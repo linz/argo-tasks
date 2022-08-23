@@ -3,8 +3,8 @@ import { command, option, string } from 'cmd-ts';
 import * as stac from 'stac-ts';
 import { createGunzip } from 'zlib';
 import { registerFileSystem } from '../../fs.register.js';
-import { logger } from '../../log.js';
-import { config } from '../common.js';
+import { logger, registerLogger } from '../../log.js';
+import { config, verbose } from '../common.js';
 
 function getTargetPath(source: string, path: string): string {
   if (path.startsWith('./')) return fsa.join(source, path.slice(2));
@@ -15,11 +15,13 @@ export const commandLdsFetch = command({
   name: 'lds-fetch-layer',
   args: {
     config,
+    verbose,
     layerId: option({ type: string, long: 'layer-id', description: 'Layer to download' }),
     target: option({ type: string, long: 'target', description: 'Target location to save file' }),
   },
   handler: async (args) => {
-    registerFileSystem(args.config);
+    registerLogger(args);
+    registerFileSystem(args);
 
     const layerId = args.layerId;
     if (isNaN(Number(layerId))) throw new Error('Invalid LayerId:' + layerId);
