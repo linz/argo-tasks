@@ -11,10 +11,17 @@
     "organization": true
   },
   "devDependencies": {
+    "@chunkd/fs": "^8.5.0",
+    "@chunkd/source-aws": "^8.5.0",
+    "@chunkd/source-aws-v2": "^8.5.0",
     "@linzjs/style": "^3.9.0",
     "@types/node": "^18.7.11",
+    "aws-sdk": "^2.1201.0",
     "cmd-ts": "^0.11.0",
-    "esbuild": "^0.15.5"
+    "esbuild": "^0.15.5",
+    "pino": "^8.4.2",
+    "pretty-json-log": "^1.1.2",
+    "stac-ts": "^1.0.0"
   },
   "scripts": {
     "build": "tsc",
@@ -31,5 +38,8 @@
   },
   "files": [
     "build/src/**"
-  ]
+  ],
+  "dependencies": {
+    "ulid": "^2.3.0"
+  }
 }
