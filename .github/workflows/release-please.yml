@@ -14,7 +14,6 @@ jobs:
         id: release
         with:
           release-type: node
-          package-name: "@linz/template-javascript-hello-world"
           token: ${{ secrets.GITHUB_TOKEN }}
 
   publish-release:
@@ -24,7 +23,18 @@ jobs:
     steps:
       - uses: linz/action-typescript@v1
 
-      - name: Publish to Github
-        run: yarn publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: 'Bundle cli'
+        uses: yarn bundle
+
+      - name: Build containers
+        run: |
+          docker build . --tag argo-tasks --label "github_run_id=${GITHUB_RUN_ID}"
+
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+      - name: Publish Containers
+        run: |
+          GIT_VERSION=$(git describe --tags --always --match 'v*')
+          docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION}
+          docker push ghcr.io/linz/argo-tasks:${GIT_VERSION}

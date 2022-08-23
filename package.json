@@ -11,11 +11,15 @@
     "organization": true
   },
   "devDependencies": {
-    "@linzjs/style": "^3.9.0"
+    "@linzjs/style": "^3.9.0",
+    "@types/node": "^18.7.11",
+    "cmd-ts": "^0.11.0",
+    "esbuild": "^0.15.5"
   },
   "scripts": {
     "build": "tsc",
     "lint": "npx eslint . --ignore-path .gitignore",
+    "bundle": "npx esbuild src/index.ts --bundle --outfile=dist/index.cjs --platform=node",
     "test": "echo 'No tests yet'"
   },
   "publishConfig": {
