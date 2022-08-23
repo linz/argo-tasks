@@ -1,8 +1,7 @@
-# Template Hello World (Javascript)
+# Argo Tasks
 
-### _A minimal template for Javascript development_
-
+Utility tasks containers for argo
 
 ## Why?
 
-This repository exists to show a working example of Typescript formatting, linting and publishing with continuous integration.
+LINZ uses Argo workflows for running bulk data tasks in AWS, there are some utilities that are often needed for these tasks
