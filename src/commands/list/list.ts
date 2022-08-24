@@ -41,7 +41,7 @@ export const commandList = command({
     for (const targetPath of paths) {
       logger.debug({ path: targetPath }, 'List');
       const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), filter));
-      logger.debug({ path: targetPath, fileCount: fileList.length }, 'List:Count');
+      logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
 
       for (const file of fileList) {
         outputFiles.push(file);
