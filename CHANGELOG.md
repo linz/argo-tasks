@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0 (2022-08-24)
+
+
+### Features
+
+* **lds-fetch-layer:** add data fetcher from lds ([8a7ec3b](https://github.com/linz/argo-tasks/commit/8a7ec3baf67edb54c2ec5c43e4a736875f96d2c9))
+* **lds-fetch-layer:** allow fetching of specific versions ([f1c950b](https://github.com/linz/argo-tasks/commit/f1c950b3b3fff4d6cfdfdcf163900676496ab8db))
+
 ## 0.0.2 (2022-08-11)
 
 
