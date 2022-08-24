@@ -9,3 +9,21 @@ jobs:
     steps:
       - uses: linz/action-typescript@v1
 
+      - name: 'Bundle cli'
+        run: |
+          yarn bundle
+
+      - name: Build containers
+        run: |
+          docker build . --tag argo-tasks --label "github_run_id=${GITHUB_RUN_ID}"
+
+      - name: Log in to registry
+        if: github.ref == 'refs/heads/master'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+      - name: Publish Containers
+        if: github.ref == 'refs/heads/master'
+        run: |
+          GIT_VERSION=$(git describe --tags --always --match 'v*')
+          docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION}
+          docker push ghcr.io/linz/argo-tasks:${GIT_VERSION}
