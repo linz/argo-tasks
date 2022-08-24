@@ -12,9 +12,9 @@
     "organization": true
   },
   "devDependencies": {
-    "@chunkd/fs": "^8.5.0",
-    "@chunkd/source-aws-v2": "^8.5.0",
-    "@chunkd/source-aws": "^8.5.0",
+    "@chunkd/fs": "^8.5.1",
+    "@chunkd/source-aws-v2": "^8.5.1",
+    "@chunkd/source-aws": "^8.5.1",
     "@linzjs/style": "^3.9.0",
     "@types/node": "^18.7.11",
     "aws-sdk": "^2.1201.0",
