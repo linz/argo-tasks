@@ -11,7 +11,7 @@ LINZ uses Argo workflows for running bulk data tasks in AWS, there are some util
 ## Command Line Tools
 
 
-### lds-layer-fetch
+### lds-fetch-layer
 
 Fetch a layer from the LDS and download it as GeoPackage
 
@@ -20,7 +20,7 @@ Fetch a layer from the LDS and download it as GeoPackage
 Fetch the latest version of layer `50063` - 50063-nz-chatham-island-airport-polygons-topo-150k and save it into /tmp/50063.gpkg
 
 ```bash
-lds-layer-fetch --layer-id 50063 --target /tmp/50063.gpkg
+lds-fetch-layer --layer-id 50063 --target /tmp/50063.gpkg
 ```
 
 ### list
