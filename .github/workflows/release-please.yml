@@ -24,7 +24,8 @@ jobs:
       - uses: linz/action-typescript@v1
 
       - name: 'Bundle cli'
-        uses: yarn bundle
+        run: |
+          yarn bundle
 
       - name: Build containers
         run: |
