@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, string } from 'cmd-ts';
+import { command, option, optional, string } from 'cmd-ts';
 import * as stac from 'stac-ts';
 import { createGunzip } from 'zlib';
 import { registerFileSystem } from '../../fs.register.js';
@@ -16,6 +16,7 @@ export const commandLdsFetch = command({
   args: {
     config,
     verbose,
+    version: option({ type: optional(string), long: 'version', description: 'Layer version to download' }),
     layerId: option({ type: string, long: 'layer-id', description: 'Layer to download' }),
     target: option({ type: string, long: 'target', description: 'Target location to save file' }),
   },
@@ -24,8 +25,19 @@ export const commandLdsFetch = command({
     registerFileSystem(args);
 
     const layerId = args.layerId;
+    const layerVersion = args.version;
+
     if (isNaN(Number(layerId))) throw new Error('Invalid LayerId:' + layerId);
-    logger.info({ layerId }, 'Collection:Download:Start');
+    logger.info({ layerId, layerVersion }, 'Collection:Download:Start');
+
+    if (args.version != null) {
+      if (isNaN(Number(layerVersion))) throw new Error('Invalid LayerVersion:' + layerVersion);
+      const source = `s3://linz-lds-cache/${layerId}/${layerId}_${layerVersion}.gpkg`;
+      await fsa.head(source); // Ensure we have read permission for the source
+
+      logger.info({ layerId, layerVersion, source }, 'Collection:Item:Fetch');
+      await fsa.write(args.target ?? `./${layerId}_${layerVersion}.gpkg`, fsa.stream(source).pipe(createGunzip()));
+    }
 
     const collectionJson = await fsa.readJson<stac.StacCollection>(`s3://linz-lds-cache/${layerId}/collection.json`);
     logger.info({ layerId, title: collectionJson.title }, 'Collection:Download:Done');
