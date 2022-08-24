@@ -9,7 +9,7 @@ export function registerFileSystem(opts: { config?: string }): void {
   const s3Fs = new FsAwsS3(new S3());
   fsa.register('s3://', s3Fs);
 
-  const configPath = opts.config ?? process.env['LINZ_BUCKET_CONFIG'];
+  const configPath = opts.config ?? process.env['AWS_ROLE_CONFIG_PATH'];
   if (configPath == null || configPath === '') return;
 
   const provider = new FsAwsS3ProviderV2(configPath, fsa);
