@@ -3,7 +3,7 @@ import { fsa } from '@chunkd/fs';
 import { FsAwsS3 } from '@chunkd/source-aws';
 import { CredentialSource, FsAwsS3ProviderV2 } from '@chunkd/source-aws-v2';
 import S3 from 'aws-sdk/clients/s3.js';
-import { logger } from './log';
+import { logger } from './log.js';
 
 export function registerFileSystem(opts: { config?: string }): void {
   const s3Fs = new FsAwsS3(new S3());

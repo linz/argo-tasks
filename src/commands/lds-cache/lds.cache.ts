@@ -2,9 +2,8 @@ import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
 import * as stac from 'stac-ts';
 import { createGunzip } from 'zlib';
-import { registerFileSystem } from '../../fs.register.js';
-import { logger, registerLogger } from '../../log.js';
-import { config, verbose } from '../common.js';
+import { logger } from '../../log.js';
+import { config, registerCli, verbose } from '../common.js';
 
 function getTargetPath(source: string, path: string): string {
   if (path.startsWith('./')) return fsa.join(source, path.slice(2));
@@ -21,8 +20,7 @@ export const commandLdsFetch = command({
     target: option({ type: string, long: 'target', description: 'Target location to save file' }),
   },
   handler: async (args) => {
-    registerLogger(args);
-    registerFileSystem(args);
+    registerCli(args);
 
     const layerId = args.layerId;
     const layerVersion = args.version;

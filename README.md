@@ -22,3 +22,25 @@ Fetch the latest version of layer `50063` - 50063-nz-chatham-island-airport-poly
 ```bash
 lds-layer-fetch --layer-id 50063 --target /tmp/50063.gpkg
 ```
+
+### list
+
+List files from AWS and split them into groups for processing 
+
+#### Example
+
+List all tiffs in a folder
+
+```bash
+list s3://linz-imagery/sample --filter ".*.tiff$" --output /tmp/list.json
+```
+
+List tiffs and split them into groups of 10
+```bash
+list s3://linz-imagery/sample --filter ".*.tiff$" --group 10  --output /tmp/list.json
+```
+
+List tiffs and split them into groups of either 10 files or 100MB which ever comes first
+```bash
+list s3://linz-imagery/sample --filter ".*.tiff$" --group 10 --group-size 100MB --output /tmp/list.json
+```
