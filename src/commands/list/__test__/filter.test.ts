@@ -1,0 +1,47 @@
+import { fsa } from '@chunkd/fs';
+import o from 'ospec';
+import { asyncFilter } from '../list.js';
+
+o.spec('AsyncFilter', () => {
+  function makGenerator(list: string[]): () => AsyncGenerator<{ path: string }> {
+    return async function* gen(): AsyncGenerator<{ path: string }> {
+      for (const path of list) yield { path };
+    };
+  }
+
+  o('should include all', async () => {
+    const gen = makGenerator(['a.tiff', 'b.tiff', 'c.tiff']);
+    const result = await fsa.toArray(asyncFilter(gen()));
+    o(result.length).equals(3);
+  });
+
+  o('should match include exact', async () => {
+    const gen = makGenerator(['a.tiff', 'b.tiff', 'c.tiff']);
+    const result = await fsa.toArray(asyncFilter(gen(), { include: 'a.tiff' }));
+    o(result).deepEquals([{ path: 'a.tiff' }]);
+  });
+
+  o('should match include regex', async () => {
+    const gen = makGenerator(['a.tiff', 'ba.tiff', 'ca.tiff']);
+    const result = await fsa.toArray(asyncFilter(gen(), { include: '^a' }));
+    o(result).deepEquals([{ path: 'a.tiff' }]);
+  });
+
+  o('should exclude', async () => {
+    const gen = makGenerator(['a.tiff', 'ba.tiff', 'ca.tiff']);
+    const result = await fsa.toArray(asyncFilter(gen(), { exclude: '^a' }));
+    o(result).deepEquals([{ path: 'ba.tiff' }, { path: 'ca.tiff' }]);
+  });
+
+  o('should include and exclude', async () => {
+    const gen = makGenerator(['a.tiff', 'ba.prj', 'ca.tiff']);
+    const result = await fsa.toArray(asyncFilter(gen(), { exclude: '^a', include: '.tiff$' }));
+    o(result).deepEquals([{ path: 'ca.tiff' }]);
+  });
+
+  o('should include exclude case insensitive', async () => {
+    const gen = makGenerator(['A.tiff', 'BA.prj', 'CA.TIFF']);
+    const result = await fsa.toArray(asyncFilter(gen(), { exclude: '^a', include: '.tiff$' }));
+    o(result).deepEquals([{ path: 'CA.TIFF' }]);
+  });
+});
