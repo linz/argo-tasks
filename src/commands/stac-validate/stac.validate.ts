@@ -54,7 +54,7 @@ export const commandStacValidate = command({
     const ajvSchema = new Map();
 
     function loadSchema(uri: string) {
-      let schema = ajv.getSchema(uri);
+      const schema = ajv.getSchema(uri);
       if (schema != null) return schema;
       let existing = ajvSchema.get(uri);
       if (existing == null) {
@@ -65,15 +65,13 @@ export const commandStacValidate = command({
     }
 
     function getSchema(schemaType: string, stacVersion: string) {
-      console.log({ schemaType });
       switch (schemaType) {
         case 'Feature':
           schemaType = 'Item';
         case 'Catalog':
         case 'Collection':
-          var type = schemaType.toLowerCase();
-          console.log({ type });
-          var schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
+          const type = schemaType.toLowerCase();
+          const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
           return schemaId;
         default:
           //TO-DO: what is the best thing to do here?
@@ -81,18 +79,15 @@ export const commandStacValidate = command({
       }
     }
 
-    for (var path of paths) {
+    for (const path of paths) {
       // TO-DO: fix this, object doesn't have property type but any lets it through
-      var stacJson: any = await fsa.readJson(path);
-      var schema = getSchema(stacJson.type, stacJson.stac_version);
-      var validate = await loadSchema(schema);
-      console.log({ validate });
+      const stacJson: any = await fsa.readJson(path);
+      const schema = getSchema(stacJson.type, stacJson.stac_version);
+      const validate = await loadSchema(schema);
       const valid = validate(stacJson);
-      console.log({ valid });
-
+      logger.info({ path: stacJson.title, type: stacJson.type }, 'Validation:Done');
       //console.log(validate.errors);
     }
-    logger.info({ path: stacJson.title, type: stacJson.type }, 'Validation:Done');
   },
 });
 
@@ -103,7 +98,7 @@ function iri(value?: string): boolean | undefined {
   try {
     const iri = new URL(value);
     if (!iri.protocol.startsWith('http')) return false;
-    if (iri.host == '') return false;
+    if (iri.host === '') return false;
     return true;
   } catch (e) {
     return false;
@@ -118,8 +113,8 @@ function iriReference(value?: string): boolean | undefined {
   try {
     const iri = new URL(value);
     if (!iri.protocol.startsWith('http')) return false;
-    if (iri.host == '') return false;
-    if (iri.pathname != '/') return false;
+    if (iri.host === '') return false;
+    if (iri.pathname !== '/') return false;
 
     return true;
   } catch (e) {
