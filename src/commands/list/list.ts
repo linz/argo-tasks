@@ -58,7 +58,7 @@ export const commandList = command({
 
 export async function* asyncFilter<T extends { path: string }>(
   source: AsyncGenerator<T>,
-  opts?: { include?: string; exclude?: string }, //filter: string,
+  opts?: { include?: string; exclude?: string },
 ): AsyncGenerator<T> {
   const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
   const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
