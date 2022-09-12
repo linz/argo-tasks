@@ -2,9 +2,11 @@ import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, optional, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
+import * as st from 'stac-ts';
+import { ConcurrentQueue } from './concurrent.queue.js';
 
 import { fastFormats } from 'ajv-formats/dist/formats.js';
-import Ajv from 'ajv';
+import Ajv, { SchemaObject, ValidateFunction } from 'ajv';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -30,7 +32,7 @@ export const commandStacValidate = command({
   },
 
   handler: async (args) => {
-    const Schemas = new Map();
+    const Schemas = new Map<string, Promise<SchemaObject>>();
     registerCli(args);
 
     const strict = args.strict ?? false;
@@ -40,7 +42,7 @@ export const commandStacValidate = command({
     const ajv = new Ajv({
       allErrors: true,
       strict,
-      loadSchema: (uri) => {
+      loadSchema: (uri: string): Promise<SchemaObject> => {
         let existing = Schemas.get(uri);
         if (existing == null) {
           existing = fsa.readJson(uri);
@@ -48,12 +50,12 @@ export const commandStacValidate = command({
         }
         return existing;
       },
-      formats: { ...fastFormats, iri, 'iri-reference': iriReference } as any,
+      formats: { ...fastFormats, iri, 'iri-reference': iriReference },
     });
 
-    const ajvSchema = new Map();
+    const ajvSchema = new Map<string, Promise<ValidateFunction>>();
 
-    function loadSchema(uri: string) {
+    function loadSchema(uri: string): Promise<ValidateFunction> | ValidateFunction {
       const schema = ajv.getSchema(uri);
       if (schema != null) return schema;
       let existing = ajvSchema.get(uri);
@@ -63,37 +65,28 @@ export const commandStacValidate = command({
       }
       return existing;
     }
-
-    function getSchema(schemaType: string, stacVersion: string) {
-      switch (schemaType) {
-        case 'Feature':
-          schemaType = 'Item';
-        case 'Catalog':
-        case 'Collection':
-          const type = schemaType.toLowerCase();
-          const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-          return schemaId;
-        default:
-          //TO-DO: what is the best thing to do here?
-          return 'invalid schema';
+    const queue = new ConcurrentQueue(5);
+    async function validateStac(path: string): Promise<void> {
+      const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+      const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version);
+      const validate = await loadSchema(schema);
+      const valid = validate(stacJson);
+      for (const child of getStacChildren(stacJson, path)) {
+        queue.push(() => validateStac(child));
       }
+      logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
     }
 
     for (const path of paths) {
-      // TO-DO: fix this, object doesn't have property type but any lets it through
-      const stacJson: any = await fsa.readJson(path);
-      const schema = getSchema(stacJson.type, stacJson.stac_version);
-      const validate = await loadSchema(schema);
-      const valid = validate(stacJson);
-      logger.info({ path: stacJson.title, type: stacJson.type }, 'Validation:Done');
-      //console.log(validate.errors);
+      queue.push(() => validateStac(path));
     }
+    await queue.join();
   },
 });
 
-function iri(value?: string): boolean | undefined {
-  if (typeof value !== 'string') return;
-  if (value.length === 0) return;
+function iri(value?: string): boolean {
+  if (typeof value !== 'string') return false;
+  if (value.length === 0) return false;
 
   try {
     const iri = new URL(value);
@@ -105,9 +98,9 @@ function iri(value?: string): boolean | undefined {
   }
 }
 
-function iriReference(value?: string): boolean | undefined {
-  if (typeof value !== 'string') return;
-  if (value.length === 0) return;
+function iriReference(value?: string): boolean {
+  if (typeof value !== 'string') return false;
+  if (value.length === 0) return false;
   if (value.startsWith('./')) return true;
 
   try {
@@ -120,4 +113,33 @@ function iriReference(value?: string): boolean | undefined {
   } catch (e) {
     return false;
   }
+}
+
+function getStacSchemaUrl(schemaType: string, stacVersion: string): string {
+  switch (schemaType) {
+    case 'Feature':
+      schemaType = 'Item';
+    case 'Catalog':
+    case 'Collection':
+      const type = schemaType.toLowerCase();
+      const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
+      return schemaId;
+    default:
+      throw new Error(`Invalid Schema Type: ${schemaType}`);
+  }
+}
+const validRels = new Set(['child', 'item']);
+
+function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
+  if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
+    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => normaliseHref(f.href, path));
+  }
+  if (stacJson.type === 'Feature') {
+    return [];
+  }
+  throw new Error(`Unknown Stac Type: ${path}`);
+}
+
+function normaliseHref(href: string, path: string): string {
+  return new URL(href, path).href;
 }
