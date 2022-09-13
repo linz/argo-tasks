@@ -16,7 +16,7 @@
     "@chunkd/source-aws": "^8.5.1",
     "@chunkd/source-aws-v2": "^8.5.1",
     "@linzjs/style": "^3.11.0",
-    "@types/node": "^18.7.11",
+    "@types/node": "^18.7.17",
     "@types/ospec": "^4.0.4",
     "aws-sdk": "^2.1201.0",
     "cmd-ts": "^0.11.0",
