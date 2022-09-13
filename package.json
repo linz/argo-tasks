@@ -23,7 +23,7 @@
     "esbuild": "^0.15.7",
     "ospec": "^4.1.6",
     "pino": "^8.5.0",
-    "pretty-json-log": "^1.1.2",
+    "pretty-json-log": "^1.2.0",
     "stac-ts": "^1.0.0",
     "ulid": "^2.3.0"
   },
