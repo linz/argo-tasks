@@ -1,12 +1,12 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, optional, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, option, optional, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import * as st from 'stac-ts';
 import { ConcurrentQueue } from './concurrent.queue.js';
 
 import { fastFormats } from 'ajv-formats/dist/formats.js';
-import Ajv, { SchemaObject, ValidateFunction } from 'ajv';
+import Ajv, { DefinedError, ErrorObject, SchemaObject, ValidateFunction } from 'ajv';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -14,13 +14,14 @@ export const commandStacValidate = command({
     config,
     verbose,
     recursive: flag({
-      type: optional(boolean),
+      type: boolean,
+      defaultValue: () => true,
       long: 'recursive',
       description: 'Follow and validate STAC links',
     }),
     strict: flag({
       type: optional(boolean),
-      defaultValue: () => false,
+      defaultValue: () => true,
       long: 'strict',
       description: 'Strict checking',
     }),
@@ -36,7 +37,7 @@ export const commandStacValidate = command({
     registerCli(args);
 
     const strict = args.strict ?? false;
-    //const recursive = args.recursive ?? false;
+    const recursive = args.recursive ?? false;
     const paths = args.location.map((c) => c.trim());
 
     const ajv = new Ajv({
@@ -68,13 +69,30 @@ export const commandStacValidate = command({
     const queue = new ConcurrentQueue(5);
     async function validateStac(path: string): Promise<void> {
       const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+      logger.info({ title: stacJson.title, type: stacJson.type, path }, 'Validation:Started');
       const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version);
       const validate = await loadSchema(schema);
       const valid = validate(stacJson);
-      for (const child of getStacChildren(stacJson, path)) {
-        queue.push(() => validateStac(child));
+      if (recursive) {
+        for (const child of getStacChildren(stacJson, path)) {
+          queue.push(() => validateStac(child));
+        }
       }
       logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
+      if (!valid) {
+        for (const err of validate.errors as DefinedError[]) {
+          logger.error(
+            {
+              instancePath: err.instancePath,
+              schemaPath: err.schemaPath,
+              keyword: err.keyword,
+              params: err.params,
+              message: err.message,
+            },
+            'Validation:Error',
+          );
+        }
+      }
     }
 
     for (const path of paths) {
