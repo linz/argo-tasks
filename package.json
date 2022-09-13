@@ -20,7 +20,7 @@
     "@types/ospec": "^4.0.4",
     "aws-sdk": "^2.1201.0",
     "cmd-ts": "^0.11.0",
-    "esbuild": "^0.15.5",
+    "esbuild": "^0.15.7",
     "ospec": "^4.1.6",
     "pino": "^8.4.2",
     "pretty-json-log": "^1.1.2",
