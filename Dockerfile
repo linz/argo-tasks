@@ -4,3 +4,4 @@ WORKDIR /app
 ADD dist/index.cjs /app/index.cjs
 
 ENTRYPOINT ["node", "index.cjs"]
+
