@@ -4,7 +4,7 @@ Utility tasks containers for argo
 
 ## Why?
 
-LINZ uses Argo workflows for running bulk data tasks in AWS, there are some utilities that are often needed for these tasks
+LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bulk data tasks in AWS, there are some utilities that are often needed for these tasks
 
 
 
@@ -32,15 +32,20 @@ List files from AWS and split them into groups for processing
 List all tiffs in a folder
 
 ```bash
-list s3://linz-imagery/sample --filter ".*.tiff$" --output /tmp/list.json
+list s3://linz-imagery/sample --include ".*.tiff$" --output /tmp/list.json
 ```
 
 List tiffs and split them into groups of 10
 ```bash
-list s3://linz-imagery/sample --filter ".*.tiff$" --group 10  --output /tmp/list.json
+list s3://linz-imagery/sample --include ".*.tiff$" --group 10  --output /tmp/list.json
 ```
 
 List tiffs and split them into groups of either 10 files or 100MB which ever comes first
 ```bash
-list s3://linz-imagery/sample --filter ".*.tiff$" --group 10 --group-size 100MB --output /tmp/list.json
+list s3://linz-imagery/sample --include ".*.tiff$" --group 10 --group-size 100MB --output /tmp/list.json
+```
+
+Exclude a specific tiff
+```bash
+list s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json
 ```

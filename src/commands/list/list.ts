@@ -13,7 +13,8 @@ export const commandList = command({
   args: {
     config,
     verbose,
-    filter: option({ type: optional(string), long: 'filter', description: 'Filter files eg ".*.tiff"' }),
+    include: option({ type: optional(string), long: 'include', description: 'Include files eg ".*.tiff?$"' }),
+    exclude: option({ type: optional(string), long: 'exclude', description: 'Exclude files eg ".*.prj$"' }),
     groupSize: option({
       type: optional(string),
       long: 'group-size',
@@ -35,12 +36,11 @@ export const commandList = command({
     const paths = args.location.map((c) => c.trim());
 
     const limit = args.limit ?? -1; // no limit by default
-    const filter = args.filter ?? '*'; // Filter everything by default
 
     const outputFiles: FileSizeInfo[] = [];
     for (const targetPath of paths) {
       logger.debug({ path: targetPath }, 'List');
-      const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), filter));
+      const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), args));
       logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
 
       for (const file of fileList) {
@@ -58,14 +58,15 @@ export const commandList = command({
 
 export async function* asyncFilter<T extends { path: string }>(
   source: AsyncGenerator<T>,
-  filter: string,
+  opts?: { include?: string; exclude?: string },
 ): AsyncGenerator<T> {
-  if (filter === '*') return yield* source;
-
-  const re = new RegExp(filter.toLowerCase(), 'i');
+  const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
+  const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
   for await (const f of source) {
-    // Always match on lowercase
-    if (re.test(f.path.toLowerCase())) yield f;
+    const testPath = f.path.toLowerCase();
+    if (exclude && exclude.test(testPath)) continue;
+    if (include === true) yield f;
+    else if (include.test(testPath)) yield f;
   }
 }
 

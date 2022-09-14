@@ -17,14 +17,16 @@
     "@chunkd/source-aws-v2": "^8.5.1",
     "@linzjs/style": "^3.11.0",
     "@types/node": "^18.7.11",
+    "@types/ospec": "^4.0.4",
     "ajv": "8.8.2",
     "ajv-formats": "2.1.1",
     "aws-sdk": "^2.1201.0",
     "cmd-ts": "^0.11.0",
-    "esbuild": "^0.15.5",
+    "esbuild": "^0.15.7",
+    "ospec": "^4.1.6",
     "p-limit": "^4.0.0",
-    "pino": "^8.4.2",
-    "pretty-json-log": "^1.1.2",
+    "pino": "^8.5.0",
+    "pretty-json-log": "^1.2.0",
     "stac-ts": "^1.0.0",
     "ulid": "^2.3.0"
   },
@@ -32,7 +34,7 @@
     "build": "tsc",
     "lint": "npx eslint . --ignore-path .gitignore",
     "bundle": "npx esbuild src/index.ts --bundle --outfile=dist/index.cjs --platform=node",
-    "test": "echo 'No tests yet'"
+    "test": "ospec --globs 'build/**/*.test.js'"
   },
   "publishConfig": {
     "access": "restricted"
