@@ -78,7 +78,7 @@ export const commandStacValidate = command({
       const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
       const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, path);
       if (schema === null) {
-        logger.error({ title: stacJson.title, type: stacJson.type, path, schema }, 'SchemaType:Invalid');
+        logger.error({ title: stacJson.title, type: stacJson.type, path, schema }, 'getStacSchema:Error');
         return;
       }
       const validate = await loadSchema(schema);
@@ -153,6 +153,7 @@ function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string)
       { invalid_stac_version: stacVersion, schema_type: schemaType, path },
       'getStacSchema:StacVersionError',
     );
+    return null;
   }
   switch (schemaType) {
     case 'Feature':
