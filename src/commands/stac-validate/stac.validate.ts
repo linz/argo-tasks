@@ -1,12 +1,12 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, option, optional, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, optional, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import * as st from 'stac-ts';
 import { ConcurrentQueue } from './concurrent.queue.js';
 
 import { fastFormats } from 'ajv-formats/dist/formats.js';
-import Ajv, { DefinedError, ErrorObject, SchemaObject, ValidateFunction } from 'ajv';
+import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -34,6 +34,7 @@ export const commandStacValidate = command({
 
   handler: async (args) => {
     const Schemas = new Map<string, Promise<SchemaObject>>();
+    const validated = new Set<string>();
     registerCli(args);
 
     const strict = args.strict ?? false;
@@ -68,9 +69,15 @@ export const commandStacValidate = command({
     }
     const queue = new ConcurrentQueue(5);
     async function validateStac(path: string): Promise<void> {
+      logger.info({ path }, 'Validation:Start');
+      if (validated.has(path)) {
+        logger.warn({ path }, 'SkippedDuplicateStacFile');
+        return;
+      }
+      validated.add(path);
       const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
-      logger.info({ title: stacJson.title, type: stacJson.type, path }, 'Validation:Started');
-      const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version);
+      const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, path);
+      if (schema) {
       const validate = await loadSchema(schema);
       const valid = validate(stacJson);
       if (recursive) {
@@ -78,8 +85,10 @@ export const commandStacValidate = command({
           queue.push(() => validateStac(child));
         }
       }
-      logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
-      if (!valid) {
+      if (valid === true) {
+        logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
+      }
+      if (valid === false) {
         for (const err of validate.errors as DefinedError[]) {
           logger.error(
             {
@@ -92,6 +101,7 @@ export const commandStacValidate = command({
             'Validation:Error',
           );
         }
+        logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
       }
     }
 
@@ -133,7 +143,14 @@ function iriReference(value?: string): boolean {
   }
 }
 
-function getStacSchemaUrl(schemaType: string, stacVersion: string): string {
+function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string {
+  logger.info({ path, schema_type: schemaType }, 'getStacSchema:Start');
+  if (stacVersion !== '1.0.0') {
+    logger.error(
+      { invalid_stac_version: stacVersion, schema_type: schemaType, path },
+      'getStacSchema:StacVersionError',
+    );
+  }
   switch (schemaType) {
     case 'Feature':
       schemaType = 'Item';
@@ -141,9 +158,12 @@ function getStacSchemaUrl(schemaType: string, stacVersion: string): string {
     case 'Collection':
       const type = schemaType.toLowerCase();
       const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
+      logger.info({ path, schema_type: schemaType, schemaId }, 'getStacSchema:Done');
       return schemaId;
     default:
       throw new Error(`Invalid Schema Type: ${schemaType}`);
+      // logger.info({ path, schema_type: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
+      // return null;
   }
 }
 const validRels = new Set(['child', 'item']);
