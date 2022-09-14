@@ -74,10 +74,16 @@ export const commandStacValidate = command({
         return;
       }
       validated.add(path);
-      const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+      let stacJson;
+      try {
+        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+      } catch (e) {
+        logger.error({ path }, 'readStacJsonFile:Error');
+        return;
+      }
+
       const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, path);
       if (schema === null) {
-        logger.error({ title: stacJson.title, type: stacJson.type, path, schema }, 'getStacSchema:Error');
         return;
       }
       const validate = await loadSchema(schema);
@@ -178,9 +184,20 @@ function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCata
   if (stacJson.type === 'Feature') {
     return [];
   }
+  // will this ever happen as version has been checked previously when validating the parent? Maybe good to keep it in in case this function is re-used.
   throw new Error(`Unknown Stac Type: ${path}`);
 }
 
 function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
 }
+
+// async function readStacJson(path: string): st.StacItem | st.StacCollection | st.StacCatalog | null {
+//   console.log('placeholder');
+//   try {
+//     const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+//     return stacJson;
+//   } catch (e) {
+//     return null;
+//   }
+// }
