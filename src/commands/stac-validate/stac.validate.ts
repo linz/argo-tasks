@@ -153,7 +153,7 @@ function iriReference(value?: string): boolean {
 }
 
 function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
-  logger.info({ path, schema_type: schemaType }, 'getStacSchema:Start');
+  logger.info({ path, schemaType: schemaType }, 'getStacSchema:Start');
   if (stacVersion !== '1.0.0') {
     logger.error(
       { invalid_stac_version: stacVersion, schema_type: schemaType, path },
@@ -168,10 +168,10 @@ function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string)
     case 'Collection':
       const type = schemaType.toLowerCase();
       const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-      logger.info({ path, schema_type: schemaType, schemaId }, 'getStacSchema:Done');
+      logger.info({ path, schemaType: schemaType, schemaId }, 'getStacSchema:Done');
       return schemaId;
     default:
-      logger.error({ path, schema_type: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
+      logger.error({ path, schemaType: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
       return null;
   }
 }
@@ -191,13 +191,3 @@ function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCata
 function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
 }
-
-// async function readStacJson(path: string): st.StacItem | st.StacCollection | st.StacCatalog | null {
-//   console.log('placeholder');
-//   try {
-//     const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
-//     return stacJson;
-//   } catch (e) {
-//     return null;
-//   }
-// }
