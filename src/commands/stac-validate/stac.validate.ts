@@ -69,7 +69,6 @@ export const commandStacValidate = command({
     }
     const queue = new ConcurrentQueue(5);
     async function validateStac(path: string): Promise<void> {
-      logger.info({ path }, 'Validation:Start');
       if (validated.has(path)) {
         logger.warn({ path }, 'SkippedDuplicateStacFile');
         return;
@@ -82,6 +81,7 @@ export const commandStacValidate = command({
         return;
       }
       const validate = await loadSchema(schema);
+      logger.info({ title: stacJson.title, type: stacJson.type, path, schema }, 'Validation:Start');
       const valid = validate(stacJson);
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
@@ -165,8 +165,7 @@ function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string)
       logger.info({ path, schema_type: schemaType, schemaId }, 'getStacSchema:Done');
       return schemaId;
     default:
-      //throw new Error(`Invalid Schema Type: ${schemaType}`);
-      logger.info({ path, schema_type: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
+      logger.error({ path, schema_type: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
       return null;
   }
 }
