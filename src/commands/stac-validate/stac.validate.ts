@@ -77,7 +77,6 @@ export const commandStacValidate = command({
       validated.add(path);
       const stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
       const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, path);
-      if (schema) {
       const validate = await loadSchema(schema);
       const valid = validate(stacJson);
       if (recursive) {
@@ -143,7 +142,7 @@ function iriReference(value?: string): boolean {
   }
 }
 
-function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string {
+function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
   logger.info({ path, schema_type: schemaType }, 'getStacSchema:Start');
   if (stacVersion !== '1.0.0') {
     logger.error(
@@ -161,9 +160,9 @@ function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string)
       logger.info({ path, schema_type: schemaType, schemaId }, 'getStacSchema:Done');
       return schemaId;
     default:
-      throw new Error(`Invalid Schema Type: ${schemaType}`);
-      // logger.info({ path, schema_type: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
-      // return null;
+      //throw new Error(`Invalid Schema Type: ${schemaType}`);
+      logger.info({ path, schema_type: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
+      return null;
   }
 }
 const validRels = new Set(['child', 'item']);
