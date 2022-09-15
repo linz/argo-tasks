@@ -3,7 +3,7 @@
   "compilerOptions": {
     "lib": ["ES2020"],
     "outDir": "build",
-    "module": "ES2020",
+    "module": "NodeNext",
     "moduleResolution": "Node",
     "resolveJsonModule": true
   },

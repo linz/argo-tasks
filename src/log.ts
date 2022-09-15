@@ -1,7 +1,7 @@
 import { log } from '@linzjs/tracing';
 import { randomBytes } from 'crypto';
 
-import pkgJson from '../package.json';
+import pkgJson from '../package.json' assert { type: 'json' };
 
 log.level = 'debug';
 
