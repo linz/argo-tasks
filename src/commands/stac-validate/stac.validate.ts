@@ -78,7 +78,7 @@ export const commandStacValidate = command({
       try {
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
       } catch (e) {
-        logger.error({ path }, 'readStacJsonFile:Error');
+        logger.error({ path, error: e }, 'readStacJsonFile:Error');
         return;
       }
 
