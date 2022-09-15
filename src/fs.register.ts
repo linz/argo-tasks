@@ -14,7 +14,7 @@ export function registerFileSystem(opts: { config?: string }): void {
 
   const provider = new FsAwsS3ProviderV2(configPath, fsa);
   provider.onFileSystemCreated = (ro: CredentialSource, fs: FileSystem): void => {
-    logger.debug({ prefix: ro.prefix, roleArn: ro.roleArn }, 'FileSystem:Register');
+    logger.debug('FileSystem:Register', { prefix: ro.prefix, roleArn: ro.roleArn });
     fsa.register(ro.prefix, fs);
   };
   s3Fs.credentials = provider;

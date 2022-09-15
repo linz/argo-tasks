@@ -13,8 +13,8 @@ export const verbose = flag({
   description: 'Verbose logging',
 });
 
-export function registerCli(args: { verbose?: boolean; config?: string }): void {
-  registerLogger(args);
+export function registerCli(args: { verbose?: boolean; config?: string }, cmd: { name: string }): void {
+  registerLogger(args, cmd);
   registerFileSystem(args);
 }
 

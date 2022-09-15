@@ -30,8 +30,8 @@ export const commandList = command({
     version: option({ type: optional(string), long: 'version', description: 'Layer version to download' }),
     location: restPositionals({ type: string, displayName: 'location', description: 'Where to list' }),
   },
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(args, this);
 
     const paths = args.location.map((c) => c.trim());
 
@@ -39,9 +39,9 @@ export const commandList = command({
 
     const outputFiles: FileSizeInfo[] = [];
     for (const targetPath of paths) {
-      logger.debug({ path: targetPath }, 'List');
+      logger.debug('List', { path: targetPath });
       const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), args));
-      logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
+      logger.info('List:Count', { path: targetPath, fileCount: fileList.length });
 
       for (const file of fileList) {
         outputFiles.push(file);

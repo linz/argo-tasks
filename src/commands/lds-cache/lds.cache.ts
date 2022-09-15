@@ -19,26 +19,26 @@ export const commandLdsFetch = command({
     layerId: option({ type: string, long: 'layer-id', description: 'Layer to download' }),
     target: option({ type: string, long: 'target', description: 'Target location to save file' }),
   },
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(args, this);
 
     const layerId = args.layerId;
     const layerVersion = args.version;
 
     if (isNaN(Number(layerId))) throw new Error('Invalid LayerId:' + layerId);
-    logger.info({ layerId, layerVersion }, 'Collection:Download:Start');
+    logger.info('Collection:Download:Start', { layerId, layerVersion });
 
     if (args.version != null) {
       if (isNaN(Number(layerVersion))) throw new Error('Invalid LayerVersion:' + layerVersion);
       const source = `s3://linz-lds-cache/${layerId}/${layerId}_${layerVersion}.gpkg`;
       await fsa.head(source); // Ensure we have read permission for the source
 
-      logger.info({ layerId, layerVersion, source }, 'Collection:Item:Fetch');
+      logger.info('Collection:Item:Fetch', { layerId, layerVersion, source });
       await fsa.write(args.target ?? `./${layerId}_${layerVersion}.gpkg`, fsa.stream(source).pipe(createGunzip()));
     }
 
     const collectionJson = await fsa.readJson<stac.StacCollection>(`s3://linz-lds-cache/${layerId}/collection.json`);
-    logger.info({ layerId, title: collectionJson.title }, 'Collection:Download:Done');
+    logger.info('Collection:Download:Done', { layerId, title: collectionJson.title });
 
     const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
     if (lastItem == null) throw new Error('No items found');
@@ -46,7 +46,7 @@ export const commandLdsFetch = command({
     const targetFile = args.target ?? lastItem.href.replace('.json', '.gpkg');
 
     const targetPath = getTargetPath(`s3://linz-lds-cache/${layerId}/`, lastItem.href).replace('.json', '.gpkg');
-    logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
+    logger.info('Collection:Item:Fetch', { layerId, lastItem, source: targetPath });
     await fsa.write(targetFile, fsa.stream(targetPath).pipe(createGunzip()));
   },
 });
