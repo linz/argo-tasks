@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, optional, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import * as st from 'stac-ts';
@@ -20,7 +20,7 @@ export const commandStacValidate = command({
       description: 'Follow and validate STAC links',
     }),
     strict: flag({
-      type: optional(boolean),
+      type: boolean,
       defaultValue: () => true,
       long: 'strict',
       description: 'Strict checking',
@@ -37,8 +37,8 @@ export const commandStacValidate = command({
     const validated = new Set<string>();
     registerCli(args);
 
-    const strict = args.strict ?? false;
-    const recursive = args.recursive ?? false;
+    const strict = args.strict;
+    const recursive = args.recursive;
     const paths = args.location.map((c) => c.trim());
 
     const ajv = new Ajv({
@@ -67,7 +67,8 @@ export const commandStacValidate = command({
       }
       return existing;
     }
-    const queue = new ConcurrentQueue(5);
+    const failures = [];
+    const queue = new ConcurrentQueue(50);
     async function validateStac(path: string): Promise<void> {
       if (validated.has(path)) {
         logger.warn({ path }, 'SkippedDuplicateStacFile');
@@ -79,6 +80,7 @@ export const commandStacValidate = command({
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
       } catch (e) {
         logger.error({ path, error: e }, 'readStacJsonFile:Error');
+        failures.push(path);
         return;
       }
 
@@ -91,13 +93,17 @@ export const commandStacValidate = command({
       const valid = validate(stacJson);
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
-          queue.push(() => validateStac(child));
+          queue.push(() =>
+            validateStac(child).catch((e) => {
+              logger.error(e, 'Failed');
+              failures.push(path);
+            }),
+          );
         }
       }
       if (valid === true) {
         logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
-      }
-      if (valid === false) {
+      } else {
         for (const err of validate.errors as DefinedError[]) {
           logger.error(
             {
@@ -110,14 +116,23 @@ export const commandStacValidate = command({
             'Validation:Error',
           );
         }
+        failures.push(path);
         logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
       }
     }
-
     for (const path of paths) {
-      queue.push(() => validateStac(path));
+      queue.push(() =>
+        validateStac(path).catch((e) => {
+          logger.error(e, 'Failed');
+          failures.push(path);
+        }),
+      );
     }
     await queue.join();
+
+    if (failures.length > 0) {
+      process.exit(1);
+    }
   },
 });
 
