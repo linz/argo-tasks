@@ -167,7 +167,7 @@ function iriReference(value?: string): boolean {
   }
 }
 
-function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
+export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
   logger.info({ path, schemaType: schemaType }, 'getStacSchema:Start');
   if (stacVersion !== '1.0.0') {
     logger.error(
@@ -192,7 +192,7 @@ function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string)
 }
 const validRels = new Set(['child', 'item']);
 
-function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
+export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
     return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => normaliseHref(f.href, path));
   }
