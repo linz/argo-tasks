@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, restPositionals, string } from 'cmd-ts';
+import { command, number, option, restPositionals, string } from 'cmd-ts';
 import { performance } from 'perf_hooks';
 import * as z from 'zod';
 import { logger } from '../../log.js';
@@ -19,12 +19,13 @@ export const commandCopy = command({
   args: {
     config,
     verbose,
+    concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 10 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
   handler: async (args) => {
     registerCli(args);
 
-    const queue = new ConcurrentQueue(50);
+    const queue = new ConcurrentQueue(args.concurrency);
 
     for (const m of args.manifest) {
       const manifest = CopyManifest.parse(tryParse(m));
