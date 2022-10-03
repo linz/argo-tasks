@@ -1,6 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 import path from 'path';
+import { gzipSync } from 'zlib';
 import { getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
 
@@ -33,7 +34,7 @@ export const commandFlatten = command({
   handler: async (args) => {
     registerCli(args);
 
-    const outputCopy: { source: string; target: string }[][] = [];
+    const outputCopy: string[] = [];
 
     for (const location of args.location) {
       const outputFiles = await getFiles([location], args);
@@ -46,10 +47,12 @@ export const commandFlatten = command({
           const target = fsa.joinAll(location, 'flat', baseFile);
           current.push({ source: filePath, target });
         }
-        outputCopy.push(current);
+
+        const outBuf = Buffer.from(JSON.stringify(current));
+        outputCopy.push(gzipSync(outBuf).toString('base64url'));
       }
     }
 
-    await fsa.write(args.output, JSON.stringify(outputCopy, null, 2));
+    await fsa.write(args.output, JSON.stringify(outputCopy));
   },
 });

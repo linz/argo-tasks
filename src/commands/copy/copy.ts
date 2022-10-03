@@ -1,5 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { command, restPositionals, string } from 'cmd-ts';
+import { performance } from 'perf_hooks';
 import * as z from 'zod';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
@@ -7,6 +8,11 @@ import { config, registerCli, verbose } from '../common.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
 const CopyManifest = z.array(CopyValidator);
+
+function tryParse(x: string): unknown {
+  if (x.startsWith('[') || x.startsWith('{')) return JSON.parse(x);
+  return JSON.parse(Buffer.from(x, 'base64url').toString());
+}
 
 export const commandCopy = command({
   name: 'copy',
@@ -21,13 +27,15 @@ export const commandCopy = command({
     const queue = new ConcurrentQueue(50);
 
     for (const m of args.manifest) {
-      const manifest = CopyManifest.parse(JSON.parse(m));
+      const manifest = CopyManifest.parse(tryParse(m));
       for (const todo of manifest) {
         queue.push(async () => {
           const exists = await fsa.head(todo.target);
           if (exists) throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
-          logger.info(todo, 'File:Copy');
+          logger.debug(todo, 'File:Copy:start');
+          const startTime = performance.now();
           await fsa.write(todo.target, fsa.stream(todo.source));
+          logger.debug({ ...todo, duration: startTime - performance.now() }, 'File:Copy');
         });
       }
     }
