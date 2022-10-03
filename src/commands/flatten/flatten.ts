@@ -1,10 +1,11 @@
 import { fsa } from '@chunkd/fs';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
+import path from 'path';
 import { getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
 
-export const commandList = command({
-  name: 'list',
+export const commandFlatten = command({
+  name: 'flatten',
   args: {
     config,
     verbose,
@@ -15,7 +16,12 @@ export const commandList = command({
       long: 'group-size',
       description: 'Group files into this size per group, eg "5Gi" or "3TB"',
     }),
-    group: option({ type: optional(number), long: 'group', description: 'Group files into this number per group' }),
+    group: option({
+      type: optional(number),
+      long: 'group',
+      description: 'Group files into this number per group',
+      defaultValue: () => 1000,
+    }),
     limit: option({
       type: optional(number),
       long: 'limit',
@@ -26,7 +32,24 @@ export const commandList = command({
   },
   handler: async (args) => {
     registerCli(args);
-    const outputFiles = await getFiles(args.location, args);
-    await fsa.write(args.output, JSON.stringify(outputFiles));
+
+    const outputCopy: { source: string; target: string }[][] = [];
+
+    for (const location of args.location) {
+      const outputFiles = await getFiles([location], args);
+
+      for (const chunk of outputFiles) {
+        const current: { source: string; target: string }[] = [];
+
+        for (const filePath of chunk) {
+          const baseFile = path.basename(filePath);
+          const target = fsa.joinAll(location, 'flat', baseFile);
+          current.push({ source: filePath, target });
+        }
+        outputCopy.push(current);
+      }
+    }
+
+    await fsa.write(args.output, JSON.stringify(outputCopy, null, 2));
   },
 });

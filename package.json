@@ -25,7 +25,9 @@
     "pino": "^8.5.0",
     "pretty-json-log": "^1.2.0",
     "stac-ts": "^1.0.0",
-    "ulid": "^2.3.0"
+    "ulid": "^2.3.0",
+    "p-limit": "^4.0.0",
+    "zod": "^3.19.1"
   },
   "scripts": {
     "build": "tsc",
