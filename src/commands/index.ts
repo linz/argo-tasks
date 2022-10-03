@@ -3,6 +3,7 @@ import { commandCopy } from './copy/copy.js';
 import { commandFlatten } from './flatten/flatten.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
+import { commandStacTiff } from './stac-create/stac.create.js';
 
 export const cmd = subcommands({
   name: 'argo-tasks',
@@ -13,5 +14,6 @@ export const cmd = subcommands({
     list: commandList,
     copy: commandCopy,
     flatten: commandFlatten,
+    'stac-tiff': commandStacTiff,
   },
 });
