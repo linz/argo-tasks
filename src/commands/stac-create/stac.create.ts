@@ -38,20 +38,20 @@ export const commandStacTiff = command({
           }
         });
       }
-    }
+      await queue.join();
 
-    await queue.join();
+      if (items.length === 0) {
+        logger.warn({ location }, 'NoItems');
+        return;
+      }
 
-    if (items.length === 0) {
-      logger.warn('NoItems');
-      return;
+      const catalog = await tiffsToCollection(collectionId, 'Some title', 'Some description', items);
+      await fsa.write(fsa.join(location, 'catalog.json'), JSON.stringify(catalog, null, 2));
+      for (const item of items) {
+        queue.push(() => fsa.write(fsa.join(location, item.id + '.json'), JSON.stringify(item, null, 2)));
+      }
+      await queue.join();
     }
-    const catalog = await tiffsToCollection(collectionId, 'Some title', 'Some description', items);
-    await fsa.write('./stac/catalog.json', JSON.stringify(catalog, null, 2));
-    for (const item of items) {
-      queue.push(() => fsa.write('./stac/' + item.id + '.json', JSON.stringify(item, null, 2)));
-    }
-    await queue.join();
 
     logger.info({ count: items.length }, 'Stac:Created');
   },
