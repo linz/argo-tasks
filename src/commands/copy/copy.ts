@@ -1,6 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { command, number, option, restPositionals, string } from 'cmd-ts';
 import { performance } from 'perf_hooks';
+import { gunzipSync } from 'zlib';
 import * as z from 'zod';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
@@ -11,7 +12,7 @@ const CopyManifest = z.array(CopyValidator);
 
 function tryParse(x: string): unknown {
   if (x.startsWith('[') || x.startsWith('{')) return JSON.parse(x);
-  return JSON.parse(Buffer.from(x, 'base64url').toString());
+  return JSON.parse(gunzipSync(Buffer.from(x, 'base64url')).toString());
 }
 
 export const commandCopy = command({
