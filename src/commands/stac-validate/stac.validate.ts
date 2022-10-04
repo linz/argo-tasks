@@ -196,7 +196,10 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: 
 }
 const validRels = new Set(['child', 'item']);
 
-export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
+export function getStacChildren(
+  stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
+  path: string,
+): string[] | null {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
     return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => normaliseHref(f.href, path));
   }
@@ -206,6 +209,6 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
   throw new Error(`Unknown Stac Type: ${path}`);
 }
 
-export function normaliseHref(href: string, path: string): string {
+export function normaliseHref(href: string, path: string): string | null {
   return new URL(href, path).href;
 }
