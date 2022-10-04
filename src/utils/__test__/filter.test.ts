@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import o from 'ospec';
-import { asyncFilter } from '../list.js';
+import { asyncFilter } from '../chunk.js';
 
 o.spec('AsyncFilter', () => {
   function makeGenerator(list: string[]): () => AsyncGenerator<{ path: string }> {
