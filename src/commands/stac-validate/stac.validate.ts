@@ -3,7 +3,7 @@ import { boolean, command, flag, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import * as st from 'stac-ts';
-import { ConcurrentQueue } from './concurrent.queue.js';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
