@@ -53,4 +53,7 @@ o.spec('stacValidate', function () {
       's3://test-bucket/test-survey/item.json',
     );
   });
+  //   o('normaliseHref', async function () {
+  //     o(normaliseHref('./item.json', 'moonboot')).equals('s3://test-bucket/test-survey/item.json');
+  //   });
 });
