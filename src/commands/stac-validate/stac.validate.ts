@@ -33,6 +33,7 @@ export const commandStacValidate = command({
   },
 
   handler: async (args) => {
+    logger.info('StacValidation:Start');
     const Schemas = new Map<string, Promise<SchemaObject>>();
     const validated = new Set<string>();
     registerCli(args);
@@ -69,6 +70,7 @@ export const commandStacValidate = command({
     }
     const failures = [];
     const queue = new ConcurrentQueue(50);
+
     async function validateStac(path: string): Promise<void> {
       if (validated.has(path)) {
         logger.warn({ path }, 'SkippedDuplicateStacFile');
@@ -86,6 +88,7 @@ export const commandStacValidate = command({
 
       const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, path);
       if (schema === null) {
+        failures.push(path);
         return;
       }
       const validate = await loadSchema(schema);
@@ -131,12 +134,13 @@ export const commandStacValidate = command({
     await queue.join();
 
     if (failures.length > 0) {
+      logger.error({ failures: failures.length }, 'StacValidation:DoneWithErrors');
       process.exit(1);
     }
   },
 });
 
-function iri(value?: string): boolean {
+export function iri(value?: string): boolean {
   if (typeof value !== 'string') return false;
   if (value.length === 0) return false;
 
@@ -150,7 +154,7 @@ function iri(value?: string): boolean {
   }
 }
 
-function iriReference(value?: string): boolean {
+export function iriReference(value?: string): boolean {
   if (typeof value !== 'string') return false;
   if (value.length === 0) return false;
   if (value.startsWith('./')) return true;
@@ -199,10 +203,9 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
   if (stacJson.type === 'Feature') {
     return [];
   }
-  // will this ever happen as version has been checked previously when validating the parent? Maybe good to keep it in in case this function is re-used.
   throw new Error(`Unknown Stac Type: ${path}`);
 }
 
-function normaliseHref(href: string, path: string): string {
+export function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
 }
