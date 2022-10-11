@@ -69,6 +69,7 @@ export const commandStacValidate = command({
       return existing;
     }
     const failures = [];
+    const stacSchemas = [];
     const queue = new ConcurrentQueue(50);
 
     async function validateStac(path: string): Promise<void> {
@@ -78,6 +79,7 @@ export const commandStacValidate = command({
       }
       validated.add(path);
       let stacJson;
+
       try {
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
       } catch (e) {
@@ -91,9 +93,37 @@ export const commandStacValidate = command({
         failures.push(path);
         return;
       }
+
       const validate = await loadSchema(schema);
       logger.info({ title: stacJson.title, type: stacJson.type, path, schema }, 'Validation:Start');
-      const valid = validate(stacJson);
+      let valid = validate(stacJson);
+
+      if (stacJson.stac_extensions) {
+        const stacExtensions: st.StacExtensions = stacJson.stac_extensions;
+        for (const se of stacExtensions) {
+          const validateStacExtension = await loadSchema(se);
+          const validStacExtension = validateStacExtension(stacJson);
+          if (!validStacExtension) {
+            for (const err of validateStacExtension.errors as DefinedError[]) {
+              logger.error(
+                {
+                  stacExtension: se,
+                  instancePath: err.instancePath,
+                  schemaPath: err.schemaPath,
+                  keyword: err.keyword,
+                  params: err.params,
+                  message: err.message,
+                },
+                'StacExtensionValidation:Error',
+              );
+            }
+            if (!validStacExtension && valid) {
+              valid = validStacExtension;
+            }
+          }
+        }
+      }
+
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
@@ -104,6 +134,7 @@ export const commandStacValidate = command({
           );
         }
       }
+
       if (valid === true) {
         logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
       } else {
@@ -209,3 +240,13 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
 export function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
 }
+
+// export async function StacValidation(
+//   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
+//   schema: string,
+// ): Promise<boolean> {
+//   const validate = await loadSchema(schema);
+//   logger.info({ title: stacJson.title, type: stacJson.type, path, schema }, 'Validation:Start');
+//   const valid = validate(stacJson);
+//   return valid;
+// }
