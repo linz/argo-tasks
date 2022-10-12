@@ -102,7 +102,9 @@ export const commandStacValidate = command({
         for (const se of stacExtensions) {
           const validateStacExtension = await loadSchema(se);
           const validStacExtension = validateStacExtension(stacJson);
-          if (!validStacExtension) {
+          if (validStacExtension === true) {
+            logger.info({ path, stacExtension: se, valid }, 'StacExtensionValidation:Done');
+          } else {
             for (const err of validateStacExtension.errors as DefinedError[]) {
               logger.error(
                 {
