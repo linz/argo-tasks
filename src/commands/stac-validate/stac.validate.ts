@@ -69,7 +69,6 @@ export const commandStacValidate = command({
       return existing;
     }
     const failures = [];
-    const stacSchemas = [];
     const queue = new ConcurrentQueue(50);
 
     async function validateStac(path: string): Promise<void> {
