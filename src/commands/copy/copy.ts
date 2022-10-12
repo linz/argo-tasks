@@ -10,7 +10,14 @@ import { config, registerCli, verbose } from '../common.js';
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
 const CopyManifest = z.array(CopyValidator);
 
-function tryParse(x: string): unknown {
+/**
+ * Attempt to figure out how the configuration is pass to us
+ * - Could be a path to a S3 location s3://foo/bar.json
+ * - Could be a JSON document "[{}]"
+ * - Could be a Base64'd Gzipped document
+ */
+async function tryParse(x: string): Promise<unknown> {
+  if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) return fsa.readJson(x);
   if (x.startsWith('[') || x.startsWith('{')) return JSON.parse(x);
   return JSON.parse(gunzipSync(Buffer.from(x, 'base64url')).toString());
 }
@@ -29,7 +36,8 @@ export const commandCopy = command({
     const queue = new ConcurrentQueue(args.concurrency);
 
     for (const m of args.manifest) {
-      const manifest = CopyManifest.parse(tryParse(m));
+      const data = await tryParse(m);
+      const manifest = CopyManifest.parse(data);
       for (const todo of manifest) {
         queue.push(async () => {
           const exists = await fsa.head(todo.target);
