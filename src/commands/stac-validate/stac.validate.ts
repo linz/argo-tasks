@@ -93,25 +93,16 @@ export const commandStacValidate = command({
         failures.push(path);
         return;
       }
-
       stacSchemas.push(schema);
-
       if (stacJson.stac_extensions) {
         const stacExtensions: st.StacExtensions = stacJson.stac_extensions;
         for (const se of stacExtensions) {
-          //   const validateStacExtension = await loadSchema(se);
-          //   const validStacExtension = validateStacExtension(stacJson);
-          //   if (validStacExtension === true) {
-          //     logger.info({ path, stacExtension: se, valid }, 'StacExtensionValidation:Done');
-          //   } else {
-          //     for (const err of validateStacExtension.errors as DefinedError[]) {
           stacSchemas.push(se);
         }
       }
       console.log(stacSchemas);
 
       for (const sch of stacSchemas) {
-        //console.log(sch);
         const validate = await loadSchema(sch);
         logger.info({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
         const valid = validate(stacJson);
@@ -137,7 +128,6 @@ export const commandStacValidate = command({
           logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
         }
       }
-
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
