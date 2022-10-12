@@ -138,17 +138,19 @@ export const commandStacValidate = command({
       if (valid === true) {
         logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
       } else {
-        for (const err of validate.errors as DefinedError[]) {
-          logger.error(
-            {
-              instancePath: err.instancePath,
-              schemaPath: err.schemaPath,
-              keyword: err.keyword,
-              params: err.params,
-              message: err.message,
-            },
-            'Validation:Error',
-          );
+        if (validate.errors) {
+          for (const err of validate.errors as DefinedError[]) {
+            logger.error(
+              {
+                instancePath: err.instancePath,
+                schemaPath: err.schemaPath,
+                keyword: err.keyword,
+                params: err.params,
+                message: err.message,
+              },
+              'Validation:Error',
+            );
+          }
         }
         failures.push(path);
         logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
