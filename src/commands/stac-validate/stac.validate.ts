@@ -77,6 +77,7 @@ export const commandStacValidate = command({
         return;
       }
       validated.add(path);
+      const stacSchemas: string[] = [];
       let stacJson;
 
       try {
@@ -93,36 +94,47 @@ export const commandStacValidate = command({
         return;
       }
 
-      const validate = await loadSchema(schema);
-      logger.info({ title: stacJson.title, type: stacJson.type, path, schema }, 'Validation:Start');
-      let valid = validate(stacJson);
+      stacSchemas.push(schema);
 
       if (stacJson.stac_extensions) {
         const stacExtensions: st.StacExtensions = stacJson.stac_extensions;
         for (const se of stacExtensions) {
-          const validateStacExtension = await loadSchema(se);
-          const validStacExtension = validateStacExtension(stacJson);
-          if (validStacExtension === true) {
-            logger.info({ path, stacExtension: se, valid }, 'StacExtensionValidation:Done');
-          } else {
-            for (const err of validateStacExtension.errors as DefinedError[]) {
+          //   const validateStacExtension = await loadSchema(se);
+          //   const validStacExtension = validateStacExtension(stacJson);
+          //   if (validStacExtension === true) {
+          //     logger.info({ path, stacExtension: se, valid }, 'StacExtensionValidation:Done');
+          //   } else {
+          //     for (const err of validateStacExtension.errors as DefinedError[]) {
+          stacSchemas.push(se);
+        }
+      }
+      console.log(stacSchemas);
+
+      for (const sch of stacSchemas) {
+        //console.log(sch);
+        const validate = await loadSchema(sch);
+        logger.info({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
+        const valid = validate(stacJson);
+        if (valid === true) {
+          logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
+        } else {
+          if (validate.errors) {
+            for (const err of validate.errors as DefinedError[]) {
               logger.error(
                 {
                   path: path,
-                  stacExtension: se,
                   instancePath: err.instancePath,
                   schemaPath: err.schemaPath,
                   keyword: err.keyword,
                   params: err.params,
                   message: err.message,
                 },
-                'StacExtensionValidation:Error',
+                'Validation:Error',
               );
             }
-            if (!validStacExtension && valid) {
-              valid = validStacExtension;
-            }
           }
+          failures.push(path);
+          logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
         }
       }
 
@@ -136,29 +148,8 @@ export const commandStacValidate = command({
           );
         }
       }
-
-      if (valid === true) {
-        logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
-      } else {
-        if (validate.errors) {
-          for (const err of validate.errors as DefinedError[]) {
-            logger.error(
-              {
-                path: path,
-                instancePath: err.instancePath,
-                schemaPath: err.schemaPath,
-                keyword: err.keyword,
-                params: err.params,
-                message: err.message,
-              },
-              'Validation:Error',
-            );
-          }
-        }
-        failures.push(path);
-        logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
-      }
     }
+
     for (const path of paths) {
       queue.push(() =>
         validateStac(path).catch((e) => {
