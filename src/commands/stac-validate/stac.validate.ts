@@ -106,6 +106,7 @@ export const commandStacValidate = command({
             for (const err of validateStacExtension.errors as DefinedError[]) {
               logger.error(
                 {
+                  path: path,
                   stacExtension: se,
                   instancePath: err.instancePath,
                   schemaPath: err.schemaPath,
@@ -141,6 +142,7 @@ export const commandStacValidate = command({
           for (const err of validate.errors as DefinedError[]) {
             logger.error(
               {
+                path: path,
                 instancePath: err.instancePath,
                 schemaPath: err.schemaPath,
                 keyword: err.keyword,
@@ -241,13 +243,3 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
 export function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
 }
-
-// export async function StacValidation(
-//   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
-//   schema: string,
-// ): Promise<boolean> {
-//   const validate = await loadSchema(schema);
-//   logger.info({ title: stacJson.title, type: stacJson.type, path, schema }, 'Validation:Start');
-//   const valid = validate(stacJson);
-//   return valid;
-// }
