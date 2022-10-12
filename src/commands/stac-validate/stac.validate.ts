@@ -79,7 +79,6 @@ export const commandStacValidate = command({
       validated.add(path);
       const stacSchemas: string[] = [];
       let stacJson;
-
       try {
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
       } catch (e) {
@@ -107,20 +106,18 @@ export const commandStacValidate = command({
         if (valid === true) {
           logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
         } else {
-          if (validate.errors) {
-            for (const err of validate.errors as DefinedError[]) {
-              logger.error(
-                {
-                  path: path,
-                  instancePath: err.instancePath,
-                  schemaPath: err.schemaPath,
-                  keyword: err.keyword,
-                  params: err.params,
-                  message: err.message,
-                },
-                'Validation:Error',
-              );
-            }
+          for (const err of validate.errors as DefinedError[]) {
+            logger.error(
+              {
+                path: path,
+                instancePath: err.instancePath,
+                schemaPath: err.schemaPath,
+                keyword: err.keyword,
+                params: err.params,
+                message: err.message,
+              },
+              'Validation:Error',
+            );
           }
           failures.push(path);
           logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
@@ -137,7 +134,6 @@ export const commandStacValidate = command({
         }
       }
     }
-
     for (const path of paths) {
       queue.push(() =>
         validateStac(path).catch((e) => {
