@@ -100,8 +100,6 @@ export const commandStacValidate = command({
           stacSchemas.push(se);
         }
       }
-      console.log(stacSchemas);
-
       for (const sch of stacSchemas) {
         const validate = await loadSchema(sch);
         logger.info({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
