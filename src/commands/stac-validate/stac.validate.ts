@@ -77,6 +77,7 @@ export const commandStacValidate = command({
         return;
       }
       validated.add(path);
+      const stacSchemas: string[] = [];
       let stacJson;
       try {
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
@@ -91,9 +92,37 @@ export const commandStacValidate = command({
         failures.push(path);
         return;
       }
-      const validate = await loadSchema(schema);
-      logger.info({ title: stacJson.title, type: stacJson.type, path, schema }, 'Validation:Start');
-      const valid = validate(stacJson);
+      stacSchemas.push(schema);
+      if (stacJson.stac_extensions) {
+        const stacExtensions: st.StacExtensions = stacJson.stac_extensions;
+        for (const se of stacExtensions) {
+          stacSchemas.push(se);
+        }
+      }
+      for (const sch of stacSchemas) {
+        const validate = await loadSchema(sch);
+        logger.info({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
+        const valid = validate(stacJson);
+        if (valid === true) {
+          logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
+        } else {
+          for (const err of validate.errors as DefinedError[]) {
+            logger.error(
+              {
+                path: path,
+                instancePath: err.instancePath,
+                schemaPath: err.schemaPath,
+                keyword: err.keyword,
+                params: err.params,
+                message: err.message,
+              },
+              'Validation:Error',
+            );
+          }
+          failures.push(path);
+          logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
+        }
+      }
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
@@ -103,24 +132,6 @@ export const commandStacValidate = command({
             }),
           );
         }
-      }
-      if (valid === true) {
-        logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
-      } else {
-        for (const err of validate.errors as DefinedError[]) {
-          logger.error(
-            {
-              instancePath: err.instancePath,
-              schemaPath: err.schemaPath,
-              keyword: err.keyword,
-              params: err.params,
-              message: err.message,
-            },
-            'Validation:Error',
-          );
-        }
-        failures.push(path);
-        logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
       }
     }
     for (const path of paths) {
