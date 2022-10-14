@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { array, command, multioption, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
 
@@ -8,8 +8,8 @@ export const commandList = command({
   args: {
     config,
     verbose,
-    include: option({ type: optional(string), long: 'include', description: 'Include files eg ".*.tiff?$"' }),
-    exclude: option({ type: optional(string), long: 'exclude', description: 'Exclude files eg ".*.prj$"' }),
+    include: multioption({ type: array(string), long: 'include', description: 'Include files eg ".*.tiff?$"' }),
+    exclude: multioption({ type: array(string), long: 'exclude', description: 'Exclude files eg ".*.prj$"' }),
     groupSize: option({
       type: optional(string),
       long: 'group-size',
@@ -26,6 +26,7 @@ export const commandList = command({
   },
   handler: async (args) => {
     registerCli(args);
+    args.include;
     const outputFiles = await getFiles(args.location, args);
     await fsa.write(args.output, JSON.stringify(outputFiles));
   },

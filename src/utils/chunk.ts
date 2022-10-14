@@ -9,15 +9,15 @@ export interface FileSizeInfo {
 
 export async function* asyncFilter<T extends { path: string }>(
   source: AsyncGenerator<T>,
-  opts?: { include?: string; exclude?: string },
+  opts?: { include?: string[]; exclude?: string[] },
 ): AsyncGenerator<T> {
-  const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
-  const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
+  const includes = opts?.include?.map((i) => new RegExp(i.toLowerCase(), 'i')) ?? [];
+  const excludes = opts?.exclude?.map((e) => new RegExp(e.toLowerCase(), 'i')) ?? [];
   for await (const f of source) {
     const testPath = f.path.toLowerCase();
-    if (exclude && exclude.test(testPath)) continue;
-    if (include === true) yield f;
-    else if (include.test(testPath)) yield f;
+    if (excludes.find((f) => f.test(testPath))) continue;
+    if (includes.find((f) => f.test(testPath))) yield f;
+    if (includes.length === 0) yield f;
   }
 }
 
@@ -43,7 +43,7 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
 
 export async function getFiles(
   paths: string[],
-  args: { include?: string; exclude?: string; limit?: number; group?: number; groupSize?: string },
+  args: { include?: string[]; exclude?: string[]; limit?: number; group?: number; groupSize?: string },
 ): Promise<string[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const maxSize = parseSize(args.groupSize ?? '-1');

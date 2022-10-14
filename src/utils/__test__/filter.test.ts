@@ -17,31 +17,43 @@ o.spec('AsyncFilter', () => {
 
   o('should match include exact', async () => {
     const gen = makeGenerator(['a.tiff', 'b.tiff', 'c.tiff']);
-    const result = await fsa.toArray(asyncFilter(gen(), { include: 'a.tiff' }));
+    const result = await fsa.toArray(asyncFilter(gen(), { include: ['a.tiff'] }));
     o(result).deepEquals([{ path: 'a.tiff' }]);
   });
 
   o('should match include regex', async () => {
     const gen = makeGenerator(['a.tiff', 'ba.tiff', 'ca.tiff']);
-    const result = await fsa.toArray(asyncFilter(gen(), { include: '^a' }));
+    const result = await fsa.toArray(asyncFilter(gen(), { include: ['^a'] }));
     o(result).deepEquals([{ path: 'a.tiff' }]);
   });
 
   o('should exclude', async () => {
     const gen = makeGenerator(['a.tiff', 'ba.tiff', 'ca.tiff']);
-    const result = await fsa.toArray(asyncFilter(gen(), { exclude: '^a' }));
+    const result = await fsa.toArray(asyncFilter(gen(), { exclude: ['^a'] }));
     o(result).deepEquals([{ path: 'ba.tiff' }, { path: 'ca.tiff' }]);
   });
 
   o('should include and exclude', async () => {
     const gen = makeGenerator(['a.tiff', 'ba.prj', 'ca.tiff']);
-    const result = await fsa.toArray(asyncFilter(gen(), { exclude: '^a', include: '.tiff$' }));
+    const result = await fsa.toArray(asyncFilter(gen(), { exclude: ['^a'], include: ['.tiff$'] }));
     o(result).deepEquals([{ path: 'ca.tiff' }]);
   });
 
   o('should include exclude case insensitive', async () => {
     const gen = makeGenerator(['A.tiff', 'BA.prj', 'CA.TIFF']);
-    const result = await fsa.toArray(asyncFilter(gen(), { exclude: '^a', include: '.tiff$' }));
+    const result = await fsa.toArray(asyncFilter(gen(), { exclude: ['^a'], include: ['.tiff$'] }));
     o(result).deepEquals([{ path: 'CA.TIFF' }]);
+  });
+
+  o('should allow multiple includes', async () => {
+    const gen = makeGenerator(['A.tiff', 'BA.prj', 'CA.json']);
+    const result = await fsa.toArray(asyncFilter(gen(), { include: ['.tiff$', '.json$'] }));
+    o(result).deepEquals([{ path: 'A.tiff' }, { path: 'CA.json' }]);
+  });
+
+  o('should allow multiple excludes', async () => {
+    const gen = makeGenerator(['A.tiff', 'BA.prj', 'CA.json']);
+    const result = await fsa.toArray(asyncFilter(gen(), { exclude: ['.tiff$', '.json$'] }));
+    o(result).deepEquals([{ path: 'BA.prj' }]);
   });
 });

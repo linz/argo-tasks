@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { array, command, multioption, number, option, optional, restPositionals, string } from 'cmd-ts';
 import path from 'path';
 import { gzipSync } from 'zlib';
 import { getFiles } from '../../utils/chunk.js';
@@ -10,8 +10,8 @@ export const commandFlatten = command({
   args: {
     config,
     verbose,
-    include: option({ type: optional(string), long: 'include', description: 'Include files eg ".*.tiff?$"' }),
-    exclude: option({ type: optional(string), long: 'exclude', description: 'Exclude files eg ".*.prj$"' }),
+    include: multioption({ type: array(string), long: 'include', description: 'Include files eg ".*.tiff?$"' }),
+    exclude: multioption({ type: array(string), long: 'exclude', description: 'Exclude files eg ".*.prj$"' }),
     groupSize: option({
       type: optional(string),
       long: 'group-size',
