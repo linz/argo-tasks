@@ -14,8 +14,23 @@ export const verbose = flag({
 });
 
 export function registerCli(args: { verbose?: boolean; config?: string }): void {
+  cleanArgs(args);
   registerLogger(args);
   registerFileSystem(args);
+}
+
+/** Trim any extra special characters from the cli parser */
+function cleanArgs(args: Record<string, unknown>): void {
+  for (const [key, value] of Object.entries(args)) {
+    if (typeof value === 'string') {
+      args[key] = value.trim();
+    } else if (Array.isArray(value)) {
+      args[key] = value.map((c) => {
+        if (typeof c === 'string') return c.trim();
+        return c;
+      });
+    }
+  }
 }
 
 export const FileSizeMap = new Map<string, number>([
