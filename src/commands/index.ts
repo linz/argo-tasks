@@ -4,6 +4,7 @@ import { commandFlatten } from './flatten/flatten.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
+import { commandTileSetValidate } from './tileset-validate/tileset.validate.js';
 
 export const cmd = subcommands({
   name: 'argo-tasks',
@@ -15,5 +16,6 @@ export const cmd = subcommands({
     'stac-validate': commandStacValidate,
     copy: commandCopy,
     flatten: commandFlatten,
+    'tileset-validate': commandTileSetValidate,
   },
 });
