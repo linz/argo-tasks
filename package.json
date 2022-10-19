@@ -47,5 +47,8 @@
   },
   "files": [
     "build/src/**"
-  ]
+  ],
+  "dependencies": {
+    "@cogeotiff/core": "^7.2.0"
+  }
 }
