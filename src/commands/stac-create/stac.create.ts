@@ -21,22 +21,42 @@ export const commandStacTiff = command({
   handler: async (args) => {
     registerCli(args);
 
-    const collectionId = ulid();
+    let collectionId: string | null = null;
     const queue = new ConcurrentQueue(args.concurrency);
 
     const abort = false;
     const items: StacItem[] = [];
     for (const location of args.location) {
       for await (const filePath of fsa.list(location)) {
-        if (!filePath.endsWith('.tiff')) continue;
+        if (!filePath.endsWith('.json')) continue;
+        if (filePath.endsWith('collection.json')) continue;
         queue.push(async () => {
           if (abort) return;
-          const item = await tiffToStac(filePath, collectionId);
-          items.push(item);
+          // const
+          const document: StacItem = await fsa.readJson(filePath);
+
+          const newCollectionId = (document as any).collection;
+          if (newCollectionId == null) throw new Error('Missing collectionId: ' + filePath);
+          if (newCollectionId !== collectionId && collectionId != null)
+            throw new Error('Different collectionId: ' + filePath);
+          collectionId = newCollectionId;
+          const item = await tiffToStac(filePath.replace('.json', '.tiff'), (document as any).collection);
+          console.log(document, item);
+          // const item = await tiffToStac(filePath, collectionId);
+          // items.push(item);
           if (items.length % 100 === 0) {
             logger.info({ index: items.length }, 'Progress');
           }
+
+          item.properties['start_datetime'] = document.properties['start_datetime'];
+          item.properties['end_datetime'] = document.properties['end_datetime'];
+          item.assets['visual']['file:checksum'] = document.assets['visual']['file:checksum'];
+
+          await fsa.write(`./changes/${document.id}_after.json`, JSON.stringify(document, null, 2));
+          await fsa.write(`./changes/${document.id}_before.json`, JSON.stringify(item, null, 2));
         });
+
+        if (queue.taskCount > 0) break;
       }
       await queue.join();
 
@@ -45,11 +65,18 @@ export const commandStacTiff = command({
         return;
       }
 
-      const catalog = await tiffsToCollection(collectionId, 'Some title', 'Some description', items);
-      await fsa.write(fsa.join(location, 'catalog.json'), JSON.stringify(catalog, null, 2));
-      for (const item of items) {
-        queue.push(() => fsa.write(fsa.join(location, item.id + '.json'), JSON.stringify(item, null, 2)));
-      }
+      if (collectionId == null) throw new Error('Collection id missing');
+
+      const collection = await tiffsToCollection(
+        collectionId,
+        'Manawatū-Whanganui 0.3m Urban Aerial Photos (2021-2022)',
+        'Some description',
+        items,
+      );
+      await fsa.write(fsa.join(location, 'catalog.json'), JSON.stringify(collection, null, 2));
+      // for (const item of items) {
+      // queue.push(() => fsa.write(fsa.join(location, item.id + '.json'), JSON.stringify(item, null, 2)));
+      // }
       await queue.join();
     }
 
@@ -72,7 +99,10 @@ async function tiffToStac(path: string, collectionId: string): Promise<StacItem>
   const { geometry } = Projection.get(tms).boundsToGeoJsonFeature(bounds) as any;
   return {
     stac_version: '1.0.0',
-    stac_extensions: ['https://stac-extensions.github.io/projection/v1.0.0/schema.json'],
+    stac_extensions: [
+      'https://stac-extensions.github.io/file/v2.0.0/schema.json',
+      'https://stac-extensions.github.io/projection/v1.0.0/schema.json',
+    ],
     id: id,
     collection: collectionId,
     type: 'Feature',
@@ -87,11 +117,12 @@ async function tiffToStac(path: string, collectionId: string): Promise<StacItem>
     links: [
       { rel: 'self', href: `./${id}.json`, type: 'application/json' },
       { rel: 'collection', href: './collection.json', type: 'application/json' },
+      { rel: 'parent', href: './collection.json', type: 'application/json' },
     ],
     assets: {
       visual: {
         href: './' + fileName,
-        type: 'image/tiff; application:geotiff; profile:cloud-optimized',
+        type: 'image/tiff; application=geotiff; profile=cloud-optimized',
       },
     },
   };
