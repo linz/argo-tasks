@@ -1,20 +1,20 @@
+import { Bounds, Nztm2000QuadTms, TileMatrixSets } from '@basemaps/geo';
+import { Projection } from '@basemaps/shared/build/proj/projection.js';
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
-import { command, number, option, restPositionals, string } from 'cmd-ts';
+import { command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { basename } from 'path';
 import { StacCollection, StacItem } from 'stac-ts';
-import { ulid } from 'ulid';
+import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { config, registerCli, verbose } from '../common.js';
-import { Projection } from '@basemaps/shared/build/proj/projection.js';
-import { Bounds, Nztm2000QuadTms, TileMatrixSets } from '@basemaps/geo';
-import { logger } from '../../log.js';
 
 export const commandStacTiff = command({
   name: 'stac-tiff',
   args: {
     config,
     verbose,
+    commit: flag({ long: 'commit', description: 'actually write the files' }),
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 50 }),
     location: restPositionals({ type: string, displayName: 'location', description: 'Manifest tiff files' }),
   },
@@ -37,11 +37,12 @@ export const commandStacTiff = command({
 
           const newCollectionId = (document as any).collection;
           if (newCollectionId == null) throw new Error('Missing collectionId: ' + filePath);
-          if (newCollectionId !== collectionId && collectionId != null)
+          if (newCollectionId !== collectionId && collectionId != null) {
             throw new Error('Different collectionId: ' + filePath);
+          }
           collectionId = newCollectionId;
           const item = await tiffToStac(filePath.replace('.json', '.tiff'), (document as any).collection);
-          // const item = await tiffToStac(filePath, collectionId);
+
           items.push(item);
           if (items.length % 100 === 0) {
             logger.info({ index: items.length }, 'Progress');
@@ -51,15 +52,8 @@ export const commandStacTiff = command({
           item.properties['end_datetime'] = document.properties['end_datetime'];
           item.assets['visual']['file:checksum'] = document.assets['visual']['file:checksum'];
 
-          // console.log(document, item);
-
-          // await fsa.write(`./changes/${document.id}_after.json`, JSON.stringify(document, null, 2));
-          // await fsa.write(`./changes/${document.id}_before.json`, JSON.stringify(item, null, 2));
-
           await fsa.write(`./after/${document.id}.json`, JSON.stringify(item, null, 2));
         });
-
-        // if (queue.taskCount > 100 || items.length > 100) break;
       }
       await queue.join();
 
@@ -73,15 +67,16 @@ export const commandStacTiff = command({
       const collection = await tiffsToCollection(
         collectionId,
         'Manawatū-Whanganui 0.3m Urban Aerial Photos (2021-2022)',
-        '',
+        'Manawatū-Whanganui 0.3m Urban Aerial Photos',
         items,
       );
-      // await fsa.write(fsa.join(location, 'catalog.json'), JSON.stringify(collection, null, 2));
       await fsa.write(`./after/collection.json`, JSON.stringify(collection, null, 2));
+      if (args.commit) await fsa.write(fsa.join(location, 'collection.json'), JSON.stringify(collection, null, 2));
 
-      // for (const item of items) {
-      // queue.push(() => fsa.write(fsa.join(location, item.id + '.json'), JSON.stringify(item, null, 2)));
-      // }
+      for (const item of items) {
+        if (args.commit)
+          queue.push(() => fsa.write(fsa.join(location, item.id + '.json'), JSON.stringify(item, null, 2)));
+      }
       await queue.join();
     }
 
