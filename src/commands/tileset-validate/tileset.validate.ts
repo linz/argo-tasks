@@ -13,7 +13,7 @@ function isTiff(x: string): boolean {
 }
 
 export const commandTileSetValidate = command({
-  name: 'list',
+  name: 'tileset-validate',
   args: {
     config,
     verbose,
