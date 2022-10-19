@@ -41,9 +41,8 @@ export const commandStacTiff = command({
             throw new Error('Different collectionId: ' + filePath);
           collectionId = newCollectionId;
           const item = await tiffToStac(filePath.replace('.json', '.tiff'), (document as any).collection);
-          console.log(document, item);
           // const item = await tiffToStac(filePath, collectionId);
-          // items.push(item);
+          items.push(item);
           if (items.length % 100 === 0) {
             logger.info({ index: items.length }, 'Progress');
           }
@@ -52,11 +51,15 @@ export const commandStacTiff = command({
           item.properties['end_datetime'] = document.properties['end_datetime'];
           item.assets['visual']['file:checksum'] = document.assets['visual']['file:checksum'];
 
-          await fsa.write(`./changes/${document.id}_after.json`, JSON.stringify(document, null, 2));
-          await fsa.write(`./changes/${document.id}_before.json`, JSON.stringify(item, null, 2));
+          // console.log(document, item);
+
+          // await fsa.write(`./changes/${document.id}_after.json`, JSON.stringify(document, null, 2));
+          // await fsa.write(`./changes/${document.id}_before.json`, JSON.stringify(item, null, 2));
+
+          await fsa.write(`./after/${document.id}.json`, JSON.stringify(item, null, 2));
         });
 
-        if (queue.taskCount > 0) break;
+        // if (queue.taskCount > 100 || items.length > 100) break;
       }
       await queue.join();
 
@@ -70,10 +73,12 @@ export const commandStacTiff = command({
       const collection = await tiffsToCollection(
         collectionId,
         'Manawatū-Whanganui 0.3m Urban Aerial Photos (2021-2022)',
-        'Some description',
+        '',
         items,
       );
-      await fsa.write(fsa.join(location, 'catalog.json'), JSON.stringify(collection, null, 2));
+      // await fsa.write(fsa.join(location, 'catalog.json'), JSON.stringify(collection, null, 2));
+      await fsa.write(`./after/collection.json`, JSON.stringify(collection, null, 2));
+
       // for (const item of items) {
       // queue.push(() => fsa.write(fsa.join(location, item.id + '.json'), JSON.stringify(item, null, 2)));
       // }
@@ -136,16 +141,34 @@ async function tiffsToCollection(
 ): Promise<StacCollection> {
   let bounds: Bounds | null = null;
   const itemLinks = [];
+
+  let minTime: Date | null = null;
+  let maxTime: Date | null = null;
+
   for (const c of items) {
     if (c.bbox) {
       if (bounds == null) bounds = Bounds.fromBbox(c.bbox);
       else bounds = bounds.union(Bounds.fromBbox(c.bbox));
     }
+    if (c.properties['start_datetime']) {
+      const startTime = new Date(c.properties['start_datetime']);
+      if (minTime == null || startTime.getTime() < minTime.getTime()) {
+        minTime = startTime;
+      }
+    }
+    if (c.properties['end_datetime']) {
+      const endTime = new Date(c.properties['end_datetime']);
+      if (maxTime == null || endTime.getTime() > endTime.getTime()) {
+        maxTime = endTime;
+      }
+    }
     itemLinks.push({ rel: 'item', href: './' + c.id + '.json', type: 'application/json' });
   }
 
   if (bounds == null) throw new Error('No bounding box');
-  const createdAt = new Date().toISOString();
+
+  if (minTime == null) minTime = new Date();
+  if (maxTime == null) maxTime = null;
   return {
     stac_version: '1.0.0',
     stac_extensions: [],
@@ -158,7 +181,7 @@ async function tiffsToCollection(
       spatial: {
         bbox: [Projection.get(Nztm2000QuadTms).boundsToWgs84BoundingBox(bounds.toJson())],
       },
-      temporal: { interval: [[createdAt, null]] },
+      temporal: { interval: [[minTime.toISOString(), maxTime?.toISOString() ?? null]] },
     },
     links: [{ rel: 'self', href: './collection.json', type: 'application/json' }, ...itemLinks],
     providers: [
