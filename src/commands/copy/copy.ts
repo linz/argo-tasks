@@ -45,7 +45,7 @@ export const commandCopy = command({
           logger.debug(todo, 'File:Copy:start');
           const startTime = performance.now();
           await fsa.write(todo.target, fsa.stream(todo.source));
-          logger.debug({ ...todo, duration: startTime - performance.now() }, 'File:Copy');
+          logger.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
         });
       }
     }
