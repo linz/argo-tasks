@@ -8,6 +8,6 @@ export function getArgoLocation(): string | null {
   if (loc == null) return null;
   if (typeof loc.key !== 'string') return null;
 
-  const key = loc.key.replace('{{pod.name}}', '');
+  const key = loc.key.replace(`/${process.env['ARGO_NODE_ID']}`, '');
   return `s3://${loc.bucket}/${key}`;
 }
