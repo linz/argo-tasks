@@ -35,6 +35,12 @@ export const commandCopy = command({
       long: 'force',
       description: 'Overwrite existing files',
     }),
+    noClobber: flag({
+      type: boolean,
+      defaultValue: () => true,
+      long: 'no-clobber',
+      description: 'Skip existing files',
+    }),
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 10 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
@@ -49,6 +55,13 @@ export const commandCopy = command({
       for (const todo of manifest) {
         queue.push(async () => {
           const exists = await fsa.head(todo.target);
+          if (exists && args.noClobber) {
+            const head = await fsa.head(todo.source);
+            if (head?.size === exists.size) {
+              logger.info({ path: todo.target, size: exists.size }, 'File:Copy:Skipped');
+              return;
+            }
+          }
           if (exists && !args.force) {
             throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
           }
