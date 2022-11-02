@@ -1,13 +1,15 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { performance } from 'perf_hooks';
 import { gunzipSync } from 'zlib';
 import * as z from 'zod';
+import timers from 'timers/promises';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { config, registerCli, verbose } from '../common.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
+type CopyTodo = z.infer<typeof CopyValidator>;
 const CopyManifest = z.array(CopyValidator);
 
 /**
@@ -27,6 +29,12 @@ export const commandCopy = command({
   args: {
     config,
     verbose,
+    force: flag({
+      type: boolean,
+      defaultValue: () => true,
+      long: 'force',
+      description: 'Overwrite existing files',
+    }),
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 10 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
@@ -41,11 +49,18 @@ export const commandCopy = command({
       for (const todo of manifest) {
         queue.push(async () => {
           const exists = await fsa.head(todo.target);
-          if (exists) throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
-          logger.debug(todo, 'File:Copy:start');
-          const startTime = performance.now();
-          await fsa.write(todo.target, fsa.stream(todo.source));
-          logger.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
+          if (exists && !args.force) {
+            throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
+          }
+          // Retry upto three times
+          for (let i = 0; i < 3; i++) {
+            try {
+              return await copyFile(todo);
+            } catch (e) {
+              logger.warn({ err: e }, 'File:Copy:Retry');
+              await timers.setTimeout(1000 * (i + 1));
+            }
+          }
         });
       }
     }
@@ -53,3 +68,10 @@ export const commandCopy = command({
     await queue.join();
   },
 });
+
+async function copyFile(todo: CopyTodo): Promise<void> {
+  logger.debug(todo, 'File:Copy:start');
+  const startTime = performance.now();
+  await fsa.write(todo.target, fsa.stream(todo.source));
+  logger.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
+}
