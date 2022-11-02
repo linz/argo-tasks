@@ -7,6 +7,7 @@ import timers from 'timers/promises';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { config, registerCli, verbose } from '../common.js';
+import { S3ActionCopy } from '../../utils/s3.action.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
 type CopyTodo = z.infer<typeof CopyValidator>;
@@ -19,7 +20,11 @@ const CopyManifest = z.array(CopyValidator);
  * - Could be a Base64'd Gzipped document
  */
 async function tryParse(x: string): Promise<unknown> {
-  if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) return fsa.readJson(x);
+  if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) {
+    const json = await fsa.readJson<S3ActionCopy>(x);
+    if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + x);
+    return json.parameters.manifest;
+  }
   if (x.startsWith('[') || x.startsWith('{')) return JSON.parse(x);
   return JSON.parse(gunzipSync(Buffer.from(x, 'base64url')).toString());
 }

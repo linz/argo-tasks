@@ -7,7 +7,7 @@ export interface FileSizeInfo {
   size?: number;
 }
 
-export async function* asyncFilter<T extends { path: string }>(
+export async function* asyncFilter<T extends { path: string; size?: number }>(
   source: AsyncGenerator<T>,
   opts?: { include?: string; exclude?: string },
 ): AsyncGenerator<T> {
@@ -56,6 +56,8 @@ export async function getFiles(
     logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
 
     for (const file of fileList) {
+      // Skip empty files
+      if (file.size === 0) continue;
       outputFiles.push(file);
       if (limit > 0 && outputFiles.length >= limit) break;
     }
