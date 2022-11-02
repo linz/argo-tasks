@@ -31,13 +31,13 @@ export const commandCopy = command({
     verbose,
     force: flag({
       type: boolean,
-      defaultValue: () => true,
+      defaultValue: () => false,
       long: 'force',
       description: 'Overwrite existing files',
     }),
     noClobber: flag({
       type: boolean,
-      defaultValue: () => true,
+      defaultValue: () => false,
       long: 'no-clobber',
       description: 'Skip existing files',
     }),
