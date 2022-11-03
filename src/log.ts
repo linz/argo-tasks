@@ -4,7 +4,9 @@ import ulid from 'ulid';
 
 const baseLogger = process.stdout.isTTY ? pino(PrettyTransform.stream()) : pino();
 
-export const logger = baseLogger.child({ id: ulid.ulid() });
+export const logId = ulid.ulid();
+
+export const logger = baseLogger.child({ id: logId });
 logger.level = 'debug';
 
 export function registerLogger(cfg: { verbose?: boolean }): void {

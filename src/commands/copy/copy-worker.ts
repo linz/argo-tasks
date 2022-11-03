@@ -1,0 +1,61 @@
+import { logger } from '../../log.js';
+import { parentPort, threadId } from 'node:worker_threads';
+import { WorkerRpc } from '@wtrpc/core';
+import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
+import { performance } from 'node:perf_hooks';
+import { registerCli } from '../common.js';
+import { fsa } from '@chunkd/fs';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+
+const Q = new ConcurrentQueue(4);
+
+const worker = new WorkerRpc<CopyContract>({
+  async copy(args: CopyContractArgs): Promise<CopyStats> {
+    const stats: CopyStats = {
+      copied: 0,
+      copiedBytes: 0,
+      retries: 0,
+      skipped: 0,
+      skippedBytes: 0,
+    };
+    const end = Math.min(args.start + args.size, args.manifest.length);
+    const log = logger.child({ id: args.id, threadId });
+
+    for (let i = args.start; i < end; i++) {
+      const todo = args.manifest[i];
+
+      Q.push(async () => {
+        const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
+        if (source == null) return;
+        if (source.size == null) return;
+        if (target != null) {
+          if (source?.size === target.size) {
+            log.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
+            stats.skipped++;
+            stats.skippedBytes += source.size;
+            return;
+          }
+
+          if (!args.force) {
+            throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
+          }
+        }
+
+        log.debug(todo, 'File:Copy:start');
+        const startTime = performance.now();
+        await fsa.write(todo.target, fsa.stream(todo.source));
+        log.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
+        stats.copied++;
+        stats.copiedBytes += source.size;
+      });
+    }
+    await Q.join();
+    return stats;
+  },
+});
+
+worker.onStart = async (): Promise<void> => {
+  registerCli({});
+};
+
+if (parentPort) worker.bind(parentPort);

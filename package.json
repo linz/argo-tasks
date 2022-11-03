@@ -49,6 +49,7 @@
     "build/src/**"
   ],
   "dependencies": {
-    "@cogeotiff/core": "^7.2.0"
+    "@cogeotiff/core": "^7.2.0",
+    "@wtrpc/core": "^1.0.0"
   }
 }
