@@ -20,6 +20,7 @@ const worker = new WorkerRpc<CopyContract>({
     };
     const end = Math.min(args.start + args.size, args.manifest.length);
     const log = logger.child({ id: args.id, threadId });
+    console.log(args);
 
     for (let i = args.start; i < end; i++) {
       const todo = args.manifest[i];
@@ -29,7 +30,7 @@ const worker = new WorkerRpc<CopyContract>({
         if (source == null) return;
         if (source.size == null) return;
         if (target != null) {
-          if (source?.size === target.size) {
+          if (source?.size === target.size && args.noClobber) {
             log.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
             stats.skipped++;
             stats.skippedBytes += source.size;
