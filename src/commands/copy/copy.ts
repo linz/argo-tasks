@@ -1,19 +1,15 @@
 import { fsa } from '@chunkd/fs';
+import { WorkerRpcPool } from '@wtrpc/core';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { performance } from 'perf_hooks';
 import { gunzipSync } from 'zlib';
 import * as z from 'zod';
-import timers from 'timers/promises';
 import { logger, logId } from '../../log.js';
-import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { config, registerCli, verbose } from '../common.js';
 import { S3ActionCopy } from '../../utils/s3.action.js';
-
-import { WorkerRpcPool } from '@wtrpc/core';
+import { config, registerCli, verbose } from '../common.js';
 import { CopyContract } from './copy-rpc.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
-type CopyTodo = z.infer<typeof CopyValidator>;
 const CopyManifest = z.array(CopyValidator);
 
 /**

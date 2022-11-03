@@ -1,26 +1,19 @@
-import { logger } from '../../log.js';
-import { parentPort, threadId } from 'node:worker_threads';
-import { WorkerRpc } from '@wtrpc/core';
-import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
-import { performance } from 'node:perf_hooks';
-import { registerCli } from '../common.js';
 import { fsa } from '@chunkd/fs';
+import { WorkerRpc } from '@wtrpc/core';
+import { performance } from 'node:perf_hooks';
+import { parentPort, threadId } from 'node:worker_threads';
+import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+import { registerCli } from '../common.js';
+import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
 
 const Q = new ConcurrentQueue(10);
 
 const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
-    const stats: CopyStats = {
-      copied: 0,
-      copiedBytes: 0,
-      retries: 0,
-      skipped: 0,
-      skippedBytes: 0,
-    };
+    const stats: CopyStats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
     const end = Math.min(args.start + args.size, args.manifest.length);
-    const log = logger.child({ id: args.id, threadId });
-    console.log(args);
+    const log = baseLogger.child({ id: args.id, threadId });
 
     for (let i = args.start; i < end; i++) {
       const todo = args.manifest[i];
