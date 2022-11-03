@@ -67,7 +67,7 @@ export const commandCopy = command({
       const data = await tryParse(m);
       const manifest = CopyManifest.parse(data);
 
-      const chunkSize = manifest.length / args.concurrency;
+      const chunkSize = Math.ceil(manifest.length / args.concurrency);
       for (let i = 0; i < manifest.length; i += chunkSize) {
         chunks.push(
           pool.run('copy', {

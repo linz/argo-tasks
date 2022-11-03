@@ -24,6 +24,7 @@ const worker = new WorkerRpc<CopyContract>({
 
     for (let i = args.start; i < end; i++) {
       const todo = args.manifest[i];
+      if (todo == null) continue;
 
       Q.push(async () => {
         const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
