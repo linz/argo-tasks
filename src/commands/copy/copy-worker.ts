@@ -7,7 +7,7 @@ import { registerCli } from '../common.js';
 import { fsa } from '@chunkd/fs';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 
-const Q = new ConcurrentQueue(4);
+const Q = new ConcurrentQueue(10);
 
 const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
