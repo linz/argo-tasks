@@ -266,6 +266,11 @@
     "@typescript-eslint/types" "5.35.1"
     eslint-visitor-keys "^3.3.0"
 
+"@wtrpc/core@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@wtrpc/core/-/core-1.0.0.tgz#8d3afe0871ef1de43ad562b20d841ac53c9da94c"
+  integrity sha512-thoQtOzyXszZLyd6LnD/6x2jYTnWJ7TD20PXBASlmv+IQSPjmrIDBXUnSXfzoWBSUcVxSSu64qh7jm6ODCKnDQ==
+
 abort-controller@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/abort-controller/-/abort-controller-3.0.0.tgz#eaf54d53b62bae4138e809ca225c8439a6efb392"

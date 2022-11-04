@@ -1,16 +1,15 @@
 import { fsa } from '@chunkd/fs';
+import { WorkerRpcPool } from '@wtrpc/core';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { performance } from 'perf_hooks';
 import { gunzipSync } from 'zlib';
 import * as z from 'zod';
-import timers from 'timers/promises';
-import { logger } from '../../log.js';
-import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { config, registerCli, verbose } from '../common.js';
+import { logger, logId } from '../../log.js';
 import { S3ActionCopy } from '../../utils/s3.action.js';
+import { config, registerCli, verbose } from '../common.js';
+import { CopyContract } from './copy-rpc.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
-type CopyTodo = z.infer<typeof CopyValidator>;
 const CopyManifest = z.array(CopyValidator);
 
 /**
@@ -46,50 +45,47 @@ export const commandCopy = command({
       long: 'no-clobber',
       description: 'Skip existing files',
     }),
-    concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 10 }),
+    concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
   handler: async (args) => {
     registerCli(args);
 
-    const queue = new ConcurrentQueue(args.concurrency);
+    const workerUrl = new URL('./copy-worker.js', import.meta.url);
+    const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
 
+    const stats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
+
+    const chunks = [];
+    const startTime = performance.now();
     for (const m of args.manifest) {
       const data = await tryParse(m);
       const manifest = CopyManifest.parse(data);
-      for (const todo of manifest) {
-        queue.push(async () => {
-          const exists = await fsa.head(todo.target);
-          if (exists && args.noClobber) {
-            const head = await fsa.head(todo.source);
-            if (head?.size === exists.size) {
-              logger.info({ path: todo.target, size: exists.size }, 'File:Copy:Skipped');
-              return;
-            }
-          }
-          if (exists && !args.force) {
-            throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
-          }
-          // Retry upto three times
-          for (let i = 0; i < 3; i++) {
-            try {
-              return await copyFile(todo);
-            } catch (e) {
-              logger.warn({ err: e }, 'File:Copy:Retry');
-              await timers.setTimeout(1000 * (i + 1));
-            }
-          }
-        });
+
+      const chunkSize = Math.ceil(manifest.length / args.concurrency);
+      for (let i = 0; i < manifest.length; i += chunkSize) {
+        chunks.push(
+          pool.run('copy', {
+            id: logId,
+            manifest,
+            start: i,
+            size: chunkSize,
+            force: args.force,
+            noClobber: args.noClobber,
+          }),
+        );
       }
     }
 
-    await queue.join();
+    const results = await Promise.all(chunks);
+    for (const result of results) {
+      stats.copied += result.copied;
+      stats.copiedBytes += result.copiedBytes;
+      stats.skipped += result.skipped;
+      stats.skippedBytes += result.skippedBytes;
+    }
+
+    await pool.close();
+    logger.info({ copyStats: stats, duration: performance.now() - startTime }, 'File:Copy:Done');
   },
 });
-
-async function copyFile(todo: CopyTodo): Promise<void> {
-  logger.debug(todo, 'File:Copy:start');
-  const startTime = performance.now();
-  await fsa.write(todo.target, fsa.stream(todo.source));
-  logger.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
-}
