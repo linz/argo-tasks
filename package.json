@@ -33,7 +33,7 @@
     "build/src/**"
   ],
   "dependencies": {
-    "@chunkd/fs": "^8.5.1",
+    "@chunkd/fs": "^10.0.0",
     "@chunkd/source-aws-v2": "^8.5.1",
     "@chunkd/source-aws": "^8.5.1",
     "@cogeotiff/core": "^7.2.0",
