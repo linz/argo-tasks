@@ -12,30 +12,14 @@
     "organization": true
   },
   "devDependencies": {
-    "@chunkd/fs": "^8.5.1",
-    "@chunkd/source-aws": "^8.5.1",
-    "@chunkd/source-aws-v2": "^8.5.1",
-    "@linzjs/style": "^3.11.0",
     "@types/node": "^18.7.11",
     "@types/ospec": "^4.0.4",
-    "ajv": "^8.8.2",
-    "ajv-formats": "^2.1.1",
-    "aws-sdk": "^2.1201.0",
-    "cmd-ts": "^0.11.0",
-    "esbuild": "^0.15.11",
     "esno": "^0.16.3",
-    "ospec": "^4.1.6",
-    "p-limit": "^4.0.0",
-    "pino": "^8.5.0",
-    "pretty-json-log": "^1.2.0",
-    "stac-ts": "^1.0.0",
-    "ulid": "^2.3.0",
-    "zod": "^3.19.1"
+    "ospec": "^4.1.6"
   },
   "scripts": {
     "build": "tsc",
     "lint": "npx eslint . --ignore-path .gitignore",
-    "bundle": "npx esbuild src/index.ts --bundle --outfile=dist/index.cjs --platform=node",
     "test": "ospec --globs 'build/**/*.test.js'"
   },
   "publishConfig": {
@@ -49,7 +33,21 @@
     "build/src/**"
   ],
   "dependencies": {
+    "@chunkd/fs": "^8.5.1",
+    "@chunkd/source-aws-v2": "^8.5.1",
+    "@chunkd/source-aws": "^8.5.1",
     "@cogeotiff/core": "^7.2.0",
-    "@wtrpc/core": "^1.0.0"
+    "@linzjs/style": "^3.11.0",
+    "@wtrpc/core": "^1.0.0",
+    "ajv-formats": "^2.1.1",
+    "ajv": "^8.8.2",
+    "aws-sdk": "^2.1201.0",
+    "cmd-ts": "^0.11.0",
+    "p-limit": "^4.0.0",
+    "pino": "^8.5.0",
+    "pretty-json-log": "^1.2.0",
+    "stac-ts": "^1.0.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.19.1"
   }
 }
