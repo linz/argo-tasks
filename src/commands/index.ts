@@ -1,6 +1,6 @@
 import { subcommands } from 'cmd-ts';
 import { commandCopy } from './copy/copy.js';
-import { commandCopyManifest } from './copy-manifest/copy-manifest.js';
+import { commandCreateManifest } from './create-manifest/create-manifest.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
@@ -15,8 +15,8 @@ export const cmd = subcommands({
     list: commandList,
     'stac-validate': commandStacValidate,
     copy: commandCopy,
-    'copy-manifest': commandCopyManifest,
-    flatten: commandCopyManifest,
+    'copy-manifest': commandCreateManifest,
+    flatten: commandCreateManifest,
     'tileset-validate': commandTileSetValidate,
   },
 });

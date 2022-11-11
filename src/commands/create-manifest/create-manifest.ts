@@ -8,8 +8,8 @@ import { getFiles } from '../../utils/chunk.js';
 import { S3ActionCopy } from '../../utils/s3.action.js';
 import { config, registerCli, verbose } from '../common.js';
 
-export const commandCopyManifest = command({
-  name: 'copy-manifest',
+export const commandCreateManifest = command({
+  name: 'create-manifest',
   args: {
     config,
     verbose,

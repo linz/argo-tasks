@@ -19,12 +19,14 @@ const CopyManifest = z.array(CopyValidator);
  * - Could be a Base64'd Gzipped document
  */
 async function tryParse(x: string): Promise<unknown> {
-  if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) {
-    const json = await fsa.readJson<S3ActionCopy>(x);
-    if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + x);
-    return json.parameters.manifest;
-  }
-  if (x.startsWith('[') || x.startsWith('{')) return JSON.parse(x);
+  //TODO: ask about the purposes of these different options - do we use them?
+  //console.log(JSON.parse(gunzipSync(Buffer.from(x, 'base64url')).toString()));
+  //   if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) {
+  //     const json = await fsa.readJson<S3ActionCopy>(x);
+  //     if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + x);
+  //     return json.parameters.manifest;
+  //   }
+  //   if (x.startsWith('[') || x.startsWith('{')) return JSON.parse(x);
   return JSON.parse(gunzipSync(Buffer.from(x, 'base64url')).toString());
 }
 
