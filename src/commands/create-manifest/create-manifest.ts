@@ -10,7 +10,10 @@ import { config, registerCli, verbose } from '../common.js';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
+<<<<<<< HEAD
   description: 'Create a list of files to copy and pass as a manifest',
+=======
+>>>>>>> 6f564a2 (fix: rename create manifest)
   args: {
     config,
     verbose,
@@ -61,7 +64,11 @@ export const commandCreateManifest = command({
 
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
+<<<<<<< HEAD
           const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
+=======
+          const targetLocation = fsa.join(actionLocation, `actions/copy-manifest-${targetHash}.json`);
+>>>>>>> 6f564a2 (fix: rename create manifest)
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
           outputCopy.push(targetLocation);
