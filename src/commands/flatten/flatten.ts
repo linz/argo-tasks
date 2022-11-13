@@ -3,13 +3,14 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { createHash } from 'crypto';
 import path from 'path';
 import { gzipSync } from 'zlib';
-import { getArgoLocation } from '../../utils/argo.js';
+import { getActionLocation } from '../../utils/action.storage.js';
 import { getFiles } from '../../utils/chunk.js';
-import { S3ActionCopy } from '../../utils/s3.action.js';
+import { ActionCopy } from '../../utils/actions.js';
 import { config, registerCli, verbose } from '../common.js';
 
 export const commandFlatten = command({
   name: 'flatten',
+  description: 'Flatten a tree of files into a single folder',
   args: {
     config,
     verbose,
@@ -36,7 +37,7 @@ export const commandFlatten = command({
   },
   handler: async (args) => {
     registerCli(args);
-    const argoLocation = getArgoLocation();
+    const actionLocation = getActionLocation();
 
     const outputCopy: string[] = [];
 
@@ -55,10 +56,10 @@ export const commandFlatten = command({
         const outBuf = Buffer.from(JSON.stringify(current));
         const targetHash = createHash('sha256').update(outBuf).digest('base64url');
 
-        // If running inside of ARGO store the list of files to move in a S3 bucket rather than the ARGO parameters
-        if (argoLocation) {
-          const targetLocation = fsa.join(argoLocation, `actions/flatten-${targetHash}.json`);
-          const targetAction: S3ActionCopy = { action: 'copy', parameters: { manifest: current } };
+        // Store the list of files to move in a bucket rather than the ARGO parameters
+        if (actionLocation) {
+          const targetLocation = fsa.join(actionLocation, `actions/flatten-${targetHash}.json`);
+          const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
           outputCopy.push(targetLocation);
         } else {
