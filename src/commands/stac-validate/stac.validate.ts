@@ -10,6 +10,7 @@ import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
+  description: 'Validate STAC files',
   args: {
     config,
     verbose,

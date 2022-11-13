@@ -1,6 +1,6 @@
-export type S3Action = S3ActionCopy;
+export type Actions = ActionCopy;
 
-export interface S3ActionCopy {
+export interface ActionCopy {
   action: 'copy';
   parameters: {
     manifest: { source: string; target: string }[];

@@ -5,7 +5,7 @@ import { performance } from 'perf_hooks';
 import { gunzipSync } from 'zlib';
 import * as z from 'zod';
 import { logger, logId } from '../../log.js';
-import { S3ActionCopy } from '../../utils/s3.action.js';
+import { ActionCopy } from '../../utils/actions.js';
 import { config, registerCli, verbose } from '../common.js';
 import { CopyContract } from './copy-rpc.js';
 
@@ -20,7 +20,7 @@ const CopyManifest = z.array(CopyValidator);
  */
 async function tryParse(x: string): Promise<unknown> {
   if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) {
-    const json = await fsa.readJson<S3ActionCopy>(x);
+    const json = await fsa.readJson<ActionCopy>(x);
     if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + x);
     return json.parameters.manifest;
   }
@@ -30,6 +30,7 @@ async function tryParse(x: string): Promise<unknown> {
 
 export const commandCopy = command({
   name: 'copy',
+  description: 'Copy a manifest of files',
   args: {
     config,
     verbose,
