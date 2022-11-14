@@ -5,6 +5,7 @@ import { config, registerCli, verbose } from '../common.js';
 
 export const commandList = command({
   name: 'list',
+  description: 'List and group files into collections of tasks',
   args: {
     config,
     verbose,

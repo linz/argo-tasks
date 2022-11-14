@@ -12,6 +12,7 @@ function getTargetPath(source: string, path: string): string {
 
 export const commandLdsFetch = command({
   name: 'lds-fetch-layer',
+  description: 'Download a LDS layer from the LDS Cache',
   args: {
     config,
     verbose,

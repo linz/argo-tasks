@@ -14,6 +14,7 @@ function isTiff(x: string): boolean {
 
 export const commandTileSetValidate = command({
   name: 'tileset-validate',
+  description: 'Validate that tiffs match the NZ Tile Grid',
   args: {
     config,
     verbose,

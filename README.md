@@ -8,6 +8,11 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 ## Command Line Tools
 
+- [lds-fetch-layer](#lds-fetch-layer)
+- [create-manifest](#create-manifest)
+- [list](#list)
+- [stac-validate](#stac-validate)
+
 ### lds-fetch-layer
 
 Fetch a layer from the LDS and download it as GeoPackage
@@ -48,6 +53,24 @@ Exclude a specific tiff
 
 ```bash
 list s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json
+```
+
+### create-manifest
+
+Generate a manifest of files that need to be copied.
+
+if $ACTION_PATH is set, store the resulting manifest files as json documents
+
+```
+create-manifest s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json
+```
+
+### copy
+
+Copy a manifest of files between two locations, for manifest creation see [create-manifest](#create-manifest)
+
+```
+copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurrency 10
 ```
 
 ### stac-validate
