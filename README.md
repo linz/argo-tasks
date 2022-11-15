@@ -9,10 +9,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 ## Command Line Tools
 
 - [lds-fetch-layer](#lds-fetch-layer)
-  <<<<<<< HEAD
-- # [create-manifest](#create-manifest)
-- [flatten](#flatten)
-  > > > > > > > master
+- [create-manifest](#create-manifest)
 - [list](#list)
 - [stac-validate](#stac-validate)
 
@@ -58,17 +55,9 @@ Exclude a specific tiff
 list s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json
 ```
 
-<<<<<<< HEAD
-
 ### create-manifest
 
-# Generate a manifest of files that need to be copied.
-
-### flatten
-
 Generate a manifest of files that need to be moved into a flattened structure.
-
-> > > > > > > master
 
 if $ACTION_PATH is set, store the resulting manifest files as json documents
 
