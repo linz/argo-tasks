@@ -57,12 +57,12 @@ list s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --out
 
 ### create-manifest
 
-Generate a manifest of files that need to be moved into a flattened structure.
+Generate a manifest of files that need to be copied and their target paths.
 
 if $ACTION_PATH is set, store the resulting manifest files as json documents
 
 ```
-create-manifest s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json
+create-manifest s3://link-workflow-artifacts/sample/flat --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json --target s3://linz-imagery/sample
 ```
 
 ### copy
