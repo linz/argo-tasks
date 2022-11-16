@@ -8,9 +8,9 @@ import { getFiles } from '../../utils/chunk.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { config, registerCli, verbose } from '../common.js';
 
-export const commandFlatten = command({
-  name: 'flatten',
-  description: 'Flatten a tree of files into a single folder',
+export const commandCreateManifest = command({
+  name: 'create-manifest',
+  description: 'Create a list of files to copy and pass as a manifest',
   args: {
     config,
     verbose,
@@ -33,7 +33,8 @@ export const commandFlatten = command({
       description: 'Limit the file count to this amount, -1 is no limit',
     }),
     output: option({ type: string, long: 'output', description: 'Output location for the listing' }),
-    location: restPositionals({ type: string, displayName: 'location', description: 'Where to list' }),
+    target: option({ type: string, long: 'target', description: 'Copy destination' }),
+    source: restPositionals({ type: string, displayName: 'source', description: 'Where to list' }),
   },
   handler: async (args) => {
     registerCli(args);
@@ -41,15 +42,17 @@ export const commandFlatten = command({
 
     const outputCopy: string[] = [];
 
-    for (const location of args.location) {
-      const outputFiles = await getFiles([location], args);
+    const targetPath: string = args.target;
+
+    for (const source of args.source) {
+      const outputFiles = await getFiles([source], args);
 
       for (const chunk of outputFiles) {
         const current: { source: string; target: string }[] = [];
 
         for (const filePath of chunk) {
           const baseFile = path.basename(filePath);
-          const target = fsa.joinAll(location, 'flat', baseFile);
+          const target = fsa.joinAll(targetPath, baseFile);
           current.push({ source: filePath, target });
         }
 
@@ -58,7 +61,7 @@ export const commandFlatten = command({
 
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
-          const targetLocation = fsa.join(actionLocation, `actions/flatten-${targetHash}.json`);
+          const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
           outputCopy.push(targetLocation);
