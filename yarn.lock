@@ -2,22 +2,27 @@
 # yarn lockfile v1
 
 
+"@chunkd/core@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@chunkd/core/-/core-10.0.0.tgz#d66fd49993cad99886eb2eb20df24a3056ebb218"
+  integrity sha512-8AvtnYUUwn8AcRrjnjstczCj2wJT1Kj+JUy/Cxo6mdsxxQiR1L+2vD46Wj/Q5s/K2toQta3/bSBys3NfYweWGg==
+
 "@chunkd/core@^8.1.0", "@chunkd/core@^8.4.0":
   version "8.4.0"
   resolved "https://registry.yarnpkg.com/@chunkd/core/-/core-8.4.0.tgz#749434f6ae6d8fd95405bb0b33d73ebae6583d79"
   integrity sha512-ayU+POyD/klSRJVf/x4ePeNnl6o+AFD87gTkqvwCuvh00snaJZGgtO7q8zzErAcDcvLla6mCElHtaQO6kn3dVw==
 
-"@chunkd/fs@^8.5.1":
-  version "8.5.1"
-  resolved "https://registry.yarnpkg.com/@chunkd/fs/-/fs-8.5.1.tgz#ac08b115f2e8b399441b6356ff83f48ca8368c41"
-  integrity sha512-C0OpeONuvIASxuEgF7jAEy0K2Xz5ITgeiza/5tx8je2SHNWFsqIVC/YTkLiG3IkQdI1UFYTdHcFV5VK+CKSNvA==
+"@chunkd/fs@^10.0.2":
+  version "10.0.2"
+  resolved "https://registry.yarnpkg.com/@chunkd/fs/-/fs-10.0.2.tgz#80c916a2a2776c47c076721eee85cbc91bb40cab"
+  integrity sha512-WsU7GD3S/nKJjeoMjvS2f8bHgQcxmBClPLidq1ZsAb+v0CmUnwL2x0GdtzwJH7bmdR5gVqXWVHCZsPCmEeHfiw==
   dependencies:
-    "@chunkd/core" "^8.4.0"
-    "@chunkd/source-file" "^8.4.0"
-    "@chunkd/source-http" "^8.4.0"
+    "@chunkd/core" "^10.0.0"
+    "@chunkd/source-file" "^10.0.0"
+    "@chunkd/source-http" "^10.0.0"
   optionalDependencies:
-    "@chunkd/source-aws" "^8.5.1"
-    "@chunkd/source-google-cloud" "^8.4.0"
+    "@chunkd/source-aws" "^10.0.2"
+    "@chunkd/source-google-cloud" "^10.0.0"
 
 "@chunkd/source-aws-v2@^8.5.1":
   version "8.5.1"
@@ -27,6 +32,13 @@
     "@chunkd/core" "^8.4.0"
     "@chunkd/source-aws" "^8.5.1"
 
+"@chunkd/source-aws@^10.0.2":
+  version "10.0.2"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-aws/-/source-aws-10.0.2.tgz#68d89d0adf81bd746037cc96a7cdae244cd2a710"
+  integrity sha512-N3/IjZIaflB0+HFGGlqQWXkIBx0INN0TnV3OOOlZiCiMvNFgWbmir+Se6slaD4RXr/42zjacdW5+BnNlz9P6IQ==
+  dependencies:
+    "@chunkd/core" "^10.0.0"
+
 "@chunkd/source-aws@^8.5.1":
   version "8.5.1"
   resolved "https://registry.yarnpkg.com/@chunkd/source-aws/-/source-aws-8.5.1.tgz#6d07b904820c3f4ab5339eadcca61e34af7a6921"
@@ -34,26 +46,26 @@
   dependencies:
     "@chunkd/core" "^8.4.0"
 
-"@chunkd/source-file@^8.4.0":
-  version "8.4.0"
-  resolved "https://registry.yarnpkg.com/@chunkd/source-file/-/source-file-8.4.0.tgz#6567f4170e3b8b762fb78db01b5d15f8bf3c9dc3"
-  integrity sha512-yk0PRpSO24MrkXJbDseeVErZ7SAOj/FptNvh3GNGd6tUEIFpQIROsQdrRyGWBKh+geK0JI/edE/r+rmDzCC6eQ==
+"@chunkd/source-file@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-file/-/source-file-10.0.0.tgz#3a53a4e3fe5b8a4efbce0e903a281a2b29573ebf"
+  integrity sha512-hqJoYiF50X7+BBdbOYBuwz85nnUuSa/IZAVW1lBIvUz1sjk7xUnITxHGgQTHGy6nBBF+0keA7LsXBAGJOz7V/A==
   dependencies:
-    "@chunkd/core" "^8.4.0"
+    "@chunkd/core" "^10.0.0"
 
-"@chunkd/source-google-cloud@^8.4.0":
-  version "8.4.0"
-  resolved "https://registry.yarnpkg.com/@chunkd/source-google-cloud/-/source-google-cloud-8.4.0.tgz#4dc7b74817ac73ceb5bcb1cbd38e99875ad5b8a4"
-  integrity sha512-36q9p5j6tL719y3PMZe+LO0wVZpaWFxAwnoY064aT430+H4FCPjJQ0Eon0Z+akEl0LU6+c3USS7hkHpchsKhMg==
+"@chunkd/source-google-cloud@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-google-cloud/-/source-google-cloud-10.0.0.tgz#5659990467ff34609633a129cef3d7909e532b73"
+  integrity sha512-appsxa/CPw+eElDrZw/l33B5BcWUaYUc10z88LEqMrKA+AUMRUpZg04+Vau9yBWOKvn5hRK/HpU/bvN9NKWI3Q==
   dependencies:
-    "@chunkd/core" "^8.4.0"
+    "@chunkd/core" "^10.0.0"
 
-"@chunkd/source-http@^8.4.0":
-  version "8.4.0"
-  resolved "https://registry.yarnpkg.com/@chunkd/source-http/-/source-http-8.4.0.tgz#a8e2260aaa0c1293f528f8d36d7b2a7e79dcb026"
-  integrity sha512-IXkErCyuKC/WcIZGjREy4OQsXyA29yhFtu2fGXmv5AroEVRltDX7wA9dVzzOBw/jhgLTuvbFvHvtdWn1A8OWxA==
+"@chunkd/source-http@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-http/-/source-http-10.0.0.tgz#09d0449ed72c6264de52f9505c453c6a283dfe1f"
+  integrity sha512-lwCn2hotROHV+XnYryZwigC/0fJZ1oBv5C1wTv/i6JTbL+9wf8h8VrduDGC7aB4z4PBd2hJ2fGp+jnu9S5sy2g==
   dependencies:
-    "@chunkd/core" "^8.4.0"
+    "@chunkd/core" "^10.0.0"
     node-fetch "^3.1.0"
 
 "@cogeotiff/core@^7.2.0":
