@@ -37,7 +37,7 @@
     "@chunkd/source-aws-v2": "^8.5.1",
     "@chunkd/source-aws": "^8.5.1",
     "@cogeotiff/core": "^7.2.0",
-    "@linzjs/style": "^3.11.0",
+    "@linzjs/style": "^3.13.0",
     "@wtrpc/core": "^1.0.0",
     "ajv-formats": "^2.1.1",
     "ajv": "^8.8.2",
