@@ -15,7 +15,7 @@ export const cmd = subcommands({
     list: commandList,
     'stac-validate': commandStacValidate,
     copy: commandCopy,
-    'copy-manifest': commandCreateManifest,
+    'create-manifest': commandCreateManifest,
     flatten: commandCreateManifest,
     'tileset-validate': commandTileSetValidate,
   },
