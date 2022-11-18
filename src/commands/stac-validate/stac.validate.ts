@@ -146,8 +146,10 @@ export const commandStacValidate = command({
     await queue.join();
 
     if (failures.length > 0) {
-      logger.error({ failures: failures.length }, 'StacValidation:DoneWithErrors');
+      logger.error({ failures: failures.length }, 'StacValidationReport:DoneWithErrors');
       process.exit(1);
+    } else {
+      logger.info('StacValidationReport:SuccessNoErrorsFound');
     }
   },
 });
