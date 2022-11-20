@@ -105,7 +105,7 @@ export const commandStacValidate = command({
         logger.info({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
         const valid = validate(stacJson);
         if (valid === true) {
-          logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done');
+          logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Ok');
         } else {
           for (const err of validate.errors as DefinedError[]) {
             logger.error(
@@ -117,11 +117,11 @@ export const commandStacValidate = command({
                 params: err.params,
                 message: err.message,
               },
-              'Validation:Error',
+              'Validation:Failed',
             );
           }
           failures.push(path);
-          logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:DoneWithErrors');
+          logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Failed');
         }
       }
       if (recursive) {
@@ -146,10 +146,10 @@ export const commandStacValidate = command({
     await queue.join();
 
     if (failures.length > 0) {
-      logger.error({ failures: failures.length }, 'StacValidationReport:DoneWithErrors');
+      logger.error({ failures: failures.length }, 'StacValidation:Done:Failed');
       process.exit(1);
     } else {
-      logger.info('StacValidationReport:SuccessNoErrorsFound');
+      logger.info('StacValidation:Done:Ok');
     }
   },
 });
