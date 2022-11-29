@@ -57,7 +57,7 @@ export const commandTileSetValidate = command({
             // Failed on size of tile
 
             failed++;
-            logger.error({ fileName, got: { x: bounds[0], y: bounds[3] }, expected }, 'File:Invalid:Size');
+            logger.error({ fileName, got: { width: width, height: height }, expected }, 'File:Invalid:Size');
           }
 
           if (checked % 100 === 0) logger.info({ checked, total, failed, lastFile: fileName }, 'File:Checked');
