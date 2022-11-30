@@ -52,12 +52,12 @@ export const commandTileSetValidate = command({
             // Failed origin
 
             failed++;
-            logger.warn({ fileName, got: { x: bounds[0], y: bounds[3] }, expected }, 'File:Invalid:Origin');
+            logger.error({ fileName, got: { x: bounds[0], y: bounds[3] }, expected }, 'File:Invalid:Origin');
           } else if (width !== expected?.width || height !== expected.height) {
             // Failed on size of tile
 
             failed++;
-            logger.warn({ fileName, got: { x: bounds[0], y: bounds[3] }, expected }, 'File:Invalid:Size');
+            logger.error({ fileName, got: { width: width, height: height }, expected }, 'File:Invalid:Size');
           }
 
           if (checked % 100 === 0) logger.info({ checked, total, failed, lastFile: fileName }, 'File:Checked');
@@ -68,5 +68,9 @@ export const commandTileSetValidate = command({
     await Q.join();
 
     logger.info({ checked, total, failed }, 'File:Checked');
+    if (failed > 0) {
+      logger.error({ failures: failed }, 'TilesetValidate:Done:Failed');
+      process.exit(1);
+    }
   },
 });
