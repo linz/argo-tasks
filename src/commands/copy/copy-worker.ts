@@ -6,6 +6,7 @@ import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { registerCli } from '../common.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
+import * as timers from 'node:timers/promises';
 
 const Q = new ConcurrentQueue(10);
 
@@ -32,6 +33,7 @@ const worker = new WorkerRpc<CopyContract>({
           }
 
           if (!args.force) {
+            log.error({ target: target.path, source: source.path }, 'File:Overwrite');
             throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
           }
         }
