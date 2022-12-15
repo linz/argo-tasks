@@ -6,7 +6,6 @@ import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { registerCli } from '../common.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
-import * as timers from 'node:timers/promises';
 
 const Q = new ConcurrentQueue(10);
 
