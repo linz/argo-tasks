@@ -20,6 +20,6 @@ export class ConcurrentQueue {
 
   /** Wait for all tasks to finish */
   async join(): Promise<void> {
-    while (this.todo.size > 0) await this.todo.values().next().value;
+    await Promise.all([...this.todo.values()]);
   }
 }
