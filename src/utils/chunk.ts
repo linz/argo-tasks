@@ -40,11 +40,8 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
   if (current.length > 0) output.push(current);
   return output;
 }
-
-export async function getFiles(
-  paths: string[],
-  args: { include?: string; exclude?: string; limit?: number; group?: number; groupSize?: string },
-): Promise<string[][]> {
+export type FileFilter = { include?: string; exclude?: string; limit?: number; group?: number; groupSize?: string };
+export async function getFiles(paths: string[], args: FileFilter): Promise<string[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const maxSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
