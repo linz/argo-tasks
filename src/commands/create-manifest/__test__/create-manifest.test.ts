@@ -14,8 +14,8 @@ o.spec('argoLocation', () => {
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
     ]);
+
     const outputFiles = await createManifest('memory://source/', 'memory://target/', { flatten: true });
-    console.log(outputFiles);
     o(outputFiles[0]).deepEquals([
       {
         source: 'memory://source/topographic.json',
@@ -33,8 +33,8 @@ o.spec('argoLocation', () => {
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
     ]);
+
     const outputFiles = await createManifest('memory://source/', 'memory://target/sub/', { flatten: false });
-    console.log(outputFiles);
     o(outputFiles[0]).deepEquals([
       {
         source: 'memory://source/topographic.json',

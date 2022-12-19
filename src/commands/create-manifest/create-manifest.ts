@@ -49,7 +49,7 @@ export const commandCreateManifest = command({
       for (const current of outputFiles) {
         const outBuf = Buffer.from(JSON.stringify(current));
         const targetHash = createHash('sha256').update(outBuf).digest('base64url');
-  
+
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
           const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
