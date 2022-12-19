@@ -52,13 +52,17 @@ export async function getFiles(paths: string[], args: FileFilter): Promise<strin
     const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), args));
     logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
 
+    let size = 0;
     for (const file of fileList) {
       // Skip empty files
       if (file.size === 0) continue;
+      if (file.size != null) size += file.size;
       outputFiles.push(file);
       if (limit > 0 && outputFiles.length >= limit) break;
     }
     if (limit > 0 && outputFiles.length >= limit) break;
+
+    logger.info({ path: targetPath, fileCount: fileList.length, totalSize: size }, 'List:Size');
   }
 
   return chunkFiles(outputFiles, maxLength, maxSize);
