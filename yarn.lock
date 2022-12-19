@@ -56,6 +56,13 @@
     "@chunkd/core" "^10.0.0"
     node-fetch "^3.1.0"
 
+"@chunkd/source-memory@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-memory/-/source-memory-10.0.0.tgz#17880ca2161bd3fc5af042d6b392cbcf42e36b0a"
+  integrity sha512-0s+rCuFpeJ2cO3Zjrhsxr08H0ujeVDnXl6VMWaOX97jDGZUGR4Nbiy3Azx3tfvL8X5LjeMuxXrs0e1gm70UpMw==
+  dependencies:
+    "@chunkd/core" "^10.0.0"
+
 "@cogeotiff/core@^7.2.1":
   version "7.2.1"
   resolved "https://registry.yarnpkg.com/@cogeotiff/core/-/core-7.2.1.tgz#96e62532613a5ae46781bb614a8e652b1750cecb"

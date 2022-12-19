@@ -1,11 +1,11 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
 import path from 'path';
 import { gzipSync } from 'zlib';
 import { getActionLocation } from '../../utils/action.storage.js';
-import { getFiles } from '../../utils/chunk.js';
 import { ActionCopy } from '../../utils/actions.js';
+import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
 
 export const commandCreateManifest = command({
@@ -14,6 +14,7 @@ export const commandCreateManifest = command({
   args: {
     config,
     verbose,
+    flatten: flag({ long: 'flatten', description: 'Flatten the files in the target location' }),
     include: option({ type: optional(string), long: 'include', description: 'Include files eg ".*.tiff?$"' }),
     exclude: option({ type: optional(string), long: 'exclude', description: 'Exclude files eg ".*.prj$"' }),
     groupSize: option({
@@ -38,24 +39,14 @@ export const commandCreateManifest = command({
   },
   handler: async (args) => {
     registerCli(args);
-    const actionLocation = getActionLocation();
 
     const outputCopy: string[] = [];
 
     const targetPath: string = args.target;
-
+    const actionLocation = getActionLocation();
     for (const source of args.source) {
-      const outputFiles = await getFiles([source], args);
-
-      for (const chunk of outputFiles) {
-        const current: { source: string; target: string }[] = [];
-
-        for (const filePath of chunk) {
-          const baseFile = path.basename(filePath);
-          const target = fsa.joinAll(targetPath, baseFile);
-          current.push({ source: filePath, target });
-        }
-
+      const outputFiles = await createManifest(source, targetPath, args);
+      for (const current of outputFiles) {
         const outBuf = Buffer.from(JSON.stringify(current));
         const targetHash = createHash('sha256').update(outBuf).digest('base64url');
 
@@ -70,7 +61,32 @@ export const commandCreateManifest = command({
         }
       }
     }
-
     await fsa.write(args.output, JSON.stringify(outputCopy));
   },
 });
+
+export type SourceTarget = { source: string; target: string };
+export type ManifestFilter = FileFilter & { flatten: boolean };
+
+export async function createManifest(
+  source: string,
+  targetPath: string,
+  args: ManifestFilter,
+): Promise<SourceTarget[][]> {
+  const outputFiles = await getFiles([source], args);
+  const outputCopy: SourceTarget[][] = [];
+
+  for (const chunk of outputFiles) {
+    const current: SourceTarget[] = [];
+
+    for (const filePath of chunk) {
+      const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
+      const target = fsa.joinAll(targetPath, baseFile);
+
+      current.push({ source: filePath, target });
+    }
+    outputCopy.push(current);
+  }
+
+  return outputCopy;
+}
