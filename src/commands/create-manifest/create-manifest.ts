@@ -1,13 +1,12 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
 import path from 'path';
 import { gzipSync } from 'zlib';
 import { getActionLocation } from '../../utils/action.storage.js';
-import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { ActionCopy } from '../../utils/actions.js';
+import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
-import { type } from 'os';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
@@ -44,23 +43,24 @@ export const commandCreateManifest = command({
     const outputCopy: string[] = [];
 
     const targetPath: string = args.target;
-    //const actionLocation = getActionLocation();
+    const actionLocation = getActionLocation();
     for (const source of args.source) {
-      //outputCopy.push(...(await createManifest(source, targetPath, args)));
-      /* const outBuf = Buffer.from(JSON.stringify(current));
-      const targetHash = createHash('sha256').update(outBuf).digest('base64url');
-
-      // Store the list of files to move in a bucket rather than the ARGO parameters
-      if (actionLocation) {
-        const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
-        const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
-        await fsa.write(targetLocation, JSON.stringify(targetAction));
-        outputCopy.push(targetLocation);
-      } else {
-        outputCopy.push(gzipSync(outBuf).toString('base64url'));
-      } */
+      const outputFiles = await createManifest(source, targetPath, args);
+      for (const current of outputFiles) {
+        const outBuf = Buffer.from(JSON.stringify(current));
+        const targetHash = createHash('sha256').update(outBuf).digest('base64url');
+  
+        // Store the list of files to move in a bucket rather than the ARGO parameters
+        if (actionLocation) {
+          const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
+          const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
+          await fsa.write(targetLocation, JSON.stringify(targetAction));
+          outputCopy.push(targetLocation);
+        } else {
+          outputCopy.push(gzipSync(outBuf).toString('base64url'));
+        }
+      }
     }
-
     await fsa.write(args.output, JSON.stringify(outputCopy));
   },
 });
@@ -87,7 +87,6 @@ export async function createManifest(
     }
     outputCopy.push(current);
   }
-  console.log(outputFiles);
 
   return outputCopy;
 }
