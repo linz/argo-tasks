@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: linz/action-typescript@v1
+      - uses: linz/action-typescript@v2
 
       - name: Build containers
         run: |
