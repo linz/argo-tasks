@@ -9,7 +9,7 @@ o.spec('argoLocation', () => {
   });
   const memory = new FsMemory();
   fsa.register('memory://', memory);
-  o.only('should copy to the target location', async () => {
+  o('should copy to the target location', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
@@ -28,7 +28,7 @@ o.spec('argoLocation', () => {
     ]);
   });
 
-  o.only('should copy to the target location without flattening', async () => {
+  o('should copy to the target location without flattening', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
