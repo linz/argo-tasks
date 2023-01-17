@@ -3,7 +3,7 @@ import { FsMemory } from '@chunkd/source-memory';
 import o from 'ospec';
 import { createManifest } from '../create-manifest.js';
 
-o.spec('argoLocation', () => {
+o.spec('createManifest', () => {
   o.beforeEach(() => {
     memory.files.clear();
   });
