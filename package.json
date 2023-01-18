@@ -35,7 +35,7 @@
   ],
   "dependencies": {
     "@chunkd/fs": "^10.0.2",
-    "@chunkd/source-aws": "^10.0.2",
+    "@chunkd/source-aws": "^10.1.1",
     "@chunkd/source-aws-v2": "^9.3.1",
     "@cogeotiff/core": "^7.2.1",
     "@linzjs/style": "^3.15.0",
