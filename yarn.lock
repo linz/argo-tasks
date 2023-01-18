@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@chunkd/core@^10.0.0":
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/@chunkd/core/-/core-10.0.0.tgz#d66fd49993cad99886eb2eb20df24a3056ebb218"
-  integrity sha512-8AvtnYUUwn8AcRrjnjstczCj2wJT1Kj+JUy/Cxo6mdsxxQiR1L+2vD46Wj/Q5s/K2toQta3/bSBys3NfYweWGg==
+"@chunkd/core@^10.0.0", "@chunkd/core@^10.1.1":
+  version "10.1.1"
+  resolved "https://registry.yarnpkg.com/@chunkd/core/-/core-10.1.1.tgz#2f7193baba36049507354bbadc2e06717a7cca98"
+  integrity sha512-dd6+7KluZWFAa4Zzj/SQsi0WVu+I8oTlDAEYDzyyY7deYwgrHUnmtciKBL9Owc0kAChbrzzrAbZrZzqaneSStg==
 
 "@chunkd/fs@^10.0.2":
   version "10.0.2"
@@ -19,20 +19,20 @@
     "@chunkd/source-aws" "^10.0.2"
     "@chunkd/source-google-cloud" "^10.0.0"
 
-"@chunkd/source-aws-v2@^9.3.1":
-  version "9.3.1"
-  resolved "https://registry.yarnpkg.com/@chunkd/source-aws-v2/-/source-aws-v2-9.3.1.tgz#46a19bd04c8bddc639309bfb824b055c3f8a0e0a"
-  integrity sha512-RmKA4Fi8e+QZE8jAXkAw5ZnDvAsJ3uVxlmxAKu/7TR2gJxwgjTMOtFyZvzYuiObKRDaA7DaTabL4ZcjLAzgmUA==
+"@chunkd/source-aws-v2@^9.4.1":
+  version "9.4.1"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-aws-v2/-/source-aws-v2-9.4.1.tgz#867d78a97a5cd1d1c73f1c6b64f166620a47813c"
+  integrity sha512-VhOrmy39ehgfJDElzTlYHAIn6k2zgSgJ61rTA59oZjoHtqfectlcmHGXYerC1Wvhph6/5LEhgyPI9lLJ0Ib+cQ==
   dependencies:
-    "@chunkd/core" "^10.0.0"
-    "@chunkd/source-aws" "^10.0.2"
+    "@chunkd/core" "^10.1.1"
+    "@chunkd/source-aws" "^10.1.1"
 
-"@chunkd/source-aws@^10.0.2":
-  version "10.0.2"
-  resolved "https://registry.yarnpkg.com/@chunkd/source-aws/-/source-aws-10.0.2.tgz#68d89d0adf81bd746037cc96a7cdae244cd2a710"
-  integrity sha512-N3/IjZIaflB0+HFGGlqQWXkIBx0INN0TnV3OOOlZiCiMvNFgWbmir+Se6slaD4RXr/42zjacdW5+BnNlz9P6IQ==
+"@chunkd/source-aws@^10.0.2", "@chunkd/source-aws@^10.1.1":
+  version "10.1.1"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-aws/-/source-aws-10.1.1.tgz#a094880081740bbd6a505ce7a4b27b7fa3b764df"
+  integrity sha512-WvAENUBL8SBh3voNEIJSIdRZLXZNyW7/JoyALreEoixAs/0TojiN+frslLRaTxzh94BQU+2wL4kl7oG8E3S2nQ==
   dependencies:
-    "@chunkd/core" "^10.0.0"
+    "@chunkd/core" "^10.1.1"
 
 "@chunkd/source-file@^10.0.0":
   version "10.0.0"
