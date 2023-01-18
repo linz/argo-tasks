@@ -12,7 +12,7 @@
     "organization": true
   },
   "devDependencies": {
-    "@chunkd/source-memory": "^10.0.0",
+    "@chunkd/source-memory": "^10.0.2",
     "@types/node": "^18.7.11",
     "@types/ospec": "^4.0.5",
     "esno": "^0.16.3",
