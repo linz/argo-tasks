@@ -25,7 +25,6 @@ async function main(): Promise<void> {
   await registerCli({ verbose: true });
 
   for await (const source of fsa.details(SourceLocation)) {
-    console.log(source);
     if (source.size === 0) continue;
     const sourceFileName = basename(source.path);
     const target = fsa.join(TargetLocation, sourceFileName);
@@ -37,7 +36,7 @@ async function main(): Promise<void> {
         return;
       }
 
-      // await fsa.write(target, fsa.stream(source.path));
+      await fsa.write(target, fsa.stream(source.path));
       logger.info({ source: source.path, target }, 'File:Copied');
     });
   }
