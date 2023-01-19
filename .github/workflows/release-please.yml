@@ -23,10 +23,6 @@ jobs:
     steps:
       - uses: linz/action-typescript@v2
 
-      - name: 'Bundle cli'
-        run: |
-          yarn bundle
-
       - name: Build containers
         run: |
           docker build . --tag argo-tasks --label "github_run_id=${GITHUB_RUN_ID}"
