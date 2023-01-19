@@ -37,7 +37,7 @@ const worker = new WorkerRpc<CopyContract>({
           }
         }
 
-        log.debug(todo, 'File:Copy:start');
+        log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
         await fsa.write(todo.target, fsa.stream(todo.source));
         log.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');

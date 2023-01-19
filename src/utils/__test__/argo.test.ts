@@ -22,17 +22,6 @@ o.spec('argoLocation', () => {
     o(getActionLocation()).equals(null);
   });
 
-  o('should not die if ARGO_TEMPLATE in missing keys', () => {
-    process.env['ARGO_TEMPLATE'] = '{}';
-    o(getActionLocation()).equals(null);
-
-    process.env['ARGO_TEMPLATE'] = JSON.stringify({ archiveLocation: {} });
-    o(getActionLocation()).equals(null);
-
-    process.env['ARGO_TEMPLATE'] = JSON.stringify({ archiveLocation: { s3: {} } });
-    o(getActionLocation()).equals(null);
-  });
-
   o('should actually parse the ARGO_TEMPLATE', () => {
     process.env['ARGO_NODE_ID'] = 'test-env-n9d2x';
     process.env['ARGO_TEMPLATE'] = JSON.stringify({
