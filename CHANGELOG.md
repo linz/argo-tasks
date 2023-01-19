@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/linz/argo-tasks/compare/v2.0.0...v2.0.1) (2023-01-19)
+
+
+### Bug Fixes
+
+* yarn bundle is not required ([#196](https://github.com/linz/argo-tasks/issues/196)) ([a255dd8](https://github.com/linz/argo-tasks/commit/a255dd8e5436a31e32b3a9020c445a7134ed1f6a))
+
 ## [2.0.0](https://github.com/linz/argo-tasks/compare/v1.0.0...v2.0.0) (2023-01-18)
 
 
