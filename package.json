@@ -44,7 +44,7 @@
     "@wtrpc/core": "^1.0.1",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
-    "cmd-ts": "^0.11.0",
+    "cmd-ts": "^0.12.0",
     "p-limit": "^4.0.0",
     "pino": "^8.8.0",
     "pretty-json-log": "^1.3.0",
