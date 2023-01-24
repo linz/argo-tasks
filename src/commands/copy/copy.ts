@@ -85,8 +85,8 @@ export const commandCopy = command({
             manifest,
             start: i,
             size: chunkSize,
-            force: force,
-            noClobber: noClobber,
+            force,
+            noClobber,
           }),
         );
       }
