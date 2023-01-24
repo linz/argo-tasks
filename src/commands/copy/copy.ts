@@ -46,6 +46,12 @@ export const commandCopy = command({
       long: 'no-clobber',
       description: 'Skip existing files',
     }),
+    forceNoClobber: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'force-no-clobber',
+      description: 'Overwrite changed files',
+    }),
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
@@ -56,6 +62,14 @@ export const commandCopy = command({
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
 
     const stats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
+
+    let force = args.force;
+    let noClobber = args.noClobber;
+
+    if (args.forceNoClobber) {
+      force = true;
+      noClobber = true;
+    }
 
     const chunks = [];
     const startTime = performance.now();
@@ -71,8 +85,8 @@ export const commandCopy = command({
             manifest,
             start: i,
             size: chunkSize,
-            force: args.force,
-            noClobber: args.noClobber,
+            force: force,
+            noClobber: noClobber,
           }),
         );
       }
