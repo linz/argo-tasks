@@ -19,10 +19,16 @@ Fetch a layer from the LDS and download it as GeoPackage
 
 #### Example
 
-Fetch the latest version of layer `50063` - 50063-nz-chatham-island-airport-polygons-topo-150k and save it into /tmp/50063.gpkg
+Fetch the latest version of layer `50063` - 50063-nz-chatham-island-airport-polygons-topo-150k and save it into ./output
 
 ```bash
-lds-fetch-layer --layer-id 50063 --target /tmp/50063.gpkg
+lds-fetch-layer --target ./output 50063 
+```
+
+Multiple layers can be fetched at the same time, fetch `51002` and `51000`
+
+```bash
+lds-fetch-layer  --target ./output 51002 51000 
 ```
 
 ### list

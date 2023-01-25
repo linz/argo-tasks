@@ -17,7 +17,7 @@ export const commandLdsFetch = command({
     config,
     verbose,
     layers: restPositionals({ type: string, description: 'Layer id and optional version "layer@version"' }),
-    target: option({ type: string, long: 'target', description: 'Target location to save file' }),
+    target: option({ type: string, long: 'target', description: 'Target directory to save files' }),
   },
   handler: async (args) => {
     registerCli(args);
@@ -34,7 +34,9 @@ export const commandLdsFetch = command({
         await fsa.head(source); // Ensure we have read permission for the source
 
         logger.info({ layerId, layerVersion, source }, 'Collection:Item:Fetch');
-        await fsa.write(args.target ?? `./${layerId}_${layerVersion}.gpkg`, fsa.stream(source).pipe(createGunzip()));
+        const fileName = `./${layerId}_${layerVersion}.gpkg`;
+        const targetLocation = fsa.join(args.target, fileName);
+        await fsa.write(targetLocation, fsa.stream(source).pipe(createGunzip()));
       }
 
       const collectionJson = await fsa.readJson<stac.StacCollection>(`s3://linz-lds-cache/${layerId}/collection.json`);
@@ -43,7 +45,7 @@ export const commandLdsFetch = command({
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
       if (lastItem == null) throw new Error('No items found');
 
-      const targetFile = args.target ?? lastItem.href.replace('.json', '.gpkg');
+      const targetFile = fsa.join(args.target, lastItem.href.replace('.json', '.gpkg'));
 
       const targetPath = getTargetPath(`s3://linz-lds-cache/${layerId}/`, lastItem.href).replace('.json', '.gpkg');
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
