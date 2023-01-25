@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.0](https://github.com/linz/argo-tasks/compare/v2.0.1...v2.1.0) (2023-01-25)
+
+
+### Features
+
+* --force-no-clobber copy option TDE-595 ([#208](https://github.com/linz/argo-tasks/issues/208)) ([e73a9f8](https://github.com/linz/argo-tasks/commit/e73a9f8a603af4da4418c16e2ce9c4dee1062fd8))
+* move to aws-sdk-v3 ([#187](https://github.com/linz/argo-tasks/issues/187)) ([7495070](https://github.com/linz/argo-tasks/commit/749507092e655104dd8d205cf440c55155130da1))
+
 ## [2.0.1](https://github.com/linz/argo-tasks/compare/v2.0.0...v2.0.1) (2023-01-19)
 
 
