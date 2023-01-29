@@ -25,5 +25,4 @@ jobs:
           docker tag argo-tasks ghcr.io/linz/argo-tasks:latest
           docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION}
 
-          docker push ghcr.io/linz/argo-tasks:latest
-          docker push ghcr.io/linz/argo-tasks:${GIT_VERSION}
+          docker push --all-tags ghcr.io/linz/argo-tasks
