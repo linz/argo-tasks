@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/linz/argo-tasks/compare/v2.1.0...v2.1.1) (2023-01-29)
+
+
+### Bug Fixes
+
+* allow multiple downloads from LDS cache ([#212](https://github.com/linz/argo-tasks/issues/212)) ([6fae252](https://github.com/linz/argo-tasks/commit/6fae252dc7fc571850a55293534a70e2ebe87955))
+
 ## [2.1.0](https://github.com/linz/argo-tasks/compare/v2.0.1...v2.1.0) (2023-01-25)
 
 
