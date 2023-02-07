@@ -108,3 +108,8 @@ Validate a collection without validating linked items
 ```bash
 stac-validate s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
+
+## Versioning and Release
+
+[googleapis/release-please](https://github.com/googleapis/release-please) is used to support the release process.
+The library generates a `changelog` based on the commit messages.
