@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/linz/argo-tasks/compare/v2.1.1...v2.2.0) (2023-02-12)
+
+
+### Features
+
+* **copy:** log errors in child workers as composite error reasons get swallowed TDE-637 ([#247](https://github.com/linz/argo-tasks/issues/247)) ([45b71cf](https://github.com/linz/argo-tasks/commit/45b71cf8bc82321465c0050913339a95b3a5a236))
+
 ## [2.1.1](https://github.com/linz/argo-tasks/compare/v2.1.0...v2.1.1) (2023-01-29)
 
 
