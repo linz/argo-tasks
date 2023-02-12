@@ -45,7 +45,11 @@ const worker = new WorkerRpc<CopyContract>({
         stats.copiedBytes += source.size;
       });
     }
-    await Q.join();
+    await Q.join().catch((err) => {
+      // Composite errors get swallowed when rethrown through worker threads
+      log.fatal({ err }, 'File:Copy:Failed');
+      throw err;
+    });
     return stats;
   },
 });
