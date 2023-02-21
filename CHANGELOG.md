@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/linz/argo-tasks/compare/v2.2.0...v2.2.1) (2023-02-21)
+
+
+### Bug Fixes
+
+* stop using alpine images ([#257](https://github.com/linz/argo-tasks/issues/257)) ([7c249af](https://github.com/linz/argo-tasks/commit/7c249afe0374d438927aaa800fc12af9f4cd8268))
+
 ## [2.2.0](https://github.com/linz/argo-tasks/compare/v2.1.1...v2.2.0) (2023-02-12)
 
 
