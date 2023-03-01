@@ -1,14 +1,13 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
-import { logger, logId } from '../../log.js';
-import { config, registerCli, verbose } from '../common.js';
-import * as st from 'stac-ts';
-import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { dirname } from 'path';
-import { fastFormats } from 'ajv-formats/dist/formats.js';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
+import { fastFormats } from 'ajv-formats/dist/formats.js';
+import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
+import { dirname } from 'path';
+import * as st from 'stac-ts';
+import { logger } from '../../log.js';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+import { config, registerCli, verbose } from '../common.js';
 import { hashStream } from './hash.worker.js';
-import { WorkerRpcPool } from '@wtrpc/core';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -139,7 +138,7 @@ export const commandStacValidate = command({
         }
       }
 
-      if (args.checksum && 'assets' in stacJson) {
+      if (args.checksum && stacJson.assets) {
         const assets = Object.entries(stacJson.assets ?? {});
         for (const [assetName, asset] of assets) {
           const checksum = asset['file:checksum'];
