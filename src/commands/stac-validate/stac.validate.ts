@@ -88,8 +88,8 @@ export const commandStacValidate = command({
       let stacJson;
       try {
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
-      } catch (e) {
-        logger.error({ path, error: e }, 'readStacJsonFile:Error');
+      } catch (err) {
+        logger.error({ path, err }, 'readStacJsonFile:Error');
         failures.push(path);
         return;
       }
@@ -133,8 +133,8 @@ export const commandStacValidate = command({
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
-            validateStac(child).catch((e) => {
-              logger.error(e, 'Failed');
+            validateStac(child).catch((err) => {
+              logger.error({ err }, 'Failed');
               failures.push(path);
             }),
           );
@@ -143,8 +143,8 @@ export const commandStacValidate = command({
     }
     for (const path of paths) {
       queue.push(() =>
-        validateStac(path).catch((e) => {
-          logger.error(e, 'Failed');
+        validateStac(path).catch((err) => {
+          logger.error({ err }, 'Failed');
           failures.push(path);
         }),
       );
