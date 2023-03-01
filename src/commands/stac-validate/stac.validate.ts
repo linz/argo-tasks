@@ -14,6 +14,12 @@ export const commandStacValidate = command({
   args: {
     config,
     verbose,
+    checksum: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'checksum',
+      description: 'Validate the file:checksum if it exists',
+    }),
     recursive: flag({
       type: boolean,
       defaultValue: () => true,
@@ -102,7 +108,7 @@ export const commandStacValidate = command({
       }
       for (const sch of stacSchemas) {
         const validate = await loadSchema(sch);
-        logger.info({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
+        logger.trace({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
         const valid = validate(stacJson);
         if (valid === true) {
           logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Ok');
@@ -186,7 +192,7 @@ export function iriReference(value?: string): boolean {
 }
 
 export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
-  logger.info({ path, schemaType: schemaType }, 'getStacSchema:Start');
+  logger.trace({ path, schemaType: schemaType }, 'getStacSchema:Start');
   if (stacVersion !== '1.0.0') {
     logger.error(
       { invalid_stac_version: stacVersion, schema_type: schemaType, path },
@@ -201,7 +207,7 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: 
     case 'Collection':
       const type = schemaType.toLowerCase();
       const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-      logger.info({ path, schemaType: schemaType, schemaId }, 'getStacSchema:Done');
+      logger.trace({ path, schemaType: schemaType, schemaId }, 'getStacSchema:Done');
       return schemaId;
     default:
       logger.error({ path, schemaType: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
