@@ -3,6 +3,7 @@ import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { dirname } from 'path';
+import { performance } from 'perf_hooks';
 import * as st from 'stac-ts';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
