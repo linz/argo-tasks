@@ -1,13 +1,14 @@
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
-import { logger } from '../../log.js';
+import { logger, logId } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import * as st from 'stac-ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { dirname } from 'path';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
-import { hashFile } from './hash.js';
+import { hashStream } from './hash.worker.js';
+import { WorkerRpcPool } from '@wtrpc/core';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -47,18 +48,18 @@ export const commandStacValidate = command({
   },
 
   handler: async (args) => {
+    registerCli(args);
+
     logger.info('StacValidation:Start');
     const Schemas = new Map<string, Promise<SchemaObject>>();
     const validated = new Set<string>();
-    registerCli(args);
 
-    const strict = args.strict;
     const recursive = args.recursive;
     const paths = args.location.map((c) => c.trim());
 
     const ajv = new Ajv({
       allErrors: true,
-      strict,
+      strict: args.strict,
       loadSchema: (uri: string): Promise<SchemaObject> => {
         let existing = Schemas.get(uri);
         if (existing == null) {
@@ -108,18 +109,18 @@ export const commandStacValidate = command({
       }
       stacSchemas.push(schema);
       if (stacJson.stac_extensions) {
-        const stacExtensions: st.StacExtensions = stacJson.stac_extensions;
-        for (const se of stacExtensions) {
-          stacSchemas.push(se);
-        }
+        for (const se of stacJson.stac_extensions) stacSchemas.push(se);
       }
+
+      let isOk = true;
       for (const sch of stacSchemas) {
         const validate = await loadSchema(sch);
-        logger.trace({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
+        logger.trace({ title: stacJson.title, type: stacJson.type, path, schema: sch }, 'Validation:Start');
         const valid = validate(stacJson);
         if (valid === true) {
-          logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Ok');
+          logger.trace({ title: stacJson.title, type: stacJson.type, path, valid, schema: sch }, 'Validation:Done:Ok');
         } else {
+          isOk = false;
           for (const err of validate.errors as DefinedError[]) {
             logger.error(
               {
@@ -137,27 +138,35 @@ export const commandStacValidate = command({
           logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Failed');
         }
       }
+
       if (args.checksum && 'assets' in stacJson) {
         const assets = Object.entries(stacJson.assets ?? {});
         for (const [assetName, asset] of assets) {
           const checksum = asset['file:checksum'];
           if (checksum == null) continue;
-          if (!checksum.startsWith('12')) continue;
+          // 12-20 is the starting prefix for all sha256 multihashes
+          if (!checksum.startsWith('1220')) continue;
+
           let source = asset.href;
           if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+
           logger.debug({ source, checksum }, 'Validate:Asset');
           const startTime = performance.now();
 
-          const hash = await hashFile(fsa.stream(source));
+          const hash = await hashStream(fsa.stream(source));
           const duration = performance.now() - startTime;
 
           if (hash === checksum) {
-            logger.debug({ asset: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
+            logger.debug({ assetType: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
           } else {
-            logger.error({ asset: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
+            isOk = false;
+            logger.error({ assetType: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
+            failures.push(path);
           }
         }
       }
+
+      if (isOk) logger.info({ title: stacJson.title, type: stacJson.type, path }, 'Validation:Done:Ok');
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
@@ -169,6 +178,7 @@ export const commandStacValidate = command({
         }
       }
     }
+
     for (const path of paths) {
       queue.push(() =>
         validateStac(path).catch((err) => {
@@ -177,6 +187,7 @@ export const commandStacValidate = command({
         }),
       );
     }
+
     await queue.join();
 
     if (failures.length > 0) {
