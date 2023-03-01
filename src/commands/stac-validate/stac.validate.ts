@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import * as st from 'stac-ts';
@@ -15,6 +15,12 @@ export const commandStacValidate = command({
   args: {
     config,
     verbose,
+    concurrency: option({
+      type: number,
+      defaultValue: () => 25,
+      long: 'concurrency',
+      description: 'Number of requests to run concurrently',
+    }),
     checksum: flag({
       type: boolean,
       defaultValue: () => false,
@@ -77,7 +83,7 @@ export const commandStacValidate = command({
       return existing;
     }
     const failures = [];
-    const queue = new ConcurrentQueue(1);
+    const queue = new ConcurrentQueue(args.concurrency);
 
     async function validateStac(path: string): Promise<void> {
       if (validated.has(path)) {
