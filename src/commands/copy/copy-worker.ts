@@ -58,14 +58,15 @@ const worker = new WorkerRpc<CopyContract>({
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
         await fsa.write(todo.target, fsa.stream(todo.source));
-        log.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
 
         // Validate the file moved successfully
-        const copied = await tryHead(todo.target);
-        if (copied !== source.size) {
+        const targetSize = await tryHead(todo.target);
+        if (targetSize !== source.size) {
           log.fatal({ ...todo }, 'Copy:Failed');
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
+        log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
+
         stats.copied++;
         stats.copiedBytes += source.size;
       });
