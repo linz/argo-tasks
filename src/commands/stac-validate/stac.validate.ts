@@ -194,10 +194,7 @@ export function iriReference(value?: string): boolean {
 export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
   logger.trace({ path, schemaType: schemaType }, 'getStacSchema:Start');
   if (stacVersion !== '1.0.0') {
-    logger.error(
-      { invalid_stac_version: stacVersion, schema_type: schemaType, path },
-      'getStacSchema:StacVersionError',
-    );
+    logger.error({ stacVersion, schemaType, path }, 'getStacSchema:StacVersionError');
     return null;
   }
   switch (schemaType) {
@@ -207,10 +204,10 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: 
     case 'Collection':
       const type = schemaType.toLowerCase();
       const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-      logger.trace({ path, schemaType: schemaType, schemaId }, 'getStacSchema:Done');
+      logger.trace({ path, schemaType, schemaId }, 'getStacSchema:Done');
       return schemaId;
     default:
-      logger.error({ path, schemaType: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
+      logger.error({ path, schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
       return null;
   }
 }
