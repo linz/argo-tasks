@@ -9,11 +9,20 @@ import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
 
 const Q = new ConcurrentQueue(10);
 
-async function tryHead(x: string, retries = 3): Promise<number | null> {
-  for (let i = 0; i < retries; i++) {
-    const ret = await fsa.head(x);
+/**
+ * S3 Writes do not always show up instantly as we have read the location earlier in the function
+ *
+ * try reading the path {retryCount} times before aborting, with a delay of 250ms between requests
+ *
+ * @param filePath File to head
+ * @param retryCount number of times to retry
+ * @returns file size if it exists or null
+ */
+async function tryHead(filePath: string, retryCount = 3): Promise<number | null> {
+  for (let i = 0; i < retryCount; i++) {
+    const ret = await fsa.head(filePath);
     if (ret?.size) return ret.size;
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 250));
   }
   return null;
 }
