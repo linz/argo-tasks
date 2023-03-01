@@ -9,6 +9,15 @@ import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
 
 const Q = new ConcurrentQueue(10);
 
+async function tryHead(x: string, retries = 3): Promise<number | null> {
+  for (let i = 0; i < retries; i++) {
+    const ret = await fsa.head(x);
+    if (ret?.size) return ret.size;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return null;
+}
+
 const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
@@ -41,6 +50,13 @@ const worker = new WorkerRpc<CopyContract>({
         const startTime = performance.now();
         await fsa.write(todo.target, fsa.stream(todo.source));
         log.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
+
+        // Validate the file moved successfully
+        const copied = await tryHead(todo.target);
+        if (copied !== source.size) {
+          log.fatal({ ...todo }, 'Copy:Failed');
+          throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
+        }
         stats.copied++;
         stats.copiedBytes += source.size;
       });
