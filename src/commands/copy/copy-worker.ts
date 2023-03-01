@@ -9,6 +9,24 @@ import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
 
 const Q = new ConcurrentQueue(10);
 
+/**
+ * S3 Writes do not always show up instantly as we have read the location earlier in the function
+ *
+ * try reading the path {retryCount} times before aborting, with a delay of 250ms between requests
+ *
+ * @param filePath File to head
+ * @param retryCount number of times to retry
+ * @returns file size if it exists or null
+ */
+async function tryHead(filePath: string, retryCount = 3): Promise<number | null> {
+  for (let i = 0; i < retryCount; i++) {
+    const ret = await fsa.head(filePath);
+    if (ret?.size) return ret.size;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return null;
+}
+
 const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
@@ -40,7 +58,15 @@ const worker = new WorkerRpc<CopyContract>({
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
         await fsa.write(todo.target, fsa.stream(todo.source));
-        log.debug({ ...todo, duration: performance.now() - startTime }, 'File:Copy');
+
+        // Validate the file moved successfully
+        const targetSize = await tryHead(todo.target);
+        if (targetSize !== source.size) {
+          log.fatal({ ...todo }, 'Copy:Failed');
+          throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
+        }
+        log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
+
         stats.copied++;
         stats.copiedBytes += source.size;
       });
