@@ -109,6 +109,12 @@ Validate a collection without validating linked items
 stac-validate s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
 
+Validate a the `file:checksum` of all assets inside of a collection
+
+```bash
+stac-validate --checksum --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+```
+
 ## Versioning and Release
 
 [googleapis/release-please](https://github.com/googleapis/release-please) is used to support the release process.

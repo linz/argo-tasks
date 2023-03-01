@@ -4,9 +4,10 @@ import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import * as st from 'stac-ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-
+import { dirname } from 'path';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
+import { hashFile } from './hash.js';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -76,7 +77,7 @@ export const commandStacValidate = command({
       return existing;
     }
     const failures = [];
-    const queue = new ConcurrentQueue(50);
+    const queue = new ConcurrentQueue(1);
 
     async function validateStac(path: string): Promise<void> {
       if (validated.has(path)) {
@@ -128,6 +129,27 @@ export const commandStacValidate = command({
           }
           failures.push(path);
           logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Failed');
+        }
+      }
+      if (args.checksum && 'assets' in stacJson) {
+        const assets = Object.entries(stacJson.assets ?? {});
+        for (const [assetName, asset] of assets) {
+          const checksum = asset['file:checksum'];
+          if (checksum == null) continue;
+          if (!checksum.startsWith('12')) continue;
+          let source = asset.href;
+          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+          logger.debug({ source, checksum }, 'Validate:Asset');
+          const startTime = performance.now();
+
+          const hash = await hashFile(fsa.stream(source));
+          const duration = performance.now() - startTime;
+
+          if (hash === checksum) {
+            logger.debug({ asset: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
+          } else {
+            logger.error({ asset: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
+          }
         }
       }
       if (recursive) {
