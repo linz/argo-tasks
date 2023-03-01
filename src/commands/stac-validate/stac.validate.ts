@@ -135,7 +135,7 @@ export const commandStacValidate = command({
           queue.push(() =>
             validateStac(child).catch((err) => {
               logger.error({ err }, 'Failed');
-              failures.push(path);
+              failures.push(child);
             }),
           );
         }
