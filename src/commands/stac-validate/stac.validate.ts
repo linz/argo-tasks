@@ -1,12 +1,14 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, restPositionals, string } from 'cmd-ts';
-import { logger } from '../../log.js';
-import { config, registerCli, verbose } from '../common.js';
-import * as st from 'stac-ts';
-import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-
-import { fastFormats } from 'ajv-formats/dist/formats.js';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
+import { fastFormats } from 'ajv-formats/dist/formats.js';
+import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
+import { dirname } from 'path';
+import { performance } from 'perf_hooks';
+import * as st from 'stac-ts';
+import { logger } from '../../log.js';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+import { config, registerCli, verbose } from '../common.js';
+import { hashStream } from './hash.worker.js';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -14,6 +16,18 @@ export const commandStacValidate = command({
   args: {
     config,
     verbose,
+    concurrency: option({
+      type: number,
+      defaultValue: () => 25,
+      long: 'concurrency',
+      description: 'Number of requests to run concurrently',
+    }),
+    checksum: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'checksum',
+      description: 'Validate the file:checksum if it exists',
+    }),
     recursive: flag({
       type: boolean,
       defaultValue: () => true,
@@ -34,18 +48,18 @@ export const commandStacValidate = command({
   },
 
   handler: async (args) => {
+    registerCli(args);
+
     logger.info('StacValidation:Start');
     const Schemas = new Map<string, Promise<SchemaObject>>();
     const validated = new Set<string>();
-    registerCli(args);
 
-    const strict = args.strict;
     const recursive = args.recursive;
     const paths = args.location.map((c) => c.trim());
 
     const ajv = new Ajv({
       allErrors: true,
-      strict,
+      strict: args.strict,
       loadSchema: (uri: string): Promise<SchemaObject> => {
         let existing = Schemas.get(uri);
         if (existing == null) {
@@ -70,7 +84,7 @@ export const commandStacValidate = command({
       return existing;
     }
     const failures = [];
-    const queue = new ConcurrentQueue(50);
+    const queue = new ConcurrentQueue(args.concurrency);
 
     async function validateStac(path: string): Promise<void> {
       if (validated.has(path)) {
@@ -82,8 +96,8 @@ export const commandStacValidate = command({
       let stacJson;
       try {
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
-      } catch (e) {
-        logger.error({ path, error: e }, 'readStacJsonFile:Error');
+      } catch (err) {
+        logger.error({ path, err }, 'readStacJsonFile:Error');
         failures.push(path);
         return;
       }
@@ -95,18 +109,18 @@ export const commandStacValidate = command({
       }
       stacSchemas.push(schema);
       if (stacJson.stac_extensions) {
-        const stacExtensions: st.StacExtensions = stacJson.stac_extensions;
-        for (const se of stacExtensions) {
-          stacSchemas.push(se);
-        }
+        for (const se of stacJson.stac_extensions) stacSchemas.push(se);
       }
+
+      let isOk = true;
       for (const sch of stacSchemas) {
         const validate = await loadSchema(sch);
-        logger.info({ title: stacJson.title, type: stacJson.type, path, sch }, 'Validation:Start');
+        logger.trace({ title: stacJson.title, type: stacJson.type, path, schema: sch }, 'Validation:Start');
         const valid = validate(stacJson);
         if (valid === true) {
-          logger.info({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Ok');
+          logger.trace({ title: stacJson.title, type: stacJson.type, path, valid, schema: sch }, 'Validation:Done:Ok');
         } else {
+          isOk = false;
           for (const err of validate.errors as DefinedError[]) {
             logger.error(
               {
@@ -124,25 +138,56 @@ export const commandStacValidate = command({
           logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Failed');
         }
       }
+
+      if (args.checksum && stacJson.assets) {
+        const assets = Object.entries(stacJson.assets ?? {});
+        for (const [assetName, asset] of assets) {
+          const checksum = asset['file:checksum'];
+          if (checksum == null) continue;
+          // 12-20 is the starting prefix for all sha256 multihashes
+          if (!checksum.startsWith('1220')) continue;
+
+          let source = asset.href;
+          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+
+          logger.debug({ source, checksum }, 'Validate:Asset');
+          const startTime = performance.now();
+
+          const hash = await hashStream(fsa.stream(source));
+          const duration = performance.now() - startTime;
+
+          if (hash === checksum) {
+            logger.debug({ assetType: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
+          } else {
+            isOk = false;
+            logger.error({ assetType: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
+            failures.push(path);
+          }
+        }
+      }
+
+      if (isOk) logger.info({ title: stacJson.title, type: stacJson.type, path }, 'Validation:Done:Ok');
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
-            validateStac(child).catch((e) => {
-              logger.error(e, 'Failed');
-              failures.push(path);
+            validateStac(child).catch((err) => {
+              logger.error({ err }, 'Failed');
+              failures.push(child);
             }),
           );
         }
       }
     }
+
     for (const path of paths) {
       queue.push(() =>
-        validateStac(path).catch((e) => {
-          logger.error(e, 'Failed');
+        validateStac(path).catch((err) => {
+          logger.error({ err }, 'Failed');
           failures.push(path);
         }),
       );
     }
+
     await queue.join();
 
     if (failures.length > 0) {
@@ -186,12 +231,9 @@ export function iriReference(value?: string): boolean {
 }
 
 export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
-  logger.info({ path, schemaType: schemaType }, 'getStacSchema:Start');
+  logger.trace({ path, schemaType: schemaType }, 'getStacSchema:Start');
   if (stacVersion !== '1.0.0') {
-    logger.error(
-      { invalid_stac_version: stacVersion, schema_type: schemaType, path },
-      'getStacSchema:StacVersionError',
-    );
+    logger.error({ stacVersion, schemaType, path }, 'getStacSchema:StacVersionError');
     return null;
   }
   switch (schemaType) {
@@ -201,10 +243,10 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: 
     case 'Collection':
       const type = schemaType.toLowerCase();
       const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-      logger.info({ path, schemaType: schemaType, schemaId }, 'getStacSchema:Done');
+      logger.trace({ path, schemaType, schemaId }, 'getStacSchema:Done');
       return schemaId;
     default:
-      logger.error({ path, schemaType: schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
+      logger.error({ path, schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
       return null;
   }
 }
