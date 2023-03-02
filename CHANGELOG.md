@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.3.0](https://github.com/linz/argo-tasks/compare/v2.2.1...v2.3.0) (2023-03-02)
+
+
+### Features
+
+* **copy:** validate that the file has the same ending file size as the source ([#275](https://github.com/linz/argo-tasks/issues/275)) ([c05e76a](https://github.com/linz/argo-tasks/commit/c05e76a4951fb30a6b9af9ebacbce7741a3012bf))
+* **stac-validate:** add --checksum to validate assets with `file:checksum` ([#276](https://github.com/linz/argo-tasks/issues/276)) ([9c407fc](https://github.com/linz/argo-tasks/commit/9c407fc1b0f509f8490f65adcb444cec1328d26c))
+
+
+### Bug Fixes
+
+* remove dev deps from docker container ([#274](https://github.com/linz/argo-tasks/issues/274)) ([e8d4adc](https://github.com/linz/argo-tasks/commit/e8d4adc80a54bbfe97f754f3a6dd25b4ab6c50be))
+
 ## [2.2.1](https://github.com/linz/argo-tasks/compare/v2.2.0...v2.2.1) (2023-02-21)
 
 
