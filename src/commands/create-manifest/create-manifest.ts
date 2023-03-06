@@ -15,6 +15,7 @@ export const commandCreateManifest = command({
     config,
     verbose,
     flatten: flag({ long: 'flatten', description: 'Flatten the files in the target location' }),
+    transform: option({ type: optional(string), long: 'transform', description: 'Transform/rename files' }),
     include: option({ type: optional(string), long: 'include', description: 'Include files eg ".*.tiff?$"' }),
     exclude: option({ type: optional(string), long: 'exclude', description: 'Exclude files eg ".*.prj$"' }),
     groupSize: option({
@@ -66,7 +67,12 @@ export const commandCreateManifest = command({
 });
 
 export type SourceTarget = { source: string; target: string };
-export type ManifestFilter = FileFilter & { flatten: boolean };
+export type ManifestFilter = FileFilter & { flatten: boolean; transform?: string };
+
+function createTransformFunc(transform: string): (f: string) => string {
+  if (transform.startsWith('return')) return new Function('f', transform) as (f: string) => string;
+  return new Function('f', 'return ' + transform) as (f: string) => string;
+}
 
 export async function createManifest(
   source: string,
@@ -76,12 +82,14 @@ export async function createManifest(
   const outputFiles = await getFiles([source], args);
   const outputCopy: SourceTarget[][] = [];
 
+  const transformFunc = args.transform ? createTransformFunc(args.transform) : null;
+
   for (const chunk of outputFiles) {
     const current: SourceTarget[] = [];
 
     for (const filePath of chunk) {
       const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
-      const target = fsa.joinAll(targetPath, baseFile);
+      const target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
 
       current.push({ source: filePath, target });
     }
