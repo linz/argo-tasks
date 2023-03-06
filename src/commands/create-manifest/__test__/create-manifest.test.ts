@@ -28,6 +28,27 @@ o.spec('createManifest', () => {
     ]);
   });
 
+  o('should transform files', async () => {
+    await Promise.all([
+      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
+      fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
+    ]);
+    const outputFiles = await createManifest('memory://source/', 'memory://target/sub/', {
+      flatten: false,
+      transform: 'f.replace("topographic", "test")',
+    });
+    o(outputFiles[0]).deepEquals([
+      {
+        source: 'memory://source/topographic.json',
+        target: 'memory://target/sub/test.json',
+      },
+      {
+        source: 'memory://source/foo/bar/topographic.png',
+        target: 'memory://target/sub/foo/bar/test.png',
+      },
+    ]);
+  });
+
   o('should copy to the target location without flattening', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
