@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/linz/argo-tasks/compare/v2.3.0...v2.4.0) (2023-03-06)
+
+
+### Features
+
+* add --transform to allow renaming of files as part of the manifest ([#284](https://github.com/linz/argo-tasks/issues/284)) ([ed1ff48](https://github.com/linz/argo-tasks/commit/ed1ff4833bd2be7ceeac5c75ece96b3d551a6329))
+
 ## [2.3.0](https://github.com/linz/argo-tasks/compare/v2.2.1...v2.3.0) (2023-03-02)
 
 
