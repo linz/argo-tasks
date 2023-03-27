@@ -11,7 +11,7 @@ jobs:
 
       - name: Build containers
         run: |
-          docker build . --tag argo-tasks --label "github_run_id=${GITHUB_RUN_ID}"
+          docker build . --tag argo-tasks-test --label "github_run_id=${GITHUB_RUN_ID}"
 
       - name: Log in to registry
         if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
