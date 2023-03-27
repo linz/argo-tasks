@@ -174,7 +174,7 @@ export const commandStacValidate = command({
           queue.push(() =>
             validateStac(child).catch((err) => {
               logger.error({ err }, 'Failed');
-              console.log('Second log');
+              console.log('First log');
               if (networkErrors.includes(err.code)) {
                 process.exitCode = 10;
               }
