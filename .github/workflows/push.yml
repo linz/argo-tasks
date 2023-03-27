@@ -22,7 +22,7 @@ jobs:
         run: |
           GIT_VERSION=$(git describe --tags --always --match 'v*')
 
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:latest
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION}
+          docker tag argo-tasks-test ghcr.io/paulfouquet/argo-tasks-test:latest
+          docker tag argo-tasks-test ghcr.io/paulfouquet/argo-tasks-test:${GIT_VERSION}
 
-          docker push --all-tags ghcr.io/linz/argo-tasks
+          docker push --all-tags ghcr.io/paulfouquet/argo-tasks-test

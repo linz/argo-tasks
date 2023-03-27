@@ -48,6 +48,8 @@ export const commandStacValidate = command({
   },
 
   handler: async (args) => {
+    process.exitCode = 0;
+    const networkErrors = ['EAI_AGAIN', 'ECONNRESET'];
     registerCli(args);
 
     logger.info('StacValidation:Start');
@@ -172,6 +174,10 @@ export const commandStacValidate = command({
           queue.push(() =>
             validateStac(child).catch((err) => {
               logger.error({ err }, 'Failed');
+              console.log('Second log');
+              if (networkErrors.includes(err.code)) {
+                process.exitCode = 10;
+              }
               failures.push(child);
             }),
           );
@@ -184,6 +190,10 @@ export const commandStacValidate = command({
         validateStac(path).catch((err) => {
           logger.error({ err }, 'Failed');
           failures.push(path);
+          console.log('Second log');
+          if (networkErrors.includes(err.code)) {
+            process.exitCode = 10;
+          }
         }),
       );
     }
@@ -192,7 +202,10 @@ export const commandStacValidate = command({
 
     if (failures.length > 0) {
       logger.error({ failures: failures.length }, 'StacValidation:Done:Failed');
-      process.exit(1);
+      if (process.exitCode === 0) {
+        process.exitCode = 1;
+      }
+      process.exit(process.exitCode);
     } else {
       logger.info('StacValidation:Done:Ok');
     }
