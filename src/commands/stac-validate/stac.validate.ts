@@ -10,6 +10,13 @@ import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { config, registerCli, verbose } from '../common.js';
 import { hashStream } from './hash.worker.js';
 
+export const BackOff = {
+  /** Number of upload retries */
+  count: 1,
+  /** Back off time in ms */
+  time: 500,
+};
+
 export const commandStacValidate = command({
   name: 'stac-validate',
   description: 'Validate STAC files',
@@ -48,17 +55,13 @@ export const commandStacValidate = command({
   },
 
   handler: async (args) => {
-    process.exitCode = 0;
-    const networkErrors = ['EAI_AGAIN', 'ECONNRESET'];
     registerCli(args);
 
     logger.info('StacValidation:Start');
     const Schemas = new Map<string, Promise<SchemaObject>>();
     const validated = new Set<string>();
-
     const recursive = args.recursive;
     const paths = args.location.map((c) => c.trim());
-
     const ajv = new Ajv({
       allErrors: true,
       strict: args.strict,
@@ -72,8 +75,11 @@ export const commandStacValidate = command({
       },
       formats: { ...fastFormats, iri, 'iri-reference': iriReference },
     });
-
     const ajvSchema = new Map<string, Promise<ValidateFunction>>();
+    const failures = [];
+    const networkErrors = ['EAI_AGAIN', 'ECONNRESET'];
+    const retries = []
+    const queue = new ConcurrentQueue(args.concurrency);
 
     function loadSchema(uri: string): Promise<ValidateFunction> | ValidateFunction {
       const schema = ajv.getSchema(uri);
@@ -85,8 +91,6 @@ export const commandStacValidate = command({
       }
       return existing;
     }
-    const failures = [];
-    const queue = new ConcurrentQueue(args.concurrency);
 
     async function validateStac(path: string): Promise<void> {
       if (validated.has(path)) {
@@ -153,17 +157,30 @@ export const commandStacValidate = command({
           if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
 
           logger.debug({ source, checksum }, 'Validate:Asset');
-          const startTime = performance.now();
+          
+          let retries = 0;
+          while (retries < BackOff.count) {
+            try {
+              const startTime = performance.now();
+              const hash = await hashStream(fsa.stream(source));
+              const duration = performance.now() - startTime;
 
-          const hash = await hashStream(fsa.stream(source));
-          const duration = performance.now() - startTime;
-
-          if (hash === checksum) {
-            logger.debug({ assetType: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
-          } else {
-            isOk = false;
-            logger.error({ assetType: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
-            failures.push(path);
+              if (hash === checksum) {
+                logger.debug({ assetType: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
+              } else {
+                isOk = false;
+                logger.error({ assetType: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
+                failures.push(path);
+              }
+              break;
+            } catch (err) {
+              // Sleep for back off
+              await new Promise((resolve) => setTimeout(resolve, BackOff.time * (retries + 1), {}));
+              retries++;
+              if (retries === BackOff.count) {
+                throw err;
+              }
+            }
           }
         }
       }
@@ -172,12 +189,8 @@ export const commandStacValidate = command({
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
-            validateStac(child).catch((err) => {
+            validateStac(path).catch((err) => {
               logger.error({ err }, 'Failed');
-              console.log('First log');
-              if (networkErrors.includes(err.code)) {
-                process.exitCode = 10;
-              }
               failures.push(child);
             }),
           );
@@ -190,10 +203,6 @@ export const commandStacValidate = command({
         validateStac(path).catch((err) => {
           logger.error({ err }, 'Failed');
           failures.push(path);
-          console.log('Second log');
-          if (networkErrors.includes(err.code)) {
-            process.exitCode = 10;
-          }
         }),
       );
     }
@@ -202,11 +211,11 @@ export const commandStacValidate = command({
 
     if (failures.length > 0) {
       logger.error({ failures: failures.length }, 'StacValidation:Done:Failed');
-      if (process.exitCode === 0) {
-        process.exitCode = 1;
-      }
-      process.exit(process.exitCode);
-    } else {
+      process.exit(1);
+    } else if (retries.length > 0){
+      //
+    } 
+    else {
       logger.info('StacValidation:Done:Ok');
     }
   },
