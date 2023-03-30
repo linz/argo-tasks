@@ -35,6 +35,8 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
       - name: Publish Containers to GHCR
+        env:
+          TAG: argo-tasks
         run: |
           GIT_VERSION=$(git describe --tags --always --match 'v*')
           GIT_VERSION_MAJOR=$(echo $GIT_VERSION | cut -d. -f1)
@@ -43,12 +45,12 @@ jobs:
           echo "GIT_VERSION_MAJOR=$GIT_VERSION_MAJOR" >> $GITHUB_ENV
           echo "GIT_VERSION_MAJOR_MINOR=$GIT_VERSION_MAJOR_MINOR" >> $GITHUB_ENV
 
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:latest
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION_MAJOR}
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION_MAJOR_MINOR}
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION}
+          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:latest
+          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:${GIT_VERSION_MAJOR}
+          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:${GIT_VERSION_MAJOR_MINOR}
+          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:${GIT_VERSION}
           
-          docker push --all-tags ghcr.io/linz/argo-tasks
+          docker push --all-tags ghcr.io/linz/${{ env.tag }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -63,12 +65,12 @@ jobs:
 
       - name: Publish Containers to ECR
         env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: eks
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}/eks
+          TAG: argo-tasks
         run: |
-          docker tag argo-tasks ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:argo-tasks-latest
-          docker tag argo-tasks ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:argo-tasks-${{ env.GIT_VERSION_MAJOR }}
-          docker tag argo-tasks ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:argo-tasks-${{ env.GIT_VERSION_MAJOR_MINOR }}
-          docker tag argo-tasks ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:argo-tasks-${{ env.GIT_VERSION }}
+          docker tag ${{ env.TAG }} ${{ env.REGISTRY }}:${{ env.TAG }}-latest
+          docker tag ${{ env.TAG }} ${{ env.REGISTRY }}:${{ env.TAG }}-${{ env.GIT_VERSION_MAJOR }}
+          docker tag ${{ env.TAG }} ${{ env.REGISTRY }}:${{ env.TAG }}-${{ env.GIT_VERSION_MAJOR_MINOR }}
+          docker tag ${{ env.TAG }} ${{ env.REGISTRY }}:${{ env.TAG }}-${{ env.GIT_VERSION }}
 
-          docker push --all-tags ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
+          docker push --all-tags ${{ env.REGISTRY }}
