@@ -45,12 +45,12 @@ jobs:
           echo "GIT_VERSION_MAJOR=$GIT_VERSION_MAJOR" >> $GITHUB_ENV
           echo "GIT_VERSION_MAJOR_MINOR=$GIT_VERSION_MAJOR_MINOR" >> $GITHUB_ENV
 
-          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:latest
-          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:${GIT_VERSION_MAJOR}
-          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:${GIT_VERSION_MAJOR_MINOR}
-          docker tag ${{ env.tag }} ghcr.io/linz/${{ env.tag }}:${GIT_VERSION}
+          docker tag ${{ env.TAG }} ghcr.io/linz/${{ env.TAG }}:latest
+          docker tag ${{ env.TAG }} ghcr.io/linz/${{ env.TAG }}:${GIT_VERSION_MAJOR}
+          docker tag ${{ env.TAG }} ghcr.io/linz/${{ env.TAG }}:${GIT_VERSION_MAJOR_MINOR}
+          docker tag ${{ env.TAG }} ghcr.io/linz/${{ env.TAG }}:${GIT_VERSION}
           
-          docker push --all-tags ghcr.io/linz/${{ env.tag }}
+          docker push --all-tags ghcr.io/linz/${{ env.TAG }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
