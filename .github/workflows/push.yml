@@ -50,9 +50,8 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: eks
-          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker tag argo-tasks ${{ secrets.AWS_ACCOUNT_ID_PROD }}.dkr.ecr.ap-southeast-2.amazonaws.com/eks:argo-tasks-latest
-          docker tag argo-tasks ${{ secrets.AWS_ACCOUNT_ID_PROD }}.dkr.ecr.ap-southeast-2.amazonaws.com/eks:argo-tasks-${{ env.GIT_VERSION }}
+          docker tag argo-tasks ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:argo-tasks-latest
+          docker tag argo-tasks ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:argo-tasks-${{ env.GIT_VERSION }}
 
-          docker push --all-tags ${{ secrets.AWS_ACCOUNT_ID_PROD }}.dkr.ecr.ap-southeast-2.amazonaws.com/eks
+          docker push --all-tags ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
