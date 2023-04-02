@@ -50,7 +50,7 @@ jobs:
       - name: Publish Containers to ECR
         if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
         env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }/eks
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}/esk
           TAG: argo-tasks
         run: |
           docker tag ${{ env.TAG}} ${{ env.REGISTRY }}:${{ env.TAG }}-latest
