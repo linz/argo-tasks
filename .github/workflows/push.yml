@@ -5,6 +5,10 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
 
     steps:
       - uses: linz/action-typescript@v2
@@ -17,12 +21,39 @@ jobs:
         if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
-      - name: Publish Containers
+      - name: Publish Containers to GHCR
         if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        env:
+          TAG: argo-tasks
         run: |
           GIT_VERSION=$(git describe --tags --always --match 'v*')
+          echo "GIT_VERSION=$GIT_VERSION" >> $GITHUB_ENV
 
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:latest
-          docker tag argo-tasks ghcr.io/linz/argo-tasks:${GIT_VERSION}
+          docker tag ${{ env.TAG }} ghcr.io/linz/${{ env.TAG }}:latest
+          docker tag ${{ env.TAG }} ghcr.io/linz/${{ env.TAG }}:${GIT_VERSION}
 
-          docker push --all-tags ghcr.io/linz/argo-tasks
+          docker push --all-tags ghcr.io/linz/${{ env.TAG }}
+
+      - name: Configure AWS Credentials
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ap-southeast-2
+          mask-aws-account-id: true
+          role-to-assume: ${{ secrets.AWS_CI_ROLE }}
+
+      - name: Login to Amazon ECR
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Publish Containers to ECR
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }/eks
+          TAG: argo-tasks
+        run: |
+          docker tag ${{ env.TAG}} ${{ env.REGISTRY }}:${{ env.TAG }}-latest
+          docker tag ${{ env.TAG}} ${{ env.REGISTRY }}:${{ env.TAG }}-${{ env.GIT_VERSION }}
+
+          docker push --all-tags ${{ env.REGISTRY }}
