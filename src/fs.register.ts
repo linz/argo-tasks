@@ -2,9 +2,11 @@ import { FileSystem } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { AwsCredentialConfig } from '@chunkd/source-aws';
 import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
+import { FsAwsS3 } from '@chunkd/source-aws';
 import { logger } from './log.js';
 
 export const s3Fs = new FsAwsS3V3();
+FsAwsS3.MaxListCount = 1000;
 s3Fs.credentials.onFileSystemCreated = (acc: AwsCredentialConfig, fs: FileSystem): void => {
   logger.debug({ prefix: acc.prefix, roleArn: acc.roleArn }, 'FileSystem:Register');
   fsa.register(acc.prefix, fs);
