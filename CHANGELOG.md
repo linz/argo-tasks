@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.2](https://github.com/linz/argo-tasks/compare/v2.4.1...v2.4.2) (2023-04-03)
+
+
+### Bug Fixes
+
+* increase MaxListCount to 1000 TDE-698 ([#350](https://github.com/linz/argo-tasks/issues/350)) ([60a1084](https://github.com/linz/argo-tasks/commit/60a1084ff11a0023ecaf1cbf2a6fb4c35e7b3f13))
+
 ## [2.4.1](https://github.com/linz/argo-tasks/compare/v2.4.0...v2.4.1) (2023-04-03)
 
 
