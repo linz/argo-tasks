@@ -1,7 +1,7 @@
 {
   "name": "@linzjs/argo-tasks",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.4.1",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "repository": "git@github.com:linz/argo-tasks.git",
@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@chunkd/source-memory": "^10.0.2",
-    "@linzjs/style": "^3.16.0",
+    "@linzjs/style": "^3.15.0",
     "@types/node": "^18.7.11",
     "@types/ospec": "^4.0.5",
     "esno": "^0.16.3",
