@@ -55,12 +55,13 @@ export const commandStacValidate = command({
     const validated = new Set<string>();
 
     const recursive = args.recursive;
-    const paths = args.location.map((c) => c.trim());
+    const paths = listLocation(args.location).map((c) => c.trim());
 
     const ajv = new Ajv({
       allErrors: true,
       strict: args.strict,
       loadSchema: (uri: string): Promise<SchemaObject> => {
+        logger.trace({ schemaUri: uri }, 'Schema:Load');
         let existing = Schemas.get(uri);
         if (existing == null) {
           existing = fsa.readJson(uri);
@@ -264,4 +265,18 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
 
 export function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
+}
+
+export function listLocation(loc: string[]): string[] {
+  if (loc[0].startsWith('[')) {
+    console.log('1a');
+    console.log(loc);
+    console.log(JSON.parse(loc[0]));
+    console.log('1b');
+    return JSON.parse(loc[0]) as string[];
+  }
+  console.log('2a');
+  console.log(loc);
+  console.log('2b');
+  return loc;
 }
