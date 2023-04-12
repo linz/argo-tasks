@@ -55,7 +55,9 @@ export const commandStacValidate = command({
     const validated = new Set<string>();
 
     const recursive = args.recursive;
+    console.log(args.location);
     const paths = listLocation(args.location).map((c) => c.trim());
+    console.log(paths);
 
     const ajv = new Ajv({
       allErrors: true,
@@ -269,14 +271,7 @@ export function normaliseHref(href: string, path: string): string {
 
 export function listLocation(loc: string[]): string[] {
   if (loc[0].startsWith('[')) {
-    console.log('1a');
-    console.log(loc);
-    console.log(JSON.parse(loc[0]));
-    console.log('1b');
     return JSON.parse(loc[0]) as string[];
   }
-  console.log('2a');
-  console.log(loc);
-  console.log('2b');
   return loc;
 }

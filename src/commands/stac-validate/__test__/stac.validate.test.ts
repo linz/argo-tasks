@@ -2,7 +2,13 @@ import o from 'ospec';
 import { listLocation, iri, iriReference, getStacSchemaUrl, normaliseHref } from '../stac.validate.js';
 
 o.spec('stacValidate', function () {
-  o('listLocationOuterList', async function () {
+  o('listLocation', async function () {
+    o(listLocation(['s3://example-bucket/test/collection.json', 's3://example-bucket/test/item.json'])).equals([
+      's3://example-bucket/test/collection.json',
+      's3://example-bucket/test/item.json',
+    ]);
+  });
+  o('listLocationAwsList', async function () {
     o(listLocation(['["s3://example-bucket/test/collection.json","s3://example-bucket/test/item.json"]'])).equals([
       's3://example-bucket/test/collection.json',
       's3://example-bucket/test/item.json',
