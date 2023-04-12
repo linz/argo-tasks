@@ -55,9 +55,12 @@ export const commandStacValidate = command({
     const validated = new Set<string>();
 
     const recursive = args.recursive;
-    console.log(args.location);
+
+    if (args.location[0] === undefined) {
+      logger.error('StacValidation:Error:NoLocationProvided');
+      process.exit(1);
+    }
     const paths = listLocation(args.location).map((c) => c.trim());
-    console.log(paths);
 
     const ajv = new Ajv({
       allErrors: true,

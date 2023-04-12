@@ -14,12 +14,6 @@ o.spec('stacValidate', function () {
       's3://example-bucket/test/item.json',
     ]);
   });
-  // o('listLocationAwsList', async function () {
-  //   o(['s3://example-bucket/test/collection.json', 's3://example-bucket/test/item.json']).deepEquals([
-  //     's3://example-bucket/test/collection.json',
-  //     's3://example-bucket/test/item.json',
-  //   ]);
-  // });
   o('iriEmptyString', async function () {
     o(iri('')).equals(false);
   });
