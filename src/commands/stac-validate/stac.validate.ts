@@ -60,7 +60,9 @@ export const commandStacValidate = command({
       logger.error('StacValidation:Error:NoLocationProvided');
       process.exit(1);
     }
+    console.log(args.location);
     const paths = listLocation(args.location).map((c) => c.trim());
+    console.log(paths);
 
     const ajv = new Ajv({
       allErrors: true,
@@ -271,6 +273,7 @@ export function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
 }
 
+// Handle list of lists that results from using the 'list' command to supply location
 export function listLocation(loc: string[]): string[] {
   if (loc[0].startsWith('[')) {
     return JSON.parse(loc[0]) as string[];
