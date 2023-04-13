@@ -1,7 +1,19 @@
 import o from 'ospec';
-import { iri, iriReference, getStacSchemaUrl, normaliseHref } from '../stac.validate.js';
+import { listLocation, iri, iriReference, getStacSchemaUrl, normaliseHref } from '../stac.validate.js';
 
 o.spec('stacValidate', function () {
+  o('listLocation', async function () {
+    o(listLocation(['s3://example-bucket/test/collection.json', 's3://example-bucket/test/item.json'])).deepEquals([
+      's3://example-bucket/test/collection.json',
+      's3://example-bucket/test/item.json',
+    ]);
+  });
+  o('listLocationAwsList', async function () {
+    o(listLocation(['["s3://example-bucket/test/collection.json","s3://example-bucket/test/item.json"]'])).deepEquals([
+      's3://example-bucket/test/collection.json',
+      's3://example-bucket/test/item.json',
+    ]);
+  });
   o('iriEmptyString', async function () {
     o(iri('')).equals(false);
   });

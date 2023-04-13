@@ -55,7 +55,12 @@ export const commandStacValidate = command({
     const validated = new Set<string>();
 
     const recursive = args.recursive;
-    const paths = args.location.map((c) => c.trim());
+
+    if (args.location[0] === undefined) {
+      logger.error('StacValidation:Error:NoLocationProvided');
+      process.exit(1);
+    }
+    const paths = listLocation(args.location).map((c) => c.trim());
 
     const ajv = new Ajv({
       allErrors: true,
@@ -264,4 +269,12 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
 
 export function normaliseHref(href: string, path: string): string {
   return new URL(href, path).href;
+}
+
+// Handle list of lists that results from using the 'list' command to supply location
+export function listLocation(loc: string[]): string[] {
+  if (loc[0].startsWith('[')) {
+    return JSON.parse(loc[0]) as string[];
+  }
+  return loc;
 }

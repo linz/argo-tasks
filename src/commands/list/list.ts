@@ -2,6 +2,7 @@ import { fsa } from '@chunkd/fs';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
+import { logger } from '../../log.js';
 
 export const commandList = command({
   name: 'list',
@@ -27,6 +28,10 @@ export const commandList = command({
   },
   handler: async (args) => {
     registerCli(args);
+    if (args.location.length === 0) {
+      logger.error('List:Error:NoLocationProvided');
+      process.exit(1);
+    }
     const outputFiles = await getFiles(args.location, args);
     await fsa.write(args.output, JSON.stringify(outputFiles));
   },
