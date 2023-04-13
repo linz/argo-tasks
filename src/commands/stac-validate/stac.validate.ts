@@ -60,9 +60,7 @@ export const commandStacValidate = command({
       logger.error('StacValidation:Error:NoLocationProvided');
       process.exit(1);
     }
-    console.log(args.location);
     const paths = listLocation(args.location).map((c) => c.trim());
-    console.log(paths);
 
     const ajv = new Ajv({
       allErrors: true,
