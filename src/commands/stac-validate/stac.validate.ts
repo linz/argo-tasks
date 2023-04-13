@@ -66,7 +66,6 @@ export const commandStacValidate = command({
       allErrors: true,
       strict: args.strict,
       loadSchema: (uri: string): Promise<SchemaObject> => {
-        logger.trace({ schemaUri: uri }, 'Schema:Load');
         let existing = Schemas.get(uri);
         if (existing == null) {
           existing = fsa.readJson(uri);
