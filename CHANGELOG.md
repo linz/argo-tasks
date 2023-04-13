@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.3](https://github.com/linz/argo-tasks/compare/v2.4.2...v2.4.3) (2023-04-13)
+
+
+### Bug Fixes
+
+* stac-validate handle list input TDE-504 ([#363](https://github.com/linz/argo-tasks/issues/363)) ([1072a3e](https://github.com/linz/argo-tasks/commit/1072a3e3ec04dae7d6df4efe7be51c6921a7c208))
+
 ## [2.4.2](https://github.com/linz/argo-tasks/compare/v2.4.1...v2.4.2) (2023-04-03)
 
 
