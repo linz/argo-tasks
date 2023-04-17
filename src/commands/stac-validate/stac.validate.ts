@@ -271,7 +271,7 @@ export function normaliseHref(href: string, path: string): string {
   if (isURL(path)) {
     return new URL(href, path).href;
   }
-  return join(path.substring(0, path.lastIndexOf('/')), href);
+  return join(dirname(path), href);
 }
 
 export function isURL(path: string): boolean {
