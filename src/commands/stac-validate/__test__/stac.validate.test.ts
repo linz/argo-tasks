@@ -1,5 +1,5 @@
 import o from 'ospec';
-import { listLocation, iri, iriReference, getStacSchemaUrl, normaliseHref } from '../stac.validate.js';
+import { listLocation, iri, iriReference, getStacSchemaUrl, normaliseHref, isURL } from '../stac.validate.js';
 
 o.spec('stacValidate', function () {
   o('listLocation', async function () {
@@ -48,9 +48,18 @@ o.spec('stacValidate', function () {
   o('getStacSchemaUrlInvalidStacType', async function () {
     o(getStacSchemaUrl('CollectionItem', '1.0.0', 'placeholder path')).equals(null);
   });
+  o('isURL', async function () {
+    o(isURL('s3://test-bucket/test-survey/collection.json')).equals(true);
+    o(isURL('data/test-survey/collection.json')).equals(false);
+  });
   o('normaliseHref', async function () {
     o(normaliseHref('./item.json', 's3://test-bucket/test-survey/collection.json')).equals(
       's3://test-bucket/test-survey/item.json',
     );
+    o(normaliseHref('./item.json', 'data/test-survey/collection.json')).equals('data/test-survey/item.json');
+    o(normaliseHref('./sub-folder/item.json', 'data/test-survey/collection.json')).equals(
+      'data/test-survey/sub-folder/item.json',
+    );
+    o(normaliseHref('./item.json', 'collection.json')).equals('item.json');
   });
 });

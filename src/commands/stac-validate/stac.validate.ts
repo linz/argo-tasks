@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
 import * as st from 'stac-ts';
 import { logger } from '../../log.js';
@@ -268,7 +268,19 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
 }
 
 export function normaliseHref(href: string, path: string): string {
-  return new URL(href, path).href;
+  if (isURL(path)) {
+    return new URL(href, path).href;
+  }
+  return join(path.substring(0, path.lastIndexOf('/')), href);
+}
+
+export function isURL(path: string): boolean {
+  try {
+    new URL(path);
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 // Handle list of lists that results from using the 'list' command to supply location
