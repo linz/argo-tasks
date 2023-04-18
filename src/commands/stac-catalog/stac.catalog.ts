@@ -40,18 +40,16 @@ export const commandStacCatalog = command({
     await fsa.write(args.output, JSON.stringify(catalog));
 
     logger.info('StacCatalogCreation:Done');
-
-    console.log(catalog);
   },
 });
 
 export function createLinks(collections: string[], catalogLocation: string): st.StacLink[] {
-  let tempLinks: st.StacLink[] = [
+  const tempLinks: st.StacLink[] = [
     { rel: 'self', href: catalogLocation },
     { rel: 'root', href: catalogLocation },
   ];
-  for (let coll of collections) {
-    let collLink: st.StacLink = {
+  for (const coll of collections) {
+    const collLink: st.StacLink = {
       rel: 'child',
       href: coll,
     };
