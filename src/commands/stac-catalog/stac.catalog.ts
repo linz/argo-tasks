@@ -10,7 +10,7 @@ export const commandStacCatalog = command({
   args: {
     config,
     verbose,
-    catalogId: option({ type: string, long: 'catalog-id', description: 'Catalog ID' }),
+    id: option({ type: string, long: 'id', description: 'Catalog ID' }),
     output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
     collections: restPositionals({
       type: string,
@@ -23,7 +23,7 @@ export const commandStacCatalog = command({
     registerCli(args);
 
     if (args.collections.length === 0) {
-      logger.error('StacCatalogCreaton:Error:NoCollectionsProvided');
+      logger.error('StacCatalogCreation:Error:NoCollectionsProvided');
       process.exit(1);
     }
 
@@ -32,8 +32,8 @@ export const commandStacCatalog = command({
     const catalog: st.StacCatalog = {
       stac_version: '1.0.0',
       type: 'Catalog',
-      id: args.catalogId,
-      description: 'Catalog of linz-imagery',
+      id: args.id,
+      description: `Catalog of ${args.id}`,
       links: createLinks(args.collections, args.output),
     };
 
