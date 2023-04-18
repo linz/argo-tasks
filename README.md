@@ -22,13 +22,13 @@ Fetch a layer from the LDS and download it as GeoPackage
 Fetch the latest version of layer `50063` - 50063-nz-chatham-island-airport-polygons-topo-150k and save it into ./output
 
 ```bash
-lds-fetch-layer --target ./output 50063 
+lds-fetch-layer --target ./output 50063
 ```
 
 Multiple layers can be fetched at the same time, fetch `51002` and `51000`
 
 ```bash
-lds-fetch-layer  --target ./output 51002 51000 
+lds-fetch-layer  --target ./output 51002 51000
 ```
 
 ### list
@@ -79,11 +79,21 @@ Copy a manifest of files between two locations, for manifest creation see [creat
 copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurrency 10
 ```
 
+### stac-catalog
+
+Create STAC catalog from collections(s)
+
+#### Stac Catalog example
+
+```bash
+stac-catalog --id linz-example-id --output catalog.json directory1/collection.json directory2/collection.json
+```
+
 ### stac-validate
 
 Validate STAC file(s) from an S3 location
 
-#### Example
+#### STAC Validate example
 
 Validate a single item
 
