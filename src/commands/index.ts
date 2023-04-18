@@ -3,6 +3,7 @@ import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
+import { commandStacCatalog } from './stac-catalog/stac.catalog.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
 import { commandTileSetValidate } from './tileset-validate/tileset.validate.js';
 
@@ -18,5 +19,6 @@ export const cmd = subcommands({
     'create-manifest': commandCreateManifest,
     flatten: commandCreateManifest,
     'tileset-validate': commandTileSetValidate,
+    'stac-catalog': commandStacCatalog,
   },
 });
