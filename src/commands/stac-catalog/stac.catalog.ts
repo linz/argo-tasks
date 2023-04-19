@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, restPositionals, string } from 'cmd-ts';
+import { command, option, string } from 'cmd-ts';
 import * as st from 'stac-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
@@ -10,51 +10,43 @@ export const commandStacCatalog = command({
   args: {
     config,
     verbose,
-    id: option({ type: string, long: 'id', description: 'Catalog ID' }),
-    output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
-    description: option({ type: string, long: 'description', description: 'Description for the catalog' }),
-    collections: restPositionals({
+    template: option({
       type: string,
-      displayName: 'collections',
-      description: 'List of collection file paths',
+      long: 'template',
+      description: 'JSON template file location for the Catalog metadata',
+    }),
+    output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
+    collections: option({
+      type: string,
+      long: 'collections',
+      description: 'Location of file containing collection.json paths',
     }),
   },
 
   handler: async (args) => {
     registerCli(args);
 
-    if (args.collections.length === 0) {
-      logger.error('StacCatalogCreation:Error:NoCollectionsProvided');
-      process.exit(1);
-    }
-
     logger.info('StacCatalogCreation:Start');
 
-    const catalog: st.StacCatalog = {
-      stac_version: '1.0.0',
-      type: 'Catalog',
-      id: args.id,
-      description: args.description,
-      links: createLinks(args.collections, args.output),
-    };
-
+    const catalog: st.StacCatalog = await fsa.readJson(args.template);
+    const collections: string[] = (await fsa.read(args.collections)).toString('utf8').split(/\r?\n/);
+    catalog.links = createLinks(collections, catalog.links);
     await fsa.write(args.output, JSON.stringify(catalog));
 
-    logger.info('StacCatalogCreation:Done');
+    logger.info({ collectionId: catalog.id }, 'StacCatalogCreation:Done');
   },
 });
 
-export function createLinks(collections: string[], catalogLocation: string): st.StacLink[] {
-  const tempLinks: st.StacLink[] = [
-    { rel: 'self', href: catalogLocation },
-    { rel: 'root', href: catalogLocation },
-  ];
+export function createLinks(collections: string[], templateLinks: st.StacLink[]): st.StacLink[] {
+  const tempLinks: st.StacLink[] = templateLinks;
   for (const coll of collections) {
-    const collLink: st.StacLink = {
-      rel: 'child',
-      href: coll,
-    };
-    tempLinks.push(collLink);
+    if (coll.includes('collection.json')) {
+      const collLink: st.StacLink = {
+        rel: 'child',
+        href: coll,
+      };
+      tempLinks.push(collLink);
+    }
   }
   return tempLinks as st.StacLink[];
 }
