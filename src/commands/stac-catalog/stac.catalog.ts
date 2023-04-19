@@ -38,15 +38,14 @@ export const commandStacCatalog = command({
 });
 
 export function createLinks(collections: string[], templateLinks: st.StacLink[]): st.StacLink[] {
-  const tempLinks: st.StacLink[] = templateLinks;
   for (const coll of collections) {
     if (coll.includes('collection.json')) {
       const collLink: st.StacLink = {
         rel: 'child',
         href: coll,
       };
-      tempLinks.push(collLink);
+      templateLinks.push(collLink);
     }
   }
-  return tempLinks as st.StacLink[];
+  return templateLinks;
 }
