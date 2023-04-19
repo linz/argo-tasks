@@ -86,7 +86,7 @@ Create STAC catalog from collections(s)
 #### Stac Catalog example
 
 ```bash
-stac-catalog --id linz-example-id --output catalog.json directory1/collection.json directory2/collection.json
+stac-catalog --id linz-example-id --output catalog.json --description "Catalog description" directory1/collection.json directory2/collection.json
 ```
 
 ### stac-validate

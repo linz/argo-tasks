@@ -12,6 +12,7 @@ export const commandStacCatalog = command({
     verbose,
     id: option({ type: string, long: 'id', description: 'Catalog ID' }),
     output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
+    description: option({ type: string, long: 'description', description: 'Description for the catalog' }),
     collections: restPositionals({
       type: string,
       displayName: 'collections',
@@ -33,7 +34,7 @@ export const commandStacCatalog = command({
       stac_version: '1.0.0',
       type: 'Catalog',
       id: args.id,
-      description: `Catalog of ${args.id}`,
+      description: args.description,
       links: createLinks(args.collections, args.output),
     };
 
