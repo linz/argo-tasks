@@ -28,7 +28,7 @@ export const commandStacCatalog = command({
 
     logger.info('StacCatalogCreation:Start');
 
-    let catalog;
+    let catalog: st.StacCatalog;
     try {
       catalog = await fsa.readJson<st.StacCatalog>(args.template);
     } catch (e) {
@@ -36,7 +36,7 @@ export const commandStacCatalog = command({
       return;
     }
 
-    let collections;
+    let collections: string[];
     try {
       collections = (await fsa.read(args.collections)).toString('utf8').split(/\r?\n/);
     } catch (e) {
@@ -59,11 +59,8 @@ export const commandStacCatalog = command({
 
 export function createLinks(collections: string[], templateLinks: st.StacLink[]): st.StacLink[] {
   for (const coll of collections) {
-    if (coll.includes('collection.json')) {
-      const collLink: st.StacLink = {
-        rel: 'child',
-        href: coll,
-      };
+    if (coll.endsWith('collection.json')) {
+      const collLink: st.StacLink = { rel: 'child', href: coll };
       templateLinks.push(collLink);
     }
   }
