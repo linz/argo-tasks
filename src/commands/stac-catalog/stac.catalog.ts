@@ -28,12 +28,32 @@ export const commandStacCatalog = command({
 
     logger.info('StacCatalogCreation:Start');
 
-    const catalog: st.StacCatalog = await fsa.readJson(args.template);
-    const collections: string[] = (await fsa.read(args.collections)).toString('utf8').split(/\r?\n/);
-    catalog.links = createLinks(collections, catalog.links);
-    await fsa.write(args.output, JSON.stringify(catalog));
+    let catalog;
+    try {
+      catalog = await fsa.readJson<st.StacCatalog>(args.template);
+    } catch (e) {
+      logger.error({ e }, 'readCatalogTemplate:Error');
+      return;
+    }
 
-    logger.info({ collectionId: catalog.id }, 'StacCatalogCreation:Done');
+    let collections;
+    try {
+      collections = (await fsa.read(args.collections)).toString('utf8').split(/\r?\n/);
+    } catch (e) {
+      logger.error({ e }, 'readCollectionsLinks:Error');
+      return;
+    }
+
+    catalog.links = createLinks(collections, catalog.links);
+
+    try {
+      await fsa.write(args.output, JSON.stringify(catalog));
+    } catch (e) {
+      logger.error({ e }, 'writeCatalog:Error');
+      return;
+    }
+
+    logger.info({ catalogId: catalog.id }, 'StacCatalogCreation:Done');
   },
 });
 
