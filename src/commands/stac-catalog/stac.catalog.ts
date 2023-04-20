@@ -19,7 +19,7 @@ export const commandStacCatalog = command({
     collections: option({
       type: string,
       long: 'collections',
-      description: 'Location of file containing collection.json paths',
+      description: 'Location of text file containing collection.json paths',
     }),
   },
 
