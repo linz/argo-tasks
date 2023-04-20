@@ -22,13 +22,13 @@ Fetch a layer from the LDS and download it as GeoPackage
 Fetch the latest version of layer `50063` - 50063-nz-chatham-island-airport-polygons-topo-150k and save it into ./output
 
 ```bash
-lds-fetch-layer --target ./output 50063 
+lds-fetch-layer --target ./output 50063
 ```
 
 Multiple layers can be fetched at the same time, fetch `51002` and `51000`
 
 ```bash
-lds-fetch-layer  --target ./output 51002 51000 
+lds-fetch-layer  --target ./output 51002 51000
 ```
 
 ### list
@@ -79,11 +79,60 @@ Copy a manifest of files between two locations, for manifest creation see [creat
 copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurrency 10
 ```
 
+### stac-catalog
+
+Create STAC catalog JSON file when given links to catalog template JSON file and collection links file (linebreak separated string).
+
+#### Stac Catalog example
+
+```bash
+stac-catalog --template catalog_template.json --collections collection_links.txt --output catalog.json
+```
+
+Example template file:
+
+```json
+{
+  "stac_version": "1.0.0",
+  "type": "Catalog",
+  "id": "catalog-id",
+  "description": "Example description goes here.",
+  "links": [
+    { "rel": "self", "href": "./catalog.json" },
+    { "rel": "root", "href": "./catalog.json" }
+  ]
+}
+```
+
+Example links file:
+
+```text
+./stac/bay-of-plenty/tauranga-city_2022_0.1m/rgb/2193/collection.json
+./stac/auckland/auckland_2010-2012_0.5m/rgb/2193/collection.json
+```
+
+Output will look like:
+
+```json
+{
+  "stac_version": "1.0.0",
+  "type": "Catalog",
+  "id": "catalog-id",
+  "description": "Example description goes here.",
+  "links": [
+    { "rel": "self", "href": "./catalog.json" },
+    { "rel": "root", "href": "./catalog.json" },
+    { "rel": "child", "href": "./stac/bay-of-plenty/tauranga-city_2022_0.1m/rgb/2193/collection.json" },
+    { "rel": "child", "href": "./stac/auckland/auckland_2010-2012_0.5m/rgb/2193/collection.json" }
+  ]
+}
+```
+
 ### stac-validate
 
 Validate STAC file(s) from an S3 location
 
-#### Example
+#### STAC Validate example
 
 Validate a single item
 
