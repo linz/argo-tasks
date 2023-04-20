@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.0](https://github.com/linz/argo-tasks/compare/v2.4.3...v2.5.0) (2023-04-20)
+
+
+### Features
+
+* create stac-catalog TDE-724 ([#373](https://github.com/linz/argo-tasks/issues/373)) ([7a01a2d](https://github.com/linz/argo-tasks/commit/7a01a2dfd9d65e38e48e638306d32e8b25660f63))
+
+
+### Bug Fixes
+
+* stac-validate --recursive fails with local path TDE-732 ([#368](https://github.com/linz/argo-tasks/issues/368)) ([4f6b2d4](https://github.com/linz/argo-tasks/commit/4f6b2d437f73ef4bc3b78c5b7827b920b9ee6002))
+
 ## [2.4.3](https://github.com/linz/argo-tasks/compare/v2.4.2...v2.4.3) (2023-04-13)
 
 
