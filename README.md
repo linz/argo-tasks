@@ -81,7 +81,7 @@ copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurr
 
 ### stac-catalog
 
-Create STAC catalog when given a link to a catalog template file and collection links file (linebreak separated string).
+Create STAC catalog JSON file when given a link to a catalog template JSON file and collection links file (linebreak separated string).
 
 #### Stac Catalog example
 
