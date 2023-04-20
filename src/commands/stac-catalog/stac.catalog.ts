@@ -49,7 +49,7 @@ export const commandStacCatalog = command({
     try {
       await fsa.write(args.output, JSON.stringify(catalog));
     } catch (e) {
-      logger.error({ e }, 'writeCatalog:Error');
+      logger.error({ catalogId: catalog.id, e }, 'writeCatalog:Error');
       return;
     }
 
