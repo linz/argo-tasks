@@ -81,12 +81,51 @@ copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurr
 
 ### stac-catalog
 
-Create STAC catalog from collections(s)
+Create STAC catalog collection links when given a link to a catalog template file and collection links file (linebreak separated string).
 
 #### Stac Catalog example
 
 ```bash
-stac-catalog --id linz-example-id --output catalog.json --description "Catalog description" directory1/collection.json directory2/collection.json
+stac-catalog --template catalog_template.json --collections collection_links.txt --output catalog.json
+```
+
+Example template file:
+
+```json
+{
+  "stac_version": "1.0.0",
+  "type": "Catalog",
+  "id": "catalog-id",
+  "description": "Example description goes here.",
+  "links": [
+    { "rel": "self", "href": "./catalog.json" },
+    { "rel": "root", "href": "./catalog.json" }
+  ]
+}
+```
+
+Example links file:
+
+```text
+./stac/bay-of-plenty/tauranga-city_2022_0.1m/rgb/2193/collection.json
+./stac/auckland/auckland_2010-2012_0.5m/rgb/2193/collection.json
+```
+
+Output will look like:
+
+```json
+{
+  "stac_version": "1.0.0",
+  "type": "Catalog",
+  "id": "catalog-id",
+  "description": "Example description goes here.",
+  "links": [
+    { "rel": "self", "href": "./catalog.json" },
+    { "rel": "root", "href": "./catalog.json" },
+    { "rel": "child", "href": "./stac/bay-of-plenty/tauranga-city_2022_0.1m/rgb/2193/collection.json" },
+    { "rel": "child", "href": "./stac/auckland/auckland_2010-2012_0.5m/rgb/2193/collection.json" }
+  ]
+}
 ```
 
 ### stac-validate
