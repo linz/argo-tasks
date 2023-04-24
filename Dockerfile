@@ -8,4 +8,4 @@ ADD package.json yarn.lock /app/
 RUN yarn install --production
 ADD build/src /app/
 
-ENTRYPOINT ["node", "index.js"]
+ENTRYPOINT ["node", "/app/index.js"]
