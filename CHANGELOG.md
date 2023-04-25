@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.1](https://github.com/linz/argo-tasks/compare/v2.5.0...v2.5.1) (2023-04-24)
+
+
+### Bug Fixes
+
+* Dockerfile entrypoint for GitHub Actions TDE-724 ([#382](https://github.com/linz/argo-tasks/issues/382)) ([6f65900](https://github.com/linz/argo-tasks/commit/6f65900ac212db3a200e472b07abc39f7680255d))
+
 ## [2.5.0](https://github.com/linz/argo-tasks/compare/v2.4.3...v2.5.0) (2023-04-20)
 
 
