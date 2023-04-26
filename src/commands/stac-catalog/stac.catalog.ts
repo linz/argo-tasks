@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional, string } from 'cmd-ts';
-import { isAbsolute, resolve } from 'path';
+import { isAbsolute } from 'path';
 import * as st from 'stac-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
@@ -20,7 +20,7 @@ export function isUrl(path: string): boolean {
  *
  * https://foo.com + https://foo.com/bar.html => ./bar.html
  * s3://foo/ + s3://foo/bar/baz.html => ./bar/baz.html
- * /home/blaha + /home/blacha/index.json => ./index.json
+ * /home/blacha + /home/blacha/index.json => ./index.json
  *
  * @param basePath path to make relative to
  * @param filePath target file
