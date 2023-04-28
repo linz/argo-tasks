@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.6.0](https://github.com/linz/argo-tasks/compare/v2.5.1...v2.6.0) (2023-04-28)
+
+
+### Features
+
+* **stac-catalog:** checksum all collections in the catalog ([#395](https://github.com/linz/argo-tasks/issues/395)) ([405a2e7](https://github.com/linz/argo-tasks/commit/405a2e7a5bb0ea3dfd215611d044e662d8a2ef6c))
+* **stac-catalog:** load collection titles from paths ([#389](https://github.com/linz/argo-tasks/issues/389)) ([7395c1f](https://github.com/linz/argo-tasks/commit/7395c1f6bfd4596d11807fa4c4e9dc518878d3f7))
+
 ## [2.5.1](https://github.com/linz/argo-tasks/compare/v2.5.0...v2.5.1) (2023-04-24)
 
 
