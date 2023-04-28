@@ -1633,10 +1633,10 @@
     "@typescript-eslint/types" "5.57.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wtrpc/core@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@wtrpc/core/-/core-1.0.1.tgz#4fac4d3df676ad270554a3750037eb16e0f2c4e4"
-  integrity sha512-tSRRiteyCD/DQgabA6zMqt18q45/Vc4BBR2bl2kaw7D2sfFkpYYJwsGNJkAA8NePeuz713oKzqm1kBw+o0X7iA==
+"@wtrpc/core@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@wtrpc/core/-/core-1.0.2.tgz#772fc610f378cdec506abc085b2f331ca14de8aa"
+  integrity sha512-KsFprkuE158VbBwhB8bWEgJFI6TtpkXUi+E5qdSevxj83xW4+tFHnvp/EobugH9sXKRrABkr3xp8S20Y8dhFeQ==
 
 abort-controller@^3.0.0:
   version "3.0.0"

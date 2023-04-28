@@ -42,7 +42,7 @@
     "@chunkd/fs": "^10.0.4",
     "@chunkd/source-aws-v3": "^10.1.1",
     "@cogeotiff/core": "^7.2.1",
-    "@wtrpc/core": "^1.0.1",
+    "@wtrpc/core": "^1.0.2",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
     "cmd-ts": "^0.12.1",
