@@ -1228,15 +1228,10 @@
   dependencies:
     tslib "^2.3.1"
 
-"@chunkd/core@^10.0.0":
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/@chunkd/core/-/core-10.0.0.tgz#d66fd49993cad99886eb2eb20df24a3056ebb218"
-  integrity sha512-8AvtnYUUwn8AcRrjnjstczCj2wJT1Kj+JUy/Cxo6mdsxxQiR1L+2vD46Wj/Q5s/K2toQta3/bSBys3NfYweWGg==
-
-"@chunkd/core@^10.1.1":
-  version "10.1.1"
-  resolved "https://registry.yarnpkg.com/@chunkd/core/-/core-10.1.1.tgz#2f7193baba36049507354bbadc2e06717a7cca98"
-  integrity sha512-dd6+7KluZWFAa4Zzj/SQsi0WVu+I8oTlDAEYDzyyY7deYwgrHUnmtciKBL9Owc0kAChbrzzrAbZrZzqaneSStg==
+"@chunkd/core@^10.0.0", "@chunkd/core@^10.1.1", "@chunkd/core@^10.2.0":
+  version "10.2.0"
+  resolved "https://registry.yarnpkg.com/@chunkd/core/-/core-10.2.0.tgz#2c58bee623d78ee838568752dbfc20d5e7729a7b"
+  integrity sha512-11c7jTgKdvVqmdfX4y6zhh/MXYZbtWu+ZnLHQjuqeGEEbyxDhmsUXVX+xjEYJ+bE8Y3+fNBys+pHJscnJPQHWw==
 
 "@chunkd/fs@^10.0.4":
   version "10.0.4"
@@ -1287,12 +1282,12 @@
     "@chunkd/core" "^10.1.1"
     node-fetch "^3.1.0"
 
-"@chunkd/source-memory@^10.0.2":
-  version "10.0.2"
-  resolved "https://registry.yarnpkg.com/@chunkd/source-memory/-/source-memory-10.0.2.tgz#d32c2ea14a2f40bc40c8ded11e1272afde9a5c37"
-  integrity sha512-Dkkdk63Ijv7qrsXkROQP/ez/KzdaPkHKNFmxAGhtYb8W2Ioat+8l2av2SzN+wMs3aC33Vhay5JcikNCJfxr6+A==
+"@chunkd/source-memory@^10.0.3":
+  version "10.0.3"
+  resolved "https://registry.yarnpkg.com/@chunkd/source-memory/-/source-memory-10.0.3.tgz#4021f9b38f66f08e937d4140b4734d7837357f2a"
+  integrity sha512-z+J0++1sa6qtflAJwFpBsNAUcyuvb7EK/Qi/zoIhMDVA3l9/tSeY1aVyU7DFmp9DEUPU5tQ1evfbT5Cdl9VfUg==
   dependencies:
-    "@chunkd/core" "^10.1.1"
+    "@chunkd/core" "^10.2.0"
 
 "@cogeotiff/core@^7.2.1":
   version "7.2.1"
