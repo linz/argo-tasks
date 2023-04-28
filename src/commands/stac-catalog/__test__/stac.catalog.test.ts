@@ -21,8 +21,20 @@ o.spec('stacCatalog', () => {
     o(links).deepEquals([
       { rel: 'self', href: './catalog.json' },
       { rel: 'root', href: './catalog.json' },
-      { rel: 'child', href: './directory1/collection.json', title: 'CollectionA' },
-      { rel: 'child', href: './directory2/collection.json', title: 'CollectionB' },
+      {
+        rel: 'child',
+        href: './directory1/collection.json',
+        title: 'CollectionA',
+        'file:checksum': '1220e57ac0913bab02b8056d8553c8e48b8ca86ee99ff5b5bf610baab14a4e3e431f',
+        'file:size': 23,
+      },
+      {
+        rel: 'child',
+        href: './directory2/collection.json',
+        title: 'CollectionB',
+        'file:checksum': '1220e757bdb6cf2ba81f006286bb71a550c3d5955bdecbce62727d119e19347700ec',
+        'file:size': 23,
+      },
     ]);
   });
 });

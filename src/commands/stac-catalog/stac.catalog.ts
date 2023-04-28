@@ -4,6 +4,7 @@ import { isAbsolute } from 'path';
 import * as st from 'stac-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
+import { createHash } from 'crypto';
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {
@@ -36,6 +37,8 @@ export function makeRelative(basePath: string, filePath: string): string {
   return filePath;
 }
 
+const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/schema.json';
+
 export const commandStacCatalog = command({
   name: 'stac-catalog',
   description: 'Construct STAC catalog',
@@ -57,6 +60,11 @@ export const commandStacCatalog = command({
     logger.info('StacCatalogCreation:Start');
 
     const catalog = await fsa.readJson<st.StacCatalog>(args.template);
+    if (catalog.stac_extensions == null) catalog.stac_extensions = [];
+    // Add the file extension for "file:checksum" the links
+    if (!catalog.stac_extensions.includes(StacFileExtensionUrl)) {
+      catalog.stac_extensions.push(StacFileExtensionUrl);
+    }
 
     const templateLinkCount = catalog.links.length;
 
@@ -76,11 +84,16 @@ export async function createLinks(basePath: string, templateLinks: st.StacLink[]
   for (const coll of collections) {
     if (coll.endsWith('/collection.json')) {
       const relPath = makeRelative(basePath, coll);
-      const collection = await fsa.readJson<st.StacCollection>(coll);
+      const buf = await fsa.read(coll);
+      const collection = JSON.parse(buf.toString()) as st.StacCollection;
+      // Muktihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
+      const checksum = '1220' + createHash('sha256').update(buf).digest('hex');
       const collLink: st.StacLink = {
         rel: 'child',
         href: fsa.join('./', relPath),
         title: collection.title,
+        'file:checksum': checksum,
+        'file:size': buf.length,
       };
       templateLinks.push(collLink);
     }
