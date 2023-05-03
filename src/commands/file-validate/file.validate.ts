@@ -13,7 +13,7 @@ const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x co
 const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
 const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
-class TileIndexException extends Error {
+export class TileIndexException extends Error {
   constructor(message: string) {
     super(message);
     this.name = this.constructor.name;
@@ -22,6 +22,11 @@ class TileIndexException extends Error {
 
 function timeInMs(): number {
   return new Date().getTime();
+}
+
+export interface FileList {
+  uri: string;
+  tileName: string;
 }
 
 export const commandValidateFiles = command({
@@ -43,7 +48,7 @@ export const commandValidateFiles = command({
     await fsa.head(files[0]);
     const tiffs = await Promise.all(files.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
     logger.info({ processingTime: timeInMs() - startTime }, 'FileValidation:All Files Read,');
-    const outputs: { uri: string; tileName: string }[] = [];
+    const outputs: FileList[] = [];
     tiffs.forEach(function (f) {
       outputs.push({
         uri: f.source.uri,
@@ -58,8 +63,8 @@ export const commandValidateFiles = command({
   },
 });
 
-function findDuplicates(arr: { uri: string; tileName: string }[]): { uri: string; tileName: string }[] {
-  const duplicates: { uri: string; tileName: string }[] = [];
+export function findDuplicates(arr: FileList[]): FileList[] {
+  const duplicates: FileList[] = [];
   for (const item of arr) {
     const isDuplicate = arr.find((obj) => obj.tileName === item.tileName && obj.uri !== item.uri);
     if (isDuplicate) {
@@ -69,7 +74,7 @@ function findDuplicates(arr: { uri: string; tileName: string }[]): { uri: string
   return duplicates;
 }
 
-function roundWithCorrection(value: number): number {
+export function roundWithCorrection(value: number): number {
   if (Number.isInteger(value)) {
     return value;
   }
@@ -93,7 +98,7 @@ function roundWithCorrection(value: number): number {
   return correction;
 }
 
-function getTileName(origin: number[], grid_size: number): string {
+export function getTileName(origin: number[], grid_size: number): string {
   if (!MapSheet.gridSizes.includes(grid_size)) {
     throw new TileIndexException(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
