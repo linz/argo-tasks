@@ -53,7 +53,7 @@ export const commandValidateFiles = command({
     });
     const duplicates = findDuplicates(outputs);
     if (duplicates && duplicates.length > 0) {
-      await fsa.write('/tmp/file_list.json', JSON.stringify(duplicates));
+      await fsa.write('/tmp/duplicate_file_list.json', JSON.stringify(duplicates));
       throw new TileIndexException('Duplicate files found, see output /tmp/file_list.json');
     }
   },
