@@ -40,6 +40,7 @@ export const commandValidateFiles = command({
     const startTime = timeInMs();
     const data = await fsa.read(args.location);
     const files = JSON.parse(data.toString()).flat();
+    await fsa.head(files[0]);
     const tiffs = await Promise.all(files.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
     logger.info({ processingTime: timeInMs() - startTime }, 'FileValidation:All Files Read,');
     const outputs: { uri: string; tileName: string }[] = [];
