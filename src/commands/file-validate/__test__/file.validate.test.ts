@@ -37,19 +37,19 @@ o('alignmentBuildsCorrectSheetCode', async function () {
     o(getTileName([f.origin.x, f.origin.y], 500).split('_')[0]).equals(f.code);
   });
 });
-o('InvalidOriginException1', function () {
+o('invalidOriginException1', function () {
   o(() => {
     getTileName([1643679, 5444159.01535345], 1000);
   }).throws(Error);
 });
-o('InvalidOriginException2', function () {
+o('invalidOriginException2', function () {
   o(() => {
     getTileName([1643679.984567, 5444159], 1000);
   }).throws(Error);
 });
-o('FindDuplicates', async function () {
+o('findDuplicates', async function () {
   o(findDuplicates(duplicatesInput)).deepEquals(duplicatesOutput);
 });
-o('FindNoDuplicates', async function () {
+o('findNoDuplicates', async function () {
   o(findDuplicates(noDuplicatesInput)).deepEquals([]);
 });

@@ -20,10 +20,6 @@ export class TileIndexException extends Error {
   }
 }
 
-function timeInMs(): number {
-  return new Date().getTime();
-}
-
 export interface FileList {
   uri: string;
   tileName: string;
@@ -62,6 +58,10 @@ export const commandValidateFiles = command({
     }
   },
 });
+
+function timeInMs(): number {
+  return new Date().getTime();
+}
 
 export function findDuplicates(arr: FileList[]): FileList[] {
   const duplicates: FileList[] = [];
