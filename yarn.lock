@@ -1627,10 +1627,10 @@
     "@typescript-eslint/types" "5.57.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wtrpc/core@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@wtrpc/core/-/core-1.0.1.tgz#4fac4d3df676ad270554a3750037eb16e0f2c4e4"
-  integrity sha512-tSRRiteyCD/DQgabA6zMqt18q45/Vc4BBR2bl2kaw7D2sfFkpYYJwsGNJkAA8NePeuz713oKzqm1kBw+o0X7iA==
+"@wtrpc/core@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@wtrpc/core/-/core-1.0.2.tgz#772fc610f378cdec506abc085b2f331ca14de8aa"
+  integrity sha512-KsFprkuE158VbBwhB8bWEgJFI6TtpkXUi+E5qdSevxj83xW4+tFHnvp/EobugH9sXKRrABkr3xp8S20Y8dhFeQ==
 
 abort-controller@^3.0.0:
   version "3.0.0"
@@ -2455,10 +2455,10 @@ prettier@^2.8.7:
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.7.tgz#bb79fc8729308549d28fe3a98fce73d2c0656450"
   integrity sha512-yPngTo3aXUUmyuTjeTUT75txrf+aMh9FiD7q9ZE/i6r0bPb22g4FsE6Y338PQX1bmfy08i9QQCB7/rcUAVntfw==
 
-pretty-json-log@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/pretty-json-log/-/pretty-json-log-1.3.0.tgz#ffebffd47d9c9ca21627a82ea0b49bac14da25ed"
-  integrity sha512-YnfMZsrZky1pGgtPvU353WQ5/RpcN2q9Wsd77dn8XsWZBYCL0TJ89KuucIEklQRg3c9BT5aEwsoaNxDRiZdRSw==
+pretty-json-log@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/pretty-json-log/-/pretty-json-log-1.4.0.tgz#9a7a6a0a18d20da896090cc2eacb04e285a327de"
+  integrity sha512-YCaLcTW3djzUggm+4mE095W2ub9uqIxo9xfqATZuh8Fu4WnyvnRExSSWD7oMHm9Xk5PCma0gyKDqO8Cs+ihnUQ==
   dependencies:
     ansi-colors "^4.1.1"
     split2 "^4.1.0"
