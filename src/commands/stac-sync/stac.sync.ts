@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import { command, positional, string, Type } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
-import { createHash, Hash } from 'crypto';
+import { createHash } from 'crypto';
 
 const S3Path: Type<string, URL> = {
   async from(str) {
