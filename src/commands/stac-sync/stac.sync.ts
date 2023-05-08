@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import { command, positional, string, Type } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
-import { createHash } from 'crypto';
+import { createHash, Hash } from 'crypto';
 
 const S3Path: Type<string, URL> = {
   async from(str) {
@@ -46,15 +46,16 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
   let count = 0;
   const sourceFiles = await fsa.toArray(fsa.list(sourcePath));
 
-  for await (const filePath of sourceFiles) {
-    if (!filePath.endsWith('.json')) {
-      continue;
-    }
-    const key = new URL(filePath.slice(sourcePath.length), destinationPath);
-    const fileData = await fsa.read(filePath);
+  await Promise.all(
+    sourceFiles.map(async (filePath) => {
+      if (filePath.endsWith('.json')) {
+        const key = new URL(filePath.slice(sourcePath.length), destinationPath);
 
-    (await uploadFileToS3(fileData, key)) && count++;
-  }
+        (await uploadFileToS3(filePath, key)) && count++;
+      }
+    }),
+  );
+
   return count;
 }
 
@@ -66,24 +67,18 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
  * @param key destination key
  * @returns
  */
-export async function uploadFileToS3(fileData: Buffer, path: URL): Promise<boolean> {
-  const hash = '1220' + createHash('sha256').update(fileData).digest('hex');
-  const existing = await getHash(path);
-  if (hash === existing) return false;
+export async function uploadFileToS3(sourcePath: string, path: URL): Promise<boolean> {
+  const destinationHead = await fsa.head(path.href);
+  const sourceData = await fsa.read(sourcePath);
+  const sourceHash = '1220' + createHash('sha256').update(sourceData).digest('hex');
+  if (destinationHead != null) {
+    const sourceHead = await fsa.head(sourcePath);
+    if (sourceHash === destinationHead?.metadata?.[HashKey] && sourceHead?.size === destinationHead?.size) {
+      return false;
+    }
+  }
 
-  await fsa.write(path.href, fileData, { metadata: { [HashKey]: hash } });
+  await fsa.write(path.href, sourceData, { metadata: { [HashKey]: sourceHash } });
   logger.debug({ path: path.href }, 'StacSync:FileUploaded');
   return true;
-}
-
-/**
- * Get the hash of the file found in the HashKey value.
- *
- * @param Bucket
- * @param Key
- * @returns the hash if found
- */
-export async function getHash(path: URL): Promise<string | null> {
-  const objHead = await fsa.head(path.href);
-  return objHead?.metadata?.[HashKey] ?? null;
 }
