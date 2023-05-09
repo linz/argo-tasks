@@ -13,7 +13,7 @@ export interface MapTileIndex {
   mapSheet: string;
   /**
    * Grid size, 1,000, 500
-   * @see {MapSheet.GridSizes}
+   * @see {MapSheet.gridSizes}
    */
   gridSize: number;
   /** Tile X offset */
@@ -50,11 +50,11 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
+/** Three sheets codes are not used and should be skipped */
 const Skipped = new Set(['BI', 'BO', 'CI']);
 
 /**
  * Topographic 1:50k map sheet calculator
- *
  *
  * Useful for working with LINZ's Topo 1:50k mapsheet names and any of the tile indexes
  *
@@ -70,17 +70,17 @@ const Skipped = new Set(['BI', 'BO', 'CI']);
  * - https://data.linz.govt.nz/layer/106965-nz-1500-tile-index/ 1:500
  **/
 export const MapSheet = {
-  /** Width of Topo 1:50k mapsheets in meters */
+  /** Width of Topo 1:50k mapsheets (meters) */
   height: 36_000,
-  /** Height of Topo 1:50k mapsheets in meters */
+  /** Height of Topo 1:50k mapsheets (meters) */
   width: 24_000,
-  /** Base scale Topo 1:50k mapsheets in meters*/
+  /** Base scale Topo 1:50k mapsheets (meters) */
   scale: 50_000,
   /** Map Sheets start at AS and end at CK */
   code: { start: 'AS', end: 'CK' },
   /** The top left point for where map sheets start from in NZTM2000 (EPSG:2193) */
   origin: { x: 988000, y: 6234000 },
-  /** Allowed grid sizes, these should exist in the LINZ Data service (meters)*/
+  /** Allowed grid sizes, these should exist in the LINZ Data service (meters) */
   gridSizes: [10_000, 5_000, 2_000, 1_000, 500],
 
   /**
@@ -88,7 +88,7 @@ export const MapSheet = {
    *
    * @example
    * ```typescript
-   * extract("BP27_1000_4817.tiff") // { mapSheet: BP27, gridSize: 1000, x: 17, y:48 }
+   * MapSheet.extract("BP27_1000_4817.tiff") // { mapSheet: "BP27", gridSize: 1000, x: 17, y:48 }
    * ```
    */
   extract(fileName: string): MapTileIndex | null {
@@ -128,7 +128,7 @@ export const MapSheet = {
    *
    * @example
    * ```typescript
-   * offset("AZ") // { x: 988000, y: 5982000 }
+   * MapSheet.offset("AZ") // { x: 988000, y: 5982000 }
    * ```
    */
   offset(sheetCode: string): { x: number; y: number } | null {
@@ -161,7 +161,7 @@ export const MapSheet = {
    * Iterate mapsheet codes
    * @example
    * ```typescript
-   * [ 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', ... ]
+   * [...MapSheet.iterate()] // [ 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', ... ]
    * ````
    */
   *iterate(): Generator<string> {
