@@ -1,6 +1,7 @@
 import { flag, option, optional, string } from 'cmd-ts';
 import { registerFileSystem } from '../fs.register.js';
-import { registerLogger } from '../log.js';
+import { logger, registerLogger } from '../log.js';
+import { GitVersion } from '../utils/git.js';
 
 export const config = option({
   long: 'config',
@@ -17,6 +18,8 @@ export function registerCli(args: { verbose?: boolean; config?: string }): void 
   cleanArgs(args);
   registerLogger(args);
   registerFileSystem(args);
+
+  logger.info({ args, version: GitVersion() }, 'Cli:Start');
 }
 
 /** Trim any extra special characters from the cli parser */
