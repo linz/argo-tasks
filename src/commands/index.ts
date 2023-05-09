@@ -5,7 +5,7 @@ import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
-import { commandValidateTilenames } from './tilename-validate/tilename.validate.js';
+import { commandTileNamesValidate } from './tilename-validate/tilename.validate.js';
 import { commandTileSetValidate } from './tileset-validate/tileset.validate.js';
 
 export const cmd = subcommands({
@@ -21,6 +21,6 @@ export const cmd = subcommands({
     flatten: commandCreateManifest,
     'tileset-validate': commandTileSetValidate,
     'stac-catalog': commandStacCatalog,
-    'tilename-validate': commandValidateTilenames,
+    'tilename-validate': commandTileNamesValidate,
   },
 });
