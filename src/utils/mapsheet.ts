@@ -82,7 +82,9 @@ export const MapSheet = {
    * Get the expected origin and mapsheet information from a file name
    *
    * @example
-   * extract("BP27_1000_4817.tiff") -> { mapSheet: BP27, gridSize: 1000, x: 17, y:48 }
+   * ```typescript
+   * extract("BP27_1000_4817.tiff") // { mapSheet: BP27, gridSize: 1000, x: 17, y:48 }
+   * ```
    */
   extract(fileName: string): MapTileIndex | null {
     const match = fileName.match(MapSheetRegex);
@@ -120,7 +122,9 @@ export const MapSheet = {
    * Calculate the expected X & Y origin point for a map sheet
    *
    * @example
+   * ```typescript
    * offset("AZ") // { x: 988000, y: 5982000 }
+   * ```
    */
   offset(sheetCode: string): { x: number; y: number } | null {
     const ms = sheetCode.slice(0, 2);
@@ -151,7 +155,9 @@ export const MapSheet = {
   /**
    * Iterate mapsheet codes
    * @example
-   * 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', ...
+   * ```typescript
+   * [ 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', ... ]
+   * ````
    */
   *iterate(): Generator<string> {
     for (let first = 0; first < 3; first++) {
