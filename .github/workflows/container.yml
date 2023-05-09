@@ -72,3 +72,15 @@ jobs:
             GIT_HASH=${{ steps.version.outputs.hash }}
           labels: ${{ steps.meta.outputs.labels }}
           push: false
+
+      - name: Docker build and push - Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: false

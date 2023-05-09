@@ -5,7 +5,7 @@ WORKDIR /app
 ENV NODE_ENV production
 
 ADD package.json package-lock.json /app/
-RUN npm install --production
+RUN npm install --omit=dev
 
 # Git Hash/Version have no impact on Yarn install
 ARG GIT_VERSION
