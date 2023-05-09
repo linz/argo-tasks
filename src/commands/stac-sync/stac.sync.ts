@@ -3,6 +3,7 @@ import { command, positional, string, Type } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import { createHash } from 'crypto';
+import { FileInfo } from '@chunkd/core';
 
 const S3Path: Type<string, URL> = {
   async from(str) {
@@ -44,15 +45,14 @@ export const HashKey = 'linz-hash';
  */
 export async function synchroniseFiles(sourcePath: string, destinationPath: URL): Promise<number> {
   let count = 0;
-  const sourceFiles = await fsa.toArray(fsa.list(sourcePath));
+  const sourceFilesInfo = await fsa.toArray(fsa.details(sourcePath));
 
   await Promise.all(
-    sourceFiles.map(async (filePath) => {
-      if (filePath.endsWith('.json')) {
-        const key = new URL(filePath.slice(sourcePath.length), destinationPath);
+    sourceFilesInfo.map(async (fileInfo) => {
+      if (!fileInfo.path.endsWith('.json')) return;
 
-        (await uploadFileToS3(filePath, key)) && count++;
-      }
+      const key = new URL(fileInfo.path.slice(sourcePath.length), destinationPath);
+      (await uploadFileToS3(fileInfo, key)) && count++;
     }),
   );
 
@@ -67,15 +67,12 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
  * @param key destination key
  * @returns
  */
-export async function uploadFileToS3(sourcePath: string, path: URL): Promise<boolean> {
+export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
   const destinationHead = await fsa.head(path.href);
-  const sourceData = await fsa.read(sourcePath);
+  const sourceData = await fsa.read(sourceFileInfo.path);
   const sourceHash = '1220' + createHash('sha256').update(sourceData).digest('hex');
-  if (destinationHead != null) {
-    const sourceHead = await fsa.head(sourcePath);
-    if (sourceHash === destinationHead?.metadata?.[HashKey] && sourceHead?.size === destinationHead?.size) {
-      return false;
-    }
+  if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
+    return false;
   }
 
   await fsa.write(path.href, sourceData, { metadata: { [HashKey]: sourceHash } });
