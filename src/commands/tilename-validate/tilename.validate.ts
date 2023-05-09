@@ -15,7 +15,7 @@ export interface FileList {
   uris: string[];
 }
 
-export const commandValidateFiles = command({
+export const commandValidateTilenames = command({
   name: 'file-validate',
   description: 'List input files and validate there are no duplicates.',
   args: {
