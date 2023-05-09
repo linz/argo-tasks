@@ -24,6 +24,20 @@ o.spec('stacSync', () => {
     o(await synchroniseFiles('m://source/stac/', destinationURL)).equals(1);
   });
 
+  o('shouldUploadFileOnlyOnce', async () => {
+    await fs.write(
+      'm://source/stac/wellington/collection.json',
+      JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
+    );
+    await fs.write(
+      'm://destination/stac/wellington/collection.json',
+      JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
+    );
+    const destinationURL = new URL('m://destination/stac/');
+    o(await synchroniseFiles('m://source/stac/', destinationURL)).equals(1);
+    o(await synchroniseFiles('m://source/stac/', destinationURL)).equals(0);
+  });
+
   o('shouldNotUploadFile', async () => {
     await fs.write(
       'm://source/stac/wellington/collection.json',
