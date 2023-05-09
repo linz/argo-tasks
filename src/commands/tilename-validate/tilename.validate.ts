@@ -1,28 +1,18 @@
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
 import { command, number, option, string } from 'cmd-ts';
-import { registerFileSystem } from '../../fs.register.js';
 import { logger } from '../../log.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { config, registerCli, verbose } from '../common.js';
-
-registerFileSystem({ config: 's3://linz-bucket-config/config.json' });
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
 const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
 const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
-export class TileIndexException extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = this.constructor.name;
-  }
-}
-
 export interface FileList {
-  uri: string;
   tileName: string;
+  uris: string[];
 }
 
 export const commandValidateFiles = command({
@@ -32,44 +22,41 @@ export const commandValidateFiles = command({
     config,
     verbose,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
-    location: option({ type: string, long: 'location', description: 'Location of the files to validate' }),
+    location: option({ type: string, long: 'location', description: 'Location of the manifest file' }),
   },
   handler: async (args) => {
     registerCli(args);
     logger.info('FileValidation:Start');
 
-    const startTime = timeInMs();
+    const readTiffStartTime = performance.now();
     const data = await fsa.read(args.location);
     const files = JSON.parse(data.toString()).flat();
     await fsa.head(files[0]);
     const tiffs = await Promise.all(files.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
-    logger.info({ processingTime: timeInMs() - startTime }, 'FileValidation:All Files Read,');
-    const outputs: FileList[] = [];
-    tiffs.forEach(function (f) {
-      outputs.push({
-        uri: f.source.uri,
-        tileName: getTileName(f.images[0].origin, args.scale),
-      });
-    });
-    const duplicates = findDuplicates(outputs);
+    logger.info({ duration: performance.now() - readTiffStartTime }, 'FileValidation: All Files Read');
+    const findDuplicatesStartTime = performance.now();
+    const duplicates = findDuplicates(tiffs, args.scale);
+    logger.info(
+      { duration: performance.now() - findDuplicatesStartTime },
+      'FileValidation: Manifest Assessed for Duplicates',
+    );
     if (duplicates && duplicates.length > 0) {
       await fsa.write('/tmp/duplicate_file_list.json', JSON.stringify(duplicates));
-      throw new TileIndexException('Duplicate files found, see output /tmp/file_list.json');
+      throw new Error('Duplicate files found, see output /tmp/file_list.json');
     }
   },
 });
 
-function timeInMs(): number {
-  return new Date().getTime();
-}
-
-export function findDuplicates(arr: FileList[]): FileList[] {
+export function findDuplicates(tiffs: CogTiff[], scale: number): FileList[] {
+  const seen = new Map<string, string[]>();
   const duplicates: FileList[] = [];
-  for (const item of arr) {
-    const isDuplicate = arr.find((obj) => obj.tileName === item.tileName && obj.uri !== item.uri);
-    if (isDuplicate) {
-      duplicates.push(item);
-    }
+  for (const f of tiffs) {
+    const uri = f.source.uri;
+    const tileName = getTileName(f.images[0].origin, scale);
+    const existingUri = seen.get(tileName) ?? [];
+    existingUri.push(uri);
+    if (existingUri.length === 2) duplicates.push({ tileName, uris: existingUri });
+    seen.set(tileName, existingUri);
   }
   return duplicates;
 }
@@ -100,7 +87,7 @@ export function roundWithCorrection(value: number): number {
 
 export function getTileName(origin: number[], grid_size: number): string {
   if (!MapSheet.gridSizes.includes(grid_size)) {
-    throw new TileIndexException(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
+    throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
 
   const origin_x = roundWithCorrection(origin[0]);
@@ -108,7 +95,7 @@ export function getTileName(origin: number[], grid_size: number): string {
 
   // If x or y is not a round number, the origin is not valid
   if (!Number.isInteger(origin_x) || !Number.isInteger(origin_y)) {
-    throw new TileIndexException(`The origin is invalid x = ${origin_x}, y = ${origin_y}`);
+    throw new Error(`The origin is invalid x = ${origin_x}, y = ${origin_y}`);
   }
 
   const scale = Math.floor(MapSheet.gridSizeMax / grid_size);
@@ -120,10 +107,10 @@ export function getTileName(origin: number[], grid_size: number): string {
   }
 
   if (!(SHEET_MIN_X <= origin_x && origin_x <= SHEET_MAX_X)) {
-    throw new TileIndexException(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${origin_x}`);
+    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${origin_x}`);
   }
   if (!(SHEET_MIN_Y <= origin_y && origin_y <= SHEET_MAX_Y)) {
-    throw new TileIndexException(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${origin_y}`);
+    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${origin_y}`);
   }
 
   // Do some maths

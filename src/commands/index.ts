@@ -1,11 +1,11 @@
 import { subcommands } from 'cmd-ts';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
-import { commandValidateFiles } from './file-validate/file.validate.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
+import { commandValidateFiles } from './tilename-validate/tilename.validate.js';
 import { commandTileSetValidate } from './tileset-validate/tileset.validate.js';
 
 export const cmd = subcommands({
