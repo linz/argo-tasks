@@ -52,11 +52,16 @@ const charS = 'S'.charCodeAt(0);
 
 const Skipped = new Set(['BI', 'BO', 'CI']);
 
-/***
+/**
  * Topographic 1:50k map sheet calculator
+ *
  *
  * Useful for working with LINZ's Topo 1:50k mapsheet names and any of the tile indexes
  *
+ * LINZ Topo50:
+ * - https://www.linz.govt.nz/products-services/maps/new-zealand-topographic-maps/topo50-map-chooser/topo50-sheet-index
+ *
+ * Tile Indexes:
  * - https://data.linz.govt.nz/layer/104687-nz-150k-tile-index/ 1:50,000
  * - https://data.linz.govt.nz/layer/104690-nz-110k-tile-index/ 1:10,000
  * - https://data.linz.govt.nz/layer/104691-nz-15k-tile-index/  1:5,000
