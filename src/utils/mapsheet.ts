@@ -72,7 +72,7 @@ const Skipped = new Set(['BI', 'BO', 'CI']);
 export const MapSheet = {
   /** Height of Topo 1:50k mapsheets (meters) */
   height: 36_000,
-  /** width of Topo 1:50k mapsheets (meters) */
+  /** Width of Topo 1:50k mapsheets (meters) */
   width: 24_000,
   /** Base scale Topo 1:50k mapsheets (meters) */
   scale: 50_000,
