@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: linz/action-typescript@v2
+        with:
+          package-manager: npm
 
       - name: Get GIT Version infromation
         id: version
@@ -43,6 +45,13 @@ jobs:
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+            registry: ghcr.io
+            username: ${{ github.repository_owner }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to ECR
         uses: docker/login-action@v2
         with:
             registry: ghcr.io
