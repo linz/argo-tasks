@@ -4,8 +4,8 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
-ADD package.json yarn.lock /app/
-RUN yarn install --production
+ADD package.json package-lock.lock /app/
+RUN npm install --omit=dev
 ADD build/src /app/
 
 ENTRYPOINT ["node", "/app/index.js"]
