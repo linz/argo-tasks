@@ -4,7 +4,7 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
-ADD package.json package-lock.lock /app/
+ADD package.json package-lock.json /app/
 RUN npm install --omit=dev
 ADD build/src /app/
 
