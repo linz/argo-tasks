@@ -60,7 +60,7 @@ export const commandStacValidate = command({
       logger.error('StacValidation:Error:NoLocationProvided');
       process.exit(1);
     }
-    const paths = listLocation(args.location).map((c) => c.trim()).flat();
+    const paths = listLocation(args.location).map((c) => c.trim());
 
     // Weird typing for ajv require us to use the "default" export to construct it.
     const ajv = new Ajv.default({
@@ -236,35 +236,25 @@ export function iriReference(value?: string): boolean {
   }
 }
 
-function getSchemaType(schemaType: string): string | null {
-  switch (schemaType) {
-    case 'Feature':
-      return 'item';
-    case 'Catalog':
-    case 'Collection':
-      return schemaType.toLowerCase();
-    default:
-      return null;
-  }
-}
-
 export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
   logger.trace({ path, schemaType: schemaType }, 'getStacSchema:Start');
   if (stacVersion !== '1.0.0') {
     logger.error({ stacVersion, schemaType, path }, 'getStacSchema:StacVersionError');
     return null;
   }
-
-  const type = getSchemaType(schemaType);
-  if (type == null) {
-    logger.error({ path, schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
-    return null
+  switch (schemaType) {
+    case 'Feature':
+      schemaType = 'Item';
+    case 'Catalog':
+    case 'Collection':
+      const type = schemaType.toLowerCase();
+      const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
+      logger.trace({ path, schemaType, schemaId }, 'getStacSchema:Done');
+      return schemaId;
+    default:
+      logger.error({ path, schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
+      return null;
   }
-
-  const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-  logger.trace({ path, schemaType, schemaId }, 'getStacSchema:Done');
-  return schemaId;
-
 }
 const validRels = new Set(['child', 'item']);
 
@@ -295,16 +285,9 @@ export function isURL(path: string): boolean {
 }
 
 // Handle list of lists that results from using the 'list' command to supply location
-export function listLocation(locs: string[]): string[] {
-  const output: string[] = [];
-  for (const loc of locs) {
-    if (loc.startsWith('[')) {
-      output.push(...JSON.parse(loc) as string[]);
-      continue;
-    }
-    output.push(loc)
-
-    // else
+export function listLocation(loc: string[]): string[] {
+  if (loc[0].startsWith('[')) {
+    return JSON.parse(loc[0]) as string[];
   }
-  return output;
+  return loc;
 }
