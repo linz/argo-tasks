@@ -94,6 +94,7 @@ export const MapSheet = {
   extract(fileName: string): MapTileIndex | null {
     const match = fileName.match(MapSheetRegex);
     if (match == null) return null;
+    if (match[1] == null) return null; // No mapsheet found
 
     const out: MapTileIndex = {
       mapSheet: match[1],
@@ -105,11 +106,11 @@ export const MapSheet = {
     };
     // 1:500 has X/Y is 3 digits not 2
     if (out.gridSize === 500) {
-      out.y = Number(match[3].slice(0, 3));
-      out.x = Number(match[3].slice(3));
+      out.y = Number(match[3]?.slice(0, 3));
+      out.x = Number(match[3]?.slice(3));
     } else {
-      out.y = Number(match[3].slice(0, 2));
-      out.x = Number(match[3].slice(2));
+      out.y = Number(match[3]?.slice(0, 2));
+      out.x = Number(match[3]?.slice(2));
     }
     if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
 
