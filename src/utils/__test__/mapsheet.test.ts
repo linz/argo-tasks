@@ -36,7 +36,7 @@ o.spec('MapSheets', () => {
   const TestBounds = [
     { name: 'CG10_500_079035', bounds: [1236160, 4837560, 1236400, 4837920] },
     { name: 'CG10_500_079036', bounds: [1236400, 4837560, 1236640, 4837920] },
-  ];
+  ] as const;
 
   for (const test of TestBounds) {
     o('should get expected bounds with file ' + test.name, () => {

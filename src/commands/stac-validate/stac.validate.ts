@@ -235,6 +235,17 @@ export function iriReference(value?: string): boolean {
     return false;
   }
 }
+function getSchemaType(schemaType: string): string | null {
+  switch (schemaType) {
+    case 'Feature':
+      return 'item';
+    case 'Catalog':
+    case 'Collection':
+      return schemaType.toLowerCase();
+    default:
+      return null;
+  }
+}
 
 export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
   logger.trace({ path, schemaType: schemaType }, 'getStacSchema:Start');
@@ -290,8 +301,6 @@ export function listLocation(locs: string[]): string[] {
       continue;
     }
     output.push(loc);
-
-    // else
   }
-  return loc;
+  return output;
 }
