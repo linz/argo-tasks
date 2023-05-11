@@ -62,7 +62,8 @@ export const commandStacValidate = command({
     }
     const paths = listLocation(args.location).map((c) => c.trim());
 
-    const ajv = new Ajv({
+    // Weird typing for ajv require us to use the "default" export to construct it.
+    const ajv = new Ajv.default({
       allErrors: true,
       strict: args.strict,
       loadSchema: (uri: string): Promise<SchemaObject> => {

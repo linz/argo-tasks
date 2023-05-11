@@ -47,7 +47,7 @@ export const commandTileSetValidate = command({
 
           const height = bounds[3] - bounds[1];
           const width = bounds[2] - bounds[0];
-          const expected = MapSheet.extract(fileName)?.expected;
+          const expected = MapSheet.extract(fileName)?.bounds;
           if (bounds[0] !== expected?.x || bounds[3] !== expected?.y) {
             // Failed origin
 

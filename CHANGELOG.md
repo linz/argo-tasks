@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.7.0](https://github.com/linz/argo-tasks/compare/v2.6.0...v2.7.0) (2023-05-09)
+
+
+### Features
+
+* organised the mapsheet api ([#422](https://github.com/linz/argo-tasks/issues/422)) ([63aa548](https://github.com/linz/argo-tasks/commit/63aa54832837f80515cc1ef817909b42f97ad27b))
+* synchronize stac TDE-725 ([#417](https://github.com/linz/argo-tasks/issues/417)) ([f2fc5ff](https://github.com/linz/argo-tasks/commit/f2fc5ff3ca19a7806f9e4a3f7f29a09bf780688d))
+
 ## [2.6.0](https://github.com/linz/argo-tasks/compare/v2.5.1...v2.6.0) (2023-04-28)
 
 

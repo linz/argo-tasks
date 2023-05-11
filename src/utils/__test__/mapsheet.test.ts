@@ -10,7 +10,7 @@ o.spec('MapSheets', () => {
       x: 37,
       y: 80,
       name: 'CG10_500_080037',
-      expected: { x: 1236640, y: 4837560, width: 240, height: 360 },
+      bounds: { x: 1236640, y: 4837560, width: 240, height: 360 },
     });
   });
 
@@ -40,7 +40,7 @@ o.spec('MapSheets', () => {
 
   for (const test of TestBounds) {
     o('should get expected bounds with file ' + test.name, () => {
-      const expected = MapSheet.extract(test.name)?.expected;
+      const expected = MapSheet.extract(test.name)?.bounds;
       o(expected?.x).equals(test.bounds[0]);
       o(expected?.y).equals(test.bounds[3]);
       o(expected?.width).equals(test.bounds[2] - test.bounds[0]);
