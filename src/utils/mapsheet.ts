@@ -96,6 +96,7 @@ export const MapSheet = {
   extract(fileName: string): MapTileIndex | null {
     const match = fileName.match(MapSheetRegex);
     if (match == null) return null;
+    if (match[1] == null) return null;
 
     const out: MapTileIndex = {
       mapSheet: match[1],
