@@ -6,8 +6,7 @@ import { commandList } from './list/list.js';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.js';
 import { commandStacSync } from './stac-sync/stac.sync.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
-import { commandTileNamesValidate } from './tilename-validate/tilename.validate.js';
-import { commandTileSetValidate } from './tileset-validate/tileset.validate.js';
+import { commandTileIndexValidate } from './tileindex-validate/tileindex.validate.js';
 
 export const cmd = subcommands({
   name: 'argo-tasks',
@@ -22,7 +21,6 @@ export const cmd = subcommands({
     'stac-catalog': commandStacCatalog,
     'stac-sync': commandStacSync,
     'stac-validate': commandStacValidate,
-    'tilename-validate': commandTileNamesValidate,
-    'tileset-validate': commandTileSetValidate,
+    'tileindex-validate': commandTileIndexValidate,
   },
 });

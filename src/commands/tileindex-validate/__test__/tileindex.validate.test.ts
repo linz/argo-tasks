@@ -1,8 +1,7 @@
 import o from 'ospec';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
-import { findDuplicates, getTileName, roundWithCorrection } from '../tilename.validate.js';
-import { DuplicateInput, DuplicateOutput, NoDuplicateInput } from './tilename.validate.data.js';
-// o.spec('createManifest', () => {
+import { findDuplicates, getTileName, roundWithCorrection } from '../tileindex.validate.js';
+import { DuplicateInput, DuplicateOutput, NoDuplicateInput } from './tileindex.validate.data.js';
 
 o.spec('roundWithCorrectionValid', () => {
   o('should round up (15 decimal places)', async () => {
