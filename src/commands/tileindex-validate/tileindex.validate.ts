@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
-import { command, number, option } from 'cmd-ts';
+import { command, number, option, optional, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
@@ -44,6 +44,11 @@ export const commandTileIndexValidate = command({
   args: {
     ...CommandListArgs,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
+    duplicatesOutput: option({
+      type: optional(string),
+      long: 'duplicates-output',
+      description: 'Output location for the listing',
+    }),
   },
   handler: async (args) => {
     registerCli(args);
@@ -66,7 +71,7 @@ export const commandTileIndexValidate = command({
     if (args.output) await fsa.write(args.output, JSON.stringify(files));
     if (duplicates && duplicates.length > 0) {
       for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate');
-      await fsa.write('/tmp/duplicate_file_list.json', JSON.stringify(duplicates, null, 2));
+      if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2));
       throw new Error('Duplicate files found, see output /tmp/duplicate_file_list.json');
     }
   },
