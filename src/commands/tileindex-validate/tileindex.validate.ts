@@ -52,7 +52,7 @@ export const commandTileIndexValidate = command({
     const readTiffStartTime = performance.now();
     const files = await getFiles(args.location, args);
     const tiffFiles = files.flat().filter(isTiff);
-    if (tiffFiles.length == 0) throw new Error('No Files found');
+    if (tiffFiles.length === 0) throw new Error('No Files found');
     await fsa.head(tiffFiles[0]);
     const tiffs = await Promise.all(tiffFiles.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
     logger.info({ duration: performance.now() - readTiffStartTime }, 'TileIndex: All Files Read');
