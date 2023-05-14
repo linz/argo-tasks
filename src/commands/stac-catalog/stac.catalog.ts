@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, option, positional, string } from 'cmd-ts';
+import { command, option, positional, string } from 'cmd-ts';
 import { isAbsolute } from 'path';
 import * as st from 'stac-ts';
 import { logger } from '../../log.js';
@@ -67,7 +67,7 @@ export const commandStacCatalog = command({
     const templateLinkCount = catalog.links.length;
 
     catalog.links = await createLinks(args.path, catalog.links);
-    
+
     await fsa.write(args.output, JSON.stringify(catalog, null, 2));
     logger.info(
       { catalogId: catalog.id, collections: catalog.links.length - templateLinkCount },
