@@ -58,7 +58,7 @@ export const commandTileIndexValidate = command({
     const files = await getFiles(args.location, args);
     const tiffFiles = files.flat().filter(isTiff);
     if (tiffFiles.length === 0) throw new Error('No Files found');
-    await fsa.head(tiffFiles[0]);
+    if (tiffFiles[0]) await fsa.head(tiffFiles[0]);
     const tiffs = await Promise.all(tiffFiles.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
     logger.info({ duration: performance.now() - readTiffStartTime }, 'TileIndex: All Files Read');
     const findDuplicatesStartTime = performance.now();
@@ -82,7 +82,9 @@ export function findDuplicates(tiffs: CogTiff[], scale: number): FileList[] {
   const duplicates: FileList[] = [];
   for (const f of tiffs) {
     const uri = f.source.uri;
-    const tileName = getTileName(f.images[0].origin, scale);
+    const firstImage = f.images[0];
+    if (firstImage == null) throw new Error(`Failed to parse tiff: ${f.source.uri}`);
+    const tileName = getTileName(firstImage.origin, scale);
     const existingUri = seen.get(tileName) ?? [];
     existingUri.push(uri);
     if (existingUri.length === 2) duplicates.push({ tileName, uris: existingUri });
@@ -119,9 +121,13 @@ export function getTileName(origin: number[], grid_size: number): string {
   if (!MapSheet.gridSizes.includes(grid_size)) {
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
+  const [oX, oY] = origin;
+  if (oX == null || Number.isNaN(oX) || oY == null || Number.isNaN(oY)) {
+    throw new Error(`Failed to parse origin ${oX},${oY}`);
+  }
 
-  const origin_x = roundWithCorrection(origin[0]);
-  const origin_y = roundWithCorrection(origin[1]);
+  const origin_x = roundWithCorrection(oX);
+  const origin_y = roundWithCorrection(oY);
 
   // If x or y is not a round number, the origin is not valid
   if (!Number.isInteger(origin_x) || !Number.isInteger(origin_y)) {
