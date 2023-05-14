@@ -52,20 +52,11 @@ export const commandStacCatalog = command({
     }),
     output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
     path: positional({ type: string, description: 'Location to search for collection.json paths' }),
-    pretty: flag({
-      type: boolean,
-      defaultValue: () => false,
-      long: 'pretty',
-      description: 'Pretty print JSON Catalog',
-    }),
   },
 
   handler: async (args) => {
     registerCli(args);
-
     logger.info('StacCatalogCreation:Start');
-    let spaces = undefined;
-    if (args.pretty) spaces = 2; 
     const catalog = await fsa.readJson<st.StacCatalog>(args.template);
     if (catalog.stac_extensions == null) catalog.stac_extensions = [];
     // Add the file extension for "file:checksum" the links
@@ -77,7 +68,7 @@ export const commandStacCatalog = command({
 
     catalog.links = await createLinks(args.path, catalog.links);
     
-    await fsa.write(args.output, JSON.stringify(catalog, null, spaces));
+    await fsa.write(args.output, JSON.stringify(catalog, null, 2));
     logger.info(
       { catalogId: catalog.id, collections: catalog.links.length - templateLinkCount },
       'StacCatalogCreation:Done',
