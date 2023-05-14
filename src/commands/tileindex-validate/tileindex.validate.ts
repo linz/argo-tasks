@@ -1,48 +1,78 @@
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
-import { command, number, option, string } from 'cmd-ts';
+import { command, number, option, optional, string } from 'cmd-ts';
 import { logger } from '../../log.js';
+import { getFiles } from '../../utils/chunk.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
-import { config, registerCli, verbose } from '../common.js';
+import { registerCli } from '../common.js';
+import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
 const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
 const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
+export function isTiff(x: string): boolean {
+  const search = x.toLowerCase();
+  return search.endsWith('.tiff') || search.endsWith('.tif');
+}
+
 export interface FileList {
   tileName: string;
   uris: string[];
 }
-
-export const commandTileNamesValidate = command({
-  name: 'file-validate',
+/**
+ * Validate list of tiffs match a LINZ Mapsheet tile index
+ *
+ * Asserts that there will be no duplicates
+ *
+ * @example
+ * List a path and validate all tiff files inside of it
+ *
+ * ```bash
+ * tileindex-validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/ --includes "[BE_232*].tiff"
+ * ```
+ *
+ * Validate a collection of tiff files
+ * ```bash
+ * tileindex-validate --scale 5000 ./path/to/imagery/
+ * ```
+ */
+export const commandTileIndexValidate = command({
+  name: 'tileindex-validate',
   description: 'List input files and validate there are no duplicates.',
   args: {
-    config,
-    verbose,
+    ...CommandListArgs,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
-    location: option({ type: string, long: 'location', description: 'Location of the manifest file' }),
+    duplicatesOutput: option({
+      type: optional(string),
+      long: 'duplicates-output',
+      description: 'Output location for the listing',
+    }),
   },
   handler: async (args) => {
     registerCli(args);
-    logger.info('FileValidation:Start');
+    logger.info('TileIndex:Start');
 
     const readTiffStartTime = performance.now();
-    const data = await fsa.read(args.location);
-    const files = JSON.parse(data.toString()).flat();
-    await fsa.head(files[0]);
-    const tiffs = await Promise.all(files.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
-    logger.info({ duration: performance.now() - readTiffStartTime }, 'FileValidation: All Files Read');
+    const files = await getFiles(args.location, args);
+    const tiffFiles = files.flat().filter(isTiff);
+    if (tiffFiles.length === 0) throw new Error('No Files found');
+    await fsa.head(tiffFiles[0]);
+    const tiffs = await Promise.all(tiffFiles.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
+    logger.info({ duration: performance.now() - readTiffStartTime }, 'TileIndex: All Files Read');
     const findDuplicatesStartTime = performance.now();
     const duplicates = findDuplicates(tiffs, args.scale);
     logger.info(
       { duration: performance.now() - findDuplicatesStartTime },
-      'FileValidation: Manifest Assessed for Duplicates',
+      'TileIndex: Manifest Assessed for Duplicates',
     );
+
+    if (args.output) await fsa.write(args.output, JSON.stringify(files));
     if (duplicates && duplicates.length > 0) {
-      await fsa.write('/tmp/duplicate_file_list.json', JSON.stringify(duplicates));
-      throw new Error('Duplicate files found, see output /tmp/file_list.json');
+      for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate');
+      if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2));
+      throw new Error('Duplicate files found, see output /tmp/duplicate_file_list.json');
     }
   },
 });
