@@ -12,6 +12,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 - [create-manifest](#create-manifest)
 - [list](#list)
 - [stac-validate](#stac-validate)
+- [tileindex-validate](#tileindex-validate)
 
 ### lds-fetch-layer
 
@@ -162,6 +163,20 @@ Validate a the `file:checksum` of all assets inside of a collection
 
 ```bash
 stac-validate --checksum --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+```
+
+### tileindex-validate
+
+Validate list of tiffs match a LINZ Mapsheet tile index and asserts that there will be no duplicates.
+
+```bash
+tileindex-validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/ --includes "[BE_232*].tiff"
+```
+
+Validate a collection of tiff files
+
+```bash
+tileindex-validate --scale 5000 ./path/to/imagery/
 ```
 
 ## Versioning and Release
