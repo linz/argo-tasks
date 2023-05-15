@@ -56,9 +56,7 @@ export const commandStacCatalog = command({
 
   handler: async (args) => {
     registerCli(args);
-
     logger.info('StacCatalogCreation:Start');
-
     const catalog = await fsa.readJson<st.StacCatalog>(args.template);
     if (catalog.stac_extensions == null) catalog.stac_extensions = [];
     // Add the file extension for "file:checksum" the links
@@ -70,7 +68,7 @@ export const commandStacCatalog = command({
 
     catalog.links = await createLinks(args.path, catalog.links);
 
-    await fsa.write(args.output, JSON.stringify(catalog));
+    await fsa.write(args.output, JSON.stringify(catalog, null, 2));
     logger.info(
       { catalogId: catalog.id, collections: catalog.links.length - templateLinkCount },
       'StacCatalogCreation:Done',
