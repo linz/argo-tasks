@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.8.0](https://github.com/linz/argo-tasks/compare/v2.7.0...v2.8.0) (2023-05-15)
+
+
+### Features
+
+* **stac-catalog:** pretty print the Catalog output file ([#446](https://github.com/linz/argo-tasks/issues/446)) ([40c0201](https://github.com/linz/argo-tasks/commit/40c020152671c424090c69dbfb3e63fcc7dee9de))
+* validate files for duplicates TDE-711 ([#404](https://github.com/linz/argo-tasks/issues/404)) ([c8be644](https://github.com/linz/argo-tasks/commit/c8be644e62809dd6cd4098612f9a59068c762d7c))
+
 ## [2.7.0](https://github.com/linz/argo-tasks/compare/v2.6.0...v2.7.0) (2023-05-09)
 
 
