@@ -8,6 +8,7 @@ ENV NODE_ENV production
 
 ADD package.json package-lock.json /app/
 RUN npm install --omit=dev
+RUN npx linz-style-install
 ADD build/src /app/
 
 ENTRYPOINT ["node", "/app/index.js"]
