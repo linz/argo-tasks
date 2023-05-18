@@ -1,9 +1,9 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, positional, string } from 'cmd-ts';
-import { isAbsolute } from 'path';
+import { command, option, string } from 'cmd-ts';
+import * as st from 'stac-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
-import { ExecFileSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {
@@ -13,27 +13,6 @@ export function isUrl(path: string): boolean {
   } catch (e) {
     return false;
   }
-}
-
-/**
- * Convert a path to relative
- *
- * https://foo.com + https://foo.com/bar.html => ./bar.html
- * s3://foo/ + s3://foo/bar/baz.html => ./bar/baz.html
- * /home/blacha + /home/blacha/index.json => ./index.json
- *
- * @param basePath path to make relative to
- * @param filePath target file
- * @returns relative path to file
- */
-export function makeRelative(basePath: string, filePath: string): string {
-  if (isUrl(filePath) || isAbsolute(filePath)) {
-    if (!filePath.startsWith(basePath)) {
-      throw new Error(`FilePaths are not relative base: ${basePath} file: ${filePath}`);
-    }
-    return filePath.slice(basePath.length);
-  }
-  return filePath;
 }
 
 export const commandStacLinzImagery = command({
@@ -68,28 +47,51 @@ export const commandStacLinzImagery = command({
     const gitEmail = 'placeholder@linz.govt.nz';
 
     const gitRepo = '/tmp/gitrepo/imagery/';
-    // const sourceCollection = args.source.replace(/\/+$/, '') + '/collection.json';
-    // const targetCollection = gitRepo + 'stac/' + args.target.replace('s3://linz-imagery/', '');
-    // const gitBranch = '';
-    const tmpCollection = '/tmp/collection.json';
+    const sourceUrl = new URL(args.source);
+    const targetUrl = new URL(args.target);
+    const sourceCollection = sourceUrl.href.replace(/\/+$/, '') + '/collection.json';
+    const targetCollection = gitRepo + 'stac' + targetUrl.pathname.replace(/\/+$/, '') + '/collection.json';
+    const targetPathParts = targetUrl.pathname.split('/');
+    const gitBranch = 'feat(' + targetPathParts[1] + '): ' + targetPathParts[2];
 
-    console.log(sourceCollection);
-    console.log(targetCollection);
+    // const root: st.StacLink = '';
+
+    // export interface StacLink {
+    //   href: string;
+    //   rel: string;
+    //   type?: string;
+    //   title?: string;
+    //   [k: string]: unknown;
+    // }
+
+    // console.log(gitBranch);
+
+    // Clone the GitHub repo
+    // execFileSync('git', ['clone', 'git@github.com:linz/imagery-test', gitRepo]).toString().trim();
+    // Configure the GitHub repo
+    // logger.info({ repository: gitRepo }, 'Git: Configure User Email');
+    // execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo }).toString().trim();
+    // logger.info({ repository: gitRepo }, 'Git: Configure User Name');
+    // execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo }).toString().trim();
+
+    const collection = await fsa.readJson<st.StacCatalog>(sourceCollection);
+
+    if (collection.links.includes('root')) {
+    }
+
+    // for (const link in collection.links) {
+    // }
+
+    // for (let link in collection['links']) {
+    //   console.log(link);
+    //   if (link['rel'] === 'root') {
+    //     console.log(link);
+    //   }
+    // }
+
+    //console.log(collection);
   },
 });
-
-// From topo-imagery
-// # Clone the GitHub repo
-// run_command(["git", "clone", """git@github.com:linz/imagery-test""", gitrepo], None)
-// # Configure Git
-// run_command(["git", "config", "user.email", git_author_email], gitrepo)
-// run_command(["git", "config", "user.name", git_author_name], gitrepo)
-
-// # Get the collection file
-// get_log().info(
-//     "download_collection", path=source_collection_file, target_path=tmp_collection_path
-// )
-// write(tmp_collection_path, read(source_collection_file))
 
 // # Rewrite the self link and save the file to its repo location
 // with open(tmp_collection_path) as cf:
