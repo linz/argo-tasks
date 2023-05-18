@@ -64,10 +64,6 @@ export const commandStacLinzImagery = command({
     // const git_author_name = process.env['GIT_AUTHOR_NAME'] ?? 'Imagery[bot]';
     // const git_author_email = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
 
-    createFullCollectionPath() {
-
-    }
-
     const gitName = 'Imagery[bot]';
     const gitEmail = 'placeholder@linz.govt.nz';
 
@@ -79,9 +75,49 @@ export const commandStacLinzImagery = command({
 
     console.log(sourceCollection);
     console.log(targetCollection);
-
   },
 });
+
+// From topo-imagery
+// # Clone the GitHub repo
+// run_command(["git", "clone", """git@github.com:linz/imagery-test""", gitrepo], None)
+// # Configure Git
+// run_command(["git", "config", "user.email", git_author_email], gitrepo)
+// run_command(["git", "config", "user.name", git_author_name], gitrepo)
+
+// # Get the collection file
+// get_log().info(
+//     "download_collection", path=source_collection_file, target_path=tmp_collection_path
+// )
+// write(tmp_collection_path, read(source_collection_file))
+
+// # Rewrite the self link and save the file to its repo location
+// with open(tmp_collection_path) as cf:
+//     coll = json.load(cf)
+//     for link in coll["links"]:
+//         if link["rel"] == "root":
+//             coll["links"].remove(link)
+//     coll["links"].append(
+//         {
+//             "rel": "root",
+//             "href": "https://linz-imagery.s3.ap-southeast-2.amazonaws.com/catalog.json",
+//             "type": "application/json",
+//         },
+//     )
+
+//     # print(coll)
+
+//     write(
+//         "/tmp/tmp_collection.json",
+//         json.dumps(coll, ensure_ascii=False, indent=2).encode("utf-8"),
+//     )
+
+// # Checkout branch
+// run_command(["git", "checkout", "-b", "argo/" + git_branch_name], gitrepo)
+// # Add and commit
+// run_command(["git", "commit", "-am", "feat: " + git_branch_name], gitrepo)
+// # Push branch
+// run_command(["git", "push", "origin", "HEAD"], gitrepo)
 
 // export async function createLinks(basePath: string, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
 //   const collections = await fsa.toArray(fsa.list(basePath));
