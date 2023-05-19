@@ -40,8 +40,8 @@ export const commandStacLinzImagery = command({
     // example source: s3://linz-workflow-artifacts/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/
     // example target s3://linz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/
 
-    // const git_author_name = process.env['GIT_AUTHOR_NAME'] ?? 'Imagery[bot]';
-    // const git_author_email = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
+    // const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'Imagery[bot]';
+    // const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
 
     const gitName = 'Imagery[bot]';
     const gitEmail = 'placeholder@linz.govt.nz';
@@ -55,18 +55,6 @@ export const commandStacLinzImagery = command({
     const gitBranch = `feat(${targetPathParts[1]})/${targetPathParts[2]}`;
     const gitCommitMsg = `feat(${targetPathParts[1]}): ${targetPathParts[2]}`;
 
-    // const root: st.StacLink = '';
-
-    // export interface StacLink {
-    //   href: string;
-    //   rel: string;
-    //   type?: string;
-    //   title?: string;
-    //   [k: string]: unknown;
-    // }
-
-    // console.log(gitBranch);
-
     // Clone the GitHub repo
     // execFileSync('git', ['clone', 'git@github.com:linz/imagery-test', gitRepo]).toString().trim();
     // Configure the GitHub repo
@@ -77,10 +65,7 @@ export const commandStacLinzImagery = command({
 
     const collection = await fsa.readJson<st.StacCatalog>(sourceCollection);
 
-    // console.log(collection.links);
-
-    // if (collection.links.includes('root')) {
-    // }
+    // Check if the links include a root link, delete and re-add or add
 
     //         {
     //             "rel": "root",
@@ -88,9 +73,7 @@ export const commandStacLinzImagery = command({
     //             "type": "application/json",
     //         },
 
-    //console.log(collection);
-
-    // Write the file
+    // Write the file to targetCollection
 
     // Checkout branch
     execFileSync('git', ['checkout', '-b', gitBranch], { cwd: gitRepo }).toString().trim();
