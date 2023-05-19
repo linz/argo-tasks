@@ -56,12 +56,13 @@ export const commandStacLinzImagery = command({
     const gitCommitMsg = `feat(${targetPathParts[1]}): ${targetPathParts[2]}`;
 
     // Clone the GitHub repo
-    // execFileSync('git', ['clone', 'git@github.com:linz/imagery-test', gitRepo]).toString().trim();
+    // logger.info({ repository: gitRepo }, 'Git: Clone');
+    execFileSync('git', ['clone', 'git@github.com:linz/imagery-test', gitRepo]).toString().trim();
     // Configure the GitHub repo
     // logger.info({ repository: gitRepo }, 'Git: Configure User Email');
-    // execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo }).toString().trim();
+    execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo }).toString().trim();
     // logger.info({ repository: gitRepo }, 'Git: Configure User Name');
-    // execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo }).toString().trim();
+    execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo }).toString().trim();
 
     const collection = await fsa.readJson<st.StacCatalog>(sourceCollection);
 
@@ -76,10 +77,13 @@ export const commandStacLinzImagery = command({
     // Write the file to targetCollection
 
     // Checkout branch
+    // logger.info({ repository: gitRepo }, 'Git: Checkout Branch');
     execFileSync('git', ['checkout', '-b', gitBranch], { cwd: gitRepo }).toString().trim();
     // Add and commit
+    // logger.info({ repository: gitRepo }, 'Git: Add and Commit');
     execFileSync('git', ['commit', '-am', gitCommitMsg], { cwd: gitRepo }).toString().trim();
     // Push branch
+    // logger.info({ repository: gitRepo }, 'Git: Push Branch to GitHub');
     execFileSync('git', ['push', 'origin', 'HEAD'], { cwd: gitRepo }).toString().trim();
   },
 });
