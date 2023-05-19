@@ -57,12 +57,12 @@ export const commandStacLinzImagery = command({
 
     // Clone the GitHub repo
     // logger.info({ repository: gitRepo }, 'Git: Clone');
-    execFileSync('git', ['clone', 'git@github.com:linz/imagery-test', gitRepo]).toString().trim();
+    execFileSync('git', ['clone', 'git@github.com:linz/imagery-test', gitRepo]);
     // Configure the GitHub repo
     // logger.info({ repository: gitRepo }, 'Git: Configure User Email');
-    execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo }).toString().trim();
+    execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo });
     // logger.info({ repository: gitRepo }, 'Git: Configure User Name');
-    execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo }).toString().trim();
+    execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo });
 
     const collection = await fsa.readJson<st.StacCatalog>(sourceCollection);
 
@@ -76,14 +76,20 @@ export const commandStacLinzImagery = command({
 
     // Write the file to targetCollection
 
+    // Format the file with prettier
+    execFileSync('npm', ['run', 'lint', targetCollection]);
+
     // Checkout branch
     // logger.info({ repository: gitRepo }, 'Git: Checkout Branch');
-    execFileSync('git', ['checkout', '-b', gitBranch], { cwd: gitRepo }).toString().trim();
+    execFileSync('git', ['checkout', '-b', gitBranch], { cwd: gitRepo });
     // Add and commit
     // logger.info({ repository: gitRepo }, 'Git: Add and Commit');
-    execFileSync('git', ['commit', '-am', gitCommitMsg], { cwd: gitRepo }).toString().trim();
+    execFileSync('git', ['commit', '-am', gitCommitMsg], { cwd: gitRepo });
     // Push branch
     // logger.info({ repository: gitRepo }, 'Git: Push Branch to GitHub');
-    execFileSync('git', ['push', 'origin', 'HEAD'], { cwd: gitRepo }).toString().trim();
+    execFileSync('git', ['push', 'origin', 'HEAD'], { cwd: gitRepo });
   },
 });
+
+// To do - write a reusable Git function to handle all the Git Commands
+// import and run prettier from the code not from execFileSync
