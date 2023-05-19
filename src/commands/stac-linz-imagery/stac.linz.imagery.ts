@@ -49,10 +49,13 @@ export const commandStacLinzImagery = command({
     const gitRepo = '/tmp/gitrepo/imagery/';
     const sourceUrl = new URL(args.source);
     const targetUrl = new URL(args.target);
-    const sourceCollection = sourceUrl.href.replace(/\/+$/, '') + '/collection.json';
-    const targetCollection = gitRepo + 'stac' + targetUrl.pathname.replace(/\/+$/, '') + '/collection.json';
+    const sourceCollection = `${sourceUrl.href.replace(/\/+$/, '')}/collection.json`;
+    const targetCollection = `${gitRepo}stac${targetUrl.pathname.replace(/\/+$/, '')}/collection.json`;
     const targetPathParts = targetUrl.pathname.split('/');
-    const gitBranch = 'feat(' + targetPathParts[1] + '): ' + targetPathParts[2];
+    const gitBranch = `feat(${targetPathParts[1]}): ${targetPathParts[2]}`;
+    console.log(sourceCollection);
+    console.log(targetCollection);
+    console.log(gitBranch);
 
     // const root: st.StacLink = '';
 
@@ -74,10 +77,18 @@ export const commandStacLinzImagery = command({
     // logger.info({ repository: gitRepo }, 'Git: Configure User Name');
     // execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo }).toString().trim();
 
-    const collection = await fsa.readJson<st.StacCatalog>(sourceCollection);
+    // const collection = await fsa.readJson<st.StacCatalog>(sourceCollection);
 
-    if (collection.links.includes('root')) {
-    }
+    // console.log(collection.links);
+
+    // if (collection.links.includes('root')) {
+    // }
+
+    //         {
+    //             "rel": "root",
+    //             "href": "https://linz-imagery.s3.ap-southeast-2.amazonaws.com/catalog.json",
+    //             "type": "application/json",
+    //         },
 
     // for (const link in collection.links) {
     // }
