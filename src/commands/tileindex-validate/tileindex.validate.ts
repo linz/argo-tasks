@@ -60,7 +60,21 @@ export const commandTileIndexValidate = command({
     if (tiffFiles.length === 0) throw new Error('No Files found');
     if (tiffFiles[0]) await fsa.head(tiffFiles[0]);
     const tiffs = await Promise.all(tiffFiles.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
-    logger.info({ duration: performance.now() - readTiffStartTime }, 'TileIndex: All Files Read');
+
+    const projections = new Set(tiffs.map((t) => t.getImage(0).epsg));
+    logger.info(
+      {
+        tiffCount: tiffs.length,
+        projections: [...projections],
+        duration: performance.now() - readTiffStartTime,
+      },
+      'TileIndex: All Files Read',
+    );
+
+    if (projections.size > 1) {
+      logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
+    }
+
     const findDuplicatesStartTime = performance.now();
     const duplicates = findDuplicates(tiffs, args.scale);
     logger.info(
@@ -84,6 +98,7 @@ export function findDuplicates(tiffs: CogTiff[], scale: number): FileList[] {
     const uri = f.source.uri;
     const firstImage = f.images[0];
     if (firstImage == null) throw new Error(`Failed to parse tiff: ${f.source.uri}`);
+    if (firstImage.epsg !== 2193) throw new Error(`Invalid projection tiff: ${f.source.uri} EPSG:${firstImage.epsg}`);
     const tileName = getTileName(firstImage.origin, scale);
     const existingUri = seen.get(tileName) ?? [];
     existingUri.push(uri);
