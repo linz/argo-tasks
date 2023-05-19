@@ -1,20 +1,16 @@
 import { fsa } from '@chunkd/fs';
 import { execFileSync } from 'child_process';
-import { command, option, string } from 'cmd-ts';
+import { Type, command, option, string } from 'cmd-ts';
 import path from 'node:path';
 import * as st from 'stac-ts';
 import { config, registerCli, verbose } from '../common.js';
 import { logger } from '../../log.js';
 
-/** is a path a URL */
-export function isUrl(path: string): boolean {
-  try {
-    new URL(path);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
+const Url: Type<string, URL> = {
+  async from(str) {
+    return new URL(str);
+  },
+};
 
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
@@ -24,13 +20,13 @@ export const commandStacGithubImport = command({
     verbose,
     //example: s3://linz-workflow-artifacts/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/
     source: option({
-      type: string,
+      type: Url,
       long: 'source',
       description: 'Source location of the collection.json file',
     }),
     // example: s3://linz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/
     target: option({
-      type: string,
+      type: Url,
       long: 'target',
       description: 'Target location for the collection.json file',
     }),
@@ -38,7 +34,7 @@ export const commandStacGithubImport = command({
       type: string,
       long: 'repo-name',
       description: 'Repository name either linz/imagery or linz/elevation',
-      defaultValue: () => 'linz/imageryZzzz',
+      defaultValue: () => 'linz/imagery',
       defaultValueIsSerializable: true,
     }),
   },
@@ -49,10 +45,8 @@ export const commandStacGithubImport = command({
     const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'imagery[bot]';
     const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
 
-    const sourceUrl = new URL(args.source);
-    const targetUrl = new URL(args.target);
-    const sourceCollection = new URL('collection.json', sourceUrl);
-    const targetCollection = new URL('collection.json', targetUrl);
+    const sourceCollection = new URL('collection.json', args.source);
+    const targetCollection = new URL('collection.json', args.target);
 
     const collection = await fsa.readJson<st.StacCatalog>(sourceCollection.href);
 
