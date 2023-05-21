@@ -54,5 +54,3 @@ o.spec('stacValidate', function () {
     o(normaliseHref('./item.json', 'collection.json')).equals('item.json');
   });
 });
-
-o.run();
