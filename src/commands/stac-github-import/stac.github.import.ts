@@ -81,7 +81,7 @@ export const commandStacGithubImport = command({
     await fsa.write(collectionPath, JSON.stringify(collection));
     logger.info({ repo: gitRepo }, 'npm:install');
 
-    execFileSync('npm', ['install'], { cwd: gitRepo });
+    execFileSync('npm', ['install', '--include=dev'], { cwd: gitRepo });
     // Format the file with prettier
     execFileSync('npx', ['prettier', '-w', collectionPath], { cwd: gitRepo });
     execFileSync('git', ['add', collectionPath], { cwd: gitRepo });
