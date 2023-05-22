@@ -70,6 +70,10 @@ const Skipped = new Set(['BI', 'BO', 'CI']);
  * - https://data.linz.govt.nz/layer/106965-nz-1500-tile-index/ 1:500
  **/
 export const MapSheet = {
+  // FIXME remove
+  gridSizeMax: 50000,
+  roundCorrection: 0.01,
+
   /** Height of Topo 1:50k mapsheets (meters) */
   height: 36_000,
   /** Width of Topo 1:50k mapsheets (meters) */
@@ -80,10 +84,30 @@ export const MapSheet = {
   code: { start: 'AS', end: 'CK' },
   /** The top left point for where map sheets start from in NZTM2000 (EPSG:2193) */
   origin: { x: 988000, y: 6234000 },
-  gridSizeMax: 50000,
-  roundCorrection: 0.01,
   /** Allowed grid sizes, these should exist in the LINZ Data service (meters) */
-  gridSizes: [10_000, 5_000, 2_000, 1_000, 500],
+  gridSizes: new Set([10_000, 5_000, 2_000, 1_000, 500]),
+
+  toName(originX: number, originY: number, gridSize: number): string {
+    if (!MapSheet.gridSizes.has(gridSize)) {
+      throw new Error(`Invalid grid size: ${gridSize}, must be one of ${[...MapSheet.gridSizes].join(',')}`);
+    }
+
+    if (originX < MapSheet.origin.x) {
+      throw new Error(`originX: ${originX} is outside of map sheet bounds: MapSheet.origin.x}`);
+    }
+    if (originY > MapSheet.origin.y) {
+      throw new Error(`originX: ${originY} is outside of map sheet bounds: ${MapSheet.origin.y}`);
+    }
+
+    const targetScale = MapSheet.scale / gridSize;
+    const digits = gridSize === 500 ? 3 : 2;
+
+    const sheetX = (originX - MapSheet.origin.x) / MapSheet.width;
+    const sheetY = (originY - MapSheet.origin.y) / MapSheet.height;
+
+    console.log({ sheetX, sheetY, targetScale, digits });
+    return '';
+  },
 
   /**
    * Get the expected origin and mapsheet information from a file name
@@ -243,3 +267,10 @@ export const SheetRanges = {
   CJ: [[7, 11]],
   CK: [[7, 9]],
 };
+
+const xy = MapSheet.extract('BP27_1000_4817.tiff');
+
+if (xy) {
+  console.log(xy);
+  console.log(xy, MapSheet.toName(xy.bounds.x, xy.bounds.y, 1000));
+}

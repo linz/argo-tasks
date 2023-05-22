@@ -133,7 +133,7 @@ export function roundWithCorrection(value: number): number {
 }
 
 export function getTileName(origin: number[], grid_size: number): string {
-  if (!MapSheet.gridSizes.includes(grid_size)) {
+  if (!MapSheet.gridSizes.has(grid_size)) {
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
   const [oX, oY] = origin;
