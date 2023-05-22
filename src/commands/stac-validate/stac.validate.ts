@@ -74,7 +74,12 @@ export const commandStacValidate = command({
         }
         return existing;
       },
-      formats: { ...fastFormats, iri, 'iri-reference': iriReference },
+      formats: {
+        ...fastFormats,
+        // iri is a more relaxed format than URI but for our purposes a URI should be close enough
+        iri: fastFormats.uri,
+        'iri-reference': fastFormats['uri-reference'],
+      },
     });
 
     const ajvSchema = new Map<string, Promise<ValidateFunction>>();
@@ -205,36 +210,6 @@ export const commandStacValidate = command({
   },
 });
 
-export function iri(value?: string): boolean {
-  if (typeof value !== 'string') return false;
-  if (value.length === 0) return false;
-
-  try {
-    const iri = new URL(value);
-    if (!iri.protocol.startsWith('http')) return false;
-    if (iri.host === '') return false;
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-export function iriReference(value?: string): boolean {
-  if (typeof value !== 'string') return false;
-  if (value.length === 0) return false;
-  if (value.startsWith('./')) return true;
-
-  try {
-    const iri = new URL(value);
-    if (!iri.protocol.startsWith('http')) return false;
-    if (iri.host === '') return false;
-    if (iri.pathname !== '/') return false;
-
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
 function getSchemaType(schemaType: string): string | null {
   switch (schemaType) {
     case 'Feature':
