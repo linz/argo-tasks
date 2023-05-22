@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.9.0](https://github.com/linz/argo-tasks/compare/v2.8.0...v2.9.0) (2023-05-22)
+
+
+### Features
+
+* **Dockerfile:** install git and openssh-client for push to github ([#460](https://github.com/linz/argo-tasks/issues/460)) ([ae444f1](https://github.com/linz/argo-tasks/commit/ae444f1fd93d9c1553db10c33c618c30815fd034))
+* **stac-github-import:** import stac github ([#456](https://github.com/linz/argo-tasks/issues/456)) ([3763e0f](https://github.com/linz/argo-tasks/commit/3763e0f0eae63a4291abb7708d67831cbb4b690d))
+* **tileindex-validate:** detect when tiffs are not in EPSG:2193 and error ([#448](https://github.com/linz/argo-tasks/issues/448)) ([e9d57b7](https://github.com/linz/argo-tasks/commit/e9d57b71c7e76edd13699dd5a4c71c3240297ca6))
+
+
+### Bug Fixes
+
+* dev dependencies were not installed before running prettier ([#461](https://github.com/linz/argo-tasks/issues/461)) ([5a3874b](https://github.com/linz/argo-tasks/commit/5a3874b56586b6b67fc1eae70e4a1614d2991a0a))
+* **stac-validate:** support other schemes than http for links/references ([#458](https://github.com/linz/argo-tasks/issues/458)) ([a38581b](https://github.com/linz/argo-tasks/commit/a38581b405e270fbc53f902372293db6ccb0c6a7))
+
 ## [2.8.0](https://github.com/linz/argo-tasks/compare/v2.7.0...v2.8.0) (2023-05-15)
 
 
