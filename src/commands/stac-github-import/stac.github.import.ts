@@ -48,7 +48,7 @@ export const commandStacGithubImport = command({
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
 
-    const collection = await fsa.readJson<st.StacCatalog>(sourceCollection.href);
+    const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
 
     const gitRepo = '/tmp/gitrepo/';
     const collectionPath = path.join(gitRepo, 'stac', targetCollection.pathname);
@@ -62,7 +62,7 @@ export const commandStacGithubImport = command({
     logger.info({ template: path.join(gitRepo, 'template', 'catalog.json') }, 'Stac:ReadTemplate');
     // Load information from the template inside the repo
     const catalog = await fsa.readJson<st.StacCatalog>(path.join(gitRepo, 'template', 'catalog.json'));
-    // Catalog template should have a absolute link to it's self
+    // Catalog template should have a absolute link to its self
     const selfLink = catalog.links.find((f) => f.rel === 'self');
     if (selfLink == null) throw new Error('unable to find self link in catalog');
 
@@ -77,7 +77,7 @@ export const commandStacGithubImport = command({
       collection.links.unshift({ rel: 'root', href: selfLink.href, type: 'application/json' });
     }
 
-    // Write the file to targetCollection and format it with prettier
+    // Write the file to targetCollection
     await fsa.write(collectionPath, JSON.stringify(collection));
     logger.info({ repo: gitRepo }, 'npm:install');
 
