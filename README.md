@@ -217,7 +217,7 @@ Validate a collection of tiff files
 tileindex-validate --scale 5000 ./path/to/imagery/
 ```
 
-### Versioning and Release
+## Versioning and Release
 
 To publish a release, the Pull Request opened by `release-please` bot needs to be merged:
 
