@@ -11,7 +11,10 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 - [lds-fetch-layer](#lds-fetch-layer)
 - [create-manifest](#create-manifest)
 - [list](#list)
-- [stac-validate](#stac-validate)
+- [stac catalog](#stac-catalog)
+- [stac github-import](#stac-github-import)
+- [stac sync](#stac-sync)
+- [stac validate](#stac-validate)
 - [tileindex-validate](#tileindex-validate)
 
 ### lds-fetch-layer
@@ -68,7 +71,7 @@ Generate a manifest of files that need to be copied and their target paths.
 
 if $ACTION_PATH is set, store the resulting manifest files as json documents
 
-```
+```bash
 create-manifest s3://link-workflow-artifacts/sample/flat --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json --target s3://linz-imagery/sample
 ```
 
@@ -76,18 +79,18 @@ create-manifest s3://link-workflow-artifacts/sample/flat --include ".*.tiff$"  -
 
 Copy a manifest of files between two locations, for manifest creation see [create-manifest](#create-manifest)
 
-```
+```bash
 copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurrency 10
 ```
 
-### stac-catalog
+### stac catalog
 
-Create STAC catalog JSON file when given links to catalog template JSON file and collection links file (linebreak separated string).
+Create STAC catalog JSON file when given links to catalog template JSON file and location to search for collection.json files.
 
 #### Stac Catalog example
 
 ```bash
-stac-catalog --template catalog_template.json --collections collection_links.txt --output catalog.json
+stac-catalog --template catalog_template.json --output catalog.json /path/to/stac/
 ```
 
 Example template file:
@@ -96,20 +99,13 @@ Example template file:
 {
   "stac_version": "1.0.0",
   "type": "Catalog",
-  "id": "catalog-id",
-  "description": "Example description goes here.",
+  "id": "linz-imagery",
+  "description": "Toitū Te Whenua Land Information New Zealand makes New Zealand's publicly owned aerial and satellite imagery archive freely available to use under an open licence. This public S3 bucket has been made available to enable bulk access and cloud-based data processing. You can also access the imagery through the LINZ Data Service or LINZ Basemaps.",
   "links": [
-    { "rel": "self", "href": "./catalog.json" },
+    { "rel": "self", "href": "https://linz-imagery.s3.ap-southeast-2.amazonaws.com/catalog.json" },
     { "rel": "root", "href": "./catalog.json" }
   ]
 }
-```
-
-Example links file:
-
-```text
-./stac/bay-of-plenty/tauranga-city_2022_0.1m/rgb/2193/collection.json
-./stac/auckland/auckland_2010-2012_0.5m/rgb/2193/collection.json
 ```
 
 Output will look like:
@@ -118,18 +114,60 @@ Output will look like:
 {
   "stac_version": "1.0.0",
   "type": "Catalog",
-  "id": "catalog-id",
-  "description": "Example description goes here.",
+  "id": "linz-imagery",
+  "description": "Toitū Te Whenua Land Information New Zealand makes New Zealand's publicly owned aerial and satellite imagery archive freely available to use under an open licence. This public S3 bucket has been made available to enable bulk access and cloud-based data processing. You can also access the imagery through the LINZ Data Service or LINZ Basemaps.",
   "links": [
-    { "rel": "self", "href": "./catalog.json" },
-    { "rel": "root", "href": "./catalog.json" },
-    { "rel": "child", "href": "./stac/bay-of-plenty/tauranga-city_2022_0.1m/rgb/2193/collection.json" },
-    { "rel": "child", "href": "./stac/auckland/auckland_2010-2012_0.5m/rgb/2193/collection.json" }
+    {
+      "rel": "self",
+      "href": "https://linz-imagery.s3.ap-southeast-2.amazonaws.com/catalog.json"
+    },
+    {
+      "rel": "root",
+      "href": "./catalog.json"
+    },
+    {
+      "rel": "child",
+      "href": "./auckland/auckland_2010-2011_0.125m/rgb/2193/collection.json",
+      "title": "Auckland 0.125m Urban Aerial Photos (2010-2011)",
+      "file:checksum": "1220670da4eb9d1e9a8ce209ac2894bc523ffc33d805718058ff268d20092f3596fd",
+      "file:size": 387938
+    },
+    {
+      "rel": "child",
+      "href": "./auckland/auckland_2010-2012_0.5m/rgb/2193/collection.json",
+      "title": "Auckland 0.5m Rural Aerial Photos (2010-2012)",
+      "file:checksum": "1220fd8793f08d92ca52ebf283db98c847cf2a23730ff10e8da95121bbd753445068",
+      "file:size": 23987
+    }
   ]
 }
 ```
 
-### stac-validate
+### stac github-import
+
+Format and push a STAC collection.json file to a GitHub repository. Used by the [publish-copy](https://github.com/linz/topo-workflows/blob/master/workflows/imagery/publish-copy.yaml) Argo Workflow.
+
+#### STAC github-import example
+
+Environment variables:
+GIT_AUTHOR_NAME="Example User"
+GIT_AUTHOR_EMAIL="<example@example.com>"
+
+```bash
+stac github-import --source s3://path/to/collection/ --target s3://linz-imagery/path/to/dataset/ --repo-name "linz/imagery-test)" (`--repo-name` is optional and defaults to linz/imagery).
+```
+
+### stac sync
+
+Synchronise STAC (JSON) files from one path to another.
+
+#### STAC Sync example
+
+```bash
+stac sync /path/to/stac/ s3://linz-imagery/
+```
+
+### stac validate
 
 Validate STAC file(s) from an S3 location
 
@@ -138,31 +176,31 @@ Validate STAC file(s) from an S3 location
 Validate a single item
 
 ```bash
-stac-validate s3://linz-imagery-staging/test/stac-validate/item1.json
+stac validate s3://linz-imagery-staging/test/stac-validate/item1.json
 ```
 
 Validate multiple items
 
 ```bash
-stac-validate s3://linz-imagery-staging/test/stac-validate/item1.json s3://linz-imagery/test/test/item2.json
+stac validate s3://linz-imagery-staging/test/stac-validate/item1.json s3://linz-imagery/test/test/item2.json
 ```
 
 Validate a collection and linked items
 
 ```bash
-stac-validate --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+stac validate --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
 
 Validate a collection without validating linked items
 
 ```bash
-stac-validate s3://linz-imagery-staging/test/stac-validate/collection.json
+stac validate s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
 
 Validate a the `file:checksum` of all assets inside of a collection
 
 ```bash
-stac-validate --checksum --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+stac validate --checksum --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
 
 ### tileindex-validate
@@ -181,5 +219,8 @@ tileindex-validate --scale 5000 ./path/to/imagery/
 
 ## Versioning and Release
 
-[googleapis/release-please](https://github.com/googleapis/release-please) is used to support the release process.
-The library generates a `changelog` based on the commit messages.
+To publish a release, the Pull Request opened by `release-please` bot needs to be merged:
+
+1. Open the PR and verify that the `CHANGELOG` contains what you expect in the release. If the latest change you expect is not there, double-check that a GitHub Actions is not currently running or failed.
+2. Approve and merge the PR.
+3. Once the Pull Request is merged to `master` a [GitHub Action](https://github.com/linz/argo-tasks/blob/master/.github/workflows/release-please.yml) it creates the release and publish a new container tagged for this release.
