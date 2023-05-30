@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import o from 'ospec';
-import { createManifest } from '../create-manifest.js';
+import { createManifest, validatePaths } from '../create-manifest.js';
 
 o.spec('createManifest', () => {
   o.beforeEach(() => {
@@ -66,5 +66,17 @@ o.spec('createManifest', () => {
         target: 'memory://target/sub/foo/bar/topographic.png',
       },
     ]);
+  });
+  o.spec('validatePaths', () => {
+    o('Should throw error for Missmatch Paths', () => {
+      o(() => {
+        validatePaths('memory://source/', 'memory://target/sub/test.tiff');
+      }).throws(Error);
+    });
+    o('Should also throw error for Missmatch Paths', () => {
+      o(() => {
+        validatePaths('memory://source/test.tiff', 'memory://target/sub/');
+      }).throws(Error);
+    });
   });
 });

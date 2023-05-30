@@ -90,11 +90,21 @@ export async function createManifest(
     for (const filePath of chunk) {
       const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
       const target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
-
+      validatePaths(filePath, target);
       current.push({ source: filePath, target });
     }
     outputCopy.push(current);
   }
 
   return outputCopy;
+}
+
+export function validatePaths(source: string, target: string): void {
+  if (source.endsWith('/') && target.endsWith('/')) {
+    return;
+  }
+  if (!source.endsWith('/') && !target.endsWith('/')) {
+    return;
+  }
+  throw new Error(`Missmatch Paths - source: ${source}, target: ${target}`);
 }
