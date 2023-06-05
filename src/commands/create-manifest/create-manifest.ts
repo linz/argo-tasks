@@ -100,7 +100,9 @@ export async function createManifest(
 }
 
 export function validatePaths(source: string, target: string): void {
-  // 31.05.2023: fixes TDE-763
+  // Throws error if the source and target paths are not:
+  // - both directories
+  // - both paths
   if (source.endsWith('/') && target.endsWith('/')) {
     return;
   }
