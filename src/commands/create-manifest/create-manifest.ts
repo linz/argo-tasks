@@ -109,5 +109,5 @@ export function validatePaths(source: string, target: string): void {
   if (!source.endsWith('/') && !target.endsWith('/')) {
     return;
   }
-  throw new Error(`Missmatch Paths - source: ${source}, target: ${target}`);
+  throw new Error(`Path Missmatch - source: ${source}, target: ${target}`);
 }
