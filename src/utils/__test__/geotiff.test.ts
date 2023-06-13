@@ -116,7 +116,7 @@ o.spec('geotiff', () => {
           resolution: [0.075, -0.075],
           origin: [1460800.0375, 5079479.9625], // PixelIsPoint offsets points by 1/2 a pixel
           valueGeo(): number {
-            return PixelIsPoint; // PixelIsArea
+            return PixelIsPoint;
           },
         };
       },
