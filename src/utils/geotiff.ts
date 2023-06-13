@@ -4,14 +4,16 @@ import { fsa } from '@chunkd/fs';
 /**
  * Attempt to prase a tiff world file
  *
+ * https://en.wikipedia.org/wiki/World_file
+ *
  * @example
  * ```
- * 0.075
- * 0
- * 0
- * -0.075
- * 1460800.0375
- * 5079479.9625
+ * 0.075        // X Scale
+ * 0            // Y Rotation
+ * 0            // X Rotation
+ * -0.075       // Y Scale (Must be negative)
+ * 1460800.0375 // X Offset of center of top left pixel
+ * 5079479.9625 // Y offset of center of top left pixel
  * ```
  *
  * @param data Raw TFW file
@@ -24,6 +26,10 @@ export function parseTfw(data: string): { scale: { x: number; y: number }; origi
   const scaleY = Number(parts[3]);
   if (Number.isNaN(scaleX) || Number.isNaN(scaleY)) throw new Error('TFW: Invalid scales: ' + data);
 
+  const rotationX = Number(parts[1]);
+  const rotationY = Number(parts[2]);
+  if (rotationX !== 0 || rotationY !== 0) throw new Error('TFW: Rotation must be zero');
+
   const originX = Number(parts[4]);
   const originY = Number(parts[5]);
   if (Number.isNaN(originX) || Number.isNaN(originY)) throw new Error('TFW: Invalid origins: ' + data);
@@ -31,7 +37,7 @@ export function parseTfw(data: string): { scale: { x: number; y: number }; origi
 }
 
 /**
- * Is the geotiff set as PixelIsPoint mode
+ * Is the geotiff set as PixelIsPoint mode which offsets the origin of Tiff
  *
  * @see {TiffTagGeo.GTRasterTypeGeoKey}
  **/
@@ -39,7 +45,8 @@ export const PixelIsPoint = 2;
 
 /**
  * Attempt to find the bounding box for a tiff
- * Will read a sidecar `.tfw` if one exists
+ *
+ * Will attempt to read a sidecar `.tfw` if the tiff does not contain the origin.
  *
  * @returns [minX, minY, maxX, maxY] bounding box
  */

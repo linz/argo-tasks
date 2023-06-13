@@ -22,6 +22,11 @@ o.spec('geotiff', () => {
     o('should fail on invalid input', () => {
       o(() => parseTfw(null as unknown as string)).throws(Error);
     });
+
+    o('should not allow rotations or skews', () => {
+      o(() => parseTfw(`0.075\n1\n0\n-0.075\n1460800.0375\n5079479.9625`)).throws(Error); // Y Rotation
+      o(() => parseTfw(`0.075\n0\n1\n-0.075\n1460800.0375\n5079479.9625`)).throws(Error); // X Rotation
+    });
   });
 
   o('should parse tiff location', async () => {
