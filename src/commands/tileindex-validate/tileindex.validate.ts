@@ -1,7 +1,7 @@
-import { fsa } from '@chunkd/fs';
-import { CogTiff } from '@cogeotiff/core';
 import { Bounds } from '@basemaps/geo';
 import { Projection } from '@basemaps/shared/build/proj/projection.js';
+import { fsa } from '@chunkd/fs';
+import { CogTiff } from '@cogeotiff/core';
 import { command, number, option, optional, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
@@ -102,24 +102,34 @@ export function findDuplicates(tiffs: CogTiff[], scale: number): FileList[] {
     const firstImage = f.images[0];
     if (firstImage == null) throw new Error(`Failed to parse tiff: ${f.source.uri}`);
     if (firstImage.epsg !== 2193) throw new Error(`Invalid projection tiff: ${f.source.uri} EPSG:${firstImage.epsg}`);
-    output.push(Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri }));
+    output.push(
+      Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri }),
+    );
     try {
       // const tileName = getTileName(firstImage.origin, scale);
-      console.log(f.source.uri, firstImage.origin, firstImage.bbox, Bounds.fromBbox(firstImage.bbox), Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox)))
+      console.log(
+        f.source.uri,
+        firstImage.origin,
+        firstImage.bbox,
+        Bounds.fromBbox(firstImage.bbox),
+        Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox)),
+      );
       // const existingUri = seen.get(tileName) ?? [];
       // existingUri.push(uri);
       // if (existingUri.length === 2) duplicates.push({ tileName, uris: existingUri });
       // seen.set(tileName, existingUri);
-    }
-    catch (e) {
-      console.log(f.source.uri, e)
+    } catch (e) {
+      console.log(f.source.uri, e);
     }
     f.close();
   }
-  fsa.write('./bounds.geojson', JSON.stringify({
-    type: 'FeatureCollection',
-    features: output
-  }));
+  fsa.write(
+    './bounds.geojson',
+    JSON.stringify({
+      type: 'FeatureCollection',
+      features: output,
+    }),
+  );
   return duplicates;
 }
 
