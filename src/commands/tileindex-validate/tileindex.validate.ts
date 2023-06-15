@@ -92,6 +92,7 @@ export const commandTileIndexValidate = command({
       'TileIndex: Manifest Assessed for Duplicates',
     ); // TODO change/move (will need x2) log message
     if (args.allowDuplicates) {
+      console.log(seen);
       // Code to change argo split from aws-list group to new tiles?
     } else {
       if (args.output) await fsa.write(args.output, JSON.stringify(files)); //do we need to add this to args? /how does this work without it?
@@ -99,7 +100,9 @@ export const commandTileIndexValidate = command({
       if (duplicates && duplicates.length > 0) {
         for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate');
         if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2));
-        throw new Error(`Duplicate files found, if location specified see output: ${args.duplicatesOutput}`);
+        throw new Error(
+          `Duplicate files found, if '--duplicates-output' specified see output: ${args.duplicatesOutput}`,
+        );
       }
     }
   },
