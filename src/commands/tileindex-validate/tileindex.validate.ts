@@ -5,6 +5,7 @@ import { CogTiff } from '@cogeotiff/core';
 import { command, number, option, optional, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
+import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { registerCli } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
@@ -78,7 +79,7 @@ export const commandTileIndexValidate = command({
     }
 
     const findDuplicatesStartTime = performance.now();
-    const duplicates = findDuplicates(tiffs, args.scale);
+    const duplicates = await findDuplicates(tiffs, args.scale);
     logger.info(
       { duration: performance.now() - findDuplicatesStartTime },
       'TileIndex: Manifest Assessed for Duplicates',
@@ -93,7 +94,7 @@ export const commandTileIndexValidate = command({
   },
 });
 
-export function findDuplicates(tiffs: CogTiff[], scale: number): FileList[] {
+export async function findDuplicates(tiffs: CogTiff[], scale: number): Promise<FileList[]> {
   const seen = new Map<string, string[]>();
   const duplicates: FileList[] = [];
   const output = [];
@@ -106,7 +107,11 @@ export function findDuplicates(tiffs: CogTiff[], scale: number): FileList[] {
       Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri }),
     );
     try {
-      // const tileName = getTileName(firstImage.origin, scale);
+      const bbox = await findBoundingBox(f);
+      if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
+      console.log(bbox);
+      const tileName = getTileName([bbox[0], bbox[3]], scale);
+      console.log(tileName);
       console.log(
         f.source.uri,
         firstImage.origin,
@@ -114,10 +119,10 @@ export function findDuplicates(tiffs: CogTiff[], scale: number): FileList[] {
         Bounds.fromBbox(firstImage.bbox),
         Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox)),
       );
-      // const existingUri = seen.get(tileName) ?? [];
-      // existingUri.push(uri);
-      // if (existingUri.length === 2) duplicates.push({ tileName, uris: existingUri });
-      // seen.set(tileName, existingUri);
+      const existingUri = seen.get(tileName) ?? [];
+      existingUri.push(uri);
+      if (existingUri.length === 2) duplicates.push({ tileName, uris: existingUri });
+      seen.set(tileName, existingUri);
     } catch (e) {
       console.log(f.source.uri, e);
     }
