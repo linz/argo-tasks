@@ -2,7 +2,7 @@ import { Bounds } from '@basemaps/geo';
 import { Projection } from '@basemaps/shared/build/proj/projection.js';
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
-import { command, number, option, optional, string } from 'cmd-ts';
+import { boolean, command, flag, number, option, optional, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
@@ -47,6 +47,12 @@ export const commandTileIndexValidate = command({
   args: {
     ...CommandListArgs,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
+    allowDuplicates: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'allow-duplicates',
+      description: 'Allow Duplicates for Merging',
+    }),
     duplicatesOutput: option({
       type: optional(string),
       long: 'duplicates-output',
@@ -78,25 +84,39 @@ export const commandTileIndexValidate = command({
       logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
     }
 
-    const findDuplicatesStartTime = performance.now();
-    const duplicates = await findDuplicates(tiffs, args.scale);
+    const findDuplicatesStartTime = performance.now(); // TODO change name of const
+    const seen = await tempNameForAllowDuplicates(tiffs, args.scale);
+
     logger.info(
       { duration: performance.now() - findDuplicatesStartTime },
       'TileIndex: Manifest Assessed for Duplicates',
-    );
-
-    if (args.output) await fsa.write(args.output, JSON.stringify(files));
-    if (duplicates && duplicates.length > 0) {
-      for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate');
-      if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2));
-      throw new Error('Duplicate files found, see output /tmp/duplicate_file_list.json');
+    ); // TODO change/move (will need x2) log message
+    if (args.allowDuplicates) {
+      // Code to change argo split from aws-list group to new tiles?
+    } else {
+      if (args.output) await fsa.write(args.output, JSON.stringify(files)); //do we need to add this to args? /how does this work without it?
+      const duplicates = findDuplicates(seen);
+      if (duplicates && duplicates.length > 0) {
+        for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate');
+        if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2));
+        throw new Error(`Duplicate files found, if location specified see output: ${args.duplicatesOutput}`);
+      }
     }
   },
 });
 
-export async function findDuplicates(tiffs: CogTiff[], scale: number): Promise<FileList[]> {
-  const seen = new Map<string, string[]>();
+export function findDuplicates(tiffs: Map<string, string[]>): FileList[] {
   const duplicates: FileList[] = [];
+  for (const tileName of tiffs.keys()) {
+    const uris = tiffs.get(tileName) ?? [];
+    if (uris.length >= 2) duplicates.push({ tileName, uris: uris });
+  }
+  return duplicates;
+}
+
+// TODO fix name of function
+export async function tempNameForAllowDuplicates(tiffs: CogTiff[], scale: number): Promise<Map<string, string[]>> {
+  const seen = new Map<string, string[]>();
   const output = [];
   for (const f of tiffs) {
     const uri = f.source.uri;
@@ -109,19 +129,9 @@ export async function findDuplicates(tiffs: CogTiff[], scale: number): Promise<F
     try {
       const bbox = await findBoundingBox(f);
       if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
-      console.log(bbox);
       const tileName = getTileName([bbox[0], bbox[3]], scale);
-      console.log(tileName);
-      console.log(
-        f.source.uri,
-        firstImage.origin,
-        firstImage.bbox,
-        Bounds.fromBbox(firstImage.bbox),
-        Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox)),
-      );
       const existingUri = seen.get(tileName) ?? [];
       existingUri.push(uri);
-      if (existingUri.length === 2) duplicates.push({ tileName, uris: existingUri });
       seen.set(tileName, existingUri);
     } catch (e) {
       console.log(f.source.uri, e);
@@ -135,7 +145,7 @@ export async function findDuplicates(tiffs: CogTiff[], scale: number): Promise<F
       features: output,
     }),
   );
-  return duplicates;
+  return seen;
 }
 
 export function roundWithCorrection(value: number): number {
