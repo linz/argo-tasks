@@ -39,9 +39,8 @@ export interface MapTileIndex {
   width: number;
   /** Height of the tile (meters) */
   height: number;
-
   /** Bounding box of the tile [minX, minY, maxX, maxY] */
-  bounds: [number, number, number, number];
+  bbox: [number, number, number, number];
 }
 
 export interface Point {
@@ -114,7 +113,7 @@ export const MapSheet = {
       origin: { x: 0, y: 0 },
       width: 0,
       height: 0,
-      bounds: [0, 0, 0, 0],
+      bbox: [0, 0, 0, 0],
     };
     // 1:500 has X/Y is 3 digits not 2
     if (out.gridSize === 500) {
@@ -135,7 +134,7 @@ export const MapSheet = {
     out.width = tileOffset.width;
     out.height = tileOffset.height;
     // As in NZTM negative Y goes north, the minY is actually the bottom right point
-    out.bounds = [out.origin.x, out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
+    out.bbox = [out.origin.x, out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
     return out;
   },
   /**

@@ -13,7 +13,7 @@ o.spec('MapSheets', () => {
       origin: { x: 1236640, y: 4837560 },
       width: 240,
       height: 360,
-      bounds: [1236640, 4837200, 1236880, 4837560],
+      bbox: [1236640, 4837200, 1236880, 4837560],
     });
   });
 
@@ -37,22 +37,22 @@ o.spec('MapSheets', () => {
 
   const ExpectedCodes = [...new Set(MapSheetData.map((f) => f.code.slice(0, 2)))];
   const TestBounds = [
-    { name: 'CG10_500_079035', bounds: [1236160, 4837560, 1236400, 4837920] },
-    { name: 'CG10_500_079036', bounds: [1236400, 4837560, 1236640, 4837920] },
+    { name: 'CG10_500_079035', bbox: [1236160, 4837560, 1236400, 4837920] },
+    { name: 'CG10_500_079036', bbox: [1236400, 4837560, 1236640, 4837920] },
   ] as const;
 
   for (const test of TestBounds) {
     o('should get expected size with file ' + test.name, () => {
       const extract = MapSheet.extract(test.name) as MapTileIndex;
-      o(extract.origin.x).equals(test.bounds[0]);
-      o(extract.origin.y).equals(test.bounds[3]);
-      o(extract.width).equals(test.bounds[2] - test.bounds[0]);
-      o(extract.height).equals(test.bounds[3] - test.bounds[1]);
+      o(extract.origin.x).equals(test.bbox[0]);
+      o(extract.origin.y).equals(test.bbox[3]);
+      o(extract.width).equals(test.bbox[2] - test.bbox[0]);
+      o(extract.height).equals(test.bbox[3] - test.bbox[1]);
     });
 
     o('should get expected bounds with file ' + test.name, () => {
       const extract = MapSheet.extract(test.name) as MapTileIndex;
-      o(String(extract.bounds)).equals(String(test.bounds));
+      o(String(extract.bbox)).equals(String(test.bbox));
     });
   }
 });
