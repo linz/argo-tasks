@@ -33,8 +33,14 @@ export interface MapTileIndex {
    * ```
    */
   name: string;
-  /** Bounding box of the MapSheet Tile */
-  bounds: Bounds;
+  /** Top left point of the MapSheet Tile */
+  origin: { x: number; y: number };
+  /** Width of the Tile (meters) */
+  width: number;
+  /** Height of the tile (meters) */
+  height: number;
+  /** Bounding box of the tile [minX, minY, maxX, maxY] */
+  bbox: [number, number, number, number];
 }
 
 export interface Point {
@@ -104,7 +110,10 @@ export const MapSheet = {
       x: -1,
       y: -1,
       name: match[0],
-      bounds: { x: 0, y: 0, width: 0, height: 0 },
+      origin: { x: 0, y: 0 },
+      width: 0,
+      height: 0,
+      bbox: [0, 0, 0, 0],
     };
     // 1:500 has X/Y is 3 digits not 2
     if (out.gridSize === 500) {
@@ -119,11 +128,13 @@ export const MapSheet = {
     const origin = MapSheet.offset(out.mapSheet);
     if (origin == null) return null;
 
-    const tileOffset = MapSheet.tileBounds(out.gridSize, out.x, out.y);
-    out.bounds.x = origin.x + tileOffset.x;
-    out.bounds.y = origin.y - tileOffset.y;
-    out.bounds.width = tileOffset.width;
-    out.bounds.height = tileOffset.height;
+    const tileOffset = MapSheet.tileSize(out.gridSize, out.x, out.y);
+    out.origin.x = origin.x + tileOffset.x;
+    out.origin.y = origin.y - tileOffset.y;
+    out.width = tileOffset.width;
+    out.height = tileOffset.height;
+    // As in NZTM negative Y goes north, the minY is actually the bottom right point
+    out.bbox = [out.origin.x, out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
     return out;
   },
   /**
@@ -152,8 +163,8 @@ export const MapSheet = {
     return { x: MapSheet.width * x + MapSheet.origin.x, y: MapSheet.origin.y - MapSheet.height * y };
   },
 
-  /** Generate the bounding box for a tile inside a mapsheet at a specific grid size */
-  tileBounds(gridSize: number, x: number, y: number): Bounds {
+  /** Generate the size of tile inside a map sheet at a specific grid size */
+  tileSize(gridSize: number, x: number, y: number): Bounds {
     const scale = gridSize / MapSheet.scale;
     const offsetX = MapSheet.width * scale;
     const offsetY = MapSheet.height * scale;
