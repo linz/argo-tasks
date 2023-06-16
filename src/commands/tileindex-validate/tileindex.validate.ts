@@ -10,6 +10,7 @@ import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { registerCli } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
+
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
 const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
@@ -91,15 +92,42 @@ export const commandTileIndexValidate = command({
       { duration: performance.now() - findDuplicatesStartTime },
       'TileIndex: Manifest Assessed for Duplicates',
     ); // TODO change/move (will need x2) log message
+      
+      // bounds geojson -> fsa.write...  == info file (do we always want this?)
+      // if allow-duplicates
+        // seen -> [[files], [files]] -> fsa.write(args.output, JSON.stringify(seen)) == standardising input
+      // else
+        // if duplicates
+          // throw new Error(`Duplicate files found, see bounds geojson`); == stop workflow
+        // else
+          // if (args.output) await fsa.write(args.output, JSON.stringify(files)); == standardising input
+
+
+    const target = [];
+    for (const tileName of seen.keys()) {
+      const mapTileIndex = MapSheet.extract(tileName)
+      if (mapTileIndex){
+        target.push(
+          Projection.get(2193).boundsToGeoJsonFeature(mapTileIndex.bounds, { tilename: tileName, source: seen.get(tileName) ?? [] }),
+        );
+      }
+      fsa.write(
+        './target-bounds.geojson',
+        JSON.stringify({
+          type: 'FeatureCollection',
+          features: target,
+        }),
+      );
+    }
     if (args.allowDuplicates) {
       console.log(seen);
       // Code to change argo split from aws-list group to new tiles?
     } else {
-      if (args.output) await fsa.write(args.output, JSON.stringify(files)); //do we need to add this to args? /how does this work without it?
+      if (args.output) await fsa.write(args.output, JSON.stringify(files));
       const duplicates = findDuplicates(seen);
       if (duplicates && duplicates.length > 0) {
-        for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate');
-        if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2));
+        for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate'); // is this useful or will people just use the geojson?
+        if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2)); // remove - superceeded by geojson?
         throw new Error(
           `Duplicate files found, if '--duplicates-output' specified see output: ${args.duplicatesOutput}`,
         );
@@ -126,13 +154,23 @@ export async function tempNameForAllowDuplicates(tiffs: CogTiff[], scale: number
     const firstImage = f.images[0];
     if (firstImage == null) throw new Error(`Failed to parse tiff: ${f.source.uri}`);
     if (firstImage.epsg !== 2193) throw new Error(`Invalid projection tiff: ${f.source.uri} EPSG:${firstImage.epsg}`);
-    output.push(
-      Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri }),
-    );
+    // output.push(
+    //   Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri, tilename: tileName }),
+    // );
     try {
       const bbox = await findBoundingBox(f);
       if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
       const tileName = getTileName([bbox[0], bbox[3]], scale);
+
+      const tiffBbox  =f.images[0]!.bbox;
+      console.log(
+        getTileName([bbox[0], bbox[3]], scale),
+        getTileName([bbox[2], bbox[1]], scale),
+        getTileName([tiffBbox[0], tiffBbox[1]], scale)
+      )
+      output.push(
+        Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri, tilename: tileName }),
+      );
       const existingUri = seen.get(tileName) ?? [];
       existingUri.push(uri);
       seen.set(tileName, existingUri);
@@ -141,6 +179,7 @@ export async function tempNameForAllowDuplicates(tiffs: CogTiff[], scale: number
     }
     f.close();
   }
+  // source geojson
   fsa.write(
     './bounds.geojson',
     JSON.stringify({
@@ -150,6 +189,7 @@ export async function tempNameForAllowDuplicates(tiffs: CogTiff[], scale: number
   );
   return seen;
 }
+
 
 export function roundWithCorrection(value: number): number {
   if (Number.isInteger(value)) {
@@ -210,13 +250,24 @@ export function getTileName(origin: number[], grid_size: number): string {
   // Do some maths
   const offset_x = Math.round(Math.floor((origin_x - MapSheet.origin.x) / MapSheet.width));
   const offset_y = Math.round(Math.floor((MapSheet.origin.y - origin_y) / MapSheet.height));
+  console.log({offset_x, offset_y})
   const max_y = MapSheet.origin.y - offset_y * MapSheet.height;
   const min_x = MapSheet.origin.x + offset_x * MapSheet.width;
   const tile_x = Math.round(Math.floor((origin_x - min_x) / tile_width + 1));
   const tile_y = Math.round(Math.floor((max_y - origin_y) / tile_height + 1));
+  console.log({tile_x, tile_y})
+
   // Build name
   const letters = Object.keys(SheetRanges)[offset_y];
   const sheet_code = `${letters}${`${offset_x}`.padStart(2, '0')}`;
   const tile_id = `${`${tile_y}`.padStart(nb_digits, '0')}${`${tile_x}`.padStart(nb_digits, '0')}`;
   return `${sheet_code}_${grid_size}_${tile_id}`;
 }
+
+
+// console.log(getTileName([1252480.000, 4830000.000], 1000)); // CH11_1000_0102
+console.log(getTileName([1252480.000, 4830000.000], 5000)); // CH11_5000_0102
+console.log(JSON.stringify(Projection.get(2193).boundsToGeoJsonFeature(MapSheet.extract('CH11_1000_0102')!.bounds)))
+// console.log(getTileName([1252480.000, 4830000.000], 10000)); // CH11_1000_0102
+
+process.exit()
