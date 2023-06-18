@@ -92,23 +92,23 @@ export const commandTileIndexValidate = command({
       { duration: performance.now() - findDuplicatesStartTime },
       'TileIndex: Manifest Assessed for Duplicates',
     ); // TODO change/move (will need x2) log message
-      
-      // bounds geojson -> fsa.write...  == info file (do we always want this?)
-      // if allow-duplicates
-        // seen -> [[files], [files]] -> fsa.write(args.output, JSON.stringify(seen)) == standardising input
-      // else
-        // if duplicates
-          // throw new Error(`Duplicate files found, see bounds geojson`); == stop workflow
-        // else
-          // if (args.output) await fsa.write(args.output, JSON.stringify(files)); == standardising input
+
+    // bounds geojson -> fsa.write...  == info file (do we always want this?)
+    // if allow-duplicates
+    // seen -> [[files], [files]] -> fsa.write(args.output, JSON.stringify(seen)) == standardising input
+    // else
+    // if duplicates
+    // throw new Error(`Duplicate files found, see bounds geojson`); == stop workflow
+    // else
+    // if (args.output) await fsa.write(args.output, JSON.stringify(files)); == standardising input
 
 
     const target = [];
     for (const tileName of seen.keys()) {
       const mapTileIndex = MapSheet.extract(tileName)
-      if (mapTileIndex){
+      if (mapTileIndex) {
         target.push(
-          Projection.get(2193).boundsToGeoJsonFeature(mapTileIndex.bounds, { tilename: tileName, source: seen.get(tileName) ?? [] }),
+          Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), { tilename: tileName, source: seen.get(tileName) ?? [] }),
         );
       }
       fsa.write(
@@ -162,7 +162,7 @@ export async function tempNameForAllowDuplicates(tiffs: CogTiff[], scale: number
       if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
       const tileName = getTileName([bbox[0], bbox[3]], scale);
 
-      const tiffBbox  =f.images[0]!.bbox;
+      const tiffBbox = f.images[0]!.bbox;
       console.log(
         getTileName([bbox[0], bbox[3]], scale),
         getTileName([bbox[2], bbox[1]], scale),
@@ -250,12 +250,12 @@ export function getTileName(origin: number[], grid_size: number): string {
   // Do some maths
   const offset_x = Math.round(Math.floor((origin_x - MapSheet.origin.x) / MapSheet.width));
   const offset_y = Math.round(Math.floor((MapSheet.origin.y - origin_y) / MapSheet.height));
-  console.log({offset_x, offset_y})
+  console.log({ offset_x, offset_y })
   const max_y = MapSheet.origin.y - offset_y * MapSheet.height;
   const min_x = MapSheet.origin.x + offset_x * MapSheet.width;
   const tile_x = Math.round(Math.floor((origin_x - min_x) / tile_width + 1));
   const tile_y = Math.round(Math.floor((max_y - origin_y) / tile_height + 1));
-  console.log({tile_x, tile_y})
+  console.log({ tile_x, tile_y })
 
   // Build name
   const letters = Object.keys(SheetRanges)[offset_y];
@@ -265,9 +265,42 @@ export function getTileName(origin: number[], grid_size: number): string {
 }
 
 
-// console.log(getTileName([1252480.000, 4830000.000], 1000)); // CH11_1000_0102
-console.log(getTileName([1252480.000, 4830000.000], 5000)); // CH11_5000_0102
-console.log(JSON.stringify(Projection.get(2193).boundsToGeoJsonFeature(MapSheet.extract('CH11_1000_0102')!.bounds)))
-// console.log(getTileName([1252480.000, 4830000.000], 10000)); // CH11_1000_0102
+// console.log(getTileName([1252480.000, 4830000.000], 1000)); // CH11_1000_0102 -> 01 / 5 =0.2 =1 02 = 0.4 1
+// console.log(getTileName([1252480.000, 4830000.000], 5000)); // CH11_5000_0101
 
-process.exit()
+// const features = [
+//   // Top left of all
+//   'CH11_1000_0101',
+//   'CH11_1000_0102',
+
+//   // Three points of 1:5k
+//   'CH11_1000_0105',
+//   'CH11_1000_0501',
+//   'CH11_1000_0505',
+
+//   // Three points of 1:10k
+//   'CH11_1000_0110',
+//   'CH11_1000_1001',
+//   'CH11_1000_1010',
+ 
+//   // Outside our bounds
+//   'CH11_1000_1111',
+//   // Bigger tiles
+//   'CH11_5000_0101',
+//   'CH11_10000_0101'
+// ].map(f => {
+//   const extract = MapSheet.extract(f)
+//   return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract!.bbox), { source: f })
+// })
+// console.log(JSON.stringify({ type: 'FeatureCollection', features }));
+
+// const mapTileIndex = MapSheet.extract("CH11_1000_0102")
+// console.log("mapTileIndex", mapTileIndex);
+// // console.log(Bounds.fromBbox(mapTileIndex.bbox));
+// if (mapTileIndex) {
+//   console.log(JSON.stringify(Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox))));
+//   };
+// //console.log(getTileName([1252480.000, 4830000.000], 10000)); // CH11_1000_0102 
+
+// process.exit() // Kill the application early
+
