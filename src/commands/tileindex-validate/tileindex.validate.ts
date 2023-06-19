@@ -9,7 +9,7 @@ import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { registerCli } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
-
+import { isArgo } from '../../utils/argo.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
@@ -48,16 +48,19 @@ export const commandTileIndexValidate = command({
   args: {
     ...CommandListArgs,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
+    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
+
     allowDuplicates: flag({
       type: boolean,
       defaultValue: () => false,
       long: 'allow-duplicates',
       description: 'Allow Duplicates for Merging',
     }),
-    duplicatesOutput: option({
-      type: optional(string),
-      long: 'duplicates-output',
-      description: 'Output location for the listing',
+    forceOutput: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'force-output',
+      description: 'force output additional files',
     }),
   },
   handler: async (args) => {
@@ -86,12 +89,17 @@ export const commandTileIndexValidate = command({
     }
 
     const findDuplicatesStartTime = performance.now(); // TODO change name of const
-    const seen = await tempNameForAllowDuplicates(tiffs, args.scale);
+    const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
+    const outputs = findDuplicates(locations);
+    // console.log(dupes);
 
     logger.info(
-      { duration: performance.now() - findDuplicatesStartTime },
+      { duration: performance.now() - findDuplicatesStartTime, files: locations.length, outputs: outputs.size },
       'TileIndex: Manifest Assessed for Duplicates',
     ); // TODO change/move (will need x2) log message
+
+    // input.geojson -> { source: "s3://foo/bar/baz_tif.tiff", outputTile: "BK23_1000_0505.tiff", isDuplicate: true }
+    // output.geojson -> { source: ["s3://foo/bar/baz_tif.tiff", ... ], tileName: "BK23_1000_0505.tiff", isDuplicate: true }
 
     // bounds geojson -> fsa.write...  == info file (do we always want this?)
     // if allow-duplicates
@@ -102,94 +110,122 @@ export const commandTileIndexValidate = command({
     // else
     // if (args.output) await fsa.write(args.output, JSON.stringify(files)); == standardising input
 
-
-    const target = [];
-    for (const tileName of seen.keys()) {
-      const mapTileIndex = MapSheet.extract(tileName)
-      if (mapTileIndex) {
-        target.push(
-          Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), { tilename: tileName, source: seen.get(tileName) ?? [] }),
-        );
-      }
-      fsa.write(
-        './target-bounds.geojson',
-        JSON.stringify({
-          type: 'FeatureCollection',
-          features: target,
+    if (args.forceOutput || isArgo()) {
+      // TODO document the output format, what is a `source` , `tileName` isDuplicate`?
+      await fsa.write('/tmp/tile-index-validate/input.geojson', {
+        type: 'FeatureCollection',
+        features: locations.map((loc) => {
+          const epsg = args.sourceEpsg ?? loc.epsg;
+          if (epsg == null) {
+            logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
+            return;
+          }
+          return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
+            source: loc.source,
+            tileName: loc.tileName,
+            isDuplicate: (outputs.get(loc.tileName)?.length ?? 1) > 1,
+          });
+        }),
+      });
+      // TODO document the output format
+      // TODO can we use FeatureCollection in Argo with withParam?
+      await fsa.write('/tmp/tile-index-validate/output.geojson', {
+        type: 'FeatureCollection',
+        features: [...outputs.values()].map((locs) => {
+          const firstLoc = locs[0];
+          if (firstLoc == null) throw new Error('No location found'); // TODO better error
+          const extract = MapSheet.extract(firstLoc.tileName);
+          if (extract == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
+          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract.bbox), {
+            source: locs.map((l) => l.source),
+            tileName: firstLoc.tileName,
+            isDuplicate: locs.length > 1,
+          });
+        }),
+      });
+      // TODO document the output
+      await fsa.write(
+        '/tmp/tile-index-validate/file-list.json',
+        [...outputs.values()].map((locs) => {
+          return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
         }),
       );
     }
-    if (args.allowDuplicates) {
-      console.log(seen);
-      // Code to change argo split from aws-list group to new tiles?
-    } else {
-      if (args.output) await fsa.write(args.output, JSON.stringify(files));
-      const duplicates = findDuplicates(seen);
-      if (duplicates && duplicates.length > 0) {
-        for (const d of duplicates) logger.warn({ tileName: d.tileName, uris: d.uris }, 'TileIndex:Duplicate'); // is this useful or will people just use the geojson?
-        if (args.duplicatesOutput) await fsa.write(args.duplicatesOutput, JSON.stringify(duplicates, null, 2)); // remove - superceeded by geojson?
-        throw new Error(
-          `Duplicate files found, if '--duplicates-output' specified see output: ${args.duplicatesOutput}`,
-        );
+
+    let duplicateFound = false;
+    for (const val of outputs.values()) {
+      if (val.length < 2) continue;
+      if (args.allowDuplicates) {
+        logger.info({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
+      } else {
+        duplicateFound = true;
+        logger.error({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
       }
     }
+    if (duplicateFound) throw new Error(`Duplicate files found, if '--allow-duplicates' specified see output`);
+    // TODO do we care if no files are left
   },
 });
 
-export function findDuplicates(tiffs: Map<string, string[]>): FileList[] {
-  const duplicates: FileList[] = [];
-  for (const tileName of tiffs.keys()) {
-    const uris = tiffs.get(tileName) ?? [];
-    if (uris.length >= 2) duplicates.push({ tileName, uris: uris });
+export function findDuplicates(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
+  const duplicates: Map<string, TiffLocation[]> = new Map();
+  for (const loc of tiffs) {
+    const uris = duplicates.get(loc.tileName) ?? [];
+    uris.push(loc);
+    duplicates.set(loc.tileName, uris);
   }
   return duplicates;
 }
 
-// TODO fix name of function
-export async function tempNameForAllowDuplicates(tiffs: CogTiff[], scale: number): Promise<Map<string, string[]>> {
-  const seen = new Map<string, string[]>();
-  const output = [];
-  for (const f of tiffs) {
-    const uri = f.source.uri;
-    const firstImage = f.images[0];
-    if (firstImage == null) throw new Error(`Failed to parse tiff: ${f.source.uri}`);
-    if (firstImage.epsg !== 2193) throw new Error(`Invalid projection tiff: ${f.source.uri} EPSG:${firstImage.epsg}`);
-    // output.push(
-    //   Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri, tilename: tileName }),
-    // );
-    try {
-      const bbox = await findBoundingBox(f);
-      if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
-      const tileName = getTileName([bbox[0], bbox[3]], scale);
-
-      const tiffBbox = f.images[0]!.bbox;
-      console.log(
-        getTileName([bbox[0], bbox[3]], scale),
-        getTileName([bbox[2], bbox[1]], scale),
-        getTileName([tiffBbox[0], tiffBbox[1]], scale)
-      )
-      output.push(
-        Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(firstImage.bbox), { source: f.source.uri, tilename: tileName }),
-      );
-      const existingUri = seen.get(tileName) ?? [];
-      existingUri.push(uri);
-      seen.set(tileName, existingUri);
-    } catch (e) {
-      console.log(f.source.uri, e);
-    }
-    f.close();
-  }
-  // source geojson
-  fsa.write(
-    './bounds.geojson',
-    JSON.stringify({
-      type: 'FeatureCollection',
-      features: output,
-    }),
-  );
-  return seen;
+export interface TiffLocation {
+  /** Location to the image */
+  source: string;
+  /** bbox, [minX, minY, maxX, maxY] */
+  bbox: [number, number, number, number];
+  /** EPSG code of the tiff if found */
+  epsg?: number | null;
+  /** Output tile name */
+  tileName: string;
 }
 
+// TODO fix name of function
+export async function extractTiffLocations(
+  tiffs: CogTiff[],
+  scale: number,
+  forceEpsg?: number,
+): Promise<TiffLocation[]> {
+  // const seen = new Map<string, string[]>();
+
+  const result = await Promise.all(
+    tiffs.map(async (f): Promise<TiffLocation | null> => {
+      try {
+        const bbox = await findBoundingBox(f);
+        if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
+
+        const sourceEpsg = forceEpsg ?? f.images[0]?.epsg;
+        if (sourceEpsg == null) throw new Error('EPSG is missing: ' + f.source.uri);
+
+        // bbox is not epsg:2193
+        const targetProjection = Projection.get(2193);
+        const sourceProjection = Projection.get(sourceEpsg);
+
+        const projectedPoint = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]]));
+        const tileName = getTileName(projectedPoint, scale);
+        return { bbox, source: f.source.uri, tileName, epsg: f.images[0]?.epsg };
+      } catch (e) {
+        console.log(f.source.uri, e);
+        return null;
+      } finally {
+        await f.close();
+      }
+    }),
+  );
+
+  const output: TiffLocation[] = [];
+  for (const o of result) if (o) output.push(o);
+
+  return output;
+}
 
 export function roundWithCorrection(value: number): number {
   if (Number.isInteger(value)) {
@@ -250,12 +286,12 @@ export function getTileName(origin: number[], grid_size: number): string {
   // Do some maths
   const offset_x = Math.round(Math.floor((origin_x - MapSheet.origin.x) / MapSheet.width));
   const offset_y = Math.round(Math.floor((MapSheet.origin.y - origin_y) / MapSheet.height));
-  console.log({ offset_x, offset_y })
+  // console.log({ offset_x, offset_y });
   const max_y = MapSheet.origin.y - offset_y * MapSheet.height;
   const min_x = MapSheet.origin.x + offset_x * MapSheet.width;
   const tile_x = Math.round(Math.floor((origin_x - min_x) / tile_width + 1));
   const tile_y = Math.round(Math.floor((max_y - origin_y) / tile_height + 1));
-  console.log({ tile_x, tile_y })
+  // console.log({ tile_x, tile_y });
 
   // Build name
   const letters = Object.keys(SheetRanges)[offset_y];
@@ -263,7 +299,6 @@ export function getTileName(origin: number[], grid_size: number): string {
   const tile_id = `${`${tile_y}`.padStart(nb_digits, '0')}${`${tile_x}`.padStart(nb_digits, '0')}`;
   return `${sheet_code}_${grid_size}_${tile_id}`;
 }
-
 
 // console.log(getTileName([1252480.000, 4830000.000], 1000)); // CH11_1000_0102 -> 01 / 5 =0.2 =1 02 = 0.4 1
 // console.log(getTileName([1252480.000, 4830000.000], 5000)); // CH11_5000_0101
@@ -282,7 +317,7 @@ export function getTileName(origin: number[], grid_size: number): string {
 //   'CH11_1000_0110',
 //   'CH11_1000_1001',
 //   'CH11_1000_1010',
- 
+
 //   // Outside our bounds
 //   'CH11_1000_1111',
 //   // Bigger tiles
@@ -290,6 +325,7 @@ export function getTileName(origin: number[], grid_size: number): string {
 //   'CH11_10000_0101'
 // ].map(f => {
 //   const extract = MapSheet.extract(f)
+// getTileName(extract.bbox)
 //   return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract!.bbox), { source: f })
 // })
 // console.log(JSON.stringify({ type: 'FeatureCollection', features }));
@@ -300,7 +336,6 @@ export function getTileName(origin: number[], grid_size: number): string {
 // if (mapTileIndex) {
 //   console.log(JSON.stringify(Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox))));
 //   };
-// //console.log(getTileName([1252480.000, 4830000.000], 10000)); // CH11_1000_0102 
+// //console.log(getTileName([1252480.000, 4830000.000], 10000)); // CH11_1000_0102
 
 // process.exit() // Kill the application early
-
