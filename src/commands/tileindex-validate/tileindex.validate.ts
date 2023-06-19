@@ -46,7 +46,7 @@ export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description: 'List input files and validate there are no duplicates.',
   args: {
-    ...CommandListArgs,
+    ...CommandListArgs, // TODO most of these args are not valid any more since we are ignoring the groupings
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
 
@@ -203,13 +203,15 @@ export async function extractTiffLocations(
         if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
 
         const sourceEpsg = forceEpsg ?? f.images[0]?.epsg;
-        if (sourceEpsg == null) throw new Error('EPSG is missing: ' + f.source.uri);
+        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.uri}`);
+        const centerX = (bbox[0] + bbox[2]) / 2;
+        const centerY = (bbox[1] + bbox[3]) / 2;
 
         // bbox is not epsg:2193
         const targetProjection = Projection.get(2193);
         const sourceProjection = Projection.get(sourceEpsg);
 
-        const projectedPoint = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]]));
+        const projectedPoint = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
         const tileName = getTileName(projectedPoint, scale);
         return { bbox, source: f.source.uri, tileName, epsg: f.images[0]?.epsg };
       } catch (e) {
