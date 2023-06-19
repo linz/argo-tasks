@@ -2,14 +2,14 @@ import { Bounds } from '@basemaps/geo';
 import { Projection } from '@basemaps/shared/build/proj/projection.js';
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
-import { boolean, command, flag, number, option, optional, string } from 'cmd-ts';
+import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
+import { isArgo } from '../../utils/argo.js';
 import { getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
-import { registerCli } from '../common.js';
-import { CommandListArgs } from '../list/list.js';
-import { isArgo } from '../../utils/argo.js';
+import { config, registerCli, verbose } from '../common.js';
+// import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
@@ -30,6 +30,29 @@ export interface FileList {
  *
  * Asserts that there will be no duplicates
  *
+ * If --allow-duplicates
+ * The script will not error as it is assumed the 'duplicate' tiffs are to be retiled and merged.
+ *
+ * @output
+ * /tmp/tile-index-validate/input.geojson
+ * Geometry:
+ *  bounding boxes of the input tiff files.
+ *
+ * Attributes:
+ * - source (string): path to source tiff
+ * - tileName (string): calculated target tileName
+ * - isDuplicate (boolean): true if source tiffs with duplicate tilenames exist
+ *
+ * /tmp/tile-index-validate/output.geojson
+ * Geometry:
+ *  bounding boxes of the target tiff files
+ *
+ * Attributes:
+ * - source (string[]): paths to source tiffs
+ * - tileName (string): target tileName for target tile index
+ *
+ * file-list.json TODO are we writing this?
+ *
  * @example
  * List a path and validate all tiff files inside of it
  *
@@ -46,10 +69,10 @@ export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description: 'List input files and validate there are no duplicates.',
   args: {
-    ...CommandListArgs, // TODO most of these args are not valid any more since we are ignoring the groupings
+    config,
+    verbose,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
-
     allowDuplicates: flag({
       type: boolean,
       defaultValue: () => false,
@@ -62,13 +85,14 @@ export const commandTileIndexValidate = command({
       long: 'force-output',
       description: 'force output additional files',
     }),
+    location: restPositionals({ type: string, displayName: 'location', description: 'Where to list' }),
   },
   handler: async (args) => {
     registerCli(args);
     logger.info('TileIndex:Start');
 
     const readTiffStartTime = performance.now();
-    const files = await getFiles(args.location, args);
+    const files = await getFiles(args.location);
     const tiffFiles = files.flat().filter(isTiff);
     if (tiffFiles.length === 0) throw new Error('No Files found');
     if (tiffFiles[0]) await fsa.head(tiffFiles[0]);
@@ -88,30 +112,16 @@ export const commandTileIndexValidate = command({
       logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
     }
 
-    const findDuplicatesStartTime = performance.now(); // TODO change name of const
+    const findDuplicatesStartTime = performance.now(); // TODO change name of duplicates
     const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
-    const outputs = findDuplicates(locations);
-    // console.log(dupes);
+    const outputs = findDuplicates(locations); // TODO change name of function doesn't seem appropriate anymore
 
     logger.info(
       { duration: performance.now() - findDuplicatesStartTime, files: locations.length, outputs: outputs.size },
       'TileIndex: Manifest Assessed for Duplicates',
-    ); // TODO change/move (will need x2) log message
-
-    // input.geojson -> { source: "s3://foo/bar/baz_tif.tiff", outputTile: "BK23_1000_0505.tiff", isDuplicate: true }
-    // output.geojson -> { source: ["s3://foo/bar/baz_tif.tiff", ... ], tileName: "BK23_1000_0505.tiff", isDuplicate: true }
-
-    // bounds geojson -> fsa.write...  == info file (do we always want this?)
-    // if allow-duplicates
-    // seen -> [[files], [files]] -> fsa.write(args.output, JSON.stringify(seen)) == standardising input
-    // else
-    // if duplicates
-    // throw new Error(`Duplicate files found, see bounds geojson`); == stop workflow
-    // else
-    // if (args.output) await fsa.write(args.output, JSON.stringify(files)); == standardising input
+    );
 
     if (args.forceOutput || isArgo()) {
-      // TODO document the output format, what is a `source` , `tileName` isDuplicate`?
       await fsa.write('/tmp/tile-index-validate/input.geojson', {
         type: 'FeatureCollection',
         features: locations.map((loc) => {
@@ -127,23 +137,21 @@ export const commandTileIndexValidate = command({
           });
         }),
       });
-      // TODO document the output format
       // TODO can we use FeatureCollection in Argo with withParam?
       await fsa.write('/tmp/tile-index-validate/output.geojson', {
         type: 'FeatureCollection',
         features: [...outputs.values()].map((locs) => {
           const firstLoc = locs[0];
-          if (firstLoc == null) throw new Error('No location found'); // TODO better error
+          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
           const extract = MapSheet.extract(firstLoc.tileName);
           if (extract == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
           return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract.bbox), {
             source: locs.map((l) => l.source),
             tileName: firstLoc.tileName,
-            isDuplicate: locs.length > 1,
           });
         }),
       });
-      // TODO document the output
+      // TODO document the output - if required?
       await fsa.write(
         '/tmp/tile-index-validate/file-list.json',
         [...outputs.values()].map((locs) => {
@@ -162,8 +170,8 @@ export const commandTileIndexValidate = command({
         logger.error({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
       }
     }
-    if (duplicateFound) throw new Error(`Duplicate files found, if '--allow-duplicates' specified see output`);
-    // TODO do we care if no files are left
+    if (duplicateFound) throw new Error(`Duplicate files found, see output.geojson`);
+    // TODO do we care if no files are left ??? TODO ask blayne what he meant
   },
 });
 
@@ -188,14 +196,11 @@ export interface TiffLocation {
   tileName: string;
 }
 
-// TODO fix name of function
 export async function extractTiffLocations(
   tiffs: CogTiff[],
   scale: number,
   forceEpsg?: number,
 ): Promise<TiffLocation[]> {
-  // const seen = new Map<string, string[]>();
-
   const result = await Promise.all(
     tiffs.map(async (f): Promise<TiffLocation | null> => {
       try {
@@ -341,3 +346,6 @@ export function getTileName(origin: number[], grid_size: number): string {
 // //console.log(getTileName([1252480.000, 4830000.000], 10000)); // CH11_1000_0102
 
 // process.exit() // Kill the application early
+
+// input.geojson -> { source: "s3://foo/bar/baz_tif.tiff", outputTile: "BK23_1000_0505.tiff", isDuplicate: true }
+// output.geojson -> { source: ["s3://foo/bar/baz_tif.tiff", ... ], tileName: "BK23_1000_0505.tiff", isDuplicate: true }
