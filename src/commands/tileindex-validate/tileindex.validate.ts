@@ -51,7 +51,12 @@ export interface FileList {
  * - source (string[]): paths to source tiffs
  * - tileName (string): target tileName for target tile index
  *
- * file-list.json TODO are we writing this?
+ * /tmp/tile-index-validate/file-list.json
+ * Filelist grouped by target tileNames
+ *
+ * Attributes:
+ * - input (string[]): paths to source tiffs
+ * - output (string): target tileName for target tile index
  *
  * @example
  * List a path and validate all tiff files inside of it
@@ -137,7 +142,6 @@ export const commandTileIndexValidate = command({
           });
         }),
       });
-      // TODO can we use FeatureCollection in Argo with withParam?
       await fsa.write('/tmp/tile-index-validate/output.geojson', {
         type: 'FeatureCollection',
         features: [...outputs.values()].map((locs) => {
@@ -151,7 +155,6 @@ export const commandTileIndexValidate = command({
           });
         }),
       });
-      // TODO document the output - if required?
       await fsa.write(
         '/tmp/tile-index-validate/file-list.json',
         [...outputs.values()].map((locs) => {
