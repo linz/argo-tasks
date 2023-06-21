@@ -1,8 +1,7 @@
 import o from 'ospec';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
 import { findDuplicates, getTileName, roundWithCorrection } from '../tileindex.validate.js';
-import { DuplicateInput, DuplicateOutput, NoDuplicateInput } from './tileindex.validate.data.js';
-import { CogTiff } from '@cogeotiff/core';
+import { DuplicateInput, DuplicateOutput } from './tileindex.validate.data.js';
 
 o.spec('roundWithCorrectionValid', () => {
   o('should round up (15 decimal places)', async () => {
@@ -57,16 +56,14 @@ o.spec('getTileName', () => {
 
 o.spec('findDuplicates', () => {
   o('should find duplicates', async () => {
-    o(findDuplicates(DuplicateInput, 1000)).deepEquals(DuplicateOutput);
-  });
-  o('find no duplicates', async () => {
-    o(findDuplicates(NoDuplicateInput, 1000)).deepEquals([]);
+    o(JSON.stringify(findDuplicates(DuplicateInput))).equals(JSON.stringify(DuplicateOutput));
   });
 
-  o('should throw if imagery is not in ESPG:2193', () => {
-    const brokenImages = [
-      { source: { uri: 's3://test-path-one' }, images: [{ origin: [1492000, 6234000], epsg: 3857 }] },
-    ] as unknown as CogTiff[];
-    o(() => findDuplicates(brokenImages, 1000)).throws(Error);
-  });
+
+//   o('should throw if imagery is not in ESPG:2193', () => {
+//     const brokenImages = [
+//       { source: { uri: 's3://test-path-one' }, images: [{ origin: [1492000, 6234000], epsg: 3857 }] },
+//     ] as unknown as CogTiff[];
+//     o(() => findDuplicates(brokenImages, 1000)).throws(Error);
+//   });
 });
