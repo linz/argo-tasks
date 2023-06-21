@@ -118,9 +118,9 @@ export const commandTileIndexValidate = command({
     }
 
     const findDuplicatesStartTime = performance.now(); // TODO change name of duplicates
+    console.log(tiffs)
     const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
     const outputs = findDuplicates(locations); // TODO change name of function doesn't seem appropriate anymore
-    console.log(outputs);
 
     logger.info(
       { duration: performance.now() - findDuplicatesStartTime, files: locations.length, outputs: outputs.size },

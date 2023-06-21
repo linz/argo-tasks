@@ -1,7 +1,7 @@
 import o from 'ospec';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
-import { findDuplicates, getTileName, roundWithCorrection } from '../tileindex.validate.js';
-import { DuplicateInput, DuplicateOutput } from './tileindex.validate.data.js';
+import { extractTiffLocations, findDuplicates, getTileName, roundWithCorrection } from '../tileindex.validate.js';
+import { DuplicateInput, DuplicateOutput, InputCogTiff } from './tileindex.validate.data.js';
 
 o.spec('roundWithCorrectionValid', () => {
   o('should round up (15 decimal places)', async () => {
@@ -58,7 +58,7 @@ o.spec('findDuplicates', () => {
   o('should find duplicates', async () => {
     o(JSON.stringify(findDuplicates(DuplicateInput))).equals(JSON.stringify(DuplicateOutput));
   });
-
+});
 
 //   o('should throw if imagery is not in ESPG:2193', () => {
 //     const brokenImages = [
@@ -66,4 +66,11 @@ o.spec('findDuplicates', () => {
 //     ] as unknown as CogTiff[];
 //     o(() => findDuplicates(brokenImages, 1000)).throws(Error);
 //   });
+
+o.spec('tiffLocation', () => {
+  o('get location from tiff', async () => {
+    o(JSON.stringify(extractTiffLocations(InputCogTiff, 1000))).equals(JSON.stringify(DuplicateInput));
+  });
 });
+
+o.run();
