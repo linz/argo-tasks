@@ -203,7 +203,7 @@ export interface TiffLocation {
 export async function extractTiffLocations(
   tiffs: CogTiff[],
   scale: number,
-  forceEpsg?: number,
+  forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {
   const result = await Promise.all(
     tiffs.map(async (f): Promise<TiffLocation | null> => {
@@ -211,7 +211,7 @@ export async function extractTiffLocations(
         const bbox = await findBoundingBox(f);
         if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
 
-        const sourceEpsg = forceEpsg ?? f.images[0]?.epsg;
+        const sourceEpsg = forceSourceEpsg ?? f.images[0]?.epsg;
         if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.uri}`);
         const centerX = (bbox[0] + bbox[2]) / 2;
         const centerY = (bbox[1] + bbox[3]) / 2;
@@ -227,7 +227,7 @@ export async function extractTiffLocations(
         console.log(f.source.uri, e);
         return null;
       } finally {
-        await f.close();
+        await f.close?.();
       }
     }),
   );

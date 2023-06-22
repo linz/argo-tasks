@@ -1,4 +1,4 @@
-import { CogTiff, TiffTagGeo } from '@cogeotiff/core';
+import { CogTiff, CogTiffImage, TiffTagGeo } from '@cogeotiff/core';
 import { fsa } from '@chunkd/fs';
 
 /**
@@ -51,7 +51,7 @@ export const PixelIsPoint = 2;
  * @returns [minX, minY, maxX, maxY] bounding box
  */
 export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, number, number] | null> {
-  const img = tiff.getImage(0);
+  const img = tiff.images[0] as CogTiffImage;
   const size = img.size;
 
   // If the tiff has geo location information just read it from the tiff

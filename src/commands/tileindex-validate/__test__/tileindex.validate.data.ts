@@ -1,9 +1,20 @@
 import { TiffLocation } from '../tileindex.validate.js';
 import { CogTiff } from '@cogeotiff/core';
 
+const resolution = [1, -1, 0];
+const size = { width: 480, height: 720 }
+const valueGeo = () => undefined;
+
+export const TiffAs21 = { source: { uri: 's3://test-as21' }, images: [{ origin: [1492000, 6234000], epsg: 2193, resolution, size, isGeoLocated: true, valueGeo }] } as unknown as CogTiff
+export const TiffAy29 = { source: { uri: 's3://test-ay29' }, images: [{ origin: [1684000, 6018000], epsg: 2193, resolution, size, isGeoLocated: true, valueGeo }] } as unknown as CogTiff
+
+
+// TODO project origin from 2193 to 3857 https://epsg.io/transform#s_srs=2193&t_srs=3857&x=1492000.0000000&y=6234000.0000000
+export const TiffAs21In3857 = { source: { uri: 's3://test-as21-3857' }, images: [{ origin: [1492000, 6234000], epsg: 3857, resolution, size, isGeoLocated: true, valueGeo }] } as unknown as CogTiff
+
 export const InputCogTiff = [
-  { source: { uri: 's3://test-path-one' }, images: [{ origin: [1492000, 6234000], epsg: 2193 }] },
-  // { source: { uri: 's3://test-path-two' }, images: [{ origin: [1684000, 6018000], epsg: 2193 }] },
+  { source: { uri: 's3://test-path-one' }, images: [{ origin: [1492000, 6234000], epsg: 2193, resolution, size, isGeoLocated: true, valueGeo }] },
+  { source: { uri: 's3://test-path-two' }, images: [{ origin: [1684000, 6018000], epsg: 2193, resolution, size, isGeoLocated: true, valueGeo}] },
 ] as unknown as CogTiff[];
 
 // export const DuplicateInputCogTiff = [
@@ -12,7 +23,7 @@ export const InputCogTiff = [
 //   { source: { uri: 's3://duplicate' }, images: [{ origin: [1492000, 6234000], epsg: 2193 }] },
 // ] as unknown as CogTiff[];
 
-// export const DuplicateOutputCogTiff = [{ tileName: 'AS21_1000_0101', uris: ['s3://test-path-one', 's3://duplicate'] }];
+export const DuplicateOutputCogTiff = [{ tileName: 'AS21_1000_0101', uris: ['s3://test-path-one', 's3://duplicate'] }];
 
 // export const NoDuplicateInputCogTiff = [
 //   { source: { uri: 's3://test-path-one' }, images: [{ origin: [1492000, 6234000], epsg: 2193 }] },

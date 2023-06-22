@@ -1,7 +1,8 @@
 import o from 'ospec';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
 import { extractTiffLocations, findDuplicates, getTileName, roundWithCorrection } from '../tileindex.validate.js';
-import { DuplicateInput, DuplicateOutput, InputCogTiff } from './tileindex.validate.data.js';
+import { DuplicateInput, DuplicateOutput, TiffAs21, TiffAs21In3857, TiffAy29 } from './tileindex.validate.data.js';
+import { MapSheet } from '../../../utils/mapsheet.js';
 
 o.spec('roundWithCorrectionValid', () => {
   o('should round up (15 decimal places)', async () => {
@@ -52,6 +53,32 @@ o.spec('getTileName', () => {
       getTileName([1643679.984567, 5444159], 1000);
     }).throws(Error);
   });
+
+  o('should get correct parent tile 1:1k', () => {
+
+    o(getTileName(MapSheet.extract('CH11_1000_0101')?.bbox!, 1000)).equals('CH11_5000_0101');
+    o(getTileName(MapSheet.extract('CH11_1000_0105')?.bbox!, 1000)).equals('CH11_1000_0105');
+    o(getTileName(MapSheet.extract('CH11_1000_0501')?.bbox!, 1000)).equals('CH11_1000_0501');
+    o(getTileName(MapSheet.extract('CH11_1000_0505')?.bbox!, 1000)).equals('CH11_1000_0505');
+  })
+  o('should get correct parent tile 1:5k', () => {
+
+  o(getTileName(MapSheet.extract('CH11_1000_0101')?.bbox!, 5000)).equals('CH11_5000_0101');
+  o(getTileName(MapSheet.extract('CH11_1000_0105')?.bbox!, 5000)).equals('CH11_5000_0101');
+  o(getTileName(MapSheet.extract('CH11_1000_0501')?.bbox!, 5000)).equals('CH11_5000_0101');
+  o(getTileName(MapSheet.extract('CH11_1000_0505')?.bbox!, 5000)).equals('CH11_5000_0101');
+  })
+
+  o('should get correct parent tile 1:10k', () => {
+    // o(getTileName(MapSheet.extract((MapSheet.extract('CH11_1000_0101')?.bbox!, 5000)))).equals('CH11_10000_0101')
+
+  o(getTileName(MapSheet.extract('CH11_1000_0101')?.bbox!, 10000)).equals('CH11_10000_0101');
+  o(getTileName(MapSheet.extract('CH11_1000_0110')?.bbox!, 10000)).equals('CH11_10000_0101');
+  o(getTileName(MapSheet.extract('CH11_1000_1010')?.bbox!, 10000)).equals('CH11_10000_0101');
+  o(getTileName(MapSheet.extract('CH11_1000_1001')?.bbox!, 10000)).equals('CH11_10000_0101');
+  });
+
+
 });
 
 o.spec('findDuplicates', () => {
@@ -69,8 +96,23 @@ o.spec('findDuplicates', () => {
 
 o.spec('tiffLocation', () => {
   o('get location from tiff', async () => {
-    o(JSON.stringify(extractTiffLocations(InputCogTiff, 1000))).equals(JSON.stringify(DuplicateInput));
+    const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000)
+    o(location[0]?.tileName).equals('AS21_1000_0101')
+    o(location[1]?.tileName).equals('AY29_1000_0101')
   });
+
+  o('should find duplicates', async () => {
+    const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000)
+    const duplicates = findDuplicates(location);
+    o(duplicates.get('AS21_1000_0101')?.map(c => c.source)).deepEquals([ 's3://test-as21',  's3://test-as21'])
+    o(duplicates.get('AY29_1000_0101')?.map(c => c.source)).deepEquals([ 's3://test-ay29',  's3://test-ay29'])
+  })
+
+  o('should find tiles from 3857', async () => {
+    const location = await extractTiffLocations([TiffAs21In3857], 1000)
+    o(location[0]?.tileName).equals('AS21_1000_0101')
+  })
 });
+
 
 o.run();
