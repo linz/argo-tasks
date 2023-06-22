@@ -134,7 +134,7 @@ export const MapSheet = {
     out.width = tileOffset.width;
     out.height = tileOffset.height;
     // As in NZTM negative Y goes north, the minY is actually the bottom right point
-    out.bbox = [out.origin.x, out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
+    out.bbox = [out.origin.x,  out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
     return out;
   },
   /**

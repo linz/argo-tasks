@@ -78,17 +78,26 @@ export const commandTileIndexValidate = command({
     verbose,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
-    allowDuplicates: flag({
+    retile: flag({
       type: boolean,
       defaultValue: () => false,
-      long: 'allow-duplicates',
-      description: 'Allow Duplicates for Merging',
+      long: 'retile',
+      description: 'Output tile configuration for retiling',
+      defaultValueIsSerializable: true,
+    }),
+    validate: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'validate',
+      description: 'Validate that all input tiffs perfectly align to tile grid',
+      defaultValueIsSerializable: true,
     }),
     forceOutput: flag({
       type: boolean,
       defaultValue: () => false,
       long: 'force-output',
       description: 'force output additional files',
+      defaultValueIsSerializable: true,
     }),
     location: restPositionals({ type: string, displayName: 'location', description: 'Where to list' }),
   },
@@ -118,9 +127,8 @@ export const commandTileIndexValidate = command({
     }
 
     const findDuplicatesStartTime = performance.now(); // TODO change name of duplicates
-    console.log(tiffs)
     const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
-    const outputs = findDuplicates(locations); // TODO change name of function doesn't seem appropriate anymore
+    const outputs = groupByTileName(locations); // TODO change name of function doesn't seem appropriate anymore
 
     logger.info(
       { duration: performance.now() - findDuplicatesStartTime, files: locations.length, outputs: outputs.size },
@@ -164,22 +172,36 @@ export const commandTileIndexValidate = command({
       );
     }
 
-    let duplicateFound = false;
+    let retileNeeded = false;
     for (const val of outputs.values()) {
       if (val.length < 2) continue;
-      if (args.allowDuplicates) {
-        logger.info({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
+      if (args.retile) {
+        logger.info({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Retile');
       } else {
-        duplicateFound = true;
+        retileNeeded = true;
         logger.error({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
       }
     }
-    if (duplicateFound) throw new Error(`Duplicate files found, see output.geojson`);
+
+    // Validate that all tiffs align to tile grid
+    if (args.validate) {
+      let validationFailed = false;
+      for (const tiff of locations)  {
+        const ret = validateTiffAlignment(tiff);
+        if (ret === true) continue;
+        logger.error({err: ret, source: tiff.source}, 'TileInvalid:Validation:Failed')
+      }
+
+      if (validationFailed) throw new Error('Tile alignment validation failed')
+    }
+
+    if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
     // TODO do we care if no files are left ??? TODO ask blayne what he meant
   },
 });
 
-export function findDuplicates(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
+// groupByTileName
+export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
   const duplicates: Map<string, TiffLocation[]> = new Map();
   for (const loc of tiffs) {
     const uris = duplicates.get(loc.tileName) ?? [];
@@ -200,6 +222,35 @@ export interface TiffLocation {
   tileName: string;
 }
 
+/**
+ * 
+ * --validate // Validates all inputs  align to output grid
+ * --retile // Creates a list of files that need to be retiled
+ * 
+ * 
+ * input: 1:1000
+ * scale: 1:1000
+ * // --retile=false --validate=true
+ * // Validate the top left points of every input align to the 1:1000 grid and no duplicates
+ * 
+ * input: 1:1000
+ * scale: 1:1000
+ * // --retile=true --validate=true
+ * // Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
+ * 
+ * input: 1:1000
+ * scale: 1:5000, 1:10_000
+ * // --retile=true --validate=false
+ * // create a re-tiling output of {tileName, input: string[] }
+ * 
+ * 
+ * 
+ * -- Not handled (yet!)
+ * input: 1:10_000
+ * scale: 1:1000
+ * // create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
+ * 
+ */
 export async function extractTiffLocations(
   tiffs: CogTiff[],
   scale: number,
@@ -215,13 +266,20 @@ export async function extractTiffLocations(
         if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.uri}`);
         const centerX = (bbox[0] + bbox[2]) / 2;
         const centerY = (bbox[1] + bbox[3]) / 2;
-
         // bbox is not epsg:2193
         const targetProjection = Projection.get(2193);
         const sourceProjection = Projection.get(sourceEpsg);
 
-        const projectedPoint = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        const tileName = getTileName(projectedPoint, scale);
+        const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
+        if (x == null || y == null) throw new Error(`Failed to repoject point: ${f.source.uri}`)
+        // Tilename from center
+        const tileName = getTileName(x, y, scale);
+
+        // if (shouldValidate) {
+        //   // Is the tiff bounding box the same as the mapsheet bounding box!
+        //   // Also need to allow for ~1.5cm of error between bounding boxes.
+        //   // assert bbox == MapSheet.extract(tileName).bbox
+        // }
         return { bbox, source: f.source.uri, tileName, epsg: f.images[0]?.epsg };
       } catch (e) {
         console.log(f.source.uri, e);
@@ -237,46 +295,28 @@ export async function extractTiffLocations(
   return output;
 }
 
-export function roundWithCorrection(value: number): number {
-  if (Number.isInteger(value)) {
-    return value;
-  }
+export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):boolean | Error {
+  // tiff.bbox vs MapSheet.extract(tiff.tileName)
+  const extract = MapSheet.extract(tiff.tileName);
+  if (extract == null) throw new Error('Failed to extact bounding box from: '+ tiff.tileName)
+  // Top Left
+  const errX = Math.abs(tiff.bbox[0] - extract.bbox[0])
+  const errY = Math.abs(tiff.bbox[2] - extract.bbox[2])
+  if (errX > allowedError || errY > allowedError) return new Error(`The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[2]} source:${tiff.source}`)
 
-  // Round to centimeter precision
-  let correction = Number(value.toFixed(2));
-  const rounded_value = Number(value.toFixed(2));
+  // // Bottom right 
+  // // TODO do we validate bottom right
+  // Math.abs(tiff.bbox[1] - extract.bbox[1])
+  // Math.abs(tiff.bbox[3] - extract.bbox[3])
 
-  if (!Number.isInteger(rounded_value)) {
-    if (Number.isInteger(rounded_value + MapSheet.roundCorrection)) {
-      correction = rounded_value + MapSheet.roundCorrection;
-    } else if (Number.isInteger(rounded_value - MapSheet.roundCorrection)) {
-      correction = rounded_value - MapSheet.roundCorrection;
-    }
-  }
-
-  if (Number.isInteger(correction)) {
-    return correction;
-  }
-
-  return correction;
+  return true;
 }
 
-export function getTileName(origin: number[], grid_size: number): string {
+export function getTileName(originX: number, originY:number, grid_size: number): string {
   if (!MapSheet.gridSizes.includes(grid_size)) {
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
-  const [oX, oY] = origin;
-  if (oX == null || Number.isNaN(oX) || oY == null || Number.isNaN(oY)) {
-    throw new Error(`Failed to parse origin ${oX},${oY}`);
-  }
 
-  const origin_x = roundWithCorrection(oX);
-  const origin_y = roundWithCorrection(oY);
-
-  // If x or y is not a round number, the origin is not valid
-  if (!Number.isInteger(origin_x) || !Number.isInteger(origin_y)) {
-    throw new Error(`The origin is invalid x = ${origin_x}, y = ${origin_y}`);
-  }
 
   const scale = Math.floor(MapSheet.gridSizeMax / grid_size);
   const tile_width = Math.floor(MapSheet.width / scale);
@@ -286,21 +326,21 @@ export function getTileName(origin: number[], grid_size: number): string {
     nb_digits = 3;
   }
 
-  if (!(SHEET_MIN_X <= origin_x && origin_x <= SHEET_MAX_X)) {
-    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${origin_x}`);
+  if (!(SHEET_MIN_X <= originX && originX <= SHEET_MAX_X)) {
+    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${originX}`);
   }
-  if (!(SHEET_MIN_Y <= origin_y && origin_y <= SHEET_MAX_Y)) {
-    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${origin_y}`);
+  if (!(SHEET_MIN_Y <= originY && originY <= SHEET_MAX_Y)) {
+    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${originY}`);
   }
 
   // Do some maths
-  const offset_x = Math.round(Math.floor((origin_x - MapSheet.origin.x) / MapSheet.width));
-  const offset_y = Math.round(Math.floor((MapSheet.origin.y - origin_y) / MapSheet.height));
+  const offset_x = Math.round(Math.floor((originX - MapSheet.origin.x) / MapSheet.width));
+  const offset_y = Math.round(Math.floor((MapSheet.origin.y - originY) / MapSheet.height));
   // console.log({ offset_x, offset_y });
   const max_y = MapSheet.origin.y - offset_y * MapSheet.height;
   const min_x = MapSheet.origin.x + offset_x * MapSheet.width;
-  const tile_x = Math.round(Math.floor((origin_x - min_x) / tile_width + 1));
-  const tile_y = Math.round(Math.floor((max_y - origin_y) / tile_height + 1));
+  const tile_x = Math.round(Math.floor((originX - min_x) / tile_width + 1));
+  const tile_y = Math.round(Math.floor((max_y - originY) / tile_height + 1));
   // console.log({ tile_x, tile_y });
 
   // Build name
