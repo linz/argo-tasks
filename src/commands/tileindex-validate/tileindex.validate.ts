@@ -271,7 +271,7 @@ export async function extractTiffLocations(
         const sourceProjection = Projection.get(sourceEpsg);
 
         const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        if (x == null || y == null) throw new Error(`Failed to repoject point: ${f.source.uri}`)
+        if (x == null || y == null) throw new Error(`Failed to reproject point: ${f.source.uri}`)
         // Tilename from center
         const tileName = getTileName(x, y, scale);
 
