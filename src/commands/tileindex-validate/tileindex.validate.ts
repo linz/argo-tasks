@@ -28,9 +28,10 @@ export interface FileList {
 /**
  * Validate list of tiffs match a LINZ Mapsheet tile index
  *
+ * If --validate
  * Asserts that there will be no duplicates
  *
- * If --allow-duplicates
+ * If --retile
  * The script will not error as it is assumed the 'duplicate' tiffs are to be retiled and merged.
  *
  * @output
@@ -59,15 +60,15 @@ export interface FileList {
  * - output (string): target tileName for target tile index
  *
  * @example
- * List a path and validate all tiff files inside of it
+ * Validate all source tiffs align to scale grid
  *
  * ```bash
- * tileindex-validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/ --includes "[BE_232*].tiff"
+ * tileindex-validate --scale 5000 --validate s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
  * ```
  *
- * Validate a collection of tiff files
+ * Create a list of files that need to be retiled
  * ```bash
- * tileindex-validate --scale 5000 ./path/to/imagery/
+ * tileindex-validate --scale 5000 --retile ./path/to/imagery/
  * ```
  */
 export const commandTileIndexValidate = command({
@@ -99,7 +100,7 @@ export const commandTileIndexValidate = command({
       description: 'force output additional files',
       defaultValueIsSerializable: true,
     }),
-    location: restPositionals({ type: string, displayName: 'location', description: 'Where to list' }),
+    location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
   handler: async (args) => {
     registerCli(args);
@@ -126,12 +127,12 @@ export const commandTileIndexValidate = command({
       logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
     }
 
-    const findDuplicatesStartTime = performance.now(); // TODO change name of duplicates
+    const groupByTileNameStartTime = performance.now();
     const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
-    const outputs = groupByTileName(locations); // TODO change name of function doesn't seem appropriate anymore
+    const outputs = groupByTileName(locations);
 
     logger.info(
-      { duration: performance.now() - findDuplicatesStartTime, files: locations.length, outputs: outputs.size },
+      { duration: performance.now() - groupByTileNameStartTime, files: locations.length, outputs: outputs.size },
       'TileIndex: Manifest Assessed for Duplicates',
     );
 
@@ -200,7 +201,6 @@ export const commandTileIndexValidate = command({
   },
 });
 
-// groupByTileName
 export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
   const duplicates: Map<string, TiffLocation[]> = new Map();
   for (const loc of tiffs) {
@@ -224,7 +224,7 @@ export interface TiffLocation {
 
 /**
  * 
- * --validate // Validates all inputs  align to output grid
+ * --validate // Validates all inputs align to output grid
  * --retile // Creates a list of files that need to be retiled
  * 
  * 
@@ -350,43 +350,6 @@ export function getTileName(originX: number, originY:number, grid_size: number):
   return `${sheet_code}_${grid_size}_${tile_id}`;
 }
 
-// console.log(getTileName([1252480.000, 4830000.000], 1000)); // CH11_1000_0102 -> 01 / 5 =0.2 =1 02 = 0.4 1
-// console.log(getTileName([1252480.000, 4830000.000], 5000)); // CH11_5000_0101
-
-// const features = [
-//   // Top left of all
-//   'CH11_1000_0101',
-//   'CH11_1000_0102',
-
-//   // Three points of 1:5k
-//   'CH11_1000_0105',
-//   'CH11_1000_0501',
-//   'CH11_1000_0505',
-
-//   // Three points of 1:10k
-//   'CH11_1000_0110',
-//   'CH11_1000_1001',
-//   'CH11_1000_1010',
-
-//   // Outside our bounds
-//   'CH11_1000_1111',
-//   // Bigger tiles
-//   'CH11_5000_0101',
-//   'CH11_10000_0101'
-// ].map(f => {
-//   const extract = MapSheet.extract(f)
-// getTileName(extract.bbox)
-//   return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract!.bbox), { source: f })
-// })
-// console.log(JSON.stringify({ type: 'FeatureCollection', features }));
-
-// const mapTileIndex = MapSheet.extract("CH11_1000_0102")
-// console.log("mapTileIndex", mapTileIndex);
-// // console.log(Bounds.fromBbox(mapTileIndex.bbox));
-// if (mapTileIndex) {
-//   console.log(JSON.stringify(Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox))));
-//   };
-// //console.log(getTileName([1252480.000, 4830000.000], 10000)); // CH11_1000_0102
 
 // process.exit() // Kill the application early
 
