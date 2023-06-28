@@ -12,7 +12,8 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import { createSandbox } from 'sinon';
 import assert from 'assert';
-// import { logger } from '../../../log.js';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 function convertTileName(x: string, scale: number): string | null {
   const extract = MapSheet.extract(x);
@@ -42,7 +43,6 @@ o.spec('getTileName', () => {
   });
 });
 o.spec('tiffLocation', () => {
-  // logger.level = 'silent'
   o('get location from tiff', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
     TiffAs21.images[0].origin[0] = 1492000;
