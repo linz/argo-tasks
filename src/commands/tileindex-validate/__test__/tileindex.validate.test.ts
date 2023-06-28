@@ -1,72 +1,225 @@
 import o from 'ospec';
-import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
-import { findDuplicates, getTileName, roundWithCorrection } from '../tileindex.validate.js';
-import { DuplicateInput, DuplicateOutput, NoDuplicateInput } from './tileindex.validate.data.js';
-import { CogTiff } from '@cogeotiff/core';
+import {
+  TiffLoader,
+  commandTileIndexValidate,
+  extractTiffLocations,
+  getTileName,
+  groupByTileName,
+} from '../tileindex.validate.js';
+import { FakeCogTiff } from './tileindex.validate.data.js';
+import { MapSheet } from '../../../utils/mapsheet.js';
+import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+import { createSandbox } from 'sinon';
+import assert from 'assert';
 
-o.spec('roundWithCorrectionValid', () => {
-  o('should round up (15 decimal places)', async () => {
-    o(roundWithCorrection(1643679.999967818148434)).equals(1643680);
-  });
-  o('Should round up (2 decimal places)', async () => {
-    o(roundWithCorrection(1643679.99)).equals(1643680);
-  });
-  o('should round down', async () => {
-    o(roundWithCorrection(1643680.01)).equals(1643680);
-  });
-  o('.05 should not round', async () => {
-    o(roundWithCorrection(1643680.05)).equals(1643680.05);
-  });
-  o('Should round to 2 decimal places (.969 to .97)', async () => {
-    o(roundWithCorrection(1643679.969)).equals(1643679.97);
-  });
-  o('Should round to 2 decimal places (.051 to .05)', async () => {
-    o(roundWithCorrection(5444160.051)).equals(5444160.05);
-  });
-  o('Should round down to whole number', async () => {
-    o(roundWithCorrection(5444160.015)).equals(5444160);
-  });
-  o('Should round up to whole number', async () => {
-    o(roundWithCorrection(5444160.985)).equals(5444161);
-  });
-});
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+function convertTileName(x: string, scale: number): string | null {
+  const extract = MapSheet.extract(x);
+  if (extract == null) return null;
+  return getTileName(extract.bbox[0], extract.bbox[3], scale);
+}
 
 o.spec('getTileName', () => {
-  o('should generate correct name', async () => {
-    o(getTileName([1236640, 4837560], 500)).equals('CG10_500_080037');
+  o('should get correct parent tile 1:1k', () => {
+    o(convertTileName('CH11_1000_0101', 1000)).equals('CH11_1000_0101');
+    o(convertTileName('CH11_1000_0105', 1000)).equals('CH11_1000_0105');
+    o(convertTileName('CH11_1000_0501', 1000)).equals('CH11_1000_0501');
+    o(convertTileName('CH11_1000_0505', 1000)).equals('CH11_1000_0505');
   });
-  o('should generate correct name with drift', async () => {
-    o(getTileName([1643679.999967818148434, 5444159.999954843893647], 1000)).equals('BP27_1000_4817');
+  o('should get correct parent tile 1:5k', () => {
+    o(convertTileName('CH11_1000_0101', 5000)).equals('CH11_5000_0101');
+    o(convertTileName('CH11_1000_0105', 5000)).equals('CH11_5000_0101');
+    o(convertTileName('CH11_1000_0501', 5000)).equals('CH11_5000_0101');
+    o(convertTileName('CH11_1000_0505', 5000)).equals('CH11_5000_0101');
   });
-  o('should guilds correct sheet code', async () => {
-    for (const f of MapSheetData) {
-      o(getTileName([f.origin.x, f.origin.y], 500).split('_')[0]).equals(f.code);
-    }
+
+  o('should get correct parent tile 1:10k', () => {
+    o(convertTileName('CH11_1000_0101', 10000)).equals('CH11_10000_0101');
+    o(convertTileName('CH11_1000_0110', 10000)).equals('CH11_10000_0101');
+    o(convertTileName('CH11_1000_1010', 10000)).equals('CH11_10000_0101');
+    o(convertTileName('CH11_1000_1001', 10000)).equals('CH11_10000_0101');
   });
-  o('Should throw error for Invalid Origin', () => {
-    o(() => {
-      getTileName([1643679, 5444159.01535345], 1000);
-    }).throws(Error);
+});
+o.spec('tiffLocation', () => {
+  o('get location from tiff', async () => {
+    const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
+    const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000);
+    o(location[0]?.tileName).equals('AS21_1000_0101');
+    o(location[1]?.tileName).equals('AY29_1000_0101');
   });
-  o('Should also throw error for Invalid Origin', () => {
-    o(() => {
-      getTileName([1643679.984567, 5444159], 1000);
-    }).throws(Error);
+
+  o('should find duplicates', async () => {
+    const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
+    const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
+    const duplicates = groupByTileName(location);
+    o(duplicates.get('AS21_1000_0101')?.map((c) => c.source)).deepEquals([
+      's3://path/AS21_1000_0101.tiff',
+      's3://path/AS21_1000_0101.tiff',
+    ]);
+    o(duplicates.get('AY29_1000_0101')?.map((c) => c.source)).deepEquals([
+      's3://path/AY29_1000_0101.tiff',
+      's3://path/AY29_1000_0101.tiff',
+    ]);
+  });
+
+  o('should find tiles from 3857', async () => {
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
+    TiffAy29.images[0].epsg = 3857;
+    TiffAy29.images[0].origin[0] = 19128043.69337794;
+    TiffAy29.images[0].origin[1] = -4032710.6009459053;
+    const location = await extractTiffLocations([TiffAy29], 1000);
+    o(location[0]?.tileName).equals('AS21_1000_0101');
   });
 });
 
-o.spec('findDuplicates', () => {
-  o('should find duplicates', async () => {
-    o(findDuplicates(DuplicateInput, 1000)).deepEquals(DuplicateOutput);
+o.spec('validate', () => {
+  const memory = new FsMemory();
+  const sandbox = createSandbox();
+
+  o.before(() => {
+    fsa.register('/tmp', memory);
   });
-  o('find no duplicates', async () => {
-    o(findDuplicates(NoDuplicateInput, 1000)).deepEquals([]);
+  o.beforeEach(() => memory.files.clear());
+  o.afterEach(() => sandbox.restore());
+
+  o('should fail if duplicate tiles are detected', async () => {
+    // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
+    const stub = sandbox
+      .stub(TiffLoader, 'load')
+      .returns(
+        Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
+      );
+    try {
+      await commandTileIndexValidate.handler({
+        location: ['s3://test'],
+        retile: false,
+        validate: true,
+        scale: 1000,
+        forceOutput: true,
+      } as any);
+      assert.fail('Should throw exception');
+    } catch (e) {
+      o(String(e)).equals('Error: Duplicate files found, see output.geojson');
+    }
+
+    o(stub.callCount).equals(1);
+    o(stub.args?.[0]?.[0]).deepEquals(['s3://test']);
+
+    const outputFileList: GeoJSON.FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson');
+    o(outputFileList.features.length).equals(1);
+    const firstFeature = outputFileList.features[0];
+    o(firstFeature?.properties?.['tileName']).equals('AS21_1000_0101');
+    o(firstFeature?.properties?.['source']).deepEquals([
+      's3://path/AS21_1000_0101.tiff',
+      's3://path/AS21_1000_0101.tiff',
+    ]);
   });
 
-  o('should throw if imagery is not in ESPG:2193', () => {
-    const brokenImages = [
-      { source: { uri: 's3://test-path-one' }, images: [{ origin: [1492000, 6234000], epsg: 3857 }] },
-    ] as unknown as CogTiff[];
-    o(() => findDuplicates(brokenImages, 1000)).throws(Error);
+  o('should not fail if duplicate tiles are detected but --retile is used', async () => {
+    // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
+    sandbox
+      .stub(TiffLoader, 'load')
+      .returns(
+        Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
+      );
+    await commandTileIndexValidate.handler({
+      location: ['s3://test'],
+      retile: true,
+      scale: 1000,
+      forceOutput: true,
+    } as any);
+    const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+    o(outputFileList).deepEquals([
+      { output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] },
+    ]);
   });
+
+  for (const offset of [0.05, -0.05]) {
+    o(`should fail if input tiff origin X is offset by ${offset}m`, async () => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+      fakeTiff.images[0].origin[0] = fakeTiff.images[0].origin[0] + offset;
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      try {
+        await commandTileIndexValidate.handler({
+          location: ['s3://test'],
+          retile: true,
+          validate: true,
+          scale: 1000,
+          forceOutput: true,
+        } as any);
+        assert.fail('Should throw exception');
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed');
+      }
+    });
+    o(`should fail if input tiff origin Y is offset by ${offset}m`, async () => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+      fakeTiff.images[0].origin[1] = fakeTiff.images[0].origin[1] + offset;
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      try {
+        await commandTileIndexValidate.handler({
+          location: ['s3://test'],
+          retile: true,
+          validate: true,
+          scale: 1000,
+          forceOutput: true,
+        } as any);
+        assert.fail('Should throw exception');
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed');
+      }
+    });
+  }
+  for (const offset of [0.1, -0.1]) {
+    // Input AS21_1000_0101.tiff width/height by +1m, -1m =>
+    // 720x480 => 721x480
+    // 720x481 => 720x481
+    // 721x481 => 721x481
+    o(`should fail if input tiff width is off by ${offset}m`, async () => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+      fakeTiff.images[0].size.width = fakeTiff.images[0].size.width + offset;
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      try {
+        await commandTileIndexValidate.handler({
+          location: ['s3://test'],
+          retile: true,
+          validate: true,
+          scale: 1000,
+          forceOutput: true,
+        } as any);
+        assert.fail('Should throw exception');
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed');
+      }
+    });
+    o(`should fail if input tiff height is off by ${offset}m`, async () => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+      fakeTiff.images[0].size.height = fakeTiff.images[0].size.height + offset;
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      try {
+        await commandTileIndexValidate.handler({
+          location: ['s3://test'],
+          retile: true,
+          validate: true,
+          scale: 1000,
+          forceOutput: true,
+        } as any);
+        assert.fail('Should throw exception');
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed');
+      }
+    });
+  }
 });

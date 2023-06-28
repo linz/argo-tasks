@@ -2,7 +2,7 @@ import { CogTiff, TiffTagGeo } from '@cogeotiff/core';
 import { fsa } from '@chunkd/fs';
 
 /**
- * Attempt to prase a tiff world file
+ * Attempt to parse a tiff world file
  *
  * https://en.wikipedia.org/wiki/World_file
  *
