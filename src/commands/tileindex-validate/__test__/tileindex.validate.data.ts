@@ -3,7 +3,7 @@ import { CogTiff, CogTiffImage, Size } from '@cogeotiff/core';
 
 const resolution = [1, -1, 0];
 const size = { width: 480, height: 720 };
-const valueGeo = () => undefined;
+const valueGeo = (): undefined => undefined;
 
 const DefaultTiffImage = {
   origin: [1492000, 6234000],
