@@ -1,7 +1,7 @@
 import { Bounds } from '@basemaps/geo';
 import { Projection } from '@basemaps/shared/build/proj/projection.js';
 import { fsa } from '@chunkd/fs';
-import { CogTiff } from '@cogeotiff/core';
+import { CogTiff, Size } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
@@ -197,10 +197,10 @@ export const commandTileIndexValidate = command({
     for (const tiff of locations)  {
       const ret = validateTiffAlignment(tiff);
       if (ret === true) continue;
-      logger.error({err: ret, source: tiff.source}, 'TileInvalid:Validation:Failed')
+      logger.error({reason: ret.message, source: tiff.source}, 'TileInvalid:Validation:Failed');
+      validationFailed = true;
     }
-
-    if (validationFailed) throw new Error('Tile alignment validation failed')
+    if (validationFailed) throw new Error(`Tile alignment validation failed`)
   }
 
   if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
@@ -302,21 +302,22 @@ export async function extractTiffLocations(
   for (const o of result) if (o) output.push(o);
   return output;
 }
+export function getSize(extent:[number, number, number,  number]): Size {
+  return {width: extent[2] - extent[0], height: extent[3] - extent[1]};
+}
 
-export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):boolean | Error {
-  // tiff.bbox vs MapSheet.extract(tiff.tileName)
+export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):true | Error {
   const extract = MapSheet.extract(tiff.tileName);
-  if (extract == null) throw new Error('Failed to extact bounding box from: '+ tiff.tileName)
+  if (extract == null) throw new Error('Failed to extract bounding box from: '+ tiff.tileName)
   // Top Left
   const errX = Math.abs(tiff.bbox[0] - extract.bbox[0])
-  const errY = Math.abs(tiff.bbox[2] - extract.bbox[2])
-  if (errX > allowedError || errY > allowedError) return new Error(`The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[2]} source:${tiff.source}`)
-
-  // // Bottom right 
-  // // TODO do we validate bottom right
-  // Math.abs(tiff.bbox[1] - extract.bbox[1])
-  // Math.abs(tiff.bbox[3] - extract.bbox[3])
-
+  const errY = Math.abs(tiff.bbox[3] - extract.bbox[3])
+  if (errX > allowedError || errY > allowedError) return new Error(`The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]} source:${tiff.source}`)
+  
+  // TODO do we validate bottom right
+  const tiffSize = getSize(tiff.bbox);
+  if (tiffSize.width != extract.width)return new Error(`Tiff size is invalid width:${tiffSize.width}, expected:${extract.width} source:${tiff.source}`)
+  if (tiffSize.height != extract.height)return new Error(`Tiff size is invalid height:${tiffSize.height}, expected:${extract.height} source:${tiff.source}`)
   return true;
 }
 
@@ -324,7 +325,6 @@ export function getTileName(originX: number, originY:number, grid_size: number):
   if (!MapSheet.gridSizes.includes(grid_size)) {
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
-
 
   const scale = Math.floor(MapSheet.gridSizeMax / grid_size);
   const tile_width = Math.floor(MapSheet.width / scale);
@@ -344,12 +344,10 @@ export function getTileName(originX: number, originY:number, grid_size: number):
   // Do some maths
   const offset_x = Math.round(Math.floor((originX - MapSheet.origin.x) / MapSheet.width));
   const offset_y = Math.round(Math.floor((MapSheet.origin.y - originY) / MapSheet.height));
-  // console.log({ offset_x, offset_y });
   const max_y = MapSheet.origin.y - offset_y * MapSheet.height;
   const min_x = MapSheet.origin.x + offset_x * MapSheet.width;
   const tile_x = Math.round(Math.floor((originX - min_x) / tile_width + 1));
   const tile_y = Math.round(Math.floor((max_y - originY) / tile_height + 1));
-  // console.log({ tile_x, tile_y });
 
   // Build name
   const letters = Object.keys(SheetRanges)[offset_y];

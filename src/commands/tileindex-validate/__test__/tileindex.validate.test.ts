@@ -1,12 +1,12 @@
 import o from 'ospec';
 import { TiffLoader, commandTileIndexValidate, extractTiffLocations, getTileName, groupByTileName } from '../tileindex.validate.js';
-import { TiffAs21, TiffAs21In3857, TiffAy29 } from './tileindex.validate.data.js';
+import { FakeCogTiff } from './tileindex.validate.data.js';
 import { MapSheet } from '../../../utils/mapsheet.js';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import { createSandbox} from 'sinon';
-import { CogTiff } from '@cogeotiff/core/build/cog.tiff.js';
-
+import { createSandbox } from 'sinon';
+import assert from 'assert';
+// import { logger } from '../../../log.js';
 
 function convertTileName(x: string, scale: number): string | null {
   const extract = MapSheet.extract(x);
@@ -35,33 +35,42 @@ o.spec('getTileName', () => {
     o(convertTileName('CH11_1000_1001', 10000)).equals('CH11_10000_0101');
   });
 })
-
-// o.spec('findDuplicates', () => {
-//   o('should find duplicates', async () => {
-//     o(JSON.stringify(groupByTileName(DuplicateInput))).equals(JSON.stringify(DuplicateOutput));
-//   });
-// });
-
 o.spec('tiffLocation', () => {
+  // logger.level = 'silent'
   o('get location from tiff', async () => {
+    const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101')
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101')
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000)
     o(location[0]?.tileName).equals('AS21_1000_0101')
     o(location[1]?.tileName).equals('AY29_1000_0101')
   });
 
   o('should find duplicates', async () => {
+    const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101')
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101')
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000)
     const duplicates = groupByTileName(location);
-    o(duplicates.get('AS21_1000_0101')?.map(c => c.source)).deepEquals(['s3://test-as21', 's3://test-as21'])
-    o(duplicates.get('AY29_1000_0101')?.map(c => c.source)).deepEquals(['s3://test-ay29', 's3://test-ay29'])
+    o(duplicates.get('AS21_1000_0101')?.map(c => c.source)).deepEquals(['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'])
+    o(duplicates.get('AY29_1000_0101')?.map(c => c.source)).deepEquals(['s3://path/AY29_1000_0101.tiff', 's3://path/AY29_1000_0101.tiff'])
   })
 
   o('should find tiles from 3857', async () => {
-    const location = await extractTiffLocations([TiffAs21In3857], 1000)
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101')
+    TiffAy29.images[0].epsg = 3857;
+    TiffAy29.images[0].origin[0] = 19128043.69337794;
+    TiffAy29.images[0].origin[1] = -4032710.6009459053;
+    const location = await extractTiffLocations([TiffAy29], 1000)
     o(location[0]?.tileName).equals('AS21_1000_0101')
   })
 });
-
 
 o.spec('validate', () => {
   const memory = new FsMemory()
@@ -75,10 +84,9 @@ o.spec('validate', () => {
 
   o('should fail if duplicate tiles are detected', async () => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
-    const stub = sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([TiffAs21, TiffAs21]))
-
+    const stub = sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([ FakeCogTiff.fromTileName('AS21_1000_0101'),  FakeCogTiff.fromTileName('AS21_1000_0101')]))
     try {
-      await commandTileIndexValidate.handler({ location: ['s3://test'], retile: false, validate:true, scale: 1000, forceOutput: true } as any);
+      await commandTileIndexValidate.handler({ location: ['s3://test'], retile: false, validate: true, scale: 1000, forceOutput: true } as any);
     } catch (e) {
       o(String(e)).equals('Error: Duplicate files found, see output.geojson')
     }
@@ -86,65 +94,82 @@ o.spec('validate', () => {
     o(stub.callCount).equals(1);
     o(stub.args?.[0]?.[0]).deepEquals(['s3://test']);
 
-    const outputFileList:GeoJSON.FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson')
+    const outputFileList: GeoJSON.FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson')
     o(outputFileList.features.length).equals(1);
     const firstFeature = outputFileList.features[0];
     o(firstFeature?.properties?.['tileName']).equals('AS21_1000_0101')
-    o(firstFeature?.properties?.['source']).deepEquals([TiffAs21.source.uri, TiffAs21.source.uri])
+    o(firstFeature?.properties?.['source']).deepEquals(['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'])
   })
 
   o('should not fail if duplicate tiles are detected but --retile is used', async () => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
-    sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([TiffAs21, TiffAs21]))
-
+    sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([ FakeCogTiff.fromTileName('AS21_1000_0101'),  FakeCogTiff.fromTileName('AS21_1000_0101')]))
     await commandTileIndexValidate.handler({ location: ['s3://test'], retile: true, scale: 1000, forceOutput: true } as any);
     const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json')
-    o(outputFileList).deepEquals([{ output: 'AS21_1000_0101', input: [TiffAs21.source.uri, TiffAs21.source.uri] }])
+    o(outputFileList).deepEquals([{ output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] }])
   })
 
-  // B
-  o.only('should fail if input tiff\'s origin is offset by Xm', async () => {
-    // Input AS21_1000_0101.tiff offset by +0.xm 
-    // Input AS21_1000_0101.tiff offset by -0.xm
-    // const tiffClone = structuredClone({ buffer: new Buffer() }, { transfer: [valueGeo]});
-    const tiffClone = cloneTiff(TiffAs21);
-    tiffClone.images[0].origin = [tiffClone.images[0].origin[0] - 0.05, tiffClone.images[0].origin[1]];
-    sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([tiffClone]))
-    await commandTileIndexValidate.handler({ location: ['s3://test'], retile: true, validate: true, scale: 1000, forceOutput: true } as any);
+  for (const offset of [0.05, -0.05]) {
+    o(`should fail if input tiff origin X is offset by ${offset}m`, async () => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101')
+      fakeTiff.images[0].origin[0] = fakeTiff.images[0].origin[0] + offset;
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]))
+      try {
+        await commandTileIndexValidate.handler({ location: ['s3://test'], retile: true, validate: true, scale: 1000, forceOutput: true } as any);
+        assert.fail('Should throw exception');
 
-    // TiffAs21.images[0]!.origin = [TiffAs21.images[0].origin[0] - 0.015, TiffAs21.images[0].origin[1]  ]
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed')
+      }
+    })
+    o(`should fail if input tiff origin Y is offset by ${offset}m`, async () => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101')
+      fakeTiff.images[0].origin[1] = fakeTiff.images[0].origin[1] + offset
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]))
+      try {
+        await commandTileIndexValidate.handler({ location: ['s3://test'], retile: true, validate: true, scale: 1000, forceOutput: true } as any);
+        assert.fail('Should throw exception');
 
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed')
+      }
+    })
+  }
+  for (const offset of [0.1, -0.1]) {
+    // Input AS21_1000_0101.tiff width/height by +1m, -1m => 
+      // 720x480 => 721x480 
+      // 720x481 => 720x481
+      // 721x481 => 721x481
+    o.only(`should fail if input tiff width is off by ${offset}m`, async () => {  
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101')
+      fakeTiff.images[0].size.width = fakeTiff.images[0].size.width + offset;
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]))
+      try {
+        await commandTileIndexValidate.handler({ location: ['s3://test'], retile: true, validate: true, scale: 1000, forceOutput: true } as any);
+        assert.fail('Should throw exception');
+  
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed')
+      }
+    });
+    o(`should fail if input tiff height is off by ${offset}m`, async () => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101')
+      fakeTiff.images[0].size.height = fakeTiff.images[0].size.height + offset;
+      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]))
+      try {
+        await commandTileIndexValidate.handler({ location: ['s3://test'], retile: true, validate: true, scale: 1000, forceOutput: true } as any);
+        assert.fail('Should throw exception');
+  
+      } catch (e) {
+        o(String(e)).equals('Error: Tile alignment validation failed')
+      }
+    });
+  
+  }
 
-  })
-
-
-  // C
-  // TODO should this have the same +- 0.015m as the origin check
-  o('should fail if input tiff is larger width or height', () => {
-    // Input AS21_1000_0101.tiff width/height by +1m => 
-    // 720x480 => 721x480 
-    // 720x481 => 720x481
-    // 721x481 => 721x481
-
-    //tiffClone.images[0].size.width = 721;
-
-    // Input AS21_1000_0101.tiff height/height by -1m
-    // 720x480 => 719x480 
-    // 720x481 => 720x479
-    // 721x481 => 719x479
-
-  })
 })
-// 
-// o.spec('retile', () => {
-// 
-// })
 
 
-function cloneTiff(tiff:CogTiff): CogTiff {
-  const tiffClone = JSON.parse(JSON.stringify(tiff));
-  tiffClone.images[0].valueGeo = () => null;
-  return tiffClone as CogTiff;
-}
+
 
 o.run();
