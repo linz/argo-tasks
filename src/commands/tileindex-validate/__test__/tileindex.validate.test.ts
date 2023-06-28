@@ -109,6 +109,7 @@ o.spec('validate', () => {
         scale: 1000,
         forceOutput: true,
       } as any);
+      assert.fail('Should throw exception');
     } catch (e) {
       o(String(e)).equals('Error: Duplicate files found, see output.geojson');
     }
@@ -222,5 +223,3 @@ o.spec('validate', () => {
     });
   }
 });
-
-// o.run();
