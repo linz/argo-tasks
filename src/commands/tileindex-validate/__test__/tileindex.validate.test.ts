@@ -111,7 +111,7 @@ describe('validate', () => {
     }
 
     assert.equal(stub.mock.callCount(), 1);
-    assert.deepEqual(stub.mock.calls[0]?.arguments, ['s3://test']);
+    assert.deepEqual(stub.mock.calls[0]?.arguments[0], ['s3://test']);
 
     const outputFileList: GeoJSON.FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson');
     assert.equal(outputFileList.features.length, 1);
