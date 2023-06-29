@@ -1,16 +1,17 @@
-import o from 'ospec';
+import { describe, beforeEach, it } from "node:test";
+import assert from "node:assert";
 import { createLinks, makeRelative } from '../stac.catalog.js';
 import { FsMemory } from '@chunkd/source-memory';
 import { fsa } from '@chunkd/fs';
 
-o.spec('stacCatalog', () => {
+describe('stacCatalog', () => {
   const fs = new FsMemory();
-  o.beforeEach(() => {
+  beforeEach(() => {
     fs.files.clear();
     fsa.register('m://', fs);
   });
 
-  o('listLocation', async () => {
+  it('listLocation', async () => {
     await fs.write('m://base/directory1/collection.json', JSON.stringify({ title: 'CollectionA' }));
     await fs.write('m://base/directory2/collection.json', JSON.stringify({ title: 'CollectionB' }));
 
@@ -18,7 +19,7 @@ o.spec('stacCatalog', () => {
       { rel: 'self', href: './catalog.json' },
       { rel: 'root', href: './catalog.json' },
     ]);
-    o(links).deepEquals([
+    assert.deepEqual(links, [
       { rel: 'self', href: './catalog.json' },
       { rel: 'root', href: './catalog.json' },
       {
@@ -39,20 +40,23 @@ o.spec('stacCatalog', () => {
   });
 });
 
-o.spec('makeRelative', () => {
-  o('should make relative urls', () => {
-    o(makeRelative('s3://linz-imagery/', 's3://linz-imagery/catalog.json')).equals('catalog.json');
+describe('makeRelative', () => {
+  it('should make relative urls', () => {
+    assert.equal(
+      makeRelative('s3://linz-imagery/', 's3://linz-imagery/catalog.json'),
+      'catalog.json'
+    );
   });
 
-  o('should make relative from absolute paths', () => {
-    o(makeRelative('/home/blacha/', '/home/blacha/catalog.json')).equals('catalog.json');
+  it('should make relative from absolute paths', () => {
+    assert.equal(makeRelative('/home/blacha/', '/home/blacha/catalog.json'), 'catalog.json');
   });
 
-  o('should make relative relative paths', () => {
-    o(makeRelative('/home/blacha/', './catalog.json')).equals('./catalog.json');
+  it('should make relative relative paths', () => {
+    assert.equal(makeRelative('/home/blacha/', './catalog.json'), './catalog.json');
   });
 
-  o('should not make relative on different paths', () => {
-    o(() => makeRelative('/home/blacha/', '/home/test/catalog.json')).throws(Error);
+  it('should not make relative on different paths', () => {
+    assert.throws(() => makeRelative('/home/blacha/', '/home/test/catalog.json'), Error);
   });
 });

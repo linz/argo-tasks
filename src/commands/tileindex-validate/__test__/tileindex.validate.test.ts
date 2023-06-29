@@ -1,4 +1,8 @@
-import o from 'ospec';
+import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+import assert from 'node:assert';
+import { before, beforeEach, describe, it } from 'node:test';
+import { MapSheet } from '../../../utils/mapsheet.js';
 import {
   TiffLoader,
   commandTileIndexValidate,
@@ -7,11 +11,6 @@ import {
   groupByTileName,
 } from '../tileindex.validate.js';
 import { FakeCogTiff } from './tileindex.validate.data.js';
-import { MapSheet } from '../../../utils/mapsheet.js';
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
-import { createSandbox } from 'sinon';
-import assert from 'assert';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -21,29 +20,29 @@ function convertTileName(x: string, scale: number): string | null {
   return getTileName(extract.bbox[0], extract.bbox[3], scale);
 }
 
-o.spec('getTileName', () => {
-  o('should get correct parent tile 1:1k', () => {
-    o(convertTileName('CH11_1000_0101', 1000)).equals('CH11_1000_0101');
-    o(convertTileName('CH11_1000_0105', 1000)).equals('CH11_1000_0105');
-    o(convertTileName('CH11_1000_0501', 1000)).equals('CH11_1000_0501');
-    o(convertTileName('CH11_1000_0505', 1000)).equals('CH11_1000_0505');
+describe('getTileName', () => {
+  it('should get correct parent tile 1:1k', () => {
+    assert.equal(convertTileName('CH11_1000_0101', 1000), 'CH11_1000_0101');
+    assert.equal(convertTileName('CH11_1000_0105', 1000), 'CH11_1000_0105');
+    assert.equal(convertTileName('CH11_1000_0501', 1000), 'CH11_1000_0501');
+    assert.equal(convertTileName('CH11_1000_0505', 1000), 'CH11_1000_0505');
   });
-  o('should get correct parent tile 1:5k', () => {
-    o(convertTileName('CH11_1000_0101', 5000)).equals('CH11_5000_0101');
-    o(convertTileName('CH11_1000_0105', 5000)).equals('CH11_5000_0101');
-    o(convertTileName('CH11_1000_0501', 5000)).equals('CH11_5000_0101');
-    o(convertTileName('CH11_1000_0505', 5000)).equals('CH11_5000_0101');
+  it('should get correct parent tile 1:5k', () => {
+    assert.equal(convertTileName('CH11_1000_0101', 5000), 'CH11_5000_0101');
+    assert.equal(convertTileName('CH11_1000_0105', 5000), 'CH11_5000_0101');
+    assert.equal(convertTileName('CH11_1000_0501', 5000), 'CH11_5000_0101');
+    assert.equal(convertTileName('CH11_1000_0505', 5000), 'CH11_5000_0101');
   });
 
-  o('should get correct parent tile 1:10k', () => {
-    o(convertTileName('CH11_1000_0101', 10000)).equals('CH11_10000_0101');
-    o(convertTileName('CH11_1000_0110', 10000)).equals('CH11_10000_0101');
-    o(convertTileName('CH11_1000_1010', 10000)).equals('CH11_10000_0101');
-    o(convertTileName('CH11_1000_1001', 10000)).equals('CH11_10000_0101');
+  it('should get correct parent tile 1:10k', () => {
+    assert.equal(convertTileName('CH11_1000_0101', 10000), 'CH11_10000_0101');
+    assert.equal(convertTileName('CH11_1000_0110', 10000), 'CH11_10000_0101');
+    assert.equal(convertTileName('CH11_1000_1010', 10000), 'CH11_10000_0101');
+    assert.equal(convertTileName('CH11_1000_1001', 10000), 'CH11_10000_0101');
   });
 });
-o.spec('tiffLocation', () => {
-  o('get location from tiff', async () => {
+describe('tiffLocation', () => {
+  it('get location from tiff', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
     TiffAs21.images[0].origin[0] = 1492000;
     TiffAs21.images[0].origin[1] = 6234000;
@@ -51,11 +50,11 @@ o.spec('tiffLocation', () => {
     TiffAy29.images[0].origin[0] = 1684000;
     TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000);
-    o(location[0]?.tileName).equals('AS21_1000_0101');
-    o(location[1]?.tileName).equals('AY29_1000_0101');
+    assert.equal(location[0]?.tileName, 'AS21_1000_0101');
+    assert.equal(location[1]?.tileName, 'AY29_1000_0101');
   });
 
-  o('should find duplicates', async () => {
+  it('should find duplicates', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
     TiffAs21.images[0].origin[0] = 1492000;
     TiffAs21.images[0].origin[1] = 6234000;
@@ -64,43 +63,40 @@ o.spec('tiffLocation', () => {
     TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
     const duplicates = groupByTileName(location);
-    o(duplicates.get('AS21_1000_0101')?.map((c) => c.source)).deepEquals([
-      's3://path/AS21_1000_0101.tiff',
-      's3://path/AS21_1000_0101.tiff',
-    ]);
-    o(duplicates.get('AY29_1000_0101')?.map((c) => c.source)).deepEquals([
-      's3://path/AY29_1000_0101.tiff',
-      's3://path/AY29_1000_0101.tiff',
-    ]);
+    assert.deepEqual(
+      duplicates.get('AS21_1000_0101')?.map((c) => c.source),
+      ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
+    );
+    assert.deepEqual(
+      duplicates.get('AY29_1000_0101')?.map((c) => c.source),
+      ['s3://path/AY29_1000_0101.tiff', 's3://path/AY29_1000_0101.tiff'],
+    );
   });
 
-  o('should find tiles from 3857', async () => {
+  it('should find tiles from 3857', async () => {
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
     TiffAy29.images[0].epsg = 3857;
     TiffAy29.images[0].origin[0] = 19128043.69337794;
     TiffAy29.images[0].origin[1] = -4032710.6009459053;
     const location = await extractTiffLocations([TiffAy29], 1000);
-    o(location[0]?.tileName).equals('AS21_1000_0101');
+    assert.equal(location[0]?.tileName, 'AS21_1000_0101');
   });
 });
 
-o.spec('validate', () => {
+describe('validate', () => {
   const memory = new FsMemory();
-  const sandbox = createSandbox();
 
-  o.before(() => {
+  before(() => {
     fsa.register('/tmp', memory);
   });
-  o.beforeEach(() => memory.files.clear());
-  o.afterEach(() => sandbox.restore());
+  beforeEach(() => memory.files.clear());
 
-  o('should fail if duplicate tiles are detected', async () => {
+  it('should fail if duplicate tiles are detected', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
-    const stub = sandbox
-      .stub(TiffLoader, 'load')
-      .returns(
-        Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
-      );
+    const stub = t.mock.method(TiffLoader, 'load', () =>
+      Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
+    );
+
     try {
       await commandTileIndexValidate.handler({
         location: ['s3://test'],
@@ -111,29 +107,28 @@ o.spec('validate', () => {
       } as any);
       assert.fail('Should throw exception');
     } catch (e) {
-      o(String(e)).equals('Error: Duplicate files found, see output.geojson');
+      assert.equal(String(e), 'Error: Duplicate files found, see output.geojson');
     }
 
-    o(stub.callCount).equals(1);
-    o(stub.args?.[0]?.[0]).deepEquals(['s3://test']);
+    assert.equal(stub.mock.callCount(), 1);
+    assert.deepEqual(stub.mock.calls[0]?.arguments, ['s3://test']);
 
     const outputFileList: GeoJSON.FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson');
-    o(outputFileList.features.length).equals(1);
+    assert.equal(outputFileList.features.length, 1);
     const firstFeature = outputFileList.features[0];
-    o(firstFeature?.properties?.['tileName']).equals('AS21_1000_0101');
-    o(firstFeature?.properties?.['source']).deepEquals([
+    assert.equal(firstFeature?.properties?.['tileName'], 'AS21_1000_0101');
+    assert.deepEqual(firstFeature?.properties?.['source'], [
       's3://path/AS21_1000_0101.tiff',
       's3://path/AS21_1000_0101.tiff',
     ]);
   });
 
-  o('should not fail if duplicate tiles are detected but --retile is used', async () => {
+  it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
-    sandbox
-      .stub(TiffLoader, 'load')
-      .returns(
-        Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
-      );
+    t.mock.method(TiffLoader, 'load', () =>
+      Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
+    );
+
     await commandTileIndexValidate.handler({
       location: ['s3://test'],
       retile: true,
@@ -141,16 +136,16 @@ o.spec('validate', () => {
       forceOutput: true,
     } as any);
     const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
-    o(outputFileList).deepEquals([
+    assert.deepEqual(outputFileList, [
       { output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] },
     ]);
   });
 
   for (const offset of [0.05, -0.05]) {
-    o(`should fail if input tiff origin X is offset by ${offset}m`, async () => {
+    it(`should fail if input tiff origin X is offset by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].origin[0] = fakeTiff.images[0].origin[0] + offset;
-      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
           location: ['s3://test'],
@@ -161,13 +156,13 @@ o.spec('validate', () => {
         } as any);
         assert.fail('Should throw exception');
       } catch (e) {
-        o(String(e)).equals('Error: Tile alignment validation failed');
+        assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
-    o(`should fail if input tiff origin Y is offset by ${offset}m`, async () => {
+    it(`should fail if input tiff origin Y is offset by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].origin[1] = fakeTiff.images[0].origin[1] + offset;
-      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
           location: ['s3://test'],
@@ -178,7 +173,7 @@ o.spec('validate', () => {
         } as any);
         assert.fail('Should throw exception');
       } catch (e) {
-        o(String(e)).equals('Error: Tile alignment validation failed');
+        assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
   }
@@ -187,10 +182,10 @@ o.spec('validate', () => {
     // 720x480 => 721x480
     // 720x481 => 720x481
     // 721x481 => 721x481
-    o(`should fail if input tiff width is off by ${offset}m`, async () => {
+    it(`should fail if input tiff width is off by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].size.width = fakeTiff.images[0].size.width + offset;
-      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
           location: ['s3://test'],
@@ -201,13 +196,13 @@ o.spec('validate', () => {
         } as any);
         assert.fail('Should throw exception');
       } catch (e) {
-        o(String(e)).equals('Error: Tile alignment validation failed');
+        assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
-    o(`should fail if input tiff height is off by ${offset}m`, async () => {
+    it(`should fail if input tiff height is off by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].size.height = fakeTiff.images[0].size.height + offset;
-      sandbox.stub(TiffLoader, 'load').returns(Promise.resolve([fakeTiff]));
+      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
           location: ['s3://test'],
@@ -218,7 +213,7 @@ o.spec('validate', () => {
         } as any);
         assert.fail('Should throw exception');
       } catch (e) {
-        o(String(e)).equals('Error: Tile alignment validation failed');
+        assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
   }

@@ -1,35 +1,36 @@
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import { CogTiff } from '@cogeotiff/core';
-import o from 'ospec';
 import { PixelIsPoint, findBoundingBox, parseTfw } from '../geotiff.js';
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
 
-o.spec('geotiff', () => {
-  o.spec('parseTfw', () => {
-    o('should parse tfw', () => {
+describe('geotiff', () => {
+  describe('parseTfw', () => {
+    it('should parse tfw', () => {
       const output = parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
-      o(output).deepEquals({ scale: { x: 0.075, y: -0.075 }, origin: { x: 1460800, y: 5079480 } });
+      assert.deepEqual(output, { scale: { x: 0.075, y: -0.075 }, origin: { x: 1460800, y: 5079480 } });
     });
 
-    o('should fail on invalid numbers', () => {
-      o(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375`)).throws(Error); // Too Short
-      o(() => parseTfw(`0.075a\n0\n0\n-0.075\n1460800.0375\n5079479.9625`)).throws(Error); // scaleX number is NaN
-      o(() => parseTfw(`0.075\n0\n0\n-0.075a\n1460800.0375\n5079479.9625`)).throws(Error); // scaleY number is NaN
-      o(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375a\n5079479.9625`)).throws(Error); // originX number is NaN
-      o(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625a`)).throws(Error); // originY number is NaN
+    it('should fail on invalid numbers', () => {
+      assert.throws(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375`)); // Too Short
+      assert.throws(() => parseTfw(`0.075a\n0\n0\n-0.075\n1460800.0375\n5079479.9625`)); // scaleX number is NaN
+      assert.throws(() => parseTfw(`0.075\n0\n0\n-0.075a\n1460800.0375\n5079479.9625`)); // scaleY number is NaN
+      assert.throws(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375a\n5079479.9625`)); // originX number is NaN
+      assert.throws(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625a`)); // originY number is NaN
     });
 
-    o('should fail on invalid input', () => {
-      o(() => parseTfw(null as unknown as string)).throws(Error);
+    it('should fail on invalid input', () => {
+      assert.throws(() => parseTfw(null as unknown as string));
     });
 
-    o('should not allow rotations or skews', () => {
-      o(() => parseTfw(`0.075\n1\n0\n-0.075\n1460800.0375\n5079479.9625`)).throws(Error); // Y Rotation
-      o(() => parseTfw(`0.075\n0\n1\n-0.075\n1460800.0375\n5079479.9625`)).throws(Error); // X Rotation
+    it('should not allow rotations or skews', () => {
+      assert.throws(() => parseTfw(`0.075\n1\n0\n-0.075\n1460800.0375\n5079479.9625`)); // Y Rotation
+      assert.throws(() => parseTfw(`0.075\n0\n1\n-0.075\n1460800.0375\n5079479.9625`)); // X Rotation
     });
   });
 
-  o('should parse tiff location', async () => {
+  it('should parse tiff location', async () => {
     const source = new FsMemory();
     // Actual tiff file
     await source.write(
@@ -66,10 +67,10 @@ o.spec('geotiff', () => {
     const tiff = await new CogTiff(fsa.source('memory://BX20_500_023098.tif')).init(true);
     const bbox = await findBoundingBox(tiff);
 
-    o(bbox).deepEquals([1460800, 5079120, 1461040, 5079480]);
+    assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 
-  o('should not parse a tiff with no information ', async () => {
+  it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
     const bbox = await findBoundingBox({
       source: { uri: 'memory://BX20_500_023098.tif' },
@@ -77,10 +78,10 @@ o.spec('geotiff', () => {
         return {};
       },
     } as unknown as CogTiff);
-    o(bbox).deepEquals(null);
+    assert.deepEqual(bbox, null);
   });
 
-  o('should parse a tiff with TFW', async () => {
+  it('should parse a tiff with TFW', async () => {
     // Write a sidecar tfw
     await fsa.write('memory://BX20_500_023098.tfw', `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
     // tiff with no location information and no TFW
@@ -90,11 +91,11 @@ o.spec('geotiff', () => {
         return { size: { width: 3200, height: 4800 } };
       },
     } as unknown as CogTiff);
-    o(bbox).deepEquals([1460800, 5079120, 1461040, 5079480]);
+    assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
     await fsa.delete('memory://BX20_500_023098.tfw');
   });
 
-  o('should parse standard tiff', async () => {
+  it('should parse standard tiff', async () => {
     const bbox = await findBoundingBox({
       source: { uri: 'memory://BX20_500_023098.tif' },
       getImage() {
@@ -109,9 +110,9 @@ o.spec('geotiff', () => {
         };
       },
     } as unknown as CogTiff);
-    o(bbox).deepEquals([1460800, 5079120, 1461040, 5079480]);
+    assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
-  o('should parse with pixel offset', async () => {
+  it('should parse with pixel offset', async () => {
     const bbox = await findBoundingBox({
       source: { uri: 'memory://BX20_500_023098.tif' },
       getImage() {
@@ -126,8 +127,6 @@ o.spec('geotiff', () => {
         };
       },
     } as unknown as CogTiff);
-    o(bbox).deepEquals([1460800, 5079120, 1461040, 5079480]);
+    assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 });
-
-o.run();

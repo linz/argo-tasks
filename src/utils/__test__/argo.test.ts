@@ -1,28 +1,29 @@
-import o from 'ospec';
+import { describe, beforeEach, it } from "node:test";
+import assert from "node:assert";
 import { getActionLocation } from '../action.storage.js';
 
-o.spec('argoLocation', () => {
-  o.beforeEach(() => {
+describe('argoLocation', () => {
+  beforeEach(() => {
     delete process.env['ARGO_TEMPLATE'];
     delete process.env['ARGO_NODE_ID'];
   });
-  o("should not die if ARGO_TEMPLATE doesn't exist", () => {
+  it("should not die if ARGO_TEMPLATE doesn't exist", () => {
     delete process.env['ARGO_TEMPLATE'];
-    o(getActionLocation()).equals(null);
+    assert.equal(getActionLocation(), null);
   });
 
-  o('should not die if ARGO_TEMPLATE in missing keys', () => {
+  it('should not die if ARGO_TEMPLATE in missing keys', () => {
     process.env['ARGO_TEMPLATE'] = '{}';
-    o(getActionLocation()).equals(null);
+    assert.equal(getActionLocation(), null);
 
     process.env['ARGO_TEMPLATE'] = JSON.stringify({ archiveLocation: {} });
-    o(getActionLocation()).equals(null);
+    assert.equal(getActionLocation(), null);
 
     process.env['ARGO_TEMPLATE'] = JSON.stringify({ archiveLocation: { s3: {} } });
-    o(getActionLocation()).equals(null);
+    assert.equal(getActionLocation(), null);
   });
 
-  o('should actually parse the ARGO_TEMPLATE', () => {
+  it('should actually parse the ARGO_TEMPLATE', () => {
     process.env['ARGO_NODE_ID'] = 'test-env-n9d2x';
     process.env['ARGO_TEMPLATE'] = JSON.stringify({
       name: 'env',
@@ -45,6 +46,9 @@ o.spec('argoLocation', () => {
       },
     });
 
-    o(getActionLocation()).equals('s3://linz-nonprod-workflow-artifacts/2022-11/02-test-env-n9d2x');
+    assert.equal(
+      getActionLocation(),
+      's3://linz-nonprod-workflow-artifacts/2022-11/02-test-env-n9d2x'
+    );
   });
 });
