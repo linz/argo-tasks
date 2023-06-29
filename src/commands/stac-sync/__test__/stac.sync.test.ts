@@ -1,5 +1,5 @@
-import { describe, beforeEach, it } from "node:test";
-import assert from "node:assert";
+import { describe, beforeEach, it } from 'node:test';
+import assert from 'node:assert';
 import { FsMemory } from '@chunkd/source-memory';
 import { fsa } from '@chunkd/fs';
 import { HashKey, synchroniseFiles } from '../stac.sync.js';

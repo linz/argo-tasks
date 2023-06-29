@@ -1,5 +1,5 @@
-import { describe, beforeEach, it } from "node:test";
-import assert from "node:assert";
+import { describe, beforeEach, it } from 'node:test';
+import assert from 'node:assert';
 import { getActionLocation } from '../action.storage.js';
 
 describe('argoLocation', () => {
@@ -46,9 +46,6 @@ describe('argoLocation', () => {
       },
     });
 
-    assert.equal(
-      getActionLocation(),
-      's3://linz-nonprod-workflow-artifacts/2022-11/02-test-env-n9d2x'
-    );
+    assert.equal(getActionLocation(), 's3://linz-nonprod-workflow-artifacts/2022-11/02-test-env-n9d2x');
   });
 });

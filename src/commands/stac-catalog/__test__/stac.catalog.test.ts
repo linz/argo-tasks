@@ -1,5 +1,5 @@
-import { describe, beforeEach, it } from "node:test";
-import assert from "node:assert";
+import { describe, beforeEach, it } from 'node:test';
+import assert from 'node:assert';
 import { createLinks, makeRelative } from '../stac.catalog.js';
 import { FsMemory } from '@chunkd/source-memory';
 import { fsa } from '@chunkd/fs';
@@ -42,10 +42,7 @@ describe('stacCatalog', () => {
 
 describe('makeRelative', () => {
   it('should make relative urls', () => {
-    assert.equal(
-      makeRelative('s3://linz-imagery/', 's3://linz-imagery/catalog.json'),
-      'catalog.json'
-    );
+    assert.equal(makeRelative('s3://linz-imagery/', 's3://linz-imagery/catalog.json'), 'catalog.json');
   });
 
   it('should make relative from absolute paths', () => {
