@@ -205,16 +205,18 @@ stac validate --checksum --recursive s3://linz-imagery-staging/test/stac-validat
 
 ### tileindex-validate
 
-Validate list of tiffs match a LINZ Mapsheet tile index and asserts that there will be no duplicates.
+Validate or retile a list of tiffs, outputting geojson files for visualisation of the tiles.
+
+Validate list of tiffs match a LINZ Mapsheet tile index and assert that there will be no duplicates.
 
 ```bash
-tileindex-validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/ --includes "[BE_232*].tiff"
+tileindex-validate --validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
 ```
 
-Validate a collection of tiff files
+Output a list of tiles to be retiled to the scale specified, and which tilename they should receive when merged. Output is a list of files suitable for Argo input.
 
 ```bash
-tileindex-validate --scale 5000 ./path/to/imagery/
+tileindex-validate --retile --scale 10000 ./path/to/imagery/
 ```
 
 ## Versioning and Release

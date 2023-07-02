@@ -204,7 +204,7 @@ export const commandTileIndexValidate = command({
     }
 
     if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
-    // TODO do we care if no files are left ??? TODO ask blayne what he meant
+    // TODO do we care if no files are left?
   },
 });
 
