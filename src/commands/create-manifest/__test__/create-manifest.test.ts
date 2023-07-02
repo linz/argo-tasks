@@ -1,22 +1,23 @@
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import o from 'ospec';
+import { describe, beforeEach, it } from 'node:test';
+import assert from 'node:assert';
 import { createManifest, validatePaths } from '../create-manifest.js';
 
-o.spec('createManifest', () => {
-  o.beforeEach(() => {
+describe('createManifest', () => {
+  beforeEach(() => {
     memory.files.clear();
   });
   const memory = new FsMemory();
   fsa.register('memory://', memory);
-  o('should copy to the target location', async () => {
+  it('should copy to the target location', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
     ]);
 
     const outputFiles = await createManifest('memory://source/', 'memory://target/', { flatten: true });
-    o(outputFiles[0]).deepEquals([
+    assert.deepEqual(outputFiles[0], [
       {
         source: 'memory://source/topographic.json',
         target: 'memory://target/topographic.json',
@@ -28,7 +29,7 @@ o.spec('createManifest', () => {
     ]);
   });
 
-  o('should transform files', async () => {
+  it('should transform files', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
@@ -37,7 +38,7 @@ o.spec('createManifest', () => {
       flatten: false,
       transform: 'f.replace("topographic", "test")',
     });
-    o(outputFiles[0]).deepEquals([
+    assert.deepEqual(outputFiles[0], [
       {
         source: 'memory://source/topographic.json',
         target: 'memory://target/sub/test.json',
@@ -49,14 +50,14 @@ o.spec('createManifest', () => {
     ]);
   });
 
-  o('should copy to the target location without flattening', async () => {
+  it('should copy to the target location without flattening', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
     ]);
 
     const outputFiles = await createManifest('memory://source/', 'memory://target/sub/', { flatten: false });
-    o(outputFiles[0]).deepEquals([
+    assert.deepEqual(outputFiles[0], [
       {
         source: 'memory://source/topographic.json',
         target: 'memory://target/sub/topographic.json',
@@ -67,16 +68,16 @@ o.spec('createManifest', () => {
       },
     ]);
   });
-  o.spec('validatePaths', () => {
-    o('Should throw error for Missmatch Paths', () => {
-      o(() => {
+  describe('validatePaths', () => {
+    it('Should throw error for Missmatch Paths', () => {
+      assert.throws(() => {
         validatePaths('memory://source/', 'memory://target/sub/test.tiff');
-      }).throws(Error);
+      }, Error);
     });
-    o('Should also throw error for Missmatch Paths', () => {
-      o(() => {
+    it('Should also throw error for Missmatch Paths', () => {
+      assert.throws(() => {
         validatePaths('memory://source/test.tiff', 'memory://target/sub/');
-      }).throws(Error);
+      }, Error);
     });
   });
 });

@@ -1,17 +1,18 @@
-import o from 'ospec';
+import { describe, beforeEach, it } from 'node:test';
+import assert from 'node:assert';
 import { FsMemory } from '@chunkd/source-memory';
 import { fsa } from '@chunkd/fs';
 import { HashKey, synchroniseFiles } from '../stac.sync.js';
 import { createHash } from 'crypto';
 
-o.spec('stacSync', () => {
+describe('stacSync', () => {
   const fs = new FsMemory();
-  o.beforeEach(() => {
+  beforeEach(() => {
     fs.files.clear();
     fsa.register('m://', fs);
   });
 
-  o('shouldUploadFile', async () => {
+  it('shouldUploadFile', async () => {
     await fs.write(
       'm://source/stac/wellington/collection.json',
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
@@ -21,10 +22,10 @@ o.spec('stacSync', () => {
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
     const destinationURL = new URL('m://destination/stac/');
-    o(await synchroniseFiles('m://source/stac/', destinationURL)).equals(1);
+    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 1);
   });
 
-  o('shouldUploadFileOnlyOnce', async () => {
+  it('shouldUploadFileOnlyOnce', async () => {
     await fs.write(
       'm://source/stac/wellington/collection.json',
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
@@ -34,11 +35,11 @@ o.spec('stacSync', () => {
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
     const destinationURL = new URL('m://destination/stac/');
-    o(await synchroniseFiles('m://source/stac/', destinationURL)).equals(1);
-    o(await synchroniseFiles('m://source/stac/', destinationURL)).equals(0);
+    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 1);
+    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 0);
   });
 
-  o('shouldNotUploadFile', async () => {
+  it('shouldNotUploadFile', async () => {
     await fs.write(
       'm://source/stac/wellington/collection.json',
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
@@ -51,6 +52,6 @@ o.spec('stacSync', () => {
       { metadata: { [HashKey]: sourceHash } },
     );
     const destinationURL = new URL('m://destination/stac/');
-    o(await synchroniseFiles('m://source/stac/', destinationURL)).equals(0);
+    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 0);
   });
 });
