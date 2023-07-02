@@ -205,15 +205,22 @@ stac validate --checksum --recursive s3://linz-imagery-staging/test/stac-validat
 
 ### tileindex-validate
 
-Validate or retile a list of tiffs, outputting geojson files for visualisation of the tiles.
+Validate or create retiling information for a list of tiffs.
 
+Outputs files for visualisation of the tiles and as an list for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for retiling with GDAL.
+`input.geojson` GeoJSON file containing the bounding boxes of the source files. Example: [input.geojson](docs/input.geojson)
+`output.geojson` GeoJSON file containing the bounding boxes of the requested target files. Example: [output.geojson](docs/output.geojson)
+`file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.geojson)
+
+`--validate`
 Validate list of tiffs match a LINZ Mapsheet tile index and assert that there will be no duplicates.
 
 ```bash
 tileindex-validate --validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
 ```
 
-Output a list of tiles to be retiled to the scale specified, and which tilename they should receive when merged. Output is a list of files suitable for Argo input.
+``--retile`
+Output a list of tiles to be retiled to the scale specified, and which tilename they should receive when merged.
 
 ```bash
 tileindex-validate --retile --scale 10000 ./path/to/imagery/

@@ -1,0 +1,239 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              168.05254390973866,
+              -46.90049964212887
+            ],
+            [
+              168.0584863252359,
+              -46.83594851171225
+            ],
+            [
+              168.12120080220285,
+              -46.83864534453648
+            ],
+            [
+              168.1153330673779,
+              -46.90320253091623
+            ],
+            [
+              168.05254390973866,
+              -46.90049964212887
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": [
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4650.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4749.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4750.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4848.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4849.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4850.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4947.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4948.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4949.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_4950.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_5047.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_5048.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_5049.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH09_2021_1000_5050.tif"
+        ],
+        "tileName": "CH09_10000_0505"
+      },
+      "bbox": [
+        168.05254390973866,
+        -46.90049964212887,
+        168.12120080220285,
+        -46.83864534453648
+      ]
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              168.1153330673779,
+              -46.90320253091623
+            ],
+            [
+              168.12120080220285,
+              -46.83864534453648
+            ],
+            [
+              168.1839242662309,
+              -46.84130792778613
+            ],
+            [
+              168.17813125095648,
+              -46.905871093813914
+            ],
+            [
+              168.1153330673779,
+              -46.90320253091623
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": [
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4301.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4302.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4303.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4401.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4402.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4403.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4404.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4405.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4501.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4502.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4503.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4504.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4505.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4601.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4602.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4603.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4604.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4605.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4606.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4701.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4702.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4703.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4704.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4705.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4706.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4801.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4802.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4803.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4804.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4805.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4901.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4902.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4903.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4904.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4905.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4906.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4907.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_4908.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_5001.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_5002.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_5003.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_5004.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_5005.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_5006.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CH10_2021_1000_5007.tif"
+        ],
+        "tileName": "CH10_10000_0501"
+      },
+      "bbox": [
+        168.1153330673779,
+        -46.90320253091623,
+        168.1839242662309,
+        -46.84130792778613
+      ]
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              168.04658093004034,
+              -46.96504946159765
+            ],
+            [
+              168.05254390973866,
+              -46.90049964212887
+            ],
+            [
+              168.1153330673779,
+              -46.90320253091623
+            ],
+            [
+              168.1094450241255,
+              -46.96775842074693
+            ],
+            [
+              168.04658093004034,
+              -46.96504946159765
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": [
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ09_2021_1000_0146.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ09_2021_1000_0147.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ09_2021_1000_0148.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ09_2021_1000_0149.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ09_2021_1000_0150.tif"
+        ],
+        "tileName": "CJ09_10000_0105"
+      },
+      "bbox": [
+        168.04658093004034,
+        -46.96504946159765,
+        168.1153330673779,
+        -46.90320253091623
+      ]
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              168.1094450241255,
+              -46.96775842074693
+            ],
+            [
+              168.1153330673779,
+              -46.90320253091623
+            ],
+            [
+              168.17813125095648,
+              -46.905871093813914
+            ],
+            [
+              168.17231818326368,
+              -46.97043297751403
+            ],
+            [
+              168.1094450241255,
+              -46.96775842074693
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": [
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ10_2021_1000_0101.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ10_2021_1000_0102.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ10_2021_1000_0103.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ10_2021_1000_0104.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ10_2021_1000_0105.tif",
+          "s3://linz-elevation-staging/publish/StewartIsland_Rakiura_Oban_LiDAR_2021/DEM/DEM_CJ10_2021_1000_0205.tif"
+        ],
+        "tileName": "CJ10_10000_0101"
+      },
+      "bbox": [
+        168.1094450241255,
+        -46.96775842074693,
+        168.17813125095648,
+        -46.905871093813914
+      ]
+    }
+  ]
+}
