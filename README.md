@@ -210,7 +210,7 @@ Validate or create retiling information for a list of tiffs.
 Outputs files for visualisation of the tiles and as an list for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for retiling with GDAL.
 * `input.geojson` GeoJSON file containing the bounding boxes of the source files. Example: [input.geojson](docs/input.geojson)
 * `output.geojson` GeoJSON file containing the bounding boxes of the requested target files. Example: [output.geojson](docs/output.geojson)
-* `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.geojson)
+* `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
 
 `--validate`
 Validate list of tiffs match a LINZ Mapsheet tile index and assert that there will be no duplicates.
