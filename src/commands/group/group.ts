@@ -4,7 +4,7 @@ import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
 
-/** Chunk a array into a group size
+/** Chunk an array into a group size
  * @example
  *
  * ```typescript
@@ -20,7 +20,7 @@ export function groupItems<T>(items: T[], groupSize: number): T[][] {
   return output;
 }
 
-/** Normalize a input as either a JSON array or just a array  */
+/** Normalize an input as either a JSON array or just an array  */
 function loadInput(x: string): string[] {
   if (x.startsWith('[')) return JSON.parse(x);
   return [x];
