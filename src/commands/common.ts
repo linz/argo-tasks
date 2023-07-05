@@ -1,4 +1,4 @@
-import { flag, option, optional, string } from 'cmd-ts';
+import { boolean, flag, option, optional, string } from 'cmd-ts';
 import { registerFileSystem } from '../fs.register.js';
 import { registerLogger } from '../log.js';
 
@@ -11,6 +11,14 @@ export const config = option({
 export const verbose = flag({
   long: 'verbose',
   description: 'Verbose logging',
+});
+
+export const forceOutput = flag({
+  type: boolean,
+  defaultValue: () => false,
+  long: 'force-output',
+  description: 'force output additional files',
+  defaultValueIsSerializable: true,
 });
 
 export function registerCli(args: { verbose?: boolean; config?: string }): void {
