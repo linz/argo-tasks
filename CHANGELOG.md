@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.10.0](https://github.com/linz/argo-tasks/compare/v2.9.1...v2.10.0) (2023-07-05)
+
+
+### Features
+
+* support parsing tfw and point geotiff bounding boxes ([#503](https://github.com/linz/argo-tasks/issues/503)) ([cb181bf](https://github.com/linz/argo-tasks/commit/cb181bf11902288be19ba6714749260f66b0cdf7))
+* tileindex-validate retile with geojson output TDE-780 & TDE-786 ([#508](https://github.com/linz/argo-tasks/issues/508)) ([5c7642c](https://github.com/linz/argo-tasks/commit/5c7642c81b1506a6e0936566e8c726f4adcc8c76))
+
+
+### Bug Fixes
+
+* do not mix image width and height with projection x and y. ([#509](https://github.com/linz/argo-tasks/issues/509)) ([47cc02a](https://github.com/linz/argo-tasks/commit/47cc02a0baaef165eb098d94e8dcd380c51c4129))
+
 ## [2.9.1](https://github.com/linz/argo-tasks/compare/v2.9.0...v2.9.1) (2023-06-07)
 
 
