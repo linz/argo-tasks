@@ -5,10 +5,11 @@ import { CogTiff, Size } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
-import { getFiles } from '../../utils/chunk.js';
+import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { config, registerCli, verbose } from '../common.js';
+import { CommandListArgs } from '../list/list.js';
 // import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
@@ -22,8 +23,8 @@ export function isTiff(x: string): boolean {
 }
 
 export const TiffLoader = {
-  async load(locations: string[]): Promise<CogTiff[]> {
-    const files = await getFiles(locations);
+  async load(locations: string[], args?: FileFilter): Promise<CogTiff[]> {
+    const files = await getFiles(locations, args);
     const tiffFiles = files.flat().filter(isTiff);
     if (tiffFiles.length === 0) throw new Error('No Files found');
     if (tiffFiles[0]) await fsa.head(tiffFiles[0]);
@@ -88,6 +89,7 @@ export const commandTileIndexValidate = command({
   args: {
     config,
     verbose,
+    include: CommandListArgs.include,
     scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
     retile: flag({
@@ -118,7 +120,7 @@ export const commandTileIndexValidate = command({
     logger.info('TileIndex:Start');
 
     const readTiffStartTime = performance.now();
-    const tiffs = await TiffLoader.load(args.location);
+    const tiffs = await TiffLoader.load(args.location, args);
 
     const projections = new Set(tiffs.map((t) => t.images[0]?.epsg));
     logger.info(
