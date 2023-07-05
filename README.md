@@ -87,7 +87,7 @@ copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurr
 
 ### group
 
-group a input list into a array of arrays
+group an input list into an array of arrays
 ```bash
 group --size 2 "a" "b" "c" '["1","2","3"]' 
 # [["a","b"], ["c","1"], ["2", "3"]]
