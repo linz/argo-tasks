@@ -10,6 +10,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 - [lds-fetch-layer](#lds-fetch-layer)
 - [create-manifest](#create-manifest)
+- [group](#group)
 - [list](#list)
 - [stac catalog](#stac-catalog)
 - [stac github-import](#stac-github-import)
@@ -81,6 +82,15 @@ Copy a manifest of files between two locations, for manifest creation see [creat
 
 ```bash
 copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurrency 10
+```
+
+
+### group
+
+group an input list into an array of arrays
+```bash
+group --size 2 "a" "b" "c" '["1","2","3"]' 
+# [["a","b"], ["c","1"], ["2", "3"]]
 ```
 
 ### stac catalog

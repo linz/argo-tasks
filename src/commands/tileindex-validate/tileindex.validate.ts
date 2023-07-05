@@ -8,9 +8,8 @@ import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
-import { config, registerCli, verbose } from '../common.js';
+import { config, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
-// import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
@@ -106,13 +105,7 @@ export const commandTileIndexValidate = command({
       description: 'Validate that all input tiffs perfectly align to tile grid',
       defaultValueIsSerializable: true,
     }),
-    forceOutput: flag({
-      type: boolean,
-      defaultValue: () => false,
-      long: 'force-output',
-      description: 'force output additional files',
-      defaultValueIsSerializable: true,
-    }),
+    forceOutput,
     location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
   async handler(args) {
