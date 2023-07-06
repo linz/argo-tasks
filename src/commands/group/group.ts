@@ -45,7 +45,7 @@ export const CommandGroupArgs = {
   fromFile: option({
     type: optional(string),
     long: 'from-file',
-    description: 'JSON file to load files from',
+    description: 'JSON file to load inputs from, must be a JSON Array',
   }),
 };
 
