@@ -55,4 +55,18 @@ describe('group', () => {
       [3, 4, 'alpha'],
     ]);
   });
+
+  it('should load from a file', async () => {
+    await fsa.write('/tmp/group/input.json', Buffer.from(JSON.stringify([1, 2, 3, 4, 5])));
+    await commandGroup.handler({
+      inputs: [],
+      fromFile: '/tmp/group/input.json',
+      forceOutput: true,
+      size: 3,
+    } as any);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), [
+      [1, 2, 3],
+      [4, 5],
+    ]);
+  });
 });

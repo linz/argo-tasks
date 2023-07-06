@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, restPositionals, string } from 'cmd-ts';
+import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
@@ -42,6 +42,11 @@ export const CommandGroupArgs = {
     displayName: 'items',
     description: 'list of items to group, can be a JSON array',
   }),
+  fromFile: option({
+    type: optional(string),
+    long: 'from-file',
+    description: 'JSON file to load files from',
+  }),
 };
 
 export const commandGroup = command({
@@ -50,13 +55,21 @@ export const commandGroup = command({
   args: CommandGroupArgs,
   handler: async (args) => {
     registerCli(args);
-    if (args.inputs.length === 0) {
+
+    const inputs: unknown[] = [];
+    for (const input of args.inputs) inputs.push(...loadInput(input));
+    if (args.fromFile && (await fsa.exists(args.fromFile))) {
+      const input = await fsa.readJson(args.fromFile);
+      if (Array.isArray(input)) inputs.push(...input);
+    }
+
+    if (inputs.length === 0) {
       logger.error('Group:Error:Empty');
       process.exit(1);
     }
-    const allFiles = await Promise.all([...args.inputs.map(loadInput)]);
-    const grouped = groupItems(allFiles.flat(), args.size);
-    logger.info({ files: allFiles.length, groups: grouped.length }, 'Group:Done');
+
+    const grouped = groupItems(inputs, args.size);
+    logger.info({ files: inputs.length, groups: grouped.length }, 'Group:Done');
     if (args.forceOutput || isArgo()) {
       await fsa.write('/tmp/group/output.json', JSON.stringify(grouped));
     }
