@@ -68,6 +68,8 @@ export const commandStacGithubImport = command({
 
     logger.info({ href: selfLink.href }, 'Stac:SetRoot');
 
+    sortLinks(collection.links);
+
     // Update the root link in the collection to the one defined in the repo template
     const rootLink = collection.links.find((f) => f.rel === 'root');
     if (rootLink) {
@@ -97,3 +99,22 @@ export const commandStacGithubImport = command({
     execFileSync('git', ['push', 'origin', 'HEAD', '--force'], { cwd: gitRepo });
   },
 });
+
+/** All other rel is set between rel */
+const RelPriorityDefault = 50;
+/** Ensure root rel are put before everything else */
+const RelPriority: Record<string, number> = {
+  root: 0,
+  item: 100,
+};
+
+/** Sort collection links keeping non items at the top then items sorted by href */
+export function sortLinks(links: st.StacLink[]): void {
+  links.sort((a, b) => {
+    if (a.rel === b.rel) return a.href.localeCompare(b.href);
+    const aRel = RelPriority[a.rel] ?? RelPriorityDefault;
+    const bRel = RelPriority[b.rel] ?? RelPriorityDefault;
+    if (aRel === bRel) return a.href.localeCompare(b.href);
+    return aRel - bRel;
+  });
+}
