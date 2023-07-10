@@ -100,7 +100,7 @@ export const commandStacGithubImport = command({
   },
 });
 
-/** All other rel is set between rel */
+/** All other rel's are set between "root" and "item" */
 const RelPriorityDefault = 50;
 /** Ensure root rel are put before everything else */
 const RelPriority: Record<string, number> = {
