@@ -55,8 +55,8 @@ export const commandCopy = command({
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     const workerUrl = new URL('./copy-worker.js', import.meta.url);
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);

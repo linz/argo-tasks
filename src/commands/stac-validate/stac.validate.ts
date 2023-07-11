@@ -47,8 +47,8 @@ export const commandStacValidate = command({
     }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     logger.info('StacValidation:Start');
     const Schemas = new Map<string, Promise<SchemaObject>>();

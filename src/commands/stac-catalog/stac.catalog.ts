@@ -54,8 +54,8 @@ export const commandStacCatalog = command({
     path: positional({ type: string, description: 'Location to search for collection.json paths' }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
     logger.info('StacCatalogCreation:Start');
     const catalog = await fsa.readJson<st.StacCatalog>(args.template);
     if (catalog.stac_extensions == null) catalog.stac_extensions = [];

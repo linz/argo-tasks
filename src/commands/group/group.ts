@@ -53,8 +53,8 @@ export const commandGroup = command({
   name: 'group',
   description: 'group a array of inputs into a set ',
   args: CommandGroupArgs,
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     const inputs: unknown[] = [];
     for (const input of args.inputs) inputs.push(...loadInput(input));

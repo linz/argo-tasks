@@ -38,8 +38,8 @@ export const commandCreateManifest = command({
     target: option({ type: string, long: 'target', description: 'Copy destination' }),
     source: restPositionals({ type: string, displayName: 'source', description: 'Where to list' }),
   },
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     const outputCopy: string[] = [];
 

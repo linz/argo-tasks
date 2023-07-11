@@ -28,8 +28,8 @@ export const commandList = command({
   name: 'list',
   description: 'List and group files into collections of tasks',
   args: CommandListArgs,
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
     if (args.location.length === 0) {
       logger.error('List:Error:NoLocationProvided');
       process.exit(1);

@@ -19,8 +19,8 @@ export const commandLdsFetch = command({
     layers: restPositionals({ type: string, description: 'Layer id and optional version "layer@version"' }),
     target: option({ type: string, long: 'target', description: 'Target directory to save files' }),
   },
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     for (const layer of args.layers) {
       const [layerId, layerVersion] = layer.split('@');

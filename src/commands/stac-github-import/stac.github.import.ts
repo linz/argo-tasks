@@ -39,8 +39,8 @@ export const commandStacGithubImport = command({
     }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'imagery[bot]';
     const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';

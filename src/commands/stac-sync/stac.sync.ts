@@ -25,8 +25,8 @@ export const commandStacSync = command({
     }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
     logger.info({ source: args.sourcePath, destination: args.destinationPath }, 'StacSync:Start');
     const nb = await synchroniseFiles(args.sourcePath, args.destinationPath);
     logger.info({ copied: nb }, 'StacSync:Done');

@@ -109,7 +109,7 @@ export const commandTileIndexValidate = command({
     location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
   async handler(args) {
-    registerCli(args);
+    registerCli(this, args);
     logger.info('TileIndex:Start');
 
     const readTiffStartTime = performance.now();
@@ -245,8 +245,6 @@ export interface TiffLocation {
  * // --retile=true --validate=false
  * // create a re-tiling output of {tileName, input: string[] }
  *
- *
- *
  * -- Not handled (yet!)
  * input: 1:10_000
  * scale: 1:1000
@@ -354,8 +352,3 @@ export function getTileName(originX: number, originY: number, grid_size: number)
   const tile_id = `${`${tile_y}`.padStart(nb_digits, '0')}${`${tile_x}`.padStart(nb_digits, '0')}`;
   return `${sheet_code}_${grid_size}_${tile_id}`;
 }
-
-// process.exit() // Kill the application early
-
-// input.geojson -> { source: "s3://foo/bar/baz_tif.tiff", outputTile: "BK23_1000_0505.tiff", isDuplicate: true }
-// output.geojson -> { source: ["s3://foo/bar/baz_tif.tiff", ... ], tileName: "BK23_1000_0505.tiff", isDuplicate: true }

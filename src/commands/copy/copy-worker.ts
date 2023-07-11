@@ -81,7 +81,7 @@ const worker = new WorkerRpc<CopyContract>({
 });
 
 worker.onStart = async (): Promise<void> => {
-  registerCli({});
+  registerCli({ name: 'copy:worker' }, {});
 };
 
 if (parentPort) worker.bind(parentPort);

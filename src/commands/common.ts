@@ -1,6 +1,8 @@
 import { boolean, flag, option, optional, string } from 'cmd-ts';
 import { registerFileSystem } from '../fs.register.js';
-import { registerLogger } from '../log.js';
+import { logger, registerLogger } from '../log.js';
+import { CliInfo } from '../cli.info.js';
+import { isArgo } from '../utils/argo.js';
 
 export const config = option({
   long: 'config',
@@ -21,10 +23,12 @@ export const forceOutput = flag({
   defaultValueIsSerializable: true,
 });
 
-export function registerCli(args: { verbose?: boolean; config?: string }): void {
+export function registerCli(cli: { name: string }, args: { verbose?: boolean; config?: string }): void {
   cleanArgs(args);
   registerLogger(args);
   registerFileSystem(args);
+
+  logger.info({ package: CliInfo, cli: cli.name, args, isArgo: isArgo() }, 'Cli:Start');
 }
 
 /** Trim any extra special characters from the cli parser */
