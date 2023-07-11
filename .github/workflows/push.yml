@@ -19,7 +19,8 @@ jobs:
           --tag argo-tasks \
           --label "github_run_id=${GITHUB_RUN_ID}" \
           --build-arg GIT_HASH=${{ github.sha }} \
-          --build-arg GIT_VERSION=$(git describe --tags --always --match 'v*')
+          --build-arg GIT_VERSION=$(git describe --tags --always --match 'v*') \
+          --build-arg GITHUB_RUN_ID=${GITHUB_RUN_ID}
 
       - name: Log in to registry
         if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
