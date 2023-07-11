@@ -7,10 +7,12 @@ import { getActionLocation } from '../../utils/action.storage.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.js';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
   description: 'Create a list of files to copy and pass as a manifest',
+  version: CliInfo.version,
   args: {
     config,
     verbose,

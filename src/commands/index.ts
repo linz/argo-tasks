@@ -9,9 +9,11 @@ import { commandStacValidate } from './stac-validate/stac.validate.js';
 import { commandTileIndexValidate } from './tileindex-validate/tileindex.validate.js';
 import { commandStacGithubImport } from './stac-github-import/stac.github.import.js';
 import { commandGroup } from './group/group.js';
+import { CliInfo } from '../cli.info.js';
 
 export const cmd = subcommands({
   name: 'argo-tasks',
+  version: CliInfo.version,
   description: 'Utility tasks for argo',
   cmds: {
     copy: commandCopy,

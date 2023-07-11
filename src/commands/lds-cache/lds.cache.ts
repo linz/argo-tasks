@@ -4,6 +4,7 @@ import * as stac from 'stac-ts';
 import { createGunzip } from 'zlib';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.js';
 
 function getTargetPath(source: string, path: string): string {
   if (path.startsWith('./')) return fsa.join(source, path.slice(2));
@@ -12,6 +13,7 @@ function getTargetPath(source: string, path: string): string {
 
 export const commandLdsFetch = command({
   name: 'lds-fetch-layer',
+  version: CliInfo.version,
   description: 'Download a LDS layer from the LDS Cache',
   args: {
     config,

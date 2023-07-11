@@ -3,6 +3,7 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.js';
 
 /** Chunk an array into a group size
  * @example
@@ -51,6 +52,7 @@ export const CommandGroupArgs = {
 
 export const commandGroup = command({
   name: 'group',
+  version: CliInfo.version,
   description: 'group a array of inputs into a set ',
   args: CommandGroupArgs,
   async handler(args) {

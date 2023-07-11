@@ -10,6 +10,7 @@ import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
+import { CliInfo } from '../../cli.info.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
@@ -85,6 +86,7 @@ export interface FileList {
 export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description: 'List input files and validate there are no duplicates.',
+  version: CliInfo.version,
   args: {
     config,
     verbose,

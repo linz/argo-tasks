@@ -5,6 +5,7 @@ import * as st from 'stac-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import { createHash } from 'crypto';
+import { CliInfo } from '../../cli.info.js';
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {
@@ -42,6 +43,7 @@ const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/sche
 export const commandStacCatalog = command({
   name: 'stac-catalog',
   description: 'Construct STAC catalog',
+  version: CliInfo.version,
   args: {
     config,
     verbose,
