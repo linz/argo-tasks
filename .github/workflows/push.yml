@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: linz/action-typescript@v3
 
-      - name: Setup tags
+      - name: Setup GIT version
         id: version
         run: |
           GIT_VERSION=$(git describe --tags --always --match 'v*')
@@ -35,11 +35,11 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.version }} 
 
-      - name: Build and push
+      - name: Build and container
         uses: docker/build-push-action@v4
         with:
           context: .
-          tags: argo-tasks
+          tags: base
           push: false
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -48,46 +48,38 @@ jobs:
             GITHUB_RUN_ID=${{ github.run_id}}
 
       - name: Login to GitHub Container Registry
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v4
+      - name: Publish Containers to GHCR
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        run: |
+          docker tag base ghcr.io/${{ github.repository }}:latest
+          docker tag base ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+
+          docker push --all-tags ghcr.io/${{ github.repository }}
+
+      - name: Configure AWS Credentials
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          context: .
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-          push: true
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            GIT_HASH=${{ github.sha }}
-            GIT_VERSION=${{ steps.version.outputs.version }} 
-            GITHUB_RUN_ID=${{ github.run_id}}
+          aws-region: ap-southeast-2
+          mask-aws-account-id: true
+          role-to-assume: ${{ secrets.AWS_CI_ROLE }}
 
+      - name: Login to Amazon ECR
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      # - name: Configure AWS Credentials
-      #   if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
-      #   uses: aws-actions/configure-aws-credentials@v2
-      #   with:
-      #     aws-region: ap-southeast-2
-      #     mask-aws-account-id: true
-      #     role-to-assume: ${{ secrets.AWS_CI_ROLE }}
+      - name: Publish Containers to ECR
+        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        run: |
+          docker tag base ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-latest
+          docker tag base ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version }}
 
-      # - name: Login to Amazon ECR
-      #   if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v1
-
-      # - name: Publish Containers to ECR
-      #   if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
-      #   env:
-      #     REGISTRY: ${{ steps.login-ecr.outputs.registry }}/eks
-      #     TAG: argo-tasks
-      #   run: |
-      #     docker tag ${{ env.TAG}} ${{ env.REGISTRY }}:${{ env.TAG }}-latest
-      #     docker tag ${{ env.TAG}} ${{ env.REGISTRY }}:${{ env.TAG }}-${{ env.GIT_VERSION }}
-
-      #     docker push --all-tags ${{ env.REGISTRY }}
+          docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/eks
