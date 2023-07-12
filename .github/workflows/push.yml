@@ -33,19 +33,7 @@ jobs:
         with:
           images: ${{ github.repository }}
           labels: |
-            org.opencontainers.image.version=${{ steps.version.outputs.version }} 
-
-      - name: Build and container
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          tags: base
-          push: false
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            GIT_HASH=${{ github.sha }}
-            GIT_VERSION=${{ steps.version.outputs.version }} 
-            GITHUB_RUN_ID=${{ github.run_id}}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - name: Login to GitHub Container Registry
         if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
@@ -54,14 +42,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish Containers to GHCR
-        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
-        run: |
-          docker tag base ghcr.io/${{ github.repository }}:latest
-          docker tag base ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-
-          docker push --all-tags ghcr.io/${{ github.repository }}
 
       - name: Configure AWS Credentials
         if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
@@ -76,10 +56,30 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Publish Containers to ECR
-        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
-        run: |
-          docker tag base ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-latest
-          docker tag base ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version }}
+      - name: Setup docker tags
+        id: tags
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: const tags = [];
+            tags.push('ghcr.io/${{ github.repository }}:latest');
+            tags.push('ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}');
 
-          docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/eks
+            if ("${{ steps.login-ecr.outputs.registry }}") {
+            tags.push('${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-latest');
+            tags.push('${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version }}');
+            }
+            return tags.join(', ')
+
+      - name: Build and push container
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: ${{ steps.tags.outputs.result }}
+          push: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_HASH=${{ github.sha }}
+            GIT_VERSION=${{ steps.version.outputs.version }} 
+            GITHUB_RUN_ID=${{ github.run_id}}
