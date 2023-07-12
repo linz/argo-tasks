@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.11.0](https://github.com/linz/argo-tasks/compare/v2.10.0...v2.11.0) (2023-07-12)
+
+
+### Features
+
+* ensure collection links are sorted with root as the first link ([#542](https://github.com/linz/argo-tasks/issues/542)) ([1fb1ad4](https://github.com/linz/argo-tasks/commit/1fb1ad4179a7ded3a34bfaf064d8594e48c04fc9))
+* **group:** add --from-file to work with argo artifacts ([#541](https://github.com/linz/argo-tasks/issues/541)) ([83e7420](https://github.com/linz/argo-tasks/commit/83e7420a5e09d0028af8fbfe45304eb6c2993231))
+* **group:** add cli to group input items into set size outputs ([#539](https://github.com/linz/argo-tasks/issues/539)) ([171365e](https://github.com/linz/argo-tasks/commit/171365eef4920354a86481cb0412d9a9c29a1fb2))
+* include git version info in container ([#543](https://github.com/linz/argo-tasks/issues/543)) ([5ba6d4c](https://github.com/linz/argo-tasks/commit/5ba6d4c993d0ba3cbb74ff348a22b05f2ea722c5))
+
+
+### Bug Fixes
+
+* re-add --include option ([#538](https://github.com/linz/argo-tasks/issues/538)) ([248f137](https://github.com/linz/argo-tasks/commit/248f137b822c40e31b7e2588e864e6cc0b5d9484))
+
 ## [2.10.0](https://github.com/linz/argo-tasks/compare/v2.9.1...v2.10.0) (2023-07-05)
 
 
