@@ -35,6 +35,16 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.version }} 
 
+
+      - name: Login to GitHub Container Registry
+        # if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
       - name: Build and container
         uses: docker/build-push-action@v4
         with:
@@ -48,14 +58,6 @@ jobs:
             GIT_HASH=${{ github.sha }}
             GIT_VERSION=${{ steps.version.outputs.version }} 
             GITHUB_RUN_ID=${{ github.run_id}}
-
-      # - name: Login to GitHub Container Registry
-      #   if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
-      #   uses: docker/login-action@v2
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.repository_owner }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
 
 
       - name: Configure AWS Credentials
