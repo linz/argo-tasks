@@ -3,6 +3,7 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.js';
 
 export const CommandListArgs = {
   config,
@@ -26,10 +27,11 @@ export const CommandListArgs = {
 
 export const commandList = command({
   name: 'list',
+  version: CliInfo.version,
   description: 'List and group files into collections of tasks',
   args: CommandListArgs,
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
     if (args.location.length === 0) {
       logger.error('List:Error:NoLocationProvided');
       process.exit(1);

@@ -8,6 +8,7 @@ import { logger, logId } from '../../log.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { config, registerCli, verbose } from '../common.js';
 import { CopyContract } from './copy-rpc.js';
+import { CliInfo } from '../../cli.info.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
 const CopyManifest = z.array(CopyValidator);
@@ -31,6 +32,7 @@ async function tryParse(x: string): Promise<unknown> {
 export const commandCopy = command({
   name: 'copy',
   description: 'Copy a manifest of files',
+  version: CliInfo.version,
   args: {
     config,
     verbose,
@@ -55,8 +57,8 @@ export const commandCopy = command({
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     const workerUrl = new URL('./copy-worker.js', import.meta.url);
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);

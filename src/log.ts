@@ -1,5 +1,5 @@
-import { PrettyTransform } from 'pretty-json-log';
 import { pino } from 'pino';
+import { PrettyTransform } from 'pretty-json-log';
 import ulid from 'ulid';
 
 export const baseLogger = process.stdout.isTTY ? pino(PrettyTransform.stream()) : pino();

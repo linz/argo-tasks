@@ -7,10 +7,12 @@ import { getActionLocation } from '../../utils/action.storage.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.js';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
   description: 'Create a list of files to copy and pass as a manifest',
+  version: CliInfo.version,
   args: {
     config,
     verbose,
@@ -38,8 +40,8 @@ export const commandCreateManifest = command({
     target: option({ type: string, long: 'target', description: 'Copy destination' }),
     source: restPositionals({ type: string, displayName: 'source', description: 'Where to list' }),
   },
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     const outputCopy: string[] = [];
 

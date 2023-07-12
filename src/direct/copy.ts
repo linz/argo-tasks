@@ -22,7 +22,7 @@ s3Fs.credentials.register({
 const q = new ConcurrentQueue(25);
 
 async function main(): Promise<void> {
-  await registerCli({ verbose: true });
+  await registerCli({ name: 'direct' }, { verbose: true });
 
   for await (const source of fsa.details(SourceLocation)) {
     if (source.size === 0) continue;

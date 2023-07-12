@@ -9,10 +9,12 @@ import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { config, registerCli, verbose } from '../common.js';
 import { hashStream } from './hash.worker.js';
+import { CliInfo } from '../../cli.info.js';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
   description: 'Validate STAC files',
+  version: CliInfo.version,
   args: {
     config,
     verbose,
@@ -47,8 +49,8 @@ export const commandStacValidate = command({
     }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     logger.info('StacValidation:Start');
     const Schemas = new Map<string, Promise<SchemaObject>>();

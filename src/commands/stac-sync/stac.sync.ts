@@ -4,6 +4,7 @@ import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import { createHash } from 'crypto';
 import { FileInfo } from '@chunkd/core';
+import { CliInfo } from '../../cli.info.js';
 
 const S3Path: Type<string, URL> = {
   async from(str) {
@@ -15,6 +16,7 @@ const S3Path: Type<string, URL> = {
 export const commandStacSync = command({
   name: 'stac-sync',
   description: 'Sync STAC files',
+  version: CliInfo.version,
   args: {
     config,
     verbose,
@@ -25,8 +27,8 @@ export const commandStacSync = command({
     }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
     logger.info({ source: args.sourcePath, destination: args.destinationPath }, 'StacSync:Start');
     const nb = await synchroniseFiles(args.sourcePath, args.destinationPath);
     logger.info({ copied: nb }, 'StacSync:Done');

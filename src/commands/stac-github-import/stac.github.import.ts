@@ -5,6 +5,7 @@ import path from 'node:path';
 import * as st from 'stac-ts';
 import { config, registerCli, verbose } from '../common.js';
 import { logger } from '../../log.js';
+import { CliInfo } from '../../cli.info.js';
 
 const Url: Type<string, URL> = {
   async from(str) {
@@ -15,6 +16,7 @@ const Url: Type<string, URL> = {
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
   description: 'Format and push a stac collection.json file to GitHub repository',
+  version: CliInfo.version,
   args: {
     config,
     verbose,
@@ -39,8 +41,8 @@ export const commandStacGithubImport = command({
     }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
 
     const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'imagery[bot]';
     const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';

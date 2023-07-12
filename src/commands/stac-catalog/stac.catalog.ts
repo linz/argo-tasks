@@ -5,6 +5,7 @@ import * as st from 'stac-ts';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import { createHash } from 'crypto';
+import { CliInfo } from '../../cli.info.js';
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {
@@ -42,6 +43,7 @@ const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/sche
 export const commandStacCatalog = command({
   name: 'stac-catalog',
   description: 'Construct STAC catalog',
+  version: CliInfo.version,
   args: {
     config,
     verbose,
@@ -54,8 +56,8 @@ export const commandStacCatalog = command({
     path: positional({ type: string, description: 'Location to search for collection.json paths' }),
   },
 
-  handler: async (args) => {
-    registerCli(args);
+  async handler(args) {
+    registerCli(this, args);
     logger.info('StacCatalogCreation:Start');
     const catalog = await fsa.readJson<st.StacCatalog>(args.template);
     if (catalog.stac_extensions == null) catalog.stac_extensions = [];
