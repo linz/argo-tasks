@@ -59,9 +59,8 @@ jobs:
         with:
           context: .
           tags: |
-            ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-          push: false
+          push: true
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             GIT_HASH=${{ github.sha }}
