@@ -44,22 +44,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-
-      - name: Build and container
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          tags: |
-            
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-          push: true
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            GIT_HASH=${{ github.sha }}
-            GIT_VERSION=${{ steps.version.outputs.version }} 
-            GITHUB_RUN_ID=${{ github.run_id}}
-
-
       - name: Configure AWS Credentials
         # if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
         uses: aws-actions/configure-aws-credentials@v2
@@ -73,9 +57,17 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Publish Containers to ECR
-        # if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
-        run: |
-          docker tag ghcr.io/${{ github.repository }}:latest ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-latest
-          docker tag ghcr.io/${{ github.repository }}:latest ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version }}
+      - name: Build and container
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
 
+            ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version }}
+          push: true
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_HASH=${{ github.sha }}
+            GIT_VERSION=${{ steps.version.outputs.version }} 
+            GITHUB_RUN_ID=${{ github.run_id}}
