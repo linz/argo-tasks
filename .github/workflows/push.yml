@@ -40,9 +40,9 @@ jobs:
         with:
           context: .
           tags: |
-            ghcr.io/${{ github.repository }}:latest
+            
             ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-          push: false
+          push: true
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             GIT_HASH=${{ github.sha }}
@@ -59,7 +59,7 @@ jobs:
 
 
       - name: Configure AWS Credentials
-        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        # if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: ap-southeast-2
@@ -67,14 +67,13 @@ jobs:
           role-to-assume: ${{ secrets.AWS_CI_ROLE }}
 
       - name: Login to Amazon ECR
-        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        # if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Publish Containers to ECR
-        if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
+        # if: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
         run: |
           docker tag ghcr.io/${{ github.repository }}:latest ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-latest
           docker tag ghcr.io/${{ github.repository }}:latest ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version }}
 
-          docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/eks
