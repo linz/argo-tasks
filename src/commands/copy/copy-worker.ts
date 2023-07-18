@@ -63,6 +63,8 @@ const worker = new WorkerRpc<CopyContract>({
         const targetSize = await tryHead(todo.target);
         if (targetSize !== source.size) {
           log.fatal({ ...todo }, 'Copy:Failed');
+          // Cleanup the failed copy so it can be retried
+          if (targetSize != null) await fsa.delete(todo.target);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
         log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
