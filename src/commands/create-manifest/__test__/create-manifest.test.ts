@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import { describe, beforeEach, it } from 'node:test';
 import assert from 'node:assert';
+import { beforeEach, describe, it } from 'node:test';
 import { createManifest, validatePaths } from '../create-manifest.js';
 
 describe('createManifest', () => {
@@ -65,6 +65,22 @@ describe('createManifest', () => {
       {
         source: 'memory://source/foo/bar/topographic.png',
         target: 'memory://target/sub/foo/bar/topographic.png',
+      },
+    ]);
+  });
+
+  it('should copy single file to the target location without a trailing /', async () => {
+    await Promise.all([fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })))]);
+
+    const outputFiles = await createManifest(
+      'memory://source/topographic.json',
+      'memory://target/sub/topographic.json',
+      { flatten: false },
+    );
+    assert.deepEqual(outputFiles[0], [
+      {
+        source: 'memory://source/topographic.json',
+        target: 'memory://target/sub/topographic.json',
       },
     ]);
   });
