@@ -39,7 +39,7 @@
     "@aws-sdk/lib-storage": "^3.245.0",
     "@basemaps/geo": "^6.40.0",
     "@basemaps/shared": "^6.40.0",
-    "@chunkd/fs": "^10.0.9",
+    "@chunkd/fs": "^11.0.0",
     "@chunkd/source-aws-v3": "^10.1.3",
     "@cogeotiff/core": "^7.2.1",
     "@wtrpc/core": "^1.0.2",
