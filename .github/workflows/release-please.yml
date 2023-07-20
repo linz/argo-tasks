@@ -67,20 +67,30 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and container
+      - name: Setup docker tags
+        id: tags
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: const tags = [];
+            tags.push('ghcr.io/${{ github.repository }}:latest');
+            tags.push('ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version_major }}');
+            tags.push('ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version_major_minor }}');
+            tags.push('ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}');
+
+            if ("${{ steps.login-ecr.outputs.registry }}") {
+            tags.push('${{ steps.login-ecr.outputs.registry }}/eks:${{ github.event.repository.name }}-latest');
+            tags.push('${{ steps.login-ecr.outputs.registry }}/eks:${{ github.event.repository.name }}-${{ steps.version.outputs.version_major }}');
+            tags.push('${{ steps.login-ecr.outputs.registry }}/eks:${{ github.event.repository.name }}-${{ steps.version.outputs.version_major_minor }}');
+            tags.push('${{ steps.login-ecr.outputs.registry }}/eks:${{ github.event.repository.name }}-${{ steps.version.outputs.version }}');
+            }
+            return tags.join(', ')
+
+      - name: Build and push container
         uses: docker/build-push-action@v4
         with:
           context: .
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version_major }}
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version_major_minor }}
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-
-            ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-latest
-            ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version_major }}
-            ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version_major_minor }}
-            ${{ steps.login-ecr.outputs.registry }}/eks:argo-tasks-${{ steps.version.outputs.version }}
+          tags: ${{ steps.tags.outputs.result }}
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
