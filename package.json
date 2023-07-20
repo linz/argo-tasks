@@ -12,7 +12,7 @@
     "organization": true
   },
   "devDependencies": {
-    "@chunkd/source-memory": "^10.1.0",
+    "@chunkd/source-memory": "^11.0.0",
     "@linzjs/style": "^4.2.0",
     "@types/node": "^20.3.2",
     "esno": "^0.16.3",
