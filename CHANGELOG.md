@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.12.0](https://github.com/linz/argo-tasks/compare/v2.11.0...v2.12.0) (2023-07-25)
+
+
+### Features
+
+* **group:** create a output file per item grouped ([#565](https://github.com/linz/argo-tasks/issues/565)) ([5d77c40](https://github.com/linz/argo-tasks/commit/5d77c40e56745e874f26561622b8dd3dc78baab2))
+
+
+### Bug Fixes
+
+* only join target and basepath if basepath exists TDE-777 ([#496](https://github.com/linz/argo-tasks/issues/496)) ([8c4ed41](https://github.com/linz/argo-tasks/commit/8c4ed418d04d5f03c276ae38f1910284b17e0a81))
+* **publish-copy:** delete the failed copy file so it can be retried ([#554](https://github.com/linz/argo-tasks/issues/554)) ([6be7e94](https://github.com/linz/argo-tasks/commit/6be7e9494df78d23e23274c8dab0e8e1da41b127))
+
 ## [2.11.0](https://github.com/linz/argo-tasks/compare/v2.10.0...v2.11.0) (2023-07-12)
 
 
