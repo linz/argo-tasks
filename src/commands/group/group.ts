@@ -73,7 +73,16 @@ export const commandGroup = command({
     const grouped = groupItems(inputs, args.size);
     logger.info({ files: inputs.length, groups: grouped.length }, 'Group:Done');
     if (args.forceOutput || isArgo()) {
-      await fsa.write('/tmp/group/output.json', JSON.stringify(grouped));
+      const items = [];
+      // Write out a file per group into /tmp/group/output/000.json
+      for (let i = 0; i < grouped.length; i++) {
+        const groupId = String(i).padStart(3, '0');
+        await fsa.write(`/tmp/group/output/${groupId}.json`, JSON.stringify(grouped[i], null, 2));
+        items.push(groupId);
+      }
+
+      // output.json contains ["001","002","003","004","005","006","007"...]
+      await fsa.write('/tmp/group/output.json', JSON.stringify(items));
     }
   },
 });

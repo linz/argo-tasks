@@ -25,12 +25,15 @@ describe('groupItems', () => {
 
 describe('group', () => {
   const memoryFs = new FsMemory();
+
   before(() => {
     fsa.register('/tmp/group', memoryFs);
   });
+
   it('should load from a JSON array', async () => {
     await commandGroup.handler({ inputs: [JSON.stringify([1, 2, 3, 4])], forceOutput: true, size: 50 } as any);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), [[1, 2, 3, 4]]);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000']);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3, 4]);
   });
 
   it('should load from multiple JSON arrays', async () => {
@@ -39,21 +42,21 @@ describe('group', () => {
       forceOutput: true,
       size: 3,
     } as any);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), [
-      [1, 2, 3],
-      [4, 'alpha'],
-    ]);
+
+    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3]);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [4, 'alpha']);
   });
+
   it('should load from strings', async () => {
     await commandGroup.handler({
       inputs: ['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
       size: 3,
     } as any);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), [
-      ['s3://foo/bar', 1, 2],
-      [3, 4, 'alpha'],
-    ]);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), ['s3://foo/bar', 1, 2]);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [3, 4, 'alpha']);
   });
 
   it('should load from a file', async () => {
@@ -64,9 +67,8 @@ describe('group', () => {
       forceOutput: true,
       size: 3,
     } as any);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), [
-      [1, 2, 3],
-      [4, 5],
-    ]);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3]);
+    assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [4, 5]);
   });
 });
