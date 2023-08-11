@@ -35,8 +35,8 @@ export const commandStacGithubImport = command({
     repoName: option({
       type: string,
       long: 'repo-name',
-      description: 'Repository name either linz/imagery or linz/elevation',
-      defaultValue: () => 'linz/imagery',
+      description: 'Repository name source for either linz/imagery or linz/elevation',
+      defaultValue: () => 'imagery',
       defaultValueIsSerializable: true,
     }),
   },
@@ -44,8 +44,9 @@ export const commandStacGithubImport = command({
   async handler(args) {
     registerCli(this, args);
 
-    const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'imagery[bot]';
-    const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
+    const linzRepoName = `linz/${args.repoName}`;
+    const gitName = `${args.repoName}[bot]`;
+    const gitEmail = `${args.repoName}, "@linz.govt.nz")`;
 
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
@@ -57,7 +58,7 @@ export const commandStacGithubImport = command({
 
     // Clone the GitHub repo
     logger.info({ repo: args.repoName }, 'Git:clone');
-    execFileSync('git', ['clone', `git@github.com:${args.repoName}`, gitRepo]);
+    execFileSync('git', ['clone', `git@github.com:${linzRepoName}`, gitRepo]);
     execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo });
     execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo });
 
