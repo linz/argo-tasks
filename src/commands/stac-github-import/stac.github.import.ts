@@ -46,7 +46,9 @@ export const commandStacGithubImport = command({
 
     const linzRepoName = `linz/${args.repoName}`;
     const gitName = `${args.repoName}[bot]`;
-    const gitEmail = `${args.repoName}, "@linz.govt.nz")`;
+    const gitEmail = `${args.repoName}@linz.govt.nz`;
+
+    console.log(linzRepoName, gitEmail, gitName)
 
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
