@@ -5,5 +5,5 @@ export const CliInfo = {
   // Git commit hash
   hash: process.env['GIT_HASH'],
   // Github action that the CLI was built from
-  runId: process.env['GITHUB_RUN_ID'],
+  buildId: process.env['GITHUB_RUN_ID'] ? `${process.env['GITHUB_RUN_ID']}-${process.env['GITHUB_RUN_ATTEMPT']}` : '',
 };
