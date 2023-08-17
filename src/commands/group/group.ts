@@ -77,11 +77,17 @@ export const commandGroup = command({
       // Write out a file per group into /tmp/group/output/000.json
       for (let i = 0; i < grouped.length; i++) {
         const groupId = String(i).padStart(3, '0');
+        logger.trace('Group:Output:File', {
+          target: `/tmp/group/output/${groupId}.json`,
+          groupId: i,
+          count: grouped[i]?.length,
+        });
         await fsa.write(`/tmp/group/output/${groupId}.json`, JSON.stringify(grouped[i], null, 2));
         items.push(groupId);
       }
 
       // output.json contains ["001","002","003","004","005","006","007"...]
+      logger.debug('Group:Output', { target: '/tmp/group/output.json', groups: items });
       await fsa.write('/tmp/group/output.json', JSON.stringify(items));
     }
   },
