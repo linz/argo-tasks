@@ -35,7 +35,7 @@
   ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
-    "@aws-sdk/credential-providers": "^3.245.0",
+    "@aws-sdk/credential-providers": "^3.397.0",
     "@aws-sdk/lib-storage": "^3.245.0",
     "@basemaps/geo": "^6.40.0",
     "@basemaps/shared": "^6.40.0",
