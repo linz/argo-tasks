@@ -14,7 +14,7 @@
   "devDependencies": {
     "@chunkd/source-memory": "^10.1.0",
     "@linzjs/style": "^4.2.0",
-    "@types/node": "^20.3.2",
+    "@types/node": "^20.5.3",
     "esno": "^0.16.3",
     "stac-ts": "^1.0.0"
   },
