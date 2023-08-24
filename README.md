@@ -17,6 +17,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 - [stac sync](#stac-sync)
 - [stac validate](#stac-validate)
 - [tileindex-validate](#tileindex-validate)
+- [bm-create-pr](#bm-create-pr)
 
 ### lds-fetch-layer
 
@@ -84,12 +85,12 @@ Copy a manifest of files between two locations, for manifest creation see [creat
 copy ./debug/manifest-eMxkhansySrfQt79rIbAGOGrQ2ne-h4GdLXkbA3O6mo.json --concurrency 10
 ```
 
-
 ### group
 
 group an input list into an array of arrays
+
 ```bash
-group --size 2 "a" "b" "c" '["1","2","3"]' 
+group --size 2 "a" "b" "c" '["1","2","3"]'
 # [["a","b"], ["c","1"], ["2", "3"]]
 ```
 
@@ -218,9 +219,10 @@ stac validate --checksum --recursive s3://linz-imagery-staging/test/stac-validat
 Validate or create retiling information for a list of tiffs.
 
 Outputs files for visualisation of the tiles and as an list for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for retiling with GDAL.
-* `input.geojson` GeoJSON file containing the bounding boxes of the source files. Example: [input.geojson](docs/input.geojson)
-* `output.geojson` GeoJSON file containing the bounding boxes of the requested target files. Example: [output.geojson](docs/output.geojson)
-* `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
+
+- `input.geojson` GeoJSON file containing the bounding boxes of the source files. Example: [input.geojson](docs/input.geojson)
+- `output.geojson` GeoJSON file containing the bounding boxes of the requested target files. Example: [output.geojson](docs/output.geojson)
+- `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
 
 `--validate`
 Validate list of tiffs match a LINZ Mapsheet tile index and assert that there will be no duplicates.
@@ -235,6 +237,22 @@ Output a list of tiles to be retiled to the scale specified, and which tilename 
 ```bash
 tileindex-validate --retile --scale 10000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
 ```
+
+### bm-create-pr
+
+Fetch a layer from the LDS and download it as GeoPackage
+
+#### Example
+
+Create a pull request in the basemaps-config repo after imagery layer imported.
+
+```bash
+bm-create-pr --layer
+{"2193":"s3://linz-basemaps-staging/2193/southland_2023_0.1m/","3857":"s3://linz-basemaps-staging/3857/southland_2023_0.1m/","name":"southland_2023_0.1m","title":"Southland 0.1m Urban Aerial Photos (2023)"}
+```
+
+Add --individual flag to import layer into standalone individual config file, otherwise import into aerial map.
+Add --vector flag to import new layer into vector map
 
 ## Versioning and Release
 
