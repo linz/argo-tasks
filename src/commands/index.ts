@@ -10,6 +10,7 @@ import { commandTileIndexValidate } from './tileindex-validate/tileindex.validat
 import { commandStacGithubImport } from './stac-github-import/stac.github.import.js';
 import { commandGroup } from './group/group.js';
 import { CliInfo } from '../cli.info.js';
+import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 
 export const cmd = subcommands({
   name: 'argo-tasks',
@@ -21,6 +22,7 @@ export const cmd = subcommands({
     group: commandGroup,
     flatten: commandCreateManifest,
     'lds-fetch-layer': commandLdsFetch,
+    'bm-create-pr': basemapsCreatePullRequest,
     list: commandList,
     ls: commandList,
     'stac-catalog': commandStacCatalog,
