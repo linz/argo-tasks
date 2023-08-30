@@ -16,11 +16,13 @@ export enum Category {
   Rural = 'Rural Aerial Photos',
   Satellite = 'Satellite Imagery',
   Event = 'Event',
+  Scanned = 'Scanned Aerial Imagery',
   Other = 'New Aerial Photos',
 }
 
 export interface CategorySetting {
   minZoom?: number;
+  maxZoom?: number;
   individual?: boolean;
 }
 
@@ -29,6 +31,7 @@ export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   [Category.Rural]: { minZoom: 13, individual: false },
   [Category.Satellite]: { minZoom: 5, individual: false },
   [Category.Event]: { individual: true },
+  [Category.Scanned]: { minZoom: 0, maxZoom: 32 },
   [Category.Other]: { individual: true },
 };
 

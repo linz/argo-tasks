@@ -39,7 +39,7 @@ export const cmd = subcommands({
       },
     }),
     bmc: subcommands({
-      name: 'basemaps-commands',
+      name: 'bmc',
       cmds: {
         'create-pr': basemapsCreatePullRequest,
       },

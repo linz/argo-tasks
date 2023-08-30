@@ -1,4 +1,4 @@
-import { boolean, command, flag, option, optional, string } from 'cmd-ts';
+import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
 import { logger } from '../../log.js';
 import { verbose } from '../common.js';
 import { CliInfo } from '../../cli.info.js';
@@ -13,7 +13,7 @@ export const CommandCreatePRArgs = {
     description: 'Input config layer import into basemaps-config',
   }),
   category: option({
-    type: optional(string),
+    type: optional(oneOf(Object.values(Category))),
     long: 'category',
     description: 'New Imagery Category, like Rural Aerial Photos, Urban Aerial Photos, Satellite Imagery',
   }),
@@ -46,7 +46,6 @@ export const basemapsCreatePullRequest = command({
   async handler(args) {
     const layerStr = args.layer;
     const category = args.category ? parseCategory(args.category) : Category.Other;
-    if (layerStr == null) throw new Error('Please provide a valid input layer and urls');
     let layer: ConfigLayer;
     try {
       layer = JSON.parse(layerStr);
