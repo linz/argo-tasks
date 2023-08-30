@@ -5,7 +5,7 @@ import { CliInfo } from '../../cli.info.js';
 import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
 import { ConfigLayer, standardizeLayerName } from '@basemaps/config';
 
-export const CommandListArgs = {
+export const CommandCreatePRArgs = {
   verbose,
   layer: option({
     type: string,
@@ -42,7 +42,7 @@ export const basemapsCreatePullRequest = command({
   name: 'bm-create-pr',
   version: CliInfo.version,
   description: 'Create a github pull request for the import imagery workflow',
-  args: CommandListArgs,
+  args: CommandCreatePRArgs,
   async handler(args) {
     const layerStr = args.layer;
     const category = args.category ? parseCategory(args.category) : Category.Other;

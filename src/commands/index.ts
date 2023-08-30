@@ -22,7 +22,6 @@ export const cmd = subcommands({
     group: commandGroup,
     flatten: commandCreateManifest,
     'lds-fetch-layer': commandLdsFetch,
-    'bm-create-pr': basemapsCreatePullRequest,
     list: commandList,
     ls: commandList,
     'stac-catalog': commandStacCatalog,
@@ -37,6 +36,12 @@ export const cmd = subcommands({
         'github-import': commandStacGithubImport,
         sync: commandStacSync,
         validate: commandStacValidate,
+      },
+    }),
+    bmc: subcommands({
+      name: 'basemaps-commands',
+      cmds: {
+        'create-pr': basemapsCreatePullRequest,
       },
     }),
   },

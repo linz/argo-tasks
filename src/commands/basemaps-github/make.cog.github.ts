@@ -144,7 +144,7 @@ export class MakeCogGithub {
   addLayer(layer: ConfigLayer, tileSet: ConfigTileSetRaster, category: Category): ConfigTileSetRaster {
     for (let i = tileSet.layers.length - 1; i >= 0; i--) {
       // Add new layer at the end of category
-      if (tileSet.layers[i]!.category === category) {
+      if (tileSet.layers[i]?.category === category) {
         // Find first valid category and insert new record above that.
         tileSet.layers.splice(i + 1, 0, layer);
         break;
@@ -163,7 +163,7 @@ export class MakeCogGithub {
   ): Promise<ConfigTileSetRaster | undefined> {
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
-      if (tileSet.layers[i]!.name === layer.name) {
+      if (tileSet.layers[i]?.name === layer.name) {
         tileSet.layers[i] = layer;
         return tileSet;
       }
@@ -176,7 +176,7 @@ export class MakeCogGithub {
     if (category === Category.Rural) {
       for (let i = 0; i < tileSet.layers.length; i++) {
         // Add new layer above the first Urban
-        if (tileSet.layers[i]!.category === Category.Urban) {
+        if (tileSet.layers[i]?.category === Category.Urban) {
           // Find first valid Urban and insert new record above that.
           tileSet.layers.splice(i, 0, layer);
           break;
@@ -230,7 +230,7 @@ export class MakeCogGithub {
   async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet: ConfigTileSetVector): Promise<ConfigTileSetVector> {
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
-      if (tileSet.layers[i]!.name === layer.name) {
+      if (tileSet.layers[i]?.name === layer.name) {
         tileSet.layers[i] = layer;
         return tileSet;
       }
