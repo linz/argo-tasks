@@ -18,7 +18,7 @@ export class Github {
     this.repoName = repoName;
 
     const token = Env.get(Env.GitHubToken);
-    if (token == null) throw new Error('Please set up github token environment variable.');
+    if (token == null) throw new Error(`Please set up ${Env.GitHubToken} environment variable.`);
     this.octokit = restEndpointMethods(new Octokit({ auth: token }));
   }
 
