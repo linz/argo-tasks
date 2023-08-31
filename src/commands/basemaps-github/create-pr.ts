@@ -15,7 +15,7 @@ export const CommandCreatePRArgs = {
   category: option({
     type: optional(oneOf(Object.values(Category))),
     long: 'category',
-    description: 'New Imagery Category, like Rural Aerial Photos, Urban Aerial Photos, Satellite Imagery',
+    description: [...Object.values(Category)].join(', '),
   }),
   repository: option({
     type: string,
