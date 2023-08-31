@@ -1,5 +1,4 @@
-import { Bounds } from '@basemaps/geo';
-import { Projection } from '@basemaps/shared/build/proj/projection.js';
+import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { CogTiff, Size } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';

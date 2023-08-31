@@ -10,6 +10,7 @@ import { commandTileIndexValidate } from './tileindex-validate/tileindex.validat
 import { commandStacGithubImport } from './stac-github-import/stac.github.import.js';
 import { commandGroup } from './group/group.js';
 import { CliInfo } from '../cli.info.js';
+import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 
 export const cmd = subcommands({
   name: 'argo-tasks',
@@ -35,6 +36,12 @@ export const cmd = subcommands({
         'github-import': commandStacGithubImport,
         sync: commandStacSync,
         validate: commandStacValidate,
+      },
+    }),
+    bmc: subcommands({
+      name: 'bmc',
+      cmds: {
+        'create-pr': basemapsCreatePullRequest,
       },
     }),
   },
