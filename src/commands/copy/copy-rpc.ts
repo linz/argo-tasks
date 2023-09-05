@@ -15,6 +15,9 @@ export interface CopyContractArgs {
   force: boolean;
   /** Do not overwrite existing files but skip them if they are the same size */
   noClobber: boolean;
+
+  /** Correct content-type from "application/octet-stream" to common formats */
+  fixContentType: boolean;
 }
 
 export interface CopyStats {

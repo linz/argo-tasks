@@ -54,6 +54,12 @@ export const commandCopy = command({
       long: 'force-no-clobber',
       description: 'Overwrite changed files',
     }),
+    fixContentType: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'fix-content-type',
+      description: 'Correct content-type from "application/octet-stream" to common formats',
+    }),
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
@@ -89,6 +95,7 @@ export const commandCopy = command({
             size: chunkSize,
             force,
             noClobber,
+            fixContentType: args.fixContentType,
           }),
         );
       }

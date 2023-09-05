@@ -1,3 +1,4 @@
+import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 import { performance } from 'node:perf_hooks';
@@ -8,6 +9,29 @@ import { registerCli } from '../common.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
 
 const Q = new ConcurrentQueue(10);
+
+export const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
+
+/** If the file has been written with a unknown binary contentType attempt to fix it with common content types */
+export function fixFileMetadata(target: string, f: FileInfo): FileInfo {
+  // If the content is encoded we do not know what the content-type should be
+  if (f.contentEncoding != null) return f;
+  if (!FixableContentType.has(f.contentType ?? 'binary/octet-stream')) return f;
+
+  if (target.endsWith('.tiff') || target.endsWith('.tif')) {
+    if (f.contentType?.startsWith('image/tiff')) return f;
+    // Assume our tiffs are cloud optimized
+    return { ...f, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+  }
+
+  if (target.endsWith('.json')) {
+    if (f.contentType?.includes('json')) return f;
+    // overwrite with application/json
+    return { ...f, contentType: 'application/json' };
+  }
+
+  return f;
+}
 
 /**
  * S3 Writes do not always show up instantly as we have read the location earlier in the function
@@ -27,7 +51,7 @@ async function tryHead(filePath: string, retryCount = 3): Promise<number | null>
   return null;
 }
 
-const worker = new WorkerRpc<CopyContract>({
+export const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
     const end = Math.min(args.start + args.size, args.manifest.length);
@@ -57,7 +81,11 @@ const worker = new WorkerRpc<CopyContract>({
 
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
-        await fsa.write(todo.target, fsa.stream(todo.source));
+        await fsa.write(
+          todo.target,
+          fsa.stream(todo.source),
+          args.fixContentType ? fixFileMetadata(todo.source, source) : source,
+        );
 
         // Validate the file moved successfully
         const targetSize = await tryHead(todo.target);
