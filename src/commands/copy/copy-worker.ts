@@ -7,30 +7,32 @@ import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { registerCli } from '../common.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
+import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 
 const Q = new ConcurrentQueue(10);
 
 export const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
 
-/** If the file has been written with a unknown binary contentType attempt to fix it with common content types */
-export function fixFileMetadata(target: string, f: FileInfo): FileInfo {
+/**
+ * If the file has been written with a unknown binary contentType attempt to fix it with common content types
+ *
+ *
+ * @param path File path to fix the metadata of
+ * @param meta File metadata
+ * @returns New fixed file metadata if fixed other wise source file metadata
+ */
+export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
   // If the content is encoded we do not know what the content-type should be
-  if (f.contentEncoding != null) return f;
-  if (!FixableContentType.has(f.contentType ?? 'binary/octet-stream')) return f;
+  if (meta.contentEncoding != null) return meta;
+  if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
 
-  if (target.endsWith('.tiff') || target.endsWith('.tif')) {
-    if (f.contentType?.startsWith('image/tiff')) return f;
-    // Assume our tiffs are cloud optimized
-    return { ...f, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
-  }
+  // Assume our tiffs are cloud optimized
+  if (isTiff(path)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
 
-  if (target.endsWith('.json')) {
-    if (f.contentType?.includes('json')) return f;
-    // overwrite with application/json
-    return { ...f, contentType: 'application/json' };
-  }
+  // overwrite with application/json
+  if (path.endsWith('.json')) return { ...meta, contentType: 'application/json' };
 
-  return f;
+  return meta;
 }
 
 /**
