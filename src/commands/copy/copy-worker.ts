@@ -1,3 +1,4 @@
+import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 import { performance } from 'node:perf_hooks';
@@ -6,8 +7,33 @@ import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { registerCli } from '../common.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
+import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 
 const Q = new ConcurrentQueue(10);
+
+export const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
+
+/**
+ * If the file has been written with a unknown binary contentType attempt to fix it with common content types
+ *
+ *
+ * @param path File path to fix the metadata of
+ * @param meta File metadata
+ * @returns New fixed file metadata if fixed other wise source file metadata
+ */
+export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
+  // If the content is encoded we do not know what the content-type should be
+  if (meta.contentEncoding != null) return meta;
+  if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
+
+  // Assume our tiffs are cloud optimized
+  if (isTiff(path)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+
+  // overwrite with application/json
+  if (path.endsWith('.json')) return { ...meta, contentType: 'application/json' };
+
+  return meta;
+}
 
 /**
  * S3 Writes do not always show up instantly as we have read the location earlier in the function
@@ -27,7 +53,7 @@ async function tryHead(filePath: string, retryCount = 3): Promise<number | null>
   return null;
 }
 
-const worker = new WorkerRpc<CopyContract>({
+export const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
     const end = Math.min(args.start + args.size, args.manifest.length);
@@ -57,7 +83,11 @@ const worker = new WorkerRpc<CopyContract>({
 
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
-        await fsa.write(todo.target, fsa.stream(todo.source));
+        await fsa.write(
+          todo.target,
+          fsa.stream(todo.source),
+          args.fixContentType ? fixFileMetadata(todo.source, source) : source,
+        );
 
         // Validate the file moved successfully
         const targetSize = await tryHead(todo.target);

@@ -41,18 +41,28 @@ export const commandCopy = command({
       defaultValue: () => false,
       long: 'force',
       description: 'Overwrite existing files',
+      defaultValueIsSerializable: true,
     }),
     noClobber: flag({
       type: boolean,
       defaultValue: () => false,
       long: 'no-clobber',
       description: 'Skip existing files',
+      defaultValueIsSerializable: true,
     }),
     forceNoClobber: flag({
       type: boolean,
       defaultValue: () => false,
       long: 'force-no-clobber',
       description: 'Overwrite changed files',
+      defaultValueIsSerializable: true,
+    }),
+    fixContentType: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'fix-content-type',
+      description: 'Correct content-type from "application/octet-stream" to common formats',
+      defaultValueIsSerializable: true,
     }),
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
@@ -89,6 +99,7 @@ export const commandCopy = command({
             size: chunkSize,
             force,
             noClobber,
+            fixContentType: args.fixContentType,
           }),
         );
       }
