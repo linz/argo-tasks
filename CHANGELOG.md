@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.13.0](https://github.com/linz/argo-tasks/compare/v2.12.0...v2.13.0) (2023-09-05)
+
+
+### Features
+
+* **cli:** Move the basemaps github create-pr cli into argo-tasks. BM-872 ([#627](https://github.com/linz/argo-tasks/issues/627)) ([a47b38a](https://github.com/linz/argo-tasks/commit/a47b38a556888a2c3df742e515692a2b23d6f12e))
+* **group:** increase logging for grouping ([#609](https://github.com/linz/argo-tasks/issues/609)) ([2966586](https://github.com/linz/argo-tasks/commit/2966586f09d52565f8fdd2fb9420c7b17c404062))
+
+
+### Bug Fixes
+
+* **copy:** copy and fix content-types TDE-859 ([#633](https://github.com/linz/argo-tasks/issues/633)) ([cc7c5cc](https://github.com/linz/argo-tasks/commit/cc7c5cc60abae9831e121ba531f844ee63622bda))
+
 ## [2.12.0](https://github.com/linz/argo-tasks/compare/v2.11.0...v2.12.0) (2023-07-25)
 
 
