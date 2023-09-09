@@ -20,10 +20,8 @@ export class GithubApi {
   octokit: Api;
   repo: string;
   owner: string;
-  logger: LogType;
 
-  constructor(repository: string, logger: LogType) {
-    this.logger = logger;
+  constructor(repository: string) {
     const [owner, repo] = repository.split('/');
     if (owner == null || repo == null) throw new Error(`Badly formatted repository name: ${repository}`);
     this.owner = owner;
@@ -41,8 +39,8 @@ export class GithubApi {
   /**
    * Get branch by name if exists
    */
-  async getBranch(branch: string): Promise<string | undefined> {
-    this.logger.debug({ branch }, 'GitHub: Get branch');
+  async getBranch(branch: string, logger: LogType): Promise<string | undefined> {
+    logger.debug({ branch }, 'GitHub: Get branch');
     try {
       const response = await this.octokit.rest.git.getRef({
         owner: this.owner,
@@ -51,7 +49,7 @@ export class GithubApi {
       });
       if (this.isOk(response.status)) return response.data.object.sha;
     } catch {
-      this.logger.debug({ branch }, 'GitHub: Branch Not Found');
+      logger.debug({ branch }, 'GitHub: Branch Not Found');
     }
     return;
   }
@@ -59,7 +57,7 @@ export class GithubApi {
   /**
    * Create a new branch from the latest master branch
    */
-  async createBranch(branch: string): Promise<string> {
+  async createBranch(branch: string, logger: LogType): Promise<string> {
     // Get the latest sha from master branch
     const master = await this.octokit.rest.git.getRef({
       owner: this.owner,
@@ -70,7 +68,7 @@ export class GithubApi {
     const sha = master.data.object.sha;
 
     // Create new branch from the latest master
-    this.logger.debug({ branch }, 'GitHub API: Create branch');
+    logger.debug({ branch }, 'GitHub API: Create branch');
     const response = await this.octokit.rest.git.createRef({
       owner: this.owner,
       repo: this.repo,
@@ -84,9 +82,9 @@ export class GithubApi {
   /**
    * Create a blob object in git
    */
-  async createBlobs(content: string, path: string): Promise<Blob> {
+  async createBlobs(content: string, path: string, logger: LogType): Promise<Blob> {
     // Create the blobs with the files content
-    this.logger.debug({ path }, 'GitHub API: Create blob');
+    logger.debug({ path }, 'GitHub API: Create blob');
     const blobRes = await this.octokit.rest.git.createBlob({
       owner: this.owner,
       repo: this.repo,
@@ -102,8 +100,8 @@ export class GithubApi {
   /**
    * Get content from the github repository
    */
-  async getContent(path: string): Promise<string> {
-    this.logger.info({ path }, 'GitHub API: Get Content');
+  async getContent(path: string, logger: LogType): Promise<string> {
+    logger.info({ path }, 'GitHub API: Get Content');
     const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
     if (!this.isOk(response.status)) throw new Error('Failed to get aerial TileSet config.');
     if ('content' in response.data) {
@@ -116,9 +114,9 @@ export class GithubApi {
   /**
    * Create a file imagery config file into basemaps-config/config/imagery and commit
    */
-  async createCommit(blobs: Blob[], message: string, sha: string): Promise<string> {
+  async createCommit(blobs: Blob[], message: string, sha: string, logger: LogType): Promise<string> {
     // Create a tree which defines the folder structure
-    this.logger.debug({ sha }, 'GitHub API: Create Tree');
+    logger.debug({ sha }, 'GitHub API: Create Tree');
     const treeRes = await this.octokit.rest.git.createTree({
       owner: this.owner,
       repo: this.repo,
@@ -130,7 +128,7 @@ export class GithubApi {
     const treeSha = treeRes.data.sha;
 
     // Create the commit
-    this.logger.debug({ treeSha }, 'GitHub API: Create Commit');
+    logger.debug({ treeSha }, 'GitHub API: Create Commit');
     const commitRes = await this.octokit.rest.git.createCommit({
       owner: this.owner,
       repo: this.repo,
@@ -145,8 +143,8 @@ export class GithubApi {
   /**
    * Update the reference of your branch to point to the new commit SHA
    */
-  async updateBranch(branch: string, commitSha: string): Promise<void> {
-    this.logger.debug({ branch, commitSha }, 'GitHub API: update ref');
+  async updateBranch(branch: string, commitSha: string, logger: LogType): Promise<void> {
+    logger.debug({ branch, commitSha }, 'GitHub API: update ref');
     const response = await this.octokit.rest.git.updateRef({
       owner: this.owner,
       repo: this.repo,
@@ -159,7 +157,7 @@ export class GithubApi {
   /**
    * Create a new pull request from the given branch and return pull request number
    */
-  async createPullRequest(branch: string, title: string): Promise<number> {
+  async createPullRequest(branch: string, title: string, logger: LogType): Promise<number> {
     // Create pull request from the give head
     const response = await this.octokit.rest.pulls.create({
       owner: this.owner,
@@ -169,71 +167,55 @@ export class GithubApi {
       base: 'master',
     });
     if (!this.isOk(response.status)) throw new Error('Failed to create pull request.');
-    this.logger.info({ branch, url: response.data.html_url }, 'GitHub: Create Pull Request');
+    logger.info({ branch, url: response.data.html_url }, 'GitHub: Create Pull Request');
     return response.data.number;
   }
 }
 
-export class Github extends GithubApi {
-  blobs: Blob[] = [];
-  sha: string | undefined;
-  commitSha: string | undefined;
-  branch: string | undefined;
+export interface GithubFiles {
+  path: string;
+  content: string;
+}
 
-  constructor(repository: string, logger: LogType) {
-    super(repository, logger);
+export class GitHubCreatePR {
+  gh: GithubApi;
+
+  constructor(gh: GithubApi) {
+    this.gh = gh;
   }
 
   /**
-   * git checkout -b
+   * Create github pull requests
+   *
+   * @returns pull request number
    */
-  async checkout(branch: string): Promise<void> {
-    this.logger.info({ branch }, 'GitHub: Get branch');
-    const sha = await this.getBranch(branch);
+  async createPR(branch: string, title: string, files: GithubFiles[], logger: LogType): Promise<number> {
+    // git checkout -b
+    logger.info({ branch }, 'GitHub: Get branch');
+    let sha = await this.gh.getBranch(branch, logger);
     if (sha == null) {
-      this.logger.info({ branch }, 'GitHub: branch Not Found, create new branch');
-      this.sha = await this.createBranch(branch);
-    } else this.sha = sha;
-    this.branch = branch;
-  }
+      logger.info({ branch }, 'GitHub: branch Not Found, create new branch');
+      sha = await this.gh.createBranch(branch, logger);
+    }
 
-  /**
-   * git add
-   */
-  async add(content: string, path: string): Promise<void> {
-    this.logger.info({ path }, 'GitHub: Add change');
-    if (this.sha == null) throw new Error('Please checkout new branch first');
-    const blob = await this.createBlobs(content, path);
-    this.blobs.push(blob);
-  }
+    // git add
+    const blobs: Blob[] = [];
+    for (const file of files) {
+      logger.info({ path: file.path }, 'GitHub: Add change');
+      const blob = await this.gh.createBlobs(file.content, file.path, logger);
+      blobs.push(blob);
+    }
 
-  /**
-   * git commit
-   */
-  async commit(message: string): Promise<void> {
-    this.logger.info({ branch: this.branch }, 'GitHub: Commit to Branch');
-    if (this.sha == null) throw new Error('Please checkout new branch first');
-    if (this.blobs.length === 0) throw new Error('Please add changes before commit');
-    this.commitSha = await this.createCommit(this.blobs, message, this.sha);
-    this.blobs = [];
-  }
+    // git commit
+    logger.info({ branch }, 'GitHub: Commit to Branch');
+    const commitSha = await this.gh.createCommit(blobs, title, sha, logger);
 
-  /**
-   * git push
-   */
-  async push(): Promise<void> {
-    this.logger.info({ branch: this.branch }, 'GitHub: Push commit to Brach');
-    if (this.branch == null) throw new Error('Please checkout branch first');
-    if (this.commitSha == null) throw new Error('Please commit changes first');
-    await this.updateBranch(this.branch, this.commitSha);
-  }
+    // git push
+    logger.info({ branch }, 'GitHub: Push commit to Brach');
+    await this.gh.updateBranch(branch, commitSha, logger);
 
-  /**
-   * git pr create
-   */
-  async prCreate(title: string): Promise<number> {
-    this.logger.info({ branch: this.branch }, 'GitHub: Create Pull Request');
-    if (this.branch == null) throw new Error('Please checkout branch first');
-    return await this.createPullRequest(this.branch, title);
+    // git pr create
+    logger.info({ branch: branch }, 'GitHub: Create Pull Request');
+    return await this.gh.createPullRequest(branch, title, logger);
   }
 }

@@ -9,7 +9,7 @@ import {
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
 import { fsa, LogType } from '@basemaps/shared';
 
-import { Github } from './github.js';
+import { GithubApi, GitHubCreatePR } from './github.js';
 
 export enum Category {
   Urban = 'Urban Aerial Photos',
@@ -61,9 +61,10 @@ export class MakeCogGithub {
     individual: boolean,
     logger: LogType,
   ): Promise<void> {
-    const github = new Github(this.repository, logger);
+    const gh = new GithubApi(this.repository);
+    const ghPr = new GitHubCreatePR(gh);
     const branch = `feat/bot-config-raster-${this.imagery}`;
-    const message = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
+    const title = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
 
     // Clone the basemaps-config repo and checkout branch
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
@@ -77,27 +78,22 @@ export class MakeCogGithub {
       };
       const content = JSON.stringify(tileSet, null, 2) + '\n';
       const tileSetPath = fsa.joinAll('config', 'tileset', 'individual', `${layer.name}.json`);
-      // Github
-      await github.checkout(branch);
-      await github.add(content, tileSetPath);
-      await github.commit(message);
-      await github.push();
-      await github.prCreate(message);
+      const file = { path: tileSetPath, content };
+      // Github create pull request
+      await ghPr.createPR(branch, title, [file], logger);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-      const tileSetContent = await github.getContent(tileSetPath);
+      const tileSetContent = await gh.getContent(tileSetPath, logger);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // skip pull request if not an urban or rural imagery
       if (newTileSet == null) return;
       // Github
       const content = JSON.stringify(newTileSet, null, 2) + '\n';
-      await github.checkout(branch);
-      await github.add(content, tileSetPath);
-      await github.commit(message);
-      await github.push();
-      await github.prCreate(message);
+      const file = { path: tileSetPath, content };
+      // Github create pull request
+      await ghPr.createPR(branch, title, [file], logger);
     }
   }
 
@@ -169,26 +165,25 @@ export class MakeCogGithub {
    * Prepare and create pull request for the aerial tileset config
    */
   async updateVectorTileSet(filename: string, layer: ConfigLayer, logger: LogType): Promise<void> {
-    const github = new Github(this.repository, logger);
+    const gh = new GithubApi(this.repository);
+    const ghPr = new GitHubCreatePR(gh);
     const branch = `feat/bot-config-vector-${this.imagery}`;
 
     // Prepare new aerial tileset config
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-    const tileSetContent = await github.getContent(tileSetPath);
+    const tileSetContent = await gh.getContent(tileSetPath, logger);
     const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
     const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
 
     // skip pull request if not an urban or rural imagery
     if (newTileSet == null) return;
     // Github
-    const message = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
+    const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
     const content = JSON.stringify(newTileSet, null, 2) + '\n';
-    await github.checkout(branch);
-    await github.add(content, tileSetPath);
-    await github.commit(message);
-    await github.push();
-    await github.prCreate(message);
+    const file = { path: tileSetPath, content };
+    // Github create pull request
+    await ghPr.createPR(branch, title, [file], logger);
   }
 
   /**
