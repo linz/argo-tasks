@@ -57,8 +57,8 @@ export const basemapsCreatePullRequest = command({
     //Make sure the imagery name is standardized before update the config
     layer.name = standardizeLayerName(layer.name);
 
-    const git = new MakeCogGithub(layer.name, args.repository, logger);
-    if (args.vector) await git.updateVectorTileSet('topographic', layer);
-    else await git.updateRasterTileSet('aerial', layer, category, args.individual);
+    const git = new MakeCogGithub(layer.name, args.repository);
+    if (args.vector) await git.updateVectorTileSet('topographic', layer, logger);
+    else await git.updateRasterTileSet('aerial', layer, category, args.individual, logger);
   },
 });

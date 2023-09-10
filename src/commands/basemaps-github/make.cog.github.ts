@@ -8,7 +8,6 @@ import {
 } from '@basemaps/config';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
 import { fsa, LogType } from '@basemaps/shared';
-import { execFileSync } from 'child_process';
 
 import { Github } from './github.js';
 
@@ -45,39 +44,11 @@ export function parseCategory(category: string): Category {
 }
 
 export class MakeCogGithub {
-  repo: string;
-  repoName: string;
-  logger: LogType;
   imagery: string;
-  github: Github;
-  _formatInstalled = false;
-
-  constructor(imagery: string, repo: string, logger: LogType) {
-    this.repo = repo;
-    this.logger = logger;
+  repository: string;
+  constructor(imagery: string, repository: string) {
     this.imagery = imagery;
-    const [org, repoName] = repo.split('/');
-    if (org == null || repoName == null) throw new Error(`Badly formatted repo name: ${repo}`);
-    this.repoName = repoName;
-    this.github = new Github(repo, org, repoName, logger);
-  }
-
-  /**
-   * Install the dependencies for the cloned repo
-   */
-  npmInstall(): boolean {
-    this.logger.info({ repository: this.repo }, 'GitHub: Npm Install');
-    execFileSync('npm', ['install', '--include=dev'], { cwd: this.repoName });
-    return true;
-  }
-
-  /**
-   * Format the config files by prettier
-   */
-  formatConfigFile(path = './config/'): void {
-    if (!this._formatInstalled) this._formatInstalled = this.npmInstall();
-    this.logger.info({ repository: this.repo }, 'GitHub: Prettier');
-    execFileSync('npx', ['prettier', '-w', path], { cwd: this.repoName });
+    this.repository = repository;
   }
 
   /**
@@ -88,15 +59,14 @@ export class MakeCogGithub {
     layer: ConfigLayer,
     category: Category,
     individual: boolean,
+    logger: LogType,
   ): Promise<void> {
+    const github = new Github(this.repository, logger);
     const branch = `feat/bot-config-raster-${this.imagery}`;
+    const message = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
 
     // Clone the basemaps-config repo and checkout branch
-    this.github.clone();
-    this.github.configUser();
-    this.github.getBranch(branch);
-
-    this.logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
+    logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     if (individual) {
       // Prepare new standalone tileset config
       const tileSet: TileSetConfigSchema = {
@@ -105,31 +75,30 @@ export class MakeCogGithub {
         title: layer.title,
         layers: [layer],
       };
+      const content = JSON.stringify(tileSet, null, 2) + '\n';
       const tileSetPath = fsa.joinAll('config', 'tileset', 'individual', `${layer.name}.json`);
-      const fullPath = fsa.join(this.repoName, tileSetPath);
-      await fsa.write(fullPath, JSON.stringify(tileSet));
-      // Format the config file by prettier
-      this.formatConfigFile(tileSetPath);
-      this.github.add([tileSetPath]);
+      // Github
+      await github.checkout(branch);
+      await github.add(content, tileSetPath);
+      await github.commit(message);
+      await github.push();
+      await github.prCreate(message);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-      const fullPath = fsa.join(this.repoName, tileSetPath);
-      const tileSet = await fsa.readJson<ConfigTileSetRaster>(fullPath);
+      const tileSetContent = await github.getContent(tileSetPath);
+      const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // skip pull request if not an urban or rural imagery
       if (newTileSet == null) return;
-      await fsa.write(fullPath, JSON.stringify(newTileSet));
-      // Format the config file by prettier
-      this.formatConfigFile(tileSetPath);
-      this.github.add([tileSetPath]);
+      // Github
+      const content = JSON.stringify(newTileSet, null, 2) + '\n';
+      await github.checkout(branch);
+      await github.add(content, tileSetPath);
+      await github.commit(message);
+      await github.push();
+      await github.prCreate(message);
     }
-
-    // Commit and push the changes
-    const message = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
-    this.github.commit(message);
-    this.github.push();
-    await this.github.createPullRequests(branch, message, false);
   }
 
   /**
@@ -199,33 +168,27 @@ export class MakeCogGithub {
   /**
    * Prepare and create pull request for the aerial tileset config
    */
-  async updateVectorTileSet(filename: string, layer: ConfigLayer): Promise<void> {
+  async updateVectorTileSet(filename: string, layer: ConfigLayer, logger: LogType): Promise<void> {
+    const github = new Github(this.repository, logger);
     const branch = `feat/bot-config-vector-${this.imagery}`;
 
-    // Clone the basemaps-config repo and checkout branch
-    this.github.clone();
-    this.github.configUser();
-    this.github.getBranch(branch);
-
     // Prepare new aerial tileset config
-    this.logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
+    logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-    const fullPath = fsa.join(this.repoName, tileSetPath);
-    const tileSet = await fsa.readJson<ConfigTileSetVector>(fullPath);
+    const tileSetContent = await github.getContent(tileSetPath);
+    const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
     const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
 
     // skip pull request if not an urban or rural imagery
     if (newTileSet == null) return;
-    await fsa.write(fullPath, JSON.stringify(newTileSet));
-    // Format the config file by prettier
-    this.formatConfigFile(tileSetPath);
-
-    // Commit and push the changes
+    // Github
     const message = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
-    this.github.add([tileSetPath]);
-    this.github.commit(message);
-    this.github.push();
-    await this.github.createPullRequests(branch, message, false);
+    const content = JSON.stringify(newTileSet, null, 2) + '\n';
+    await github.checkout(branch);
+    await github.add(content, tileSetPath);
+    await github.commit(message);
+    await github.push();
+    await github.prCreate(message);
   }
 
   /**
