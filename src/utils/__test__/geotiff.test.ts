@@ -1,9 +1,11 @@
+import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import { CogTiff } from '@cogeotiff/core';
-import { PixelIsPoint, findBoundingBox, parseTfw } from '../geotiff.js';
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
+
+import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';
 
 describe('geotiff', () => {
   describe('parseTfw', () => {

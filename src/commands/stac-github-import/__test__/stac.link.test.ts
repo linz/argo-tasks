@@ -1,6 +1,7 @@
-import { describe, it } from 'node:test';
-import { sortLinks } from '../stac.github.import.js';
 import assert from 'node:assert';
+import { describe, it } from 'node:test';
+
+import { sortLinks } from '../stac.github.import.js';
 
 function shuffle<T>(array: T[]): T[] {
   let currentIndex = array.length;

@@ -1,13 +1,15 @@
+import { performance } from 'node:perf_hooks';
+import { parentPort, threadId } from 'node:worker_threads';
+
 import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
-import { performance } from 'node:perf_hooks';
-import { parentPort, threadId } from 'node:worker_threads';
+
 import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { registerCli } from '../common.js';
-import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
 import { isTiff } from '../tileindex-validate/tileindex.validate.js';
+import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
 
 const Q = new ConcurrentQueue(10);
 

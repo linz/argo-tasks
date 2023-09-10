@@ -6,10 +6,11 @@ import {
   ConfigTileSetVector,
   TileSetType,
 } from '@basemaps/config';
-import { LogType, fsa } from '@basemaps/shared';
-import { Github } from './github.js';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
+import { fsa, LogType } from '@basemaps/shared';
 import { execFileSync } from 'child_process';
+
+import { Github } from './github.js';
 
 export enum Category {
   Urban = 'Urban Aerial Photos',

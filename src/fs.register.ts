@@ -1,8 +1,9 @@
 import { FileSystem } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { AwsCredentialConfig } from '@chunkd/source-aws';
-import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
 import { FsAwsS3 } from '@chunkd/source-aws';
+import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
+
 import { logger } from './log.js';
 
 export const s3Fs = new FsAwsS3V3();

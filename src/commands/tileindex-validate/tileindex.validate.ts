@@ -2,6 +2,8 @@ import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { CogTiff, Size } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
+
+import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
@@ -9,7 +11,6 @@ import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
-import { CliInfo } from '../../cli.info.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile

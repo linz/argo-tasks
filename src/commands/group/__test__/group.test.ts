@@ -1,7 +1,9 @@
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
 import assert from 'node:assert';
 import { before, describe, it } from 'node:test';
+
+import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+
 import { commandGroup, groupItems } from '../group.js';
 
 describe('groupItems', () => {
@@ -37,11 +39,17 @@ describe('group', () => {
   });
 
   it('should load from multiple JSON arrays', async () => {
+    commandGroup.handler({
+      config: '',
+      inputs: [],
+    });
+
     await commandGroup.handler({
       inputs: [JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
+      fromFile: '',
       size: 3,
-    } as any);
+    });
 
     assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3]);

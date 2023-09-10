@@ -1,11 +1,13 @@
+import path from 'node:path';
+
 import { fsa } from '@chunkd/fs';
 import { execFileSync } from 'child_process';
-import { Type, command, option, string } from 'cmd-ts';
-import path from 'node:path';
+import { command, option, string, Type } from 'cmd-ts';
 import * as st from 'stac-ts';
-import { config, registerCli, verbose } from '../common.js';
-import { logger } from '../../log.js';
+
 import { CliInfo } from '../../cli.info.js';
+import { logger } from '../../log.js';
+import { config, registerCli, verbose } from '../common.js';
 
 const Url: Type<string, URL> = {
   async from(str) {

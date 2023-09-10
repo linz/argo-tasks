@@ -1,10 +1,11 @@
+import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { command, positional, string, Type } from 'cmd-ts';
+import { createHash } from 'crypto';
+
+import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
-import { createHash } from 'crypto';
-import { FileInfo } from '@chunkd/core';
-import { CliInfo } from '../../cli.info.js';
 
 const S3Path: Type<string, URL> = {
   async from(str) {

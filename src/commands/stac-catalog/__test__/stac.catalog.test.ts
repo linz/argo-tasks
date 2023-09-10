@@ -1,8 +1,10 @@
-import { describe, beforeEach, it } from 'node:test';
 import assert from 'node:assert';
-import { createLinks, makeRelative } from '../stac.catalog.js';
-import { FsMemory } from '@chunkd/source-memory';
+import { beforeEach, describe, it } from 'node:test';
+
 import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+
+import { createLinks, makeRelative } from '../stac.catalog.js';
 
 describe('stacCatalog', () => {
   const fs = new FsMemory();
