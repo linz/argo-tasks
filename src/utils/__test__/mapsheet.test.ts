@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
+
 import { MapSheet, MapTileIndex } from '../mapsheet.js';
 import { MapSheetData } from './mapsheet.data.js';
 

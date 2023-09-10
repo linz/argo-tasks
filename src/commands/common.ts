@@ -1,7 +1,8 @@
 import { boolean, flag, option, optional, string } from 'cmd-ts';
+
+import { CliInfo } from '../cli.info.js';
 import { registerFileSystem } from '../fs.register.js';
 import { logger, registerLogger } from '../log.js';
-import { CliInfo } from '../cli.info.js';
 import { isArgo } from '../utils/argo.js';
 
 export const config = option({

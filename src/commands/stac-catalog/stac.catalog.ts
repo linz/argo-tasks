@@ -1,11 +1,12 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional, string } from 'cmd-ts';
+import { createHash } from 'crypto';
 import { isAbsolute } from 'path';
 import * as st from 'stac-ts';
+
+import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
-import { createHash } from 'crypto';
-import { CliInfo } from '../../cli.info.js';
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {

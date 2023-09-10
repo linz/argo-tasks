@@ -1,16 +1,17 @@
 import { subcommands } from 'cmd-ts';
+
+import { CliInfo } from '../cli.info.js';
+import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
+import { commandGroup } from './group/group.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.js';
+import { commandStacGithubImport } from './stac-github-import/stac.github.import.js';
 import { commandStacSync } from './stac-sync/stac.sync.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
 import { commandTileIndexValidate } from './tileindex-validate/tileindex.validate.js';
-import { commandStacGithubImport } from './stac-github-import/stac.github.import.js';
-import { commandGroup } from './group/group.js';
-import { CliInfo } from '../cli.info.js';
-import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 
 export const cmd = subcommands({
   name: 'argo-tasks',
