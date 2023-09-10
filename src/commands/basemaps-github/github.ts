@@ -1,8 +1,8 @@
 import { Env, LogType } from '@basemaps/shared';
-import { execFileSync } from 'child_process';
 import { Octokit } from '@octokit/core';
-import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
 import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
+import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
+import { execFileSync } from 'child_process';
 
 export class Github {
   repo: string;

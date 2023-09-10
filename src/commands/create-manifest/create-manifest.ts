@@ -3,11 +3,12 @@ import { command, flag, number, option, optional, restPositionals, string } from
 import { createHash } from 'crypto';
 import path from 'path';
 import { gzipSync } from 'zlib';
+
+import { CliInfo } from '../../cli.info.js';
 import { getActionLocation } from '../../utils/action.storage.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { config, registerCli, verbose } from '../common.js';
-import { CliInfo } from '../../cli.info.js';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',

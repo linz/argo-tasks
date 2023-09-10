@@ -5,11 +5,12 @@ import { boolean, command, flag, number, option, restPositionals, string } from 
 import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
 import * as st from 'stac-ts';
+
+import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { config, registerCli, verbose } from '../common.js';
 import { hashStream } from './hash.worker.js';
-import { CliInfo } from '../../cli.info.js';
 
 export const commandStacValidate = command({
   name: 'stac-validate',

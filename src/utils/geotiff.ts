@@ -1,5 +1,5 @@
-import { CogTiff, TiffTagGeo } from '@cogeotiff/core';
 import { fsa } from '@chunkd/fs';
+import { CogTiff, TiffTagGeo } from '@cogeotiff/core';
 
 /**
  * Attempt to parse a tiff world file

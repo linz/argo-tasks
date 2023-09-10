@@ -1,8 +1,10 @@
+import assert from 'node:assert';
+import { beforeEach, describe, it } from 'node:test';
+
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import { beforeEach, describe, it } from 'node:test';
+
 import { worker } from '../copy-worker.js';
-import assert from 'node:assert';
 
 describe('copyFiles', () => {
   const memory = new FsMemory();

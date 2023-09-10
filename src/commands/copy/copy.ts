@@ -4,11 +4,12 @@ import { boolean, command, flag, number, option, restPositionals, string } from 
 import { performance } from 'perf_hooks';
 import { gunzipSync } from 'zlib';
 import * as z from 'zod';
+
+import { CliInfo } from '../../cli.info.js';
 import { logger, logId } from '../../log.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { config, registerCli, verbose } from '../common.js';
 import { CopyContract } from './copy-rpc.js';
-import { CliInfo } from '../../cli.info.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
 const CopyManifest = z.array(CopyValidator);

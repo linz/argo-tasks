@@ -1,9 +1,10 @@
+import { ConfigLayer, standardizeLayerName } from '@basemaps/config';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
+
+import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { verbose } from '../common.js';
-import { CliInfo } from '../../cli.info.js';
 import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
-import { ConfigLayer, standardizeLayerName } from '@basemaps/config';
 
 export const CommandCreatePRArgs = {
   verbose,

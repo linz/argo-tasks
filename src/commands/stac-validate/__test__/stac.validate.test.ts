@@ -1,6 +1,7 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { listLocation, getStacSchemaUrl, normaliseHref, isURL } from '../stac.validate.js';
+import { describe, it } from 'node:test';
+
+import { getStacSchemaUrl, isURL, listLocation, normaliseHref } from '../stac.validate.js';
 
 describe('stacValidate', function () {
   it('listLocation', async function () {

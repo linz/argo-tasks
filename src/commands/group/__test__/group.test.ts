@@ -1,7 +1,9 @@
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
 import assert from 'node:assert';
 import { before, describe, it } from 'node:test';
+
+import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+
 import { commandGroup, groupItems } from '../group.js';
 
 describe('groupItems', () => {
@@ -31,17 +33,24 @@ describe('group', () => {
   });
 
   it('should load from a JSON array', async () => {
-    await commandGroup.handler({ inputs: [JSON.stringify([1, 2, 3, 4])], forceOutput: true, size: 50 } as any);
+    await commandGroup.handler({ inputs: [JSON.stringify([1, 2, 3, 4])], forceOutput: true, size: 50, ...values });
     assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000']);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3, 4]);
   });
+
+  const values = {
+    config: undefined,
+    verbose: false,
+    fromFile: undefined,
+  };
 
   it('should load from multiple JSON arrays', async () => {
     await commandGroup.handler({
       inputs: [JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
       size: 3,
-    } as any);
+      ...values,
+    });
 
     assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3]);
@@ -53,7 +62,8 @@ describe('group', () => {
       inputs: ['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
       size: 3,
-    } as any);
+      ...values,
+    });
     assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), ['s3://foo/bar', 1, 2]);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [3, 4, 'alpha']);
@@ -66,7 +76,9 @@ describe('group', () => {
       fromFile: '/tmp/group/input.json',
       forceOutput: true,
       size: 3,
-    } as any);
+      config: undefined,
+      verbose: false,
+    });
     assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3]);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [4, 5]);

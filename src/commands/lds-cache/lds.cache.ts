@@ -2,9 +2,10 @@ import { fsa } from '@chunkd/fs';
 import { command, option, restPositionals, string } from 'cmd-ts';
 import * as stac from 'stac-ts';
 import { createGunzip } from 'zlib';
+
+import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
-import { CliInfo } from '../../cli.info.js';
 
 function getTargetPath(source: string, path: string): string {
   if (path.startsWith('./')) return fsa.join(source, path.slice(2));

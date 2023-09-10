@@ -1,7 +1,9 @@
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
+
+import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+
 import { createManifest, validatePaths } from '../create-manifest.js';
 
 describe('createManifest', () => {
