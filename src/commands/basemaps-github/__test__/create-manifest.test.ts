@@ -8,9 +8,9 @@ import { DefaultPrettierFormat } from '../make.cog.github.js';
 describe('DefaultPrettierFormat', () => {
   it('should be the same prettier format with @linzjs/style', async () => {
     const cfg = await prettier.resolveConfigFile('@linzjs/style/.prettierrc.cjs');
-    if (cfg == null) assert.ok(cfg !== null, 'Failed to read @linzjs/style/.prettierrc.cjs');
+    assert.ok(cfg, 'Failed to read @linzjs/style/.prettierrc.cjs');
     const options = await prettier.resolveConfig(cfg);
-    if (options == null) assert.ok(options !== null, 'Failed to resolve prettier config');
+    assert.ok(options, 'Failed to resolve prettier config');
 
     assert.equal(DefaultPrettierFormat.semi, options.semi, 'prettier.semi');
     assert.equal(DefaultPrettierFormat.trailingComma, options.trailingComma, 'prettier.trailingComma');
