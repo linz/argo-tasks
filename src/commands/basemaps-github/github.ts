@@ -28,7 +28,7 @@ export class GithubApi {
     this.repo = repo;
 
     const token = Env.get(Env.GitHubToken);
-    if (token == null) throw new Error('Please set up github token environment variable.');
+    if (token == null) throw new Error(`Please set up ${Env.GitHubToken} environment variable.`);
     this.octokit = restEndpointMethods(new Octokit({ auth: token }));
   }
 
@@ -82,7 +82,7 @@ export class GithubApi {
   /**
    * Create a blob object in git
    */
-  async createBlobs(content: string, path: string, logger: LogType): Promise<Blob> {
+  async createBlob(content: string, path: string, logger: LogType): Promise<Blob> {
     // Create the blobs with the files content
     logger.debug({ path }, 'GitHub API: Create blob');
     const blobRes = await this.octokit.rest.git.createBlob({
@@ -107,7 +107,7 @@ export class GithubApi {
     if ('content' in response.data) {
       return Buffer.from(response.data.content, 'base64').toString();
     } else {
-      throw new Error('Unable to find the content.');
+      throw new Error(`Unable to find the content from path ${path}.`);
     }
   }
 
@@ -177,45 +177,43 @@ export interface GithubFiles {
   content: string;
 }
 
-export class GitHubCreatePR {
-  gh: GithubApi;
-
-  constructor(gh: GithubApi) {
-    this.gh = gh;
+/**
+ * Create github pull requests
+ *
+ * @returns pull request number
+ */
+export async function createPR(
+  gh: GithubApi,
+  branch: string,
+  title: string,
+  files: GithubFiles[],
+  logger: LogType,
+): Promise<number> {
+  // git checkout -b
+  logger.info({ branch }, 'GitHub: Get branch');
+  let sha = await gh.getBranch(branch, logger);
+  if (sha == null) {
+    logger.info({ branch }, 'GitHub: branch Not Found, create new branch');
+    sha = await gh.createBranch(branch, logger);
   }
 
-  /**
-   * Create github pull requests
-   *
-   * @returns pull request number
-   */
-  async createPR(branch: string, title: string, files: GithubFiles[], logger: LogType): Promise<number> {
-    // git checkout -b
-    logger.info({ branch }, 'GitHub: Get branch');
-    let sha = await this.gh.getBranch(branch, logger);
-    if (sha == null) {
-      logger.info({ branch }, 'GitHub: branch Not Found, create new branch');
-      sha = await this.gh.createBranch(branch, logger);
-    }
-
-    // git add
-    const blobs: Blob[] = [];
-    for (const file of files) {
-      logger.info({ path: file.path }, 'GitHub: Add change');
-      const blob = await this.gh.createBlobs(file.content, file.path, logger);
-      blobs.push(blob);
-    }
-
-    // git commit
-    logger.info({ branch }, 'GitHub: Commit to Branch');
-    const commitSha = await this.gh.createCommit(blobs, title, sha, logger);
-
-    // git push
-    logger.info({ branch }, 'GitHub: Push commit to Brach');
-    await this.gh.updateBranch(branch, commitSha, logger);
-
-    // git pr create
-    logger.info({ branch: branch }, 'GitHub: Create Pull Request');
-    return await this.gh.createPullRequest(branch, title, logger);
+  // git add
+  const blobs: Blob[] = [];
+  for (const file of files) {
+    logger.info({ path: file.path }, 'GitHub: Add change');
+    const blob = await gh.createBlob(file.content, file.path, logger);
+    blobs.push(blob);
   }
+
+  // git commit
+  logger.info({ branch }, 'GitHub: Commit to Branch');
+  const commitSha = await gh.createCommit(blobs, title, sha, logger);
+
+  // git push
+  logger.info({ branch }, 'GitHub: Push commit to Brach');
+  await gh.updateBranch(branch, commitSha, logger);
+
+  // git pr create
+  logger.info({ branch: branch }, 'GitHub: Create Pull Request');
+  return await gh.createPullRequest(branch, title, logger);
 }

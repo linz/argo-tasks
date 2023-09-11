@@ -11,7 +11,7 @@ import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.
 import { fsa, LogType } from '@basemaps/shared';
 import prettier from 'prettier';
 
-import { GithubApi, GitHubCreatePR } from './github.js';
+import { createPR, GithubApi } from './github.js';
 
 export enum Category {
   Urban = 'Urban Aerial Photos',
@@ -80,7 +80,6 @@ export class MakeCogGithub {
     logger: LogType,
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
-    const ghPr = new GitHubCreatePR(gh);
     const branch = `feat/bot-config-raster-${this.imagery}`;
     const title = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
 
@@ -103,7 +102,7 @@ export class MakeCogGithub {
       const tileSetPath = fsa.joinAll('config', 'tileset', 'individual', `${layer.name}.json`);
       const file = { path: tileSetPath, content };
       // Github create pull request
-      await ghPr.createPR(branch, title, [file], logger);
+      await createPR(gh, branch, title, [file], logger);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
@@ -116,7 +115,7 @@ export class MakeCogGithub {
       const content = await formatConfigFile(newTileSet);
       const file = { path: tileSetPath, content };
       // Github create pull request
-      await ghPr.createPR(branch, title, [file], logger);
+      await createPR(gh, branch, title, [file], logger);
     }
   }
 
@@ -189,7 +188,6 @@ export class MakeCogGithub {
    */
   async updateVectorTileSet(filename: string, layer: ConfigLayer, logger: LogType): Promise<void> {
     const gh = new GithubApi(this.repository);
-    const ghPr = new GitHubCreatePR(gh);
     const branch = `feat/bot-config-vector-${this.imagery}`;
 
     // Prepare new aerial tileset config
@@ -206,7 +204,7 @@ export class MakeCogGithub {
     const content = await formatConfigFile(newTileSet);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await ghPr.createPR(branch, title, [file], logger);
+    await createPR(gh, branch, title, [file], logger);
   }
 
   /**
