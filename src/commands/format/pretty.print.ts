@@ -36,11 +36,14 @@ export const commandPrettyPrint = command({
     if (args.target) {
       logger.info({ target: args.target }, 'PrettyPrint:Info');
     }
+
     const files = await getFiles([args.path]);
     const jsonFiles = files.flat().filter(isJson);
     if (jsonFiles.length === 0) throw new Error('No Files found');
-    // test if can access on of the file
+
+    // test if can access one of the file
     if (jsonFiles[0]) await fsa.head(jsonFiles[0]);
+
     // format files
     await Promise.all(jsonFiles.map((f: string) => formatFile(f, args.target)));
     logger.info({ fileCount: jsonFiles.length, duration: performance.now() - startTime }, 'PrettyPrint:Done');
@@ -63,5 +66,6 @@ async function formatFile(path: string, target = ''): Promise<void> {
     // FIXME: can be duplicate files
     path = fsa.join(target, basename(path));
   }
+
   fsa.write(path, Buffer.from(formatted));
 }
