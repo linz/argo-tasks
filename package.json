@@ -15,6 +15,7 @@
     "@chunkd/source-memory": "^10.1.0",
     "@linzjs/style": "^5.0.0",
     "@types/node": "^20.3.2",
+    "@types/prettier": "^3.0.0",
     "esno": "^0.16.3",
     "stac-ts": "^1.0.0"
   },
@@ -51,6 +52,7 @@
     "cmd-ts": "^0.12.1",
     "p-limit": "^4.0.0",
     "pino": "^8.11.0",
+    "prettier": "^3.0.3",
     "pretty-json-log": "^1.4.0",
     "ulid": "^2.3.0",
     "zod": "^3.21.4"

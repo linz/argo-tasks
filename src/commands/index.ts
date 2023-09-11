@@ -4,6 +4,7 @@ import { CliInfo } from '../cli.info.js';
 import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
+import { commandPrettyPrint } from './format/pretty.print.js';
 import { commandGroup } from './group/group.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
 import { commandList } from './list/list.js';
@@ -45,5 +46,6 @@ export const cmd = subcommands({
         'create-pr': basemapsCreatePullRequest,
       },
     }),
+    'pretty-print': commandPrettyPrint,
   },
 });
