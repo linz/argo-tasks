@@ -24,9 +24,9 @@ export const commandPrettyPrint = command({
     target: option({
       type: optional(string),
       long: 'target',
-      description: 'Use if files have to be saved somewhere else instead of overwriting the source (testing).',
+      description: 'Use if files have to be saved somewhere else instead of overwriting the source (testing)',
     }),
-    path: positional({ type: string, displayName: 'path', description: 'Path of the files to format with Prettier' }),
+    path: positional({ type: string, displayName: 'path', description: 'Path of the files to pretty print' }),
   },
 
   async handler(args) {
