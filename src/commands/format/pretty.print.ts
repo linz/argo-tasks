@@ -47,6 +47,12 @@ export const commandPrettyPrint = command({
   },
 });
 
+/**
+ * Format the file using Prettier
+ *
+ * @param path of the file to format
+ * @param target where to save the output. If not specified, overwrite the original file.
+ */
 async function formatFile(path: string, target = ''): Promise<void> {
   logger.debug({ file: path }, 'PrettyPrint:RunPrettier');
   const formatted = await prettier.format(JSON.stringify(await fsa.readJson(path)), {
