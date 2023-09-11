@@ -78,7 +78,27 @@ export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promi
     return false;
   }
 
-  await fsa.write(path.href, sourceData, { metadata: { [HashKey]: sourceHash } });
+  await fsa.write(path.href, sourceData, {
+    metadata: { [HashKey]: sourceHash },
+    contentType: guessStacContentType(path.href),
+  });
   logger.debug({ path: path.href }, 'StacSync:FileUploaded');
   return true;
+}
+
+/**
+ * Guess the content type of a STAC file
+ *
+ * - application/geo+json - A STAC Item
+ * - application/json - A STAC Catalog
+ * - application/json - A STAC Collection
+ *
+ * Assumes anything ending with '.json' is a stac item
+ * @see {@link https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md#stac-media-types}
+ */
+function guessStacContentType(path: string): string | undefined {
+  if (path.endsWith('collection.json')) return 'application/json';
+  if (path.endsWith('catalog.json')) return 'application/json';
+  if (path.endsWith('.json')) return 'application/geo+json';
+  return;
 }
