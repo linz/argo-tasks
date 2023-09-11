@@ -6,21 +6,13 @@ import prettier from 'prettier';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
+import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
 import { config, registerCli, verbose } from '../common.js';
 
 function isJson(x: string): boolean {
   const search = x.toLowerCase();
   return search.endsWith('.json');
 }
-
-export const defaultPrettierFormat: prettier.Options = {
-  semi: true,
-  trailingComma: 'all',
-  singleQuote: true,
-  printWidth: 120,
-  useTabs: false,
-  tabWidth: 2,
-};
 
 export const commandPrettyPrint = command({
   name: 'pretty-print',
@@ -39,7 +31,11 @@ export const commandPrettyPrint = command({
 
   async handler(args) {
     registerCli(this, args);
+    const startTime = performance.now();
     logger.info('PrettyPrint:Start');
+    if (args.target) {
+      logger.info({ target: args.target }, 'PrettyPrint:Info');
+    }
     const files = await getFiles([args.path]);
     const jsonFiles = files.flat().filter(isJson);
     if (jsonFiles.length === 0) throw new Error('No Files found');
@@ -47,14 +43,14 @@ export const commandPrettyPrint = command({
     if (jsonFiles[0]) await fsa.head(jsonFiles[0]);
     // format files
     await Promise.all(jsonFiles.map((f: string) => formatFile(f, args.target)));
-    logger.info({ formatted: jsonFiles.length }, 'PrettyPrint:Done');
+    logger.info({ fileCount: jsonFiles.length, duration: performance.now() - startTime }, 'PrettyPrint:Done');
   },
 });
 
 async function formatFile(path: string, target = ''): Promise<void> {
-  logger.info({ file: path }, 'Prettier:Format');
+  logger.debug({ file: path }, 'PrettyPrint:RunPrettier');
   const formatted = await prettier.format(JSON.stringify(await fsa.readJson(path)), {
-    ...defaultPrettierFormat,
+    ...DEFAULT_PRETTIER_FORMAT,
     parser: 'json',
   });
   if (target) {
