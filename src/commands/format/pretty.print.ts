@@ -51,7 +51,7 @@ export const commandPrettyPrint = command({
 });
 
 /**
- * Format the file using Prettier
+ * Format the file
  *
  * @param path of the file to format
  * @param target where to save the output. If not specified, overwrite the original file.
