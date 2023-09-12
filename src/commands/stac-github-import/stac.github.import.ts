@@ -8,6 +8,7 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
+import { formatFile } from '../format/pretty.print.js';
 
 const Url: Type<string, URL> = {
   async from(str) {
@@ -89,7 +90,7 @@ export const commandStacGithubImport = command({
 
     execFileSync('npm', ['install', '--include=dev'], { cwd: gitRepo });
     // Format the file with prettier
-    execFileSync('npx', ['prettier', '-w', collectionPath], { cwd: gitRepo });
+    await formatFile(collectionPath);
     execFileSync('git', ['add', collectionPath], { cwd: gitRepo });
     logger.info({ path: collectionPath }, 'git:add');
 
