@@ -187,7 +187,7 @@ export class MakeCogGithub {
     if (newTileSet == null) return;
     // Github
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
-    const content = await formatConfigFile(newTileSet);
+    const content = await prettyPrint(JSON.stringify(newTileSet), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
     await createPR(gh, branch, title, [file], logger);
