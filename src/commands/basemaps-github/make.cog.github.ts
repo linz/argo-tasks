@@ -2,15 +2,15 @@ import {
   ConfigId,
   ConfigLayer,
   ConfigPrefix,
-  ConfigTileSet,
   ConfigTileSetRaster,
   ConfigTileSetVector,
   TileSetType,
 } from '@basemaps/config';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
 import { fsa, LogType } from '@basemaps/shared';
-import prettier from 'prettier';
 
+import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
+import { prettyPrint } from '../format/pretty.print.js';
 import { createPR, GithubApi } from './github.js';
 
 export enum Category {
@@ -45,21 +45,7 @@ export function parseCategory(category: string): Category {
   else return Category.Other;
 }
 
-export const DefaultPrettierFormat: prettier.Options = {
-  semi: true,
-  trailingComma: 'all',
-  singleQuote: true,
-  printWidth: 120,
-  useTabs: false,
-  tabWidth: 2,
-};
-
-const ConfigPrettierFormat = Object.assign({}, DefaultPrettierFormat, { printWidth: 200 });
-
-async function formatConfigFile(tileSet: ConfigTileSet | TileSetConfigSchema): Promise<string> {
-  const formatted = prettier.format(JSON.stringify(tileSet), { ...ConfigPrettierFormat, parser: 'json' });
-  return formatted;
-}
+const ConfigPrettierFormat = Object.assign({}, DEFAULT_PRETTIER_FORMAT, { printWidth: 200 });
 
 export class MakeCogGithub {
   imagery: string;
@@ -98,7 +84,7 @@ export class MakeCogGithub {
         category,
         layers: [layer],
       };
-      const content = await formatConfigFile(tileSet);
+      const content = await prettyPrint(JSON.stringify(tileSet), ConfigPrettierFormat);
       const tileSetPath = fsa.joinAll('config', 'tileset', 'individual', `${layer.name}.json`);
       const file = { path: tileSetPath, content };
       // Github create pull request
@@ -112,7 +98,7 @@ export class MakeCogGithub {
       // skip pull request if not an urban or rural imagery
       if (newTileSet == null) return;
       // Github
-      const content = await formatConfigFile(newTileSet);
+      const content = await prettyPrint(JSON.stringify(newTileSet), ConfigPrettierFormat);
       const file = { path: tileSetPath, content };
       // Github create pull request
       await createPR(gh, branch, title, [file], logger);
@@ -201,7 +187,7 @@ export class MakeCogGithub {
     if (newTileSet == null) return;
     // Github
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
-    const content = await formatConfigFile(newTileSet);
+    const content = await prettyPrint(JSON.stringify(newTileSet), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
     await createPR(gh, branch, title, [file], logger);
