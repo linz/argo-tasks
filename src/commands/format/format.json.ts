@@ -15,7 +15,7 @@ function isJson(x: string): boolean {
 }
 
 export const commandFormatJson = command({
-  name: 'format-jspon',
+  name: 'format-json',
   description: 'Format JSON files',
   version: CliInfo.version,
   args: {
