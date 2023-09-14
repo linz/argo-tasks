@@ -8,7 +8,7 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
-import { formatFile } from '../format/pretty.print.js';
+import { formatFile } from '../format/format.json.js';
 
 const Url: Type<string, URL> = {
   async from(str) {
