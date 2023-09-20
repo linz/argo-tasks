@@ -9,6 +9,7 @@ import { logger } from '../../log.js';
 import { verbose } from '../common.js';
 import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
 
+const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
 const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
 
 async function parseTargetInfo(
@@ -25,7 +26,7 @@ async function parseTargetInfo(
 
   //Validate the target information
   logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
-  if (bucket == null || bucket !== 'linz-basemaps') {
+  if (bucket == null || !validTargetBuckets.has(bucket)) {
     throw new Error(`Invalid s3 bucket ${bucket} from the target ${target}.`);
   }
 
