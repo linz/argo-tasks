@@ -11,8 +11,11 @@ import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
 
 async function parseTargetInfo(target: string): Promise<{ name: string; title: string; epsg: EpsgCode }> {
   const splits = target.replace('s3://', '').split('/');
+  const bucket = splits[0];
   const epsg = Epsg.tryGet(Number(splits[1]));
   const name = splits[2];
+  if (bucket == null || bucket !== 'linz-basemaps')
+    throw new Error(`Invalid s3 bucket ${bucket} from the target ${target}.`);
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   const collectionPath = fsa.join(target, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
