@@ -38,7 +38,7 @@ async function parseTargetInfo(
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
 
   //Validate the source location
-  const source = collection.links[collection.links.length - 1]?.href;
+  const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
