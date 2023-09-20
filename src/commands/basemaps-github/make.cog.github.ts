@@ -62,7 +62,7 @@ export class MakeCogGithub {
     filename: string,
     layer: ConfigLayer,
     category: Category,
-    individual: boolean,
+    region: string | undefined,
     logger: LogType,
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
@@ -71,7 +71,7 @@ export class MakeCogGithub {
 
     // Clone the basemaps-config repo and checkout branch
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
-    if (individual) {
+    if (region) {
       // Prepare new standalone tileset config
       layer.category = category;
       layer.minZoom = 0;
@@ -85,7 +85,7 @@ export class MakeCogGithub {
         layers: [layer],
       };
       const content = await prettyPrint(JSON.stringify(tileSet), ConfigPrettierFormat);
-      const tileSetPath = fsa.joinAll('config', 'tileset', 'individual', `${layer.name}.json`);
+      const tileSetPath = fsa.joinAll('config', 'tileset', region, `${layer.name}.json`);
       const file = { path: tileSetPath, content };
       // Github create pull request
       await createPR(gh, branch, title, [file], logger);
