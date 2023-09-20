@@ -272,8 +272,8 @@ Fetch a layer from the LDS and download it as GeoPackage.
 - Create a pull request in the basemaps-config repo after imagery layer imported:
 
 ```bash
-bm-create-pr --layer
-{"2193":"s3://linz-basemaps-staging/2193/southland_2023_0.1m/","3857":"s3://linz-basemaps-staging/3857/southland_2023_0.1m/","name":"southland_2023_0.1m","title":"Southland 0.1m Urban Aerial Photos (2023)"}
+bm-create-pr --target
+["s3://linz-basemaps/3857/gisborne-cyclone-gabrielle_2023_0.2m/01HAAYW5NXJMRMBZBHFPCNY71J/","s3://linz-basemaps/2193/gisborne-cyclone-gabrielle_2023_0.2m/01HAAYW5PMJ90MGRSQCB9YPX0W/"]
 ```
 
 Add --individual flag to import layer into standalone individual config file, otherwise import into aerial map.
