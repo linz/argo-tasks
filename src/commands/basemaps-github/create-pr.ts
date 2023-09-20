@@ -78,6 +78,8 @@ export const basemapsCreatePullRequest = command({
       layer[info.epsg] = target;
     }
 
+    if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
+
     const git = new MakeCogGithub(layer.name, args.repository);
     if (args.vector) await git.updateVectorTileSet('topographic', layer as ConfigLayer, logger);
     else await git.updateRasterTileSet('aerial', layer as ConfigLayer, category, args.individual, logger);
