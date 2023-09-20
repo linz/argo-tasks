@@ -81,7 +81,7 @@ export const basemapsCreatePullRequest = command({
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository);
-    if (args.vector) await git.updateVectorTileSet('topographic', layer as ConfigLayer, logger);
-    else await git.updateRasterTileSet('aerial', layer as ConfigLayer, category, args.individual, logger);
+    if (args.vector) await git.updateVectorTileSet('topographic', layer, logger);
+    else await git.updateRasterTileSet('aerial', layer, category, args.individual, logger);
   },
 });
