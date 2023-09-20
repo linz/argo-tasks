@@ -1,17 +1,33 @@
 import { ConfigLayer, standardizeLayerName } from '@basemaps/config';
+import { Epsg, EpsgCode } from '@basemaps/geo';
+import { fsa } from '@basemaps/shared';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
+import { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { verbose } from '../common.js';
 import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
 
+async function parseTargetInfo(target: string): Promise<{ name: string; title: string; epsg: EpsgCode }> {
+  const splits = target.replace('s3://', '').split('/');
+  const epsg = Epsg.tryGet(Number(splits[1]));
+  const name = splits[2];
+  if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
+  const collectionPath = fsa.join(target, 'collection.json');
+  const collection = await fsa.readJson<StacCollection>(collectionPath);
+  const title = collection.title;
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
+
+  return { name: standardizeLayerName(name), epsg: epsg.code, title };
+}
+
 export const CommandCreatePRArgs = {
   verbose,
-  layer: option({
+  target: option({
     type: string,
-    long: 'layer',
-    description: 'Input config layer import into basemaps-config',
+    long: 'target',
+    description: 'New layers locations as array of strings import into basemaps-config',
   }),
   category: option({
     type: optional(oneOf(Object.values(Category))),
@@ -45,17 +61,24 @@ export const basemapsCreatePullRequest = command({
   description: 'Create a github pull request for the import imagery workflow',
   args: CommandCreatePRArgs,
   async handler(args) {
-    const layerStr = args.layer;
+    const target = args.target;
     const category = args.category ? parseCategory(args.category) : Category.Other;
-    let layer: ConfigLayer;
+    let targets: string[];
     try {
-      layer = JSON.parse(layerStr);
+      targets = JSON.parse(target);
     } catch {
       throw new Error('Please provide a valid input layer');
     }
 
-    //Make sure the imagery name is standardized before update the config
-    layer.name = standardizeLayerName(layer.name);
+    const layer: ConfigLayer = { name: '', title: '', category };
+    for (const target of targets) {
+      const info = await parseTargetInfo(target);
+      layer.name = info.name;
+      layer.title = info.title;
+      layer[info.epsg] = target;
+    }
+
+    if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository);
     if (args.vector) await git.updateVectorTileSet('topographic', layer, logger);
