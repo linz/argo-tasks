@@ -37,12 +37,12 @@ async function parseTargetInfo(
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
 
   //Validate the source location
-  const source = collection.links[-1]?.href;
+  const source = collection.links[collection.links.length - 1]?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
-  const sourceBucket = url.hostname;
+  const sourceBucket = sourceUrl.hostname;
   logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
-  if (sourceBucket == null || validSourceBuckets.has(sourceBucket)) {
+  if (sourceBucket == null || !validSourceBuckets.has(sourceBucket)) {
     throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceUrl}.`);
   }
   // Try to get the region for individual layers
