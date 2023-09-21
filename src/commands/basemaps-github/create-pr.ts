@@ -1,6 +1,6 @@
 import { ConfigLayer, standardizeLayerName } from '@basemaps/config';
 import { Epsg, EpsgCode } from '@basemaps/geo';
-import { fsa } from '@basemaps/shared';
+import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
 import { StacCollection } from 'stac-ts';
 
