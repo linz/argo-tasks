@@ -1,4 +1,5 @@
-import { ConfigLayer, standardizeLayerName } from '@basemaps/config';
+import { ConfigLayer } from '@basemaps/config/build/config/tile.set.js';
+import { standardizeLayerName } from '@basemaps/config/build/json/name.convertor.js';
 import { Epsg, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
