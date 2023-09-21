@@ -1,12 +1,12 @@
 import { ConfigLayer, standardizeLayerName } from '@basemaps/config';
 import { Epsg, EpsgCode } from '@basemaps/geo';
-import { fsa, LogType } from '@basemaps/shared';
+import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
 import { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { verbose } from '../common.js';
+import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
 
 const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
@@ -15,7 +15,6 @@ const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
 async function parseTargetInfo(
   target: string,
   individual: boolean,
-  logger: LogType,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const url = new URL(target);
@@ -100,6 +99,7 @@ export const basemapsCreatePullRequest = command({
   description: 'Create a github pull request for the import imagery workflow',
   args: CommandCreatePRArgs,
   async handler(args) {
+    registerCli(this, args);
     const target = args.target;
     const category = args.category ? parseCategory(args.category) : Category.Other;
     let targets: string[];
@@ -112,7 +112,7 @@ export const basemapsCreatePullRequest = command({
     const layer: ConfigLayer = { name: '', title: '', category };
     let region;
     for (const target of targets) {
-      const info = await parseTargetInfo(target, args.individual, logger);
+      const info = await parseTargetInfo(target, args.individual);
       layer.name = info.name;
       layer.title = info.title;
       layer[info.epsg] = target;
@@ -122,7 +122,7 @@ export const basemapsCreatePullRequest = command({
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository);
-    if (args.vector) await git.updateVectorTileSet('topographic', layer, logger);
-    else await git.updateRasterTileSet('aerial', layer, category, region, logger);
+    if (args.vector) await git.updateVectorTileSet('topographic', layer);
+    else await git.updateRasterTileSet('aerial', layer, category, region);
   },
 });

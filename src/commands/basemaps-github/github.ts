@@ -1,7 +1,8 @@
-import { Env, LogType } from '@basemaps/shared';
 import { Octokit } from '@octokit/core';
 import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
 import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
+
+import { logger } from '../../log.js';
 
 export interface Job {
   imagery: string;
@@ -27,8 +28,8 @@ export class GithubApi {
     this.owner = owner;
     this.repo = repo;
 
-    const token = Env.get(Env.GitHubToken);
-    if (token == null) throw new Error(`Please set up ${Env.GitHubToken} environment variable.`);
+    const token = process.env['GITHUB_API_TOKEN'];
+    if (token == null) throw new Error(`Please set up GITHUB_API_TOKEN environment variable.`);
     this.octokit = restEndpointMethods(new Octokit({ auth: token }));
   }
 
@@ -39,7 +40,7 @@ export class GithubApi {
   /**
    * Get branch by name if exists
    */
-  async getBranch(branch: string, logger: LogType): Promise<string | undefined> {
+  async getBranch(branch: string): Promise<string | undefined> {
     logger.debug({ branch }, 'GitHub: Get branch');
     try {
       const response = await this.octokit.rest.git.getRef({
@@ -57,7 +58,7 @@ export class GithubApi {
   /**
    * Create a new branch from the latest master branch
    */
-  async createBranch(branch: string, logger: LogType): Promise<string> {
+  async createBranch(branch: string): Promise<string> {
     // Get the latest sha from master branch
     const master = await this.octokit.rest.git.getRef({
       owner: this.owner,
@@ -82,7 +83,7 @@ export class GithubApi {
   /**
    * Create a blob object in git
    */
-  async createBlob(content: string, path: string, logger: LogType): Promise<Blob> {
+  async createBlob(content: string, path: string): Promise<Blob> {
     // Create the blobs with the files content
     logger.debug({ path }, 'GitHub API: Create blob');
     const blobRes = await this.octokit.rest.git.createBlob({
@@ -100,7 +101,7 @@ export class GithubApi {
   /**
    * Get content from the github repository
    */
-  async getContent(path: string, logger: LogType): Promise<string> {
+  async getContent(path: string): Promise<string> {
     logger.info({ path }, 'GitHub API: Get Content');
     const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
     if (!this.isOk(response.status)) throw new Error('Failed to get aerial TileSet config.');
@@ -114,7 +115,7 @@ export class GithubApi {
   /**
    * Create a file imagery config file into basemaps-config/config/imagery and commit
    */
-  async createCommit(blobs: Blob[], message: string, sha: string, logger: LogType): Promise<string> {
+  async createCommit(blobs: Blob[], message: string, sha: string): Promise<string> {
     // Create a tree which defines the folder structure
     logger.debug({ sha }, 'GitHub API: Create Tree');
     const treeRes = await this.octokit.rest.git.createTree({
@@ -143,7 +144,7 @@ export class GithubApi {
   /**
    * Update the reference of your branch to point to the new commit SHA
    */
-  async updateBranch(branch: string, commitSha: string, logger: LogType): Promise<void> {
+  async updateBranch(branch: string, commitSha: string): Promise<void> {
     logger.debug({ branch, commitSha }, 'GitHub API: update ref');
     const response = await this.octokit.rest.git.updateRef({
       owner: this.owner,
@@ -157,7 +158,7 @@ export class GithubApi {
   /**
    * Create a new pull request from the given branch and return pull request number
    */
-  async createPullRequest(branch: string, title: string, logger: LogType): Promise<number> {
+  async createPullRequest(branch: string, title: string): Promise<number> {
     // Create pull request from the give head
     const response = await this.octokit.rest.pulls.create({
       owner: this.owner,
@@ -182,38 +183,32 @@ export interface GithubFiles {
  *
  * @returns pull request number
  */
-export async function createPR(
-  gh: GithubApi,
-  branch: string,
-  title: string,
-  files: GithubFiles[],
-  logger: LogType,
-): Promise<number> {
+export async function createPR(gh: GithubApi, branch: string, title: string, files: GithubFiles[]): Promise<number> {
   // git checkout -b
   logger.info({ branch }, 'GitHub: Get branch');
-  let sha = await gh.getBranch(branch, logger);
+  let sha = await gh.getBranch(branch);
   if (sha == null) {
     logger.info({ branch }, 'GitHub: branch Not Found, create new branch');
-    sha = await gh.createBranch(branch, logger);
+    sha = await gh.createBranch(branch);
   }
 
   // git add
   const blobs: Blob[] = [];
   for (const file of files) {
     logger.info({ path: file.path }, 'GitHub: Add change');
-    const blob = await gh.createBlob(file.content, file.path, logger);
+    const blob = await gh.createBlob(file.content, file.path);
     blobs.push(blob);
   }
 
   // git commit
   logger.info({ branch }, 'GitHub: Commit to Branch');
-  const commitSha = await gh.createCommit(blobs, title, sha, logger);
+  const commitSha = await gh.createCommit(blobs, title, sha);
 
   // git push
   logger.info({ branch }, 'GitHub: Push commit to Brach');
-  await gh.updateBranch(branch, commitSha, logger);
+  await gh.updateBranch(branch, commitSha);
 
   // git pr create
   logger.info({ branch: branch }, 'GitHub: Create Pull Request');
-  return await gh.createPullRequest(branch, title, logger);
+  return await gh.createPullRequest(branch, title);
 }

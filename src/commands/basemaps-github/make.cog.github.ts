@@ -7,8 +7,9 @@ import {
   TileSetType,
 } from '@basemaps/config';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
-import { fsa, LogType } from '@basemaps/shared';
+import { fsa } from '@chunkd/fs';
 
+import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
 import { prettyPrint } from '../format/pretty.print.js';
 import { createPR, GithubApi } from './github.js';
@@ -63,7 +64,6 @@ export class MakeCogGithub {
     layer: ConfigLayer,
     category: Category,
     region: string | undefined,
-    logger: LogType,
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-raster-${this.imagery}`;
@@ -88,11 +88,11 @@ export class MakeCogGithub {
       const tileSetPath = fsa.joinAll('config', 'tileset', region, `${layer.name}.json`);
       const file = { path: tileSetPath, content };
       // Github create pull request
-      await createPR(gh, branch, title, [file], logger);
+      await createPR(gh, branch, title, [file]);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-      const tileSetContent = await gh.getContent(tileSetPath, logger);
+      const tileSetContent = await gh.getContent(tileSetPath);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // skip pull request if not an urban or rural imagery
@@ -101,7 +101,7 @@ export class MakeCogGithub {
       const content = await prettyPrint(JSON.stringify(newTileSet), ConfigPrettierFormat);
       const file = { path: tileSetPath, content };
       // Github create pull request
-      await createPR(gh, branch, title, [file], logger);
+      await createPR(gh, branch, title, [file]);
     }
   }
 
@@ -172,14 +172,14 @@ export class MakeCogGithub {
   /**
    * Prepare and create pull request for the aerial tileset config
    */
-  async updateVectorTileSet(filename: string, layer: ConfigLayer, logger: LogType): Promise<void> {
+  async updateVectorTileSet(filename: string, layer: ConfigLayer): Promise<void> {
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-vector-${this.imagery}`;
 
     // Prepare new aerial tileset config
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-    const tileSetContent = await gh.getContent(tileSetPath, logger);
+    const tileSetContent = await gh.getContent(tileSetPath);
     const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
     const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
 
@@ -190,7 +190,7 @@ export class MakeCogGithub {
     const content = await prettyPrint(JSON.stringify(newTileSet), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await createPR(gh, branch, title, [file], logger);
+    await createPR(gh, branch, title, [file]);
   }
 
   /**
