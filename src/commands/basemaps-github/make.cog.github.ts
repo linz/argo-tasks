@@ -1,11 +1,9 @@
 import {
-  ConfigId,
   ConfigLayer,
-  ConfigPrefix,
   ConfigTileSetRaster,
   ConfigTileSetVector,
   TileSetType,
-} from '@basemaps/config';
+} from '@basemaps/config/build/config/tile.set.js';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
 import { fsa } from '@chunkd/fs';
 
@@ -78,7 +76,7 @@ export class MakeCogGithub {
       layer.maxZoom = 32;
       const tileSet: TileSetConfigSchema = {
         type: TileSetType.Raster,
-        id: ConfigId.prefix(ConfigPrefix.TileSet, layer.name),
+        id: `ts_${layer.name}`,
         title: layer.title,
         background: '#00000000',
         category,
