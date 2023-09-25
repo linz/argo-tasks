@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.14.0](https://github.com/linz/argo-tasks/compare/v2.13.0...v2.14.0) (2023-09-21)
+
+
+### Features
+
+* **basemaps:** Get the region from collection.json and validate the source and target bucket. ([#662](https://github.com/linz/argo-tasks/issues/662)) ([821225e](https://github.com/linz/argo-tasks/commit/821225ea2f2c7d1052ec223dba909312275663c8))
+* **basemaps:** Remove the @basemaps/shared package from argo-tasks. ([#665](https://github.com/linz/argo-tasks/issues/665)) ([71449b8](https://github.com/linz/argo-tasks/commit/71449b8079ab373564f0956399e5c1517d391ae7))
+* **basemaps:** Update the create-pr cli to take targets as input. ([#661](https://github.com/linz/argo-tasks/issues/661)) ([3b1bd1a](https://github.com/linz/argo-tasks/commit/3b1bd1a6609b55a73161f16c0ee9d9d2833ede0e))
+* **bmc:** New github wrapper to use github api by pat. BM-878 ([#634](https://github.com/linz/argo-tasks/issues/634)) ([3d6c81e](https://github.com/linz/argo-tasks/commit/3d6c81ea85bed722b3b5bf80a868f1611b4787c0))
+* pretty print JSON files TDE-759 ([#647](https://github.com/linz/argo-tasks/issues/647)) ([1beab94](https://github.com/linz/argo-tasks/commit/1beab943c24bbf7b183b01a5de0953770f56c5fe))
+
+
+### Bug Fixes
+
+* **basemaps:** Import config types from the file to avoid importing dynamo ([#666](https://github.com/linz/argo-tasks/issues/666)) ([6574d87](https://github.com/linz/argo-tasks/commit/6574d8762a4ff24012fdaab99643cdf795aa4525))
+* **stac-sync:** add content type ([#645](https://github.com/linz/argo-tasks/issues/645)) ([a137084](https://github.com/linz/argo-tasks/commit/a137084cb0d53522ee7795f547b3b879cbc1c575))
+
 ## [2.13.0](https://github.com/linz/argo-tasks/compare/v2.12.0...v2.13.0) (2023-09-05)
 
 
