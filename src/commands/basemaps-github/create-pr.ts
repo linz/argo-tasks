@@ -107,17 +107,24 @@ export const basemapsCreatePullRequest = command({
     try {
       targets = JSON.parse(target);
     } catch {
-      throw new Error('Please provide a valid input layer');
+      throw new Error('Please provide a valid input target');
     }
 
-    const layer: ConfigLayer = { name: '', title: '', category };
+    const layer: ConfigLayer = { name: '', title: '' };
     let region;
-    for (const target of targets) {
-      const info = await parseTargetInfo(target, args.individual);
-      layer.name = info.name;
-      layer.title = info.title;
-      layer[info.epsg] = target;
-      region = info.region;
+    if (args.vector) {
+      layer.name = 'topographic';
+      layer.title = 'Topographic';
+      layer[3857] = targets[0];
+    } else {
+      for (const target of targets) {
+        const info = await parseTargetInfo(target, args.individual);
+        layer.name = info.name;
+        layer.title = info.title;
+        layer[info.epsg] = target;
+        region = info.region;
+      }
+      layer.category = category;
     }
 
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');

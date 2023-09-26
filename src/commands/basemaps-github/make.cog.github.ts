@@ -82,7 +82,7 @@ export class MakeCogGithub {
         category,
         layers: [layer],
       };
-      const content = await prettyPrint(JSON.stringify(tileSet), ConfigPrettierFormat);
+      const content = await prettyPrint(JSON.stringify(tileSet, null, 2), ConfigPrettierFormat);
       const tileSetPath = fsa.joinAll('config', 'tileset', region, `${layer.name}.json`);
       const file = { path: tileSetPath, content };
       // Github create pull request
@@ -96,7 +96,7 @@ export class MakeCogGithub {
       // skip pull request if not an urban or rural imagery
       if (newTileSet == null) return;
       // Github
-      const content = await prettyPrint(JSON.stringify(newTileSet), ConfigPrettierFormat);
+      const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
       const file = { path: tileSetPath, content };
       // Github create pull request
       await createPR(gh, branch, title, [file]);
@@ -185,7 +185,7 @@ export class MakeCogGithub {
     if (newTileSet == null) return;
     // Github
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
-    const content = await prettyPrint(JSON.stringify(newTileSet), ConfigPrettierFormat);
+    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
     await createPR(gh, branch, title, [file]);
