@@ -74,3 +74,20 @@ export function parseSize(size: string): number {
   if (isNaN(fileSize)) throw new Error(`Failed to parse: ${size} as a file size`);
   return Math.round(fileSize);
 }
+
+/**
+ * Guess the content type of a STAC file
+ *
+ * - application/geo+json - A STAC Item
+ * - application/json - A STAC Catalog
+ * - application/json - A STAC Collection
+ *
+ * Assumes anything ending with '.json' is a stac item
+ * @see {@link https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md#stac-media-types}
+ */
+export function guessStacContentType(path: string): string | undefined {
+  if (path.endsWith('collection.json')) return 'application/json';
+  if (path.endsWith('catalog.json')) return 'application/json';
+  if (path.endsWith('.json')) return 'application/geo+json';
+  return;
+}

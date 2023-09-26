@@ -9,7 +9,7 @@ import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { prettyPrint } from '../format/pretty.print.js';
+import { prettyPrint } from '../format/format.json.js';
 import { createPR, GithubApi } from './github.js';
 
 export enum Category {
