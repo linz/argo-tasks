@@ -10,7 +10,7 @@ import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.
 import { fsa, LogType } from '@basemaps/shared';
 
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { prettyPrint } from '../format/format.json.js';
+import { prettyPrint } from '../format/pretty.print.js';
 import { createPR, GithubApi } from './github.js';
 
 export enum Category {

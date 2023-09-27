@@ -14,9 +14,9 @@ function isJson(x: string): boolean {
   return search.endsWith('.json');
 }
 
-export const commandFormatJson = command({
-  name: 'format-json',
-  description: 'Format JSON files',
+export const commandPrettyPrint = command({
+  name: 'pretty-print',
+  description: 'Pretty-print JSON files',
   version: CliInfo.version,
   args: {
     config,
@@ -39,9 +39,9 @@ export const commandFormatJson = command({
   async handler(args) {
     registerCli(this, args);
     const startTime = performance.now();
-    logger.info('FormatJson:Start');
+    logger.info('PrettyPrint:Start');
     if (args.target) {
-      logger.info({ target: args.target }, 'FormatJson:Info');
+      logger.info({ target: args.target }, 'PrettyPrint:Info');
     }
 
     const files = await getFiles([args.path]);
@@ -53,7 +53,7 @@ export const commandFormatJson = command({
 
     // format files
     await Promise.all(jsonFiles.map((f: string) => formatFile(f, args.target, args.fixContentType)));
-    logger.info({ fileCount: jsonFiles.length, duration: performance.now() - startTime }, 'FormatJson:Done');
+    logger.info({ fileCount: jsonFiles.length, duration: performance.now() - startTime }, 'PrettyPrint:Done');
   },
 });
 
@@ -65,7 +65,7 @@ export const commandFormatJson = command({
  * @param fixContentType if true will set the `contentType` with a guessed value. @see guessStacContentType
  */
 export async function formatFile(path: string, target = '', fixContentType: boolean = false): Promise<void> {
-  logger.debug({ file: path }, 'FormatJson:RunPrettier');
+  logger.debug({ file: path }, 'PrettyPrint:RunPrettier');
   const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(path)), DEFAULT_PRETTIER_FORMAT);
   if (target) {
     // FIXME: can be duplicate files
