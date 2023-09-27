@@ -12,7 +12,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 - [create-manifest](#create-manifest)
 - [group](#group)
 - [list](#list)
-- [format-json](#format-json)
+- [pretty-print](#pretty-print)
 - [stac catalog](#stac-catalog)
 - [stac github-import](#stac-github-import)
 - [stac sync](#stac-sync)
@@ -68,7 +68,7 @@ list s3://linz-imagery/sample --include ".*.tiff$" --group 10 --group-size 100MB
 list s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --output /tmp/list.json
 ```
 
-### `format-json`
+### `pretty-print`
 
 Format all JSON files within a directory using `prettier`. An optional flag `--fix-content-type` allows to set the content-type for s3 object with a value depending on the STAC object type.
 
@@ -77,13 +77,13 @@ Format all JSON files within a directory using `prettier`. An optional flag `--f
 - Format and overwrite files:
 
 ```bash
-format-json source/ [--fix-content-type]
+pretty-print source/ [--fix-content-type]
 ```
 
 - Create a copy of the formatted file in another flatten directory (testing only - does not handle duplicate filenames):
 
 ```bash
-format-json source/ --target output/
+pretty-print source/ --target output/
 ```
 
 ### `create-manifest`
