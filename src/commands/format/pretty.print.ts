@@ -64,7 +64,7 @@ export async function formatFile(path: string, target = ''): Promise<void> {
     path = fsa.join(target, basename(path));
   }
 
-  fsa.write(path, Buffer.from(prettyPrinted));
+  await fsa.write(path, Buffer.from(prettyPrinted));
 }
 
 /**
