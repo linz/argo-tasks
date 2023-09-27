@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.14.1](https://github.com/linz/argo-tasks/compare/v2.14.0...v2.14.1) (2023-09-27)
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the create pull request cli input to support the vector layer as well. ([#670](https://github.com/linz/argo-tasks/issues/670)) ([6d7d357](https://github.com/linz/argo-tasks/commit/6d7d357399677eec9bb70264ba0769fec285e6e3))
+* collection.json is pushed to gh before pretty-printed TDE-893 ([#673](https://github.com/linz/argo-tasks/issues/673)) ([b98aea8](https://github.com/linz/argo-tasks/commit/b98aea8059750b7ab0bdda9c6f15b0e1fd720111))
+
 ## [2.14.0](https://github.com/linz/argo-tasks/compare/v2.13.0...v2.14.0) (2023-09-21)
 
 
