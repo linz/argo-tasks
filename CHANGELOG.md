@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.0](https://github.com/linz/argo-tasks/compare/v2.14.1...v2.15.0) (2023-10-03)
+
+
+### Features
+
+* re-point ci to argo-tasks ecr repository ([#681](https://github.com/linz/argo-tasks/issues/681)) ([d244e2f](https://github.com/linz/argo-tasks/commit/d244e2f82f7cc811360e2fa7df7f94ea783659a3))
+
 ## [2.14.1](https://github.com/linz/argo-tasks/compare/v2.14.0...v2.14.1) (2023-09-27)
 
 
