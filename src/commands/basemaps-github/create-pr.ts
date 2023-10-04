@@ -121,7 +121,7 @@ export const basemapsCreatePullRequest = command({
         const info = await parseTargetInfo(target, args.individual);
         layer.name = info.name;
         layer.title = info.title;
-        layer[info.epsg] = target;
+        layer[info.epsg] = target.endsWith('/') ? target.slice(0, -1) : target;
         region = info.region;
       }
       layer.category = category;
