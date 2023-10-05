@@ -24,16 +24,15 @@ export enum Category {
 export interface CategorySetting {
   minZoom?: number;
   maxZoom?: number;
-  individual?: boolean;
 }
 
 export const DefaultCategorySetting: Record<Category, CategorySetting> = {
-  [Category.Urban]: { minZoom: 14, individual: false },
-  [Category.Rural]: { minZoom: 13, individual: false },
-  [Category.Satellite]: { minZoom: 5, individual: false },
-  [Category.Event]: { individual: true },
+  [Category.Urban]: { minZoom: 14 },
+  [Category.Rural]: { minZoom: 13 },
+  [Category.Satellite]: { minZoom: 5 },
   [Category.Scanned]: { minZoom: 0, maxZoom: 32 },
-  [Category.Other]: { individual: true },
+  [Category.Other]: {},
+  [Category.Event]: {},
 };
 
 export function parseCategory(category: string): Category {
@@ -109,7 +108,7 @@ export class MakeCogGithub {
   setDefaultConfig(layer: ConfigLayer, category: Category): ConfigLayer {
     layer.category = category;
     const defaultSetting = DefaultCategorySetting[category];
-    if (defaultSetting.minZoom != null && layer.minZoom != null) layer.minZoom = defaultSetting.minZoom;
+    if (defaultSetting.minZoom != null && layer.minZoom == null) layer.minZoom = defaultSetting.minZoom;
     return layer;
   }
 
