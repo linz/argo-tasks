@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.1](https://github.com/linz/argo-tasks/compare/v2.15.0...v2.15.1) (2023-10-09)
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the default zoom level not populate to the config. BM-903 ([#688](https://github.com/linz/argo-tasks/issues/688)) ([7c91012](https://github.com/linz/argo-tasks/commit/7c910123cbac2be3fd1595ab165a88250ad576a6))
+
 ## [2.15.0](https://github.com/linz/argo-tasks/compare/v2.14.1...v2.15.0) (2023-10-03)
 
 
