@@ -1,7 +1,7 @@
 {
   "name": "@linzjs/argo-tasks",
   "private": true,
-  "version": "2.15.0",
+  "version": "2.15.1",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "repository": "git@github.com:linz/argo-tasks.git",
