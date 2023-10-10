@@ -38,7 +38,7 @@
     "@aws-sdk/client-s3": "^3.245.0",
     "@aws-sdk/credential-providers": "^3.245.0",
     "@aws-sdk/lib-storage": "^3.245.0",
-    "@basemaps/config": "^6.43.0",
+    "@basemaps/config": "^6.45.0",
     "@basemaps/geo": "^6.43.0",
     "@chunkd/fs": "^10.0.9",
     "@chunkd/source-aws-v3": "^10.1.3",
