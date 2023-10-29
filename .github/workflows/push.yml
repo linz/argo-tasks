@@ -26,6 +26,10 @@ jobs:
           echo "version_major=${GIT_VERSION_MAJOR}" >> $GITHUB_OUTPUT
           echo "version_major_minor=${GIT_VERSION_MAJOR_MINOR}" >> $GITHUB_OUTPUT
 
+      - name: Set up Docker Qemu
+        id: qemu
+        uses: docker/setup-qemu-action@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -80,6 +84,7 @@ jobs:
           tags: ${{ steps.tags.outputs.result }}
           push: ${{(github.ref == 'refs/heads/master') && !(startsWith(github.event.head_commit.message, 'release:'))}}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/arm64,linux/amd64
           build-args: |
             GIT_HASH=${{ github.sha }}
             GIT_VERSION=${{ steps.version.outputs.version }} 
