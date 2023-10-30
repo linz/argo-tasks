@@ -17,7 +17,7 @@
     "@types/node": "^20.8.9",
     "@types/prettier": "^3.0.0",
     "esno": "^0.17.0",
-    "stac-ts": "^1.0.0"
+    "stac-ts": "^1.0.2"
   },
   "scripts": {
     "build": "tsc",
