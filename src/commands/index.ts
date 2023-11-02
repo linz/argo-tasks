@@ -1,6 +1,7 @@
 import { subcommands } from 'cmd-ts';
 
 import { CliInfo } from '../cli.info.js';
+import { basemapsCreateMapSheet } from './basemaps-github/create-mapsheet.js';
 import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
@@ -44,6 +45,7 @@ export const cmd = subcommands({
       name: 'bmc',
       cmds: {
         'create-pr': basemapsCreatePullRequest,
+        'create-mapsheet': basemapsCreateMapSheet,
       },
     }),
     'pretty-print': commandPrettyPrint,
