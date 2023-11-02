@@ -44,7 +44,7 @@ export function lintODRImageryPath(path: string): void {
   if (bucket == null || region == null || dataset == null || product == null || crs == null) {
     throw new Error(`Missing key from path: ${path}`);
   }
-  if (bucket != 'nz-imagery') {
+  if (bucket !== 'nz-imagery') {
     throw new Error(`Incorrect Bucket: ${bucket}`);
   }
   if (!regions.includes(region)) {
