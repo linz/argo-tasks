@@ -78,13 +78,13 @@ export const basemapsCreateMapSheet = command({
     }
     const imagery = await mem.Imagery.getAll(imageryIds);
 
-    const output: Output[] = [];
+    const outputs: Output[] = [];
     logger.info({ path, config }, 'MapSheet:CreateMapSheet');
     for (const feature of rest.features) {
       if (feature.properties == null) continue;
       const sheetCode = feature.properties['sheet_code_id'];
       const current: Output = { sheetCode, files: [] };
-      output.push(current);
+      outputs.push(current);
       const bounds = Bounds.fromMultiPolygon((feature.geometry as MultiPolygon).coordinates);
 
       for (const layer of layers) {
