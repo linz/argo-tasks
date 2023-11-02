@@ -34,25 +34,26 @@ export const commandLintInputs = command({
 
 export function lintODRImageryPath(path: string): void {
   const pathArray: string[] = path.replace('s3://', '').split('/');
-  const pathObj = {
-    bucket: pathArray[0],
-    region: pathArray[1],
-    dataset: pathArray[2],
-    product: pathArray[3],
-    crs: pathArray[4],
-  };
+  const bucket: string | undefined = pathArray[0];
+  const region: string | undefined = pathArray[1];
+  const dataset: string | undefined = pathArray[2];
+  const product: string | undefined = pathArray[3];
+  const crs: string | undefined = pathArray[4];
 
   // lint target path
-  if (pathObj.bucket != null && pathObj.bucket != 'nz-imagery') {
-    throw new Error(`Incorrect Bucket: ${pathObj.bucket}`);
+  if (bucket == null || region == null || dataset == null || product == null || crs == null) {
+    throw new Error(`Missing key from path: ${path}`);
   }
-  if (pathObj.region != null && !regions.includes(pathObj.region)) {
-    throw new Error(`Provided region not in region list: ${pathObj.region}`);
+  if (bucket != 'nz-imagery') {
+    throw new Error(`Incorrect Bucket: ${bucket}`);
   }
-  if (pathObj.product != null && !imageryProducts.includes(pathObj.product)) {
-    throw new Error(`Provided region not in imagery products list: ${pathObj.product}`);
+  if (!regions.includes(region)) {
+    throw new Error(`Provided region not in region list: ${region}`);
   }
-  if (pathObj.crs != null && !imageryCrs.includes(pathObj.crs)) {
-    throw new Error(`Provided crs not in imagery crs list: ${pathObj.crs}`);
+  if (!imageryProducts.includes(product)) {
+    throw new Error(`Provided region not in imagery products list: ${product}`);
+  }
+  if (!imageryCrs.includes(crs)) {
+    throw new Error(`Provided crs not in imagery crs list: ${crs}`);
   }
 }
