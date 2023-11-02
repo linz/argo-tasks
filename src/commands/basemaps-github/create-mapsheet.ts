@@ -61,11 +61,11 @@ export const basemapsCreateMapSheet = command({
     const buf = await fsa.read(path);
     logger.info({ config }, 'MapSheet:LoadConfig');
     const configJson = await fsa.readJson<ConfigBundled>(config);
-    const men = ConfigProviderMemory.fromJson(configJson);
+    const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
 
-    const aerial = await men.TileSet.get('ts_aerial');
+    const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
     const layers = aerial.layers.filter(
       (c) => c[2193] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32),
@@ -76,7 +76,7 @@ export const basemapsCreateMapSheet = command({
       if (include && !include.test(layer.name)) continue;
       if (layer[2193] != null) imageryIds.add(layer[2193]);
     }
-    const imagery = await men.Imagery.getAll(imageryIds);
+    const imagery = await mem.Imagery.getAll(imageryIds);
 
     const output: Output[] = [];
     logger.info({ path, config }, 'MapSheet:CreateMapSheet');
