@@ -101,6 +101,6 @@ export const basemapsCreateMapSheet = command({
       }
     }
     logger.info({ outputPath }, 'MapSheet:WriteOutput');
-    fsa.write(outputPath, JSON.stringify(output, null, 2));
+    fsa.write(outputPath, JSON.stringify(outputs, null, 2));
   },
 });
