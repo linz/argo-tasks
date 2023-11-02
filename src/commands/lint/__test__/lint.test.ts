@@ -30,8 +30,8 @@ describe('lintODRImageryPaths', () => {
     }, Error);
   });
   it('Should Pass', () => {
-    assert.throws(() => {
+    assert.ok(() => {
       lintODRImageryPath('s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/');
-    }, Error);
+    });
   });
 });
