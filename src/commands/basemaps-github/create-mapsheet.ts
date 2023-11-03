@@ -67,12 +67,14 @@ export const basemapsCreateMapSheet = command({
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
-    const layers = aerial.layers.filter(
-      (c) =>
-        c[EpsgCode.Nztm2000] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32),
-    );
+
+    // Filter invalid layers.
+    const filteredLayers = aerial.layers.filter((c) => {
+      c[EpsgCode.Nztm2000] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32);
+    });
+
     const imageryIds = new Set<string>();
-    for (const layer of layers) {
+    for (const layer of filteredLayers) {
       if (exclude && exclude.test(layer.name)) continue;
       if (include && !include.test(layer.name)) continue;
       if (layer[EpsgCode.Nztm2000] != null) imageryIds.add(layer[EpsgCode.Nztm2000]);
@@ -88,7 +90,7 @@ export const basemapsCreateMapSheet = command({
       outputs.push(current);
       const bounds = Bounds.fromMultiPolygon((feature.geometry as MultiPolygon).coordinates);
 
-      for (const layer of layers) {
+      for (const layer of filteredLayers) {
         if (layer[EpsgCode.Nztm2000] == null) continue;
         const img = imagery.get(layer[EpsgCode.Nztm2000]);
         if (img == null) continue;
