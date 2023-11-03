@@ -72,7 +72,7 @@ export const basemapsCreateMapSheet = command({
         c[EpsgCode.Nztm2000] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32),
     );
     const imageryIds = new Set<string>();
-    for (const layer of aerial.layers) {
+    for (const layer of layers) {
       if (exclude && exclude.test(layer.name)) continue;
       if (include && !include.test(layer.name)) continue;
       if (layer[EpsgCode.Nztm2000] != null) imageryIds.add(layer[EpsgCode.Nztm2000]);
