@@ -1,5 +1,5 @@
 import { ConfigBundled, ConfigProviderMemory } from '@basemaps/config';
-import { Bounds } from '@basemaps/geo';
+import { Bounds, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
 import * as fgb from 'flatgeobuf/lib/mjs/geojson.js';
@@ -68,13 +68,14 @@ export const basemapsCreateMapSheet = command({
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
     const layers = aerial.layers.filter(
-      (c) => c[2193] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32),
+      (c) =>
+        c[EpsgCode.Nztm2000] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32),
     );
     const imageryIds = new Set<string>();
-    for (const layer of layers) {
+    for (const layer of aerial.layers) {
       if (exclude && exclude.test(layer.name)) continue;
       if (include && !include.test(layer.name)) continue;
-      if (layer[2193] != null) imageryIds.add(layer[2193]);
+      if (layer[EpsgCode.Nztm2000] != null) imageryIds.add(layer[EpsgCode.Nztm2000]);
     }
     const imagery = await mem.Imagery.getAll(imageryIds);
 
@@ -88,8 +89,8 @@ export const basemapsCreateMapSheet = command({
       const bounds = Bounds.fromMultiPolygon((feature.geometry as MultiPolygon).coordinates);
 
       for (const layer of layers) {
-        if (layer[2193] == null) continue;
-        const img = imagery.get(layer[2193]);
+        if (layer[EpsgCode.Nztm2000] == null) continue;
+        const img = imagery.get(layer[EpsgCode.Nztm2000]);
         if (img == null) continue;
         if (img.bounds == null || Bounds.fromJson(img.bounds).intersects(bounds)) {
           for (const file of img.files) {
