@@ -17,6 +17,8 @@ export const regions = [
   'southland',
 ];
 
+export const imageryBucketNames = ['linz-imagery', 'nz-imagery'];
+
 export const imageryProducts = ['rgb'];
 
 export const imageryCrs = ['2193'];
