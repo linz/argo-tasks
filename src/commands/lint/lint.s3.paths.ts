@@ -42,6 +42,9 @@ export function lintPath(path: string): void {
   if (region == null || dataset == null || product == null || crs == null) {
     throw new Error(`Missing key from path: ${path}`);
   }
+  if (!path.endsWith(`${crs}/`)) {
+    throw new Error(`Additional arguments in path, please remove: ${path.split(`${crs}/`)[1]}`);
+  }
   if (imageryBucketNames.includes(bucket)) {
     lintImageryPath(region, product, crs);
   } else {
