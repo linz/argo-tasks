@@ -39,7 +39,7 @@ Multiple layers can be fetched at the same time, fetch `51002` and `51000`:
 lds-fetch-layer  --target ./output 51002 51000
 ```
 
-### `lint`
+### `lint-inputs`
 
 Lint imagery s3 target paths
 
