@@ -1,4 +1,4 @@
-import { ConfigBundled, ConfigProviderMemory, ConfigTileSet } from '@basemaps/config';
+import { ConfigBundled, ConfigImagery, ConfigProviderMemory, ConfigTileSet } from '@basemaps/config';
 import { Bounds, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
@@ -84,34 +84,33 @@ export async function createMapSheet(
   include: RegExp | undefined,
   exclude: RegExp | undefined,
 ): Promise<Output[]> {
-  // Filter invalid layers.
+  // Find all the valid NZTM imagery from the config
+  const imagery: ConfigImagery[] = [];
+  for (const layer of aerial.layers) {
+    const nztmImageryId = layer[EpsgCode.Nztm2000];
+    if (nztmImageryId == null) continue;
 
-  const filteredLayers = aerial.layers.filter(
-    (c) =>
-      c[EpsgCode.Nztm2000] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32),
-  );
+    if (!(layer.minZoom == null || layer.minZoom < 32)) continue;
+    if (!(layer.maxZoom == null || layer.maxZoom > 19)) continue;
 
-  const imageryIds = new Set<string>();
-  for (const layer of filteredLayers) {
     if (exclude && exclude.test(layer.name)) continue;
     if (include && !include.test(layer.name)) continue;
-    if (layer[EpsgCode.Nztm2000] != null) imageryIds.add(layer[EpsgCode.Nztm2000]);
-  }
-  const imagery = await mem.Imagery.getAll(imageryIds);
 
+    const img = mem.objects.get(nztmImageryId) as ConfigImagery;
+    if (img == null) continue;
+    imagery.push(img);
+  }
+
+  // Do bounds check and add current files
   const outputs: Output[] = [];
   for (const feature of rest.features) {
-    console.log(feature);
     if (feature.properties == null) continue;
     const sheetCode = feature.properties['sheet_code_id'];
     const current: Output = { sheetCode, files: [] };
     outputs.push(current);
     const bounds = Bounds.fromMultiPolygon((feature.geometry as MultiPolygon).coordinates);
 
-    for (const layer of filteredLayers) {
-      if (layer[EpsgCode.Nztm2000] == null) continue;
-      const img = imagery.get(layer[EpsgCode.Nztm2000]);
-      if (img == null) continue;
+    for (const img of imagery) {
       if (img.bounds == null || Bounds.fromJson(img.bounds).intersects(bounds)) {
         for (const file of img.files) {
           if (bounds.intersects(Bounds.fromJson(file))) {
@@ -121,5 +120,6 @@ export async function createMapSheet(
       }
     }
   }
+
   return outputs;
 }
