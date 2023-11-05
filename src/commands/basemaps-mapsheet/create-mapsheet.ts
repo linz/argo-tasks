@@ -1,4 +1,4 @@
-import { ConfigBundled, ConfigProviderMemory } from '@basemaps/config';
+import { ConfigBundled, ConfigProviderMemory, ConfigTileSet } from '@basemaps/config';
 import { Bounds, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
@@ -64,46 +64,62 @@ export const basemapsCreateMapSheet = command({
     const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
+    fsa.write('features.json', JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
 
-    // Filter invalid layers.
-    const filteredLayers = aerial.layers.filter((c) => {
-      c[EpsgCode.Nztm2000] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32);
-    });
-
-    const imageryIds = new Set<string>();
-    for (const layer of filteredLayers) {
-      if (exclude && exclude.test(layer.name)) continue;
-      if (include && !include.test(layer.name)) continue;
-      if (layer[EpsgCode.Nztm2000] != null) imageryIds.add(layer[EpsgCode.Nztm2000]);
-    }
-    const imagery = await mem.Imagery.getAll(imageryIds);
-
-    const outputs: Output[] = [];
     logger.info({ path, config }, 'MapSheet:CreateMapSheet');
-    for (const feature of rest.features) {
-      if (feature.properties == null) continue;
-      const sheetCode = feature.properties['sheet_code_id'];
-      const current: Output = { sheetCode, files: [] };
-      outputs.push(current);
-      const bounds = Bounds.fromMultiPolygon((feature.geometry as MultiPolygon).coordinates);
+    const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
 
-      for (const layer of filteredLayers) {
-        if (layer[EpsgCode.Nztm2000] == null) continue;
-        const img = imagery.get(layer[EpsgCode.Nztm2000]);
-        if (img == null) continue;
-        if (img.bounds == null || Bounds.fromJson(img.bounds).intersects(bounds)) {
-          for (const file of img.files) {
-            if (bounds.intersects(Bounds.fromJson(file))) {
-              current.files.push(`${img.uri}/${file.name}.tiff`);
-            }
-          }
-        }
-      }
-    }
     logger.info({ outputPath }, 'MapSheet:WriteOutput');
     fsa.write(outputPath, JSON.stringify(outputs, null, 2));
   },
 });
+
+export async function createMapSheet(
+  aerial: ConfigTileSet,
+  mem: ConfigProviderMemory,
+  rest: FeatureCollection,
+  include: RegExp | undefined,
+  exclude: RegExp | undefined,
+): Promise<Output[]> {
+  // Filter invalid layers.
+
+  const filteredLayers = aerial.layers.filter(
+    (c) =>
+      c[EpsgCode.Nztm2000] != null && (c.maxZoom == null || c.maxZoom > 19) && (c.minZoom == null || c.minZoom < 32),
+  );
+
+  const imageryIds = new Set<string>();
+  for (const layer of filteredLayers) {
+    if (exclude && exclude.test(layer.name)) continue;
+    if (include && !include.test(layer.name)) continue;
+    if (layer[EpsgCode.Nztm2000] != null) imageryIds.add(layer[EpsgCode.Nztm2000]);
+  }
+  const imagery = await mem.Imagery.getAll(imageryIds);
+
+  const outputs: Output[] = [];
+  for (const feature of rest.features) {
+    console.log(feature);
+    if (feature.properties == null) continue;
+    const sheetCode = feature.properties['sheet_code_id'];
+    const current: Output = { sheetCode, files: [] };
+    outputs.push(current);
+    const bounds = Bounds.fromMultiPolygon((feature.geometry as MultiPolygon).coordinates);
+
+    for (const layer of filteredLayers) {
+      if (layer[EpsgCode.Nztm2000] == null) continue;
+      const img = imagery.get(layer[EpsgCode.Nztm2000]);
+      if (img == null) continue;
+      if (img.bounds == null || Bounds.fromJson(img.bounds).intersects(bounds)) {
+        for (const file of img.files) {
+          if (bounds.intersects(Bounds.fromJson(file))) {
+            current.files.push(`${img.uri}/${file.name}.tiff`);
+          }
+        }
+      }
+    }
+  }
+  return outputs;
+}

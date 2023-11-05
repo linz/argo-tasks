@@ -1,8 +1,8 @@
 import { subcommands } from 'cmd-ts';
 
 import { CliInfo } from '../cli.info.js';
-import { basemapsCreateMapSheet } from './basemaps-github/create-mapsheet.js';
 import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
+import { basemapsCreateMapSheet } from './basemaps-mapsheet/create-mapsheet.js';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
 import { commandPrettyPrint } from './format/pretty.print.js';
