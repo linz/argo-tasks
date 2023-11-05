@@ -34,30 +34,22 @@ export const commandLintInputs = command({
 });
 
 export function lintPath(path: string): void {
-  const pathArray: string[] = path.replace('s3://', '').split('/');
-  const bucket: string | undefined = pathArray[0];
+  const [bucket, region, dataset, product, crs] = path.replace('s3://', '').split('/', 5);
 
   if (bucket == null) {
     throw new Error(`No Bucket Specified: ${path}`);
   }
-
+  if (region == null || dataset == null || product == null || crs == null) {
+    throw new Error(`Missing key from path: ${path}`);
+  }
   if (imageryBucketNames.includes(bucket)) {
-    lintImageryPath(pathArray);
+    lintImageryPath(region, product, crs);
   } else {
     throw new Error(`Bucket not bucket list: ${bucket}`);
   }
 }
 
-export function lintImageryPath(pathArray: string[]): void {
-  const region: string | undefined = pathArray[1];
-  const dataset: string | undefined = pathArray[2];
-  const product: string | undefined = pathArray[3];
-  const crs: string | undefined = pathArray[4];
-
-  // lint target path
-  if (region == null || dataset == null || product == null || crs == null) {
-    throw new Error(`Missing key from path: s3://${pathArray.join('/')}`);
-  }
+export function lintImageryPath(region: string, product: string, crs: string): void {
   if (!regions.includes(region)) {
     throw new Error(`Provided region not in region list: ${region}`);
   }
