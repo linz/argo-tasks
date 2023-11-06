@@ -11,7 +11,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 - [lds-fetch-layer](#lds-fetch-layer)
 - [create-manifest](#create-manifest)
 - [group](#group)
-- [lint](#lint)
+- [lint-inputs](#lint-inputs)
 - [list](#list)
 - [pretty-print](#pretty-print)
 - [stac catalog](#stac-catalog)
