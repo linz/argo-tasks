@@ -44,7 +44,7 @@ export function lintPath(path: string): void {
 }
 
 export function lintImageryPath(pathName: string): void {
-  const [_, region, dataset, product, crs] = pathName.split('/', 5);
+  const [, region, dataset, product, crs] = pathName.split('/', 5);
 
   if (region === undefined || dataset === undefined || product === undefined || crs === undefined) {
     throw new Error(`Missing Key in Path: ${pathName}`);
