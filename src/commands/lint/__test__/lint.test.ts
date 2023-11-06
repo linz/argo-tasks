@@ -1,23 +1,23 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { AdditionalKeyError, InvalidKeyError, lintImageryPath, lintPath, MissingKeyError } from '../lint.s3.paths.js';
+import { lintImageryPath, lintPath } from '../lint.s3.paths.js';
 
 describe('lintImageryPaths', () => {
   it('Should Fail - Incorrect Bucket Name', () => {
     assert.throws(() => {
       lintPath('s3://n-imagery/auckland/auckland_2012_0.075m/rgb/2193/');
-    }, InvalidKeyError);
+    }, Error('bucket not in bucket list: n-imagery'));
   });
   it('Should Fail - Missing key (Product)', () => {
     assert.throws(() => {
       lintPath('s3://nz-imagery/auckland/auckland_2012_0.075m/2193/');
-    }, MissingKeyError);
+    }, Error('Missing Key in Path: s3://nz-imagery/auckland/auckland_2012_0.075m/2193/'));
   });
   it('Should Fail - Extra args', () => {
     assert.throws(() => {
       lintPath('s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/extra-args/');
-    }, AdditionalKeyError);
+    }, Error('Additional arguments in path: s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/extra-args/'));
   });
   it('Should Pass', () => {
     assert.ok(() => {
@@ -30,17 +30,17 @@ describe('lintImageryPaths', () => {
   it('Should Fail - Incorrect Region', () => {
     assert.throws(() => {
       lintImageryPath('hawkesbay', 'rgb', '2193');
-    }, InvalidKeyError);
+    }, Error('region not in region list: hawkesbay'));
   });
   it('Should Fail - Incorrect product', () => {
     assert.throws(() => {
       lintImageryPath('hawkes-bay', 'rgbi', '2193');
-    }, InvalidKeyError);
+    }, Error('product not in product list: rgbi'));
   });
   it('Should Fail - Incorrect Crs', () => {
     assert.throws(() => {
       lintImageryPath('auckland', 'rgb', '219');
-    }, InvalidKeyError);
+    }, Error('crs not in crs list: 219'));
   });
   it('Should Pass', () => {
     assert.ok(() => {

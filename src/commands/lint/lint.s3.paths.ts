@@ -5,27 +5,6 @@ import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import { imageryBucketNames, imageryCrs, imageryProducts, regions } from './lint.constants.js';
 
-export class MissingKeyError extends Error {
-  constructor(path: string) {
-    super(`Missing Key in Path: ${path}`);
-    this.name = 'MissingKeyError';
-  }
-}
-
-export class AdditionalKeyError extends Error {
-  constructor(path: string) {
-    super(`Additional arguments in path: ${path}`);
-    this.name = 'AdditionalKeyError';
-  }
-}
-
-export class InvalidKeyError extends Error {
-  constructor(type: string, value: string) {
-    super(`${type} not in ${type} list: ${value}`);
-    this.name = 'InvalidKeyError';
-  }
-}
-
 export const commandLintInputs = command({
   name: 'lint-inputs',
   description: 'Pretty print JSON files',
@@ -58,30 +37,30 @@ export function lintPath(path: string): void {
   const [bucket, region, dataset, product, crs] = path.replace('s3://', '').split('/', 5);
 
   if (bucket == null || region == null || dataset == null || product == null || crs == null) {
-    throw new MissingKeyError(path);
+    throw new Error(`Missing Key in Path: ${path}`);
   }
   if (bucket === '' || region === '' || dataset === '' || product === '' || crs === '') {
-    throw new MissingKeyError(path);
+    throw new Error(`Missing Key in Path: ${path}`);
   }
   console.log(crs);
   if (!path.endsWith(`${crs}/`)) {
-    throw new AdditionalKeyError(path);
+    throw new Error(`Additional arguments in path: ${path}`);
   }
   if (imageryBucketNames.includes(bucket)) {
     lintImageryPath(region, product, crs);
   } else {
-    throw new InvalidKeyError('Bucket', bucket);
+    throw new Error(`bucket not in bucket list: ${bucket}`);
   }
 }
 
 export function lintImageryPath(region: string, product: string, crs: string): void {
   if (!regions.includes(region)) {
-    throw new InvalidKeyError('region', region);
+    throw new Error(`region not in region list: ${region}`);
   }
   if (!imageryProducts.includes(product)) {
-    throw new InvalidKeyError('product', product);
+    throw new Error(`product not in product list: ${product}`);
   }
   if (!imageryCrs.includes(crs)) {
-    throw new InvalidKeyError('crs', crs);
+    throw new Error(`crs not in crs list: ${crs}`);
   }
 }
