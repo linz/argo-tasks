@@ -34,26 +34,27 @@ export const commandLintInputs = command({
 });
 
 export function lintPath(path: string): void {
-  const [bucket, region, dataset, product, crs] = path.replace('s3://', '').split('/', 5);
+  const url = new URL(path);
 
-  if (bucket == null || region == null || dataset == null || product == null || crs == null) {
-    throw new Error(`Missing Key in Path: ${path}`);
-  }
-  if (bucket === '' || region === '' || dataset === '' || product === '' || crs === '') {
-    throw new Error(`Missing Key in Path: ${path}`);
-  }
-  console.log(crs);
-  if (!path.endsWith(`${crs}/`)) {
-    throw new Error(`Additional arguments in path: ${path}`);
-  }
-  if (imageryBucketNames.includes(bucket)) {
-    lintImageryPath(region, product, crs);
+  if (imageryBucketNames.includes(url.hostname)) {
+    lintImageryPath(url.pathname);
   } else {
-    throw new Error(`bucket not in bucket list: ${bucket}`);
+    throw new Error(`bucket not in bucket list: ${url.hostname}`);
   }
 }
 
-export function lintImageryPath(region: string, product: string, crs: string): void {
+export function lintImageryPath(pathName: string): void {
+  const [_, region, dataset, product, crs] = pathName.split('/', 5);
+
+  if (region === undefined || dataset === undefined || product === undefined || crs === undefined) {
+    throw new Error(`Missing Key in Path: ${pathName}`);
+  }
+  if (pathName.split('/').length < 6) {
+    throw new Error(`Missing key in Path: ${pathName}`);
+  }
+  if (pathName.split('/').length > 6) {
+    throw new Error(`Too many keys in Path: ${pathName}`);
+  }
   if (!regions.includes(region)) {
     throw new Error(`region not in region list: ${region}`);
   }

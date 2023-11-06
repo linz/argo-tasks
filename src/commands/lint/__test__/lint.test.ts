@@ -12,12 +12,12 @@ describe('lintImageryPaths', () => {
   it('Should Fail - Missing key (Product)', () => {
     assert.throws(() => {
       lintPath('s3://nz-imagery/auckland/auckland_2012_0.075m/2193/');
-    }, Error('Missing Key in Path: s3://nz-imagery/auckland/auckland_2012_0.075m/2193/'));
+    }, Error('Missing key in Path: /auckland/auckland_2012_0.075m/2193/'));
   });
   it('Should Fail - Extra args', () => {
     assert.throws(() => {
       lintPath('s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/extra-args/');
-    }, Error('Additional arguments in path: s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/extra-args/'));
+    }, Error('Too many keys in Path: /auckland/auckland_2012_0.075m/rgb/2193/extra-args/'));
   });
   it('Should Pass', () => {
     assert.ok(() => {
@@ -29,22 +29,22 @@ describe('lintImageryPaths', () => {
 describe('lintImageryPaths', () => {
   it('Should Fail - Incorrect Region', () => {
     assert.throws(() => {
-      lintImageryPath('hawkesbay', 'rgb', '2193');
+      lintImageryPath('/hawkesbay/hawkes-bay_2018_0-75m/rgb/2193/');
     }, Error('region not in region list: hawkesbay'));
   });
   it('Should Fail - Incorrect product', () => {
     assert.throws(() => {
-      lintImageryPath('hawkes-bay', 'rgbi', '2193');
+      lintImageryPath('/hawkes-bay/hawkes-bay_2018_0-75m/rgbi/2193/');
     }, Error('product not in product list: rgbi'));
   });
   it('Should Fail - Incorrect Crs', () => {
     assert.throws(() => {
-      lintImageryPath('auckland', 'rgb', '219');
+      lintImageryPath('/auckland/auckland_2020_0-2m/rgb/219/');
     }, Error('crs not in crs list: 219'));
   });
   it('Should Pass', () => {
     assert.ok(() => {
-      lintImageryPath('auckland', 'rgb', '2193');
+      lintImageryPath('/auckland/auckland_2020_0-2m/rgb/2193/');
     });
   });
 });
