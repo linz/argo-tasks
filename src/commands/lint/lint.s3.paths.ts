@@ -5,6 +5,27 @@ import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
 import { imageryBucketNames, imageryCrs, imageryProducts, regions } from './lint.constants.js';
 
+export class MissingKeyError extends Error {
+  constructor(path: string) {
+    super(`Missing Key in Path: ${path}`);
+    this.name = 'MissingKeyError';
+  }
+}
+
+export class AdditionalKeyError extends Error {
+  constructor(path: string) {
+    super(`Additional arguments in path: ${path}`);
+    this.name = 'AdditionalKeyError';
+  }
+}
+
+export class InvalidKeyError extends Error {
+  constructor(type: string, value: string) {
+    super(`${type} not in ${type} list: ${value}`);
+    this.name = 'InvalidKeyError';
+  }
+}
+
 export const commandLintInputs = command({
   name: 'lint-inputs',
   description: 'Pretty print JSON files',
@@ -36,30 +57,31 @@ export const commandLintInputs = command({
 export function lintPath(path: string): void {
   const [bucket, region, dataset, product, crs] = path.replace('s3://', '').split('/', 5);
 
-  if (bucket == null) {
-    throw new Error(`No Bucket Specified: ${path}`);
+  if (bucket == null || region == null || dataset == null || product == null || crs == null) {
+    throw new MissingKeyError(path);
   }
-  if (region == null || dataset == null || product == null || crs == null) {
-    throw new Error(`Missing key from path: ${path}`);
+  if (bucket === '' || region === '' || dataset === '' || product === '' || crs === '') {
+    throw new MissingKeyError(path);
   }
+  console.log(crs);
   if (!path.endsWith(`${crs}/`)) {
-    throw new Error(`Additional arguments in path, please remove: ${path.split(`${crs}/`)[1]}`);
+    throw new AdditionalKeyError(path);
   }
   if (imageryBucketNames.includes(bucket)) {
     lintImageryPath(region, product, crs);
   } else {
-    throw new Error(`Bucket not bucket list: ${bucket}`);
+    throw new InvalidKeyError('Bucket', bucket);
   }
 }
 
 export function lintImageryPath(region: string, product: string, crs: string): void {
   if (!regions.includes(region)) {
-    throw new Error(`Provided region not in region list: ${region}`);
+    throw new InvalidKeyError('region', region);
   }
   if (!imageryProducts.includes(product)) {
-    throw new Error(`Provided region not in imagery products list: ${product}`);
+    throw new InvalidKeyError('product', product);
   }
   if (!imageryCrs.includes(crs)) {
-    throw new Error(`Provided crs not in imagery crs list: ${crs}`);
+    throw new InvalidKeyError('crs', crs);
   }
 }
