@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { AdditionalKeyError, InvalidKeyError, MissingKeyError, lintImageryPath, lintPath } from '../lint.s3.paths.js';
+import { AdditionalKeyError, InvalidKeyError, lintImageryPath, lintPath, MissingKeyError } from '../lint.s3.paths.js';
 
 describe('lintImageryPaths', () => {
   it('Should Fail - Incorrect Bucket Name', () => {
