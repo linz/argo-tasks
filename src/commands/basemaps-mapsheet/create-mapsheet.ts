@@ -90,8 +90,8 @@ export async function createMapSheet(
     const nztmImageryId = layer[EpsgCode.Nztm2000];
     if (nztmImageryId == null) continue;
 
-    if (!(layer.minZoom == null || layer.minZoom < 32)) continue;
-    if (!(layer.maxZoom == null || layer.maxZoom > 19)) continue;
+    if (layer.minZoom != null && layer.minZoom >= 32) continue;
+    if (layer.maxZoom != null && layer.maxZoom <= 19) continue;
 
     if (exclude && exclude.test(layer.name)) continue;
     if (include && !include.test(layer.name)) continue;
