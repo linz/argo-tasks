@@ -21,9 +21,9 @@ export const CommandCreateMapSheetArgs = {
     long: 'path',
     description: 'Path of flatgeobuf, this can be both a local path or s3 location',
   }),
-  config: option({
+  bmConfig: option({
     type: string,
-    long: 'config',
+    long: 'bm-config',
     description: 'Path of basemaps config json, this can be both a local path or s3 location',
   }),
   output: option({
@@ -51,7 +51,7 @@ export const basemapsCreateMapSheet = command({
   async handler(args) {
     registerCli(this, args);
     const path = args.path;
-    const config = args.config;
+    const config = args.bmConfig;
     const outputPath = args.output;
 
     const include = args.include ? new RegExp(args.include.toLowerCase(), 'i') : undefined;
