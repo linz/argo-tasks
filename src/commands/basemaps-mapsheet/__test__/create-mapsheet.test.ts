@@ -139,7 +139,6 @@ describe('copyFiles', () => {
 
   it('Should exclude the satellite', async () => {
     const outputs = await createMapSheet(aerial, mem, rest, undefined, new RegExp('satellite', 'i'));
-    console.log(outputs);
 
     assert.deepEqual(outputs, [
       {
