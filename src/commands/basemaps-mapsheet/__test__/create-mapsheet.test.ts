@@ -125,7 +125,6 @@ describe('copyFiles', () => {
 
   it('Should create the correct mapsheets', async () => {
     const outputs = await createMapSheet(aerial, mem, rest, undefined, undefined);
-    console.log(outputs);
 
     assert.deepEqual(outputs, [
       {
