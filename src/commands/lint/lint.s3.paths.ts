@@ -61,7 +61,7 @@ export function lintImageryPath(pathName: string): void {
   if (!imageryProducts.includes(product)) {
     throw new Error(`product not in product list: ${product}`);
   }
-  if (!imageryCrs.includes(crs)) {
+  if (!imageryCrs.includes(Number(crs))) {
     throw new Error(`crs not in crs list: ${crs}`);
   }
 }

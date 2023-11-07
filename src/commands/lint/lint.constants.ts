@@ -1,3 +1,5 @@
+import { EpsgCode } from '@basemaps/geo';
+
 export const regions = [
   'northland',
   'auckland',
@@ -21,4 +23,4 @@ export const imageryBucketNames = ['linz-imagery', 'nz-imagery'];
 
 export const imageryProducts = ['rgb'];
 
-export const imageryCrs = ['2193'];
+export const imageryCrs = [EpsgCode.Nztm2000];
