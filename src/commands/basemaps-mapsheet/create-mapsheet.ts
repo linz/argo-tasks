@@ -4,10 +4,32 @@ import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
 import * as fgb from 'flatgeobuf/lib/mjs/geojson.js';
 import { FeatureCollection, MultiPolygon } from 'geojson';
+import { promisify } from 'util';
+import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { registerCli, verbose } from '../common.js';
+
+const gunzipProm = promisify(gunzip);
+
+export function isGzip(b: Buffer): boolean {
+  return b[0] === 0x1f && b[1] === 0x8b;
+}
+
+/**
+ * Read a basemaps config file as JSON
+ *
+ * If the file ends with .gz or is a GZIP like {@link isGzip} file it will automatically be decompressed.
+ */
+async function readConfig(config: string): Promise<ConfigBundled> {
+  const obj = await fsa.read(config);
+  if (config.endsWith('.gz') || isGzip(obj)) {
+    const data = await gunzipProm(obj);
+    return JSON.parse(data.toString());
+  }
+  return JSON.parse(obj.toString());
+}
 
 interface Output {
   sheetCode: string;
@@ -60,7 +82,7 @@ export const basemapsCreateMapSheet = command({
     logger.info({ path }, 'MapSheet:LoadFgb');
     const buf = await fsa.read(path);
     logger.info({ config }, 'MapSheet:LoadConfig');
-    const configJson = await fsa.readJson<ConfigBundled>(config);
+    const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
