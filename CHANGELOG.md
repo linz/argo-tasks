@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.16.0](https://github.com/linz/argo-tasks/compare/v2.15.1...v2.16.0) (2023-11-08)
+
+
+### Features
+
+* **basemaps:** Decompress basemaps config json file if it is gzip file. ([#738](https://github.com/linz/argo-tasks/issues/738)) ([1cbf015](https://github.com/linz/argo-tasks/commit/1cbf015c643f6c2637593a87aa1d553c1bb42f09))
+* **basemaps:** Move create-mapsheet into argo task. BM-879 ([#727](https://github.com/linz/argo-tasks/issues/727)) ([a560882](https://github.com/linz/argo-tasks/commit/a56088232b91e4514e384f714656ea41dbefe695))
+* lint imagery input target paths TDE-857 ([#730](https://github.com/linz/argo-tasks/issues/730)) ([ea996f8](https://github.com/linz/argo-tasks/commit/ea996f8f0263fefdd1b3baaa46d99721774bb6be))
+
+
+### Bug Fixes
+
+* **basemaps:** create-mapsheet config arg conflicts with role config arg ([#733](https://github.com/linz/argo-tasks/issues/733)) ([3b85208](https://github.com/linz/argo-tasks/commit/3b8520860f2c73848140d6ca1201608ac0ce30f1))
+
 ## [2.15.1](https://github.com/linz/argo-tasks/compare/v2.15.0...v2.15.1) (2023-10-09)
 
 
