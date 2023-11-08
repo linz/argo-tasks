@@ -4,17 +4,21 @@ import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
 import * as fgb from 'flatgeobuf/lib/mjs/geojson.js';
 import { FeatureCollection, MultiPolygon } from 'geojson';
+import { promisify } from 'util';
+import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { registerCli, verbose } from '../common.js';
+import { config, registerCli, verbose } from '../common.js';
 
+const pGunzip = promisify(gunzip) as (data: Buffer) => Promise<Buffer>;
 interface Output {
   sheetCode: string;
   files: string[];
 }
 
 export const CommandCreateMapSheetArgs = {
+  config,
   verbose,
   path: option({
     type: string,
@@ -60,7 +64,7 @@ export const basemapsCreateMapSheet = command({
     logger.info({ path }, 'MapSheet:LoadFgb');
     const buf = await fsa.read(path);
     logger.info({ config }, 'MapSheet:LoadConfig');
-    const configJson = await fsa.readJson<ConfigBundled>(config);
+    const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
@@ -76,6 +80,19 @@ export const basemapsCreateMapSheet = command({
     fsa.write(outputPath, JSON.stringify(outputs, null, 2));
   },
 });
+
+/**
+ * Read Basemaps bundled config file by a given path can be both local or s3 path. Also support for gunzip json file.
+ *
+ */
+async function readConfig(config: string): Promise<ConfigBundled> {
+  const data = await fsa.read(config);
+  if (config.endsWith('.gz')) {
+    return JSON.parse((await pGunzip(data)).toString()) as ConfigBundled;
+  } else {
+    return JSON.parse(data.toString()) as ConfigBundled;
+  }
+}
 
 export async function createMapSheet(
   aerial: ConfigTileSet,
