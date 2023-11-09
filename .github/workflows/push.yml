@@ -31,11 +31,14 @@ jobs:
 
     # On push to master when it is not a release!
     if: ${{ github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'release:') }}
+
     needs: ['build']
+
     permissions:
       id-token: write
       contents: read
       packages: write
+
     env:
       AWS_CI_ROLE: ${{ secrets.AWS_CI_ROLE }}
 
@@ -87,6 +90,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_CI_ROLE }}
 
       - name: Login to Amazon ECR
+        if: ${{env.AWS_CI_ROLE != ''}}
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
