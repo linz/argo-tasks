@@ -19,6 +19,10 @@ jobs:
   publish-release:
     needs: release-please
     runs-on: ubuntu-latest
+
+    environment:
+      name: prod
+
     permissions:
       id-token: write
       contents: read
@@ -76,17 +80,18 @@ jobs:
         uses: actions/github-script@v6
         with:
           result-encoding: string
-          script: const tags = [];
+          script: |
+            const tags = [];
             tags.push('ghcr.io/${{ github.repository }}:latest');
             tags.push('ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version_major }}');
             tags.push('ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version_major_minor }}');
             tags.push('ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}');
 
             if ("${{ steps.login-ecr.outputs.registry }}") {
-            tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:latest');
-            tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.version.outputs.version_major }}');
-            tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.version.outputs.version_major_minor }}');
-            tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.version.outputs.version }}');
+              tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:latest');
+              tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.version.outputs.version_major }}');
+              tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.version.outputs.version_major_minor }}');
+              tags.push('${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.version.outputs.version }}');
             }
             return tags.join(', ')
 
