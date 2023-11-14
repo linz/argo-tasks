@@ -215,7 +215,6 @@ describe('validate', () => {
         } as any);
         assert.fail('Should throw exception');
       } catch (e) {
-        console.log(e);
         assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
