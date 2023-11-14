@@ -28,7 +28,7 @@ export class FakeCogTiff extends CogTiff {
     uri: string,
     image: Partial<{ origin: number[]; epsg: number; resolution: number[]; size: Size; isGeoLocated: boolean }>,
   ) {
-    super({ uri } as any);
+    super({ url: new URL(uri) } as any);
     this.images = [{ ...structuredClone(DefaultTiffImage), valueGeo, ...image } as any];
   }
 

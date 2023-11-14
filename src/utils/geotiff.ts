@@ -51,7 +51,8 @@ export const PixelIsPoint = 2;
  * @returns [minX, minY, maxX, maxY] bounding box
  */
 export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, number, number] | null> {
-  const img = tiff.getImage(0);
+  const img = tiff.images[0];
+  if (img == null) return null;
   const size = img.size;
 
   // If the tiff has geo location information just read it from the tiff
@@ -73,7 +74,7 @@ export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, n
   }
 
   // Attempt to read a TFW next to the tiff
-  const tfwPath = tiff.source.uri.slice(0, tiff.source.uri.lastIndexOf('.')) + '.tfw';
+  const tfwPath = tiff.source.url.href.slice(0, tiff.source.url.href.lastIndexOf('.')) + '.tfw';
   const tfwData = await fsa.read(tfwPath).catch(() => null);
   if (tfwData) {
     const tfw = parseTfw(String(tfwData));

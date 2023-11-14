@@ -1,4 +1,7 @@
+import { fsa } from '@chunkd/fs';
+import { CogTiff } from '@cogeotiff/core';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
+import { pathToFileURL } from 'url';
 
 import { CliInfo } from '../cli.info.js';
 import { registerFileSystem } from '../fs.register.js';
@@ -73,4 +76,28 @@ export function parseSize(size: string): number {
   const fileSize = Number(textString);
   if (isNaN(fileSize)) throw new Error(`Failed to parse: ${size} as a file size`);
   return Math.round(fileSize);
+}
+
+/**
+ * There is a minor difference between @chunkd/core and @cogeotiff/core
+ * because @chunkd/core is a major version behind, when it upgrades this can be removed
+ *
+ * Because the major version upgrade for chunkd is a lot of work skip it for now (2023-11)
+ *
+ * @param loc
+ * @returns
+ */
+export function createTiff(loc: string): Promise<CogTiff> {
+  const source = fsa.source(loc);
+
+  const tiff = new CogTiff({ url: tryParseUrl(loc), fetch: (offset, length) => source.fetchBytes(offset, length) });
+  return tiff.init();
+}
+
+function tryParseUrl(loc: string): URL {
+  try {
+    return new URL(loc);
+  } catch (e) {
+    return pathToFileURL(loc);
+  }
 }
