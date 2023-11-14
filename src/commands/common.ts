@@ -1,6 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
+import pLimit from 'p-limit';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 import { CliInfo } from '../cli.info.js';
@@ -78,6 +79,8 @@ export function parseSize(size: string): number {
   return Math.round(fileSize);
 }
 
+/** Limit fetches to 25 concurrently **/
+const TiffQueue = pLimit(25);
 /**
  * There is a minor difference between @chunkd/core and @cogeotiff/core
  * because @chunkd/core is a major version behind, when it upgrades this can be removed
@@ -90,7 +93,13 @@ export function parseSize(size: string): number {
 export function createTiff(loc: string): Promise<CogTiff> {
   const source = fsa.source(loc);
 
-  const tiff = new CogTiff({ url: tryParseUrl(loc), fetch: (offset, length) => source.fetchBytes(offset, length) });
+  const tiff = new CogTiff({
+    url: tryParseUrl(loc),
+    fetch: (offset, length): Promise<ArrayBuffer> => {
+      // Limit fetches to 25 concurrently
+      return TiffQueue(() => source.fetchBytes(offset, length));
+    },
+  });
   return tiff.init();
 }
 
