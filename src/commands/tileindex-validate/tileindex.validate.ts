@@ -28,7 +28,21 @@ export const TiffLoader = {
     const tiffFiles = files.flat().filter(isTiff);
     if (tiffFiles.length === 0) throw new Error('No Files found');
     if (tiffFiles[0]) await fsa.head(tiffFiles[0]);
-    return await Promise.all(tiffFiles.map((f: string) => createTiff(f)));
+    const ret = await Promise.allSettled(
+      tiffFiles.map((f: string) => {
+        return createTiff(f).catch((e) => {
+          logger.fatal({ source: f, err: e }, 'Tiff:Load:Failed');
+          throw e;
+        });
+      }),
+    );
+    const output = [];
+    for (const r of ret) {
+      // All the errors are logged above so just throw th
+      if (r.status === 'rejected') throw new Error('Tiff loading failed: ' + String(r.reason));
+      output.push(r.value);
+    }
+    return output;
   },
 };
 
