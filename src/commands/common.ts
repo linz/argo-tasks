@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
-import { pathToFileURL } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import { CliInfo } from '../cli.info.js';
 import { registerFileSystem } from '../fs.register.js';
@@ -100,4 +100,15 @@ function tryParseUrl(loc: string): URL {
   } catch (e) {
     return pathToFileURL(loc);
   }
+}
+
+/**
+ * When chunkd moves to URLs this can be removed
+ *
+ * But reading a file as a string with `file://....` does not work in node
+ * it needs to be converted with `fileURLToPath`
+ */
+export function urlToString(u: URL): string {
+  if (u.protocol === 'file:') return fileURLToPath(u);
+  return u.href;
 }
