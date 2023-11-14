@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.17.0](https://github.com/linz/argo-tasks/compare/v2.16.0...v2.17.0) (2023-11-14)
+
+
+### Features
+
+* lint resolution TDE-938 ([#747](https://github.com/linz/argo-tasks/issues/747)) ([b4b8512](https://github.com/linz/argo-tasks/commit/b4b851208dddcca2a6b2c7419b882914276f9155))
+
 ## [2.16.0](https://github.com/linz/argo-tasks/compare/v2.15.1...v2.16.0) (2023-11-08)
 
 
