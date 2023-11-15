@@ -34,7 +34,7 @@ export const TiffLoader = {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
-    // Ensure credentials are loaded before
+    // Ensure credentials are loaded before concurrently loading tiffs
     if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
 
     const promises = await Promise.allSettled(
