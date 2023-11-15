@@ -104,9 +104,9 @@ export function createTiff(loc: string): Promise<CogTiff> {
   return tiff.init();
 }
 
-/** 
+/**
  * Attempt to parse a location as a string as a URL,
- * 
+ *
  * Relative paths will be converted into file urls.
  */
 function tryParseUrl(loc: string): URL {

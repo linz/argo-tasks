@@ -24,8 +24,8 @@ export function isTiff(x: string): boolean {
 
 export const TiffLoader = {
   /**
-   * Concurrently load a collection of tiffs in the locations provided. 
-   * 
+   * Concurrently load a collection of tiffs in the locations provided.
+   *
    * @param locations list of locations to find tiffs in.
    * @param args filter the tiffs
    * @returns Initialized tiff
@@ -34,7 +34,7 @@ export const TiffLoader = {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
-    // Ensure credentials are loaded before 
+    // Ensure credentials are loaded before
     if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
 
     const promises = await Promise.allSettled(
