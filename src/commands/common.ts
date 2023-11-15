@@ -81,14 +81,15 @@ export function parseSize(size: string): number {
 
 /** Limit fetches to 25 concurrently **/
 const TiffQueue = pLimit(25);
+
 /**
  * There is a minor difference between @chunkd/core and @cogeotiff/core
  * because @chunkd/core is a major version behind, when it upgrades this can be removed
  *
  * Because the major version upgrade for chunkd is a lot of work skip it for now (2023-11)
  *
- * @param loc
- * @returns
+ * @param loc location to load the tiff from
+ * @returns Initialized tiff
  */
 export function createTiff(loc: string): Promise<CogTiff> {
   const source = fsa.source(loc);
@@ -96,13 +97,18 @@ export function createTiff(loc: string): Promise<CogTiff> {
   const tiff = new CogTiff({
     url: tryParseUrl(loc),
     fetch: (offset, length): Promise<ArrayBuffer> => {
-      // Limit fetches to 25 concurrently
+      /** Limit fetches concurrency see {@link TiffQueue} **/
       return TiffQueue(() => source.fetchBytes(offset, length));
     },
   });
   return tiff.init();
 }
 
+/** 
+ * Attempt to parse a location as a string as a URL,
+ * 
+ * Relative paths will be converted into file urls.
+ */
 function tryParseUrl(loc: string): URL {
   try {
     return new URL(loc);

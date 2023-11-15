@@ -23,24 +23,35 @@ export function isTiff(x: string): boolean {
 }
 
 export const TiffLoader = {
+  /**
+   * Concurrently load a collection of tiffs in the locations provided. 
+   * 
+   * @param locations list of locations to find tiffs in.
+   * @param args filter the tiffs
+   * @returns Initialized tiff
+   */
   async load(locations: string[], args?: FileFilter): Promise<CogTiff[]> {
     const files = await getFiles(locations, args);
-    const tiffFiles = files.flat().filter(isTiff);
-    if (tiffFiles.length === 0) throw new Error('No Files found');
-    if (tiffFiles[0]) await fsa.head(tiffFiles[0]);
-    const ret = await Promise.allSettled(
-      tiffFiles.map((f: string) => {
-        return createTiff(f).catch((e) => {
-          logger.fatal({ source: f, err: e }, 'Tiff:Load:Failed');
+    const tiffLocations = files.flat().filter(isTiff);
+    if (tiffLocations.length === 0) throw new Error('No Files found');
+    // Ensure credentials are loaded before 
+    if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
+
+    const promises = await Promise.allSettled(
+      tiffLocations.map((loc: string) => {
+        return createTiff(loc).catch((e) => {
+          // Ensure tiff loading errors include the location of the tiff
+          logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
           throw e;
         });
       }),
     );
+    // Ensure all the tiffs loaded successfully
     const output = [];
-    for (const r of ret) {
-      // All the errors are logged above so just throw th
-      if (r.status === 'rejected') throw new Error('Tiff loading failed: ' + String(r.reason));
-      output.push(r.value);
+    for (const prom of promises) {
+      // All the errors are logged above so just throw throw the first error
+      if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
+      output.push(prom.value);
     }
     return output;
   },
