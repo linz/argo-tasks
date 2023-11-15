@@ -96,7 +96,7 @@ jobs:
 
       - name: Setup docker tags
         id: tags
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           result-encoding: string
           script: |
