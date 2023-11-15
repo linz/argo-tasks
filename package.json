@@ -45,7 +45,7 @@
     "@cogeotiff/core": "^7.2.1",
     "@linzjs/geojson": "^6.43.0",
     "@octokit/core": "^5.0.0",
-    "@octokit/plugin-rest-endpoint-methods": "^10.1.1",
+    "@octokit/plugin-rest-endpoint-methods": "^10.1.5",
     "@wtrpc/core": "^1.0.2",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
