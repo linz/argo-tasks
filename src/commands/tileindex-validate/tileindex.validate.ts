@@ -49,7 +49,7 @@ export const TiffLoader = {
     // Ensure all the tiffs loaded successfully
     const output = [];
     for (const prom of promises) {
-      // All the errors are logged above so just throw throw the first error
+      // All the errors are logged above so just throw the first error
       if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
       output.push(prom.value);
     }
