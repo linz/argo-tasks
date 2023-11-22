@@ -10,6 +10,7 @@ import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
+import { createPR, GithubApi } from '../basemaps-github/github.js';
 
 const Url: Type<string, URL> = {
   async from(str) {
@@ -48,45 +49,18 @@ export const commandStacGithubImport = command({
   async handler(args) {
     registerCli(this, args);
 
-    const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'imagery[bot]';
-    const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
+    // 00000000000000000000000000000000000000000000000000000000000000000
 
-    const sourceCollection = new URL('collection.json', args.source);
-    const targetCollection = new URL('collection.json', args.target);
+    // const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'imagery[bot]';
+    // const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
 
-    const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
 
-    const gitRepo = '/tmp/gitrepo/';
-    const collectionPath = path.join(gitRepo, 'stac', targetCollection.pathname);
+  
 
-    // Clone the GitHub repo
-    logger.info({ repo: args.repoName }, 'Git:clone');
-    execFileSync('git', ['clone', `git@github.com:${args.repoName}`, gitRepo]);
-    execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo });
-    execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo });
 
-    logger.info({ template: path.join(gitRepo, 'template', 'catalog.json') }, 'Stac:ReadTemplate');
-    // Load information from the template inside the repo
-    const catalog = await fsa.readJson<st.StacCatalog>(path.join(gitRepo, 'template', 'catalog.json'));
-    // Catalog template should have a absolute link to its self
-    const selfLink = catalog.links.find((f) => f.rel === 'self');
-    if (selfLink == null) throw new Error('unable to find self link in catalog');
 
-    logger.info({ href: selfLink.href }, 'Stac:SetRoot');
-
-    sortLinks(collection.links);
-
-    // Update the root link in the collection to the one defined in the repo template
-    const rootLink = collection.links.find((f) => f.rel === 'root');
-    if (rootLink) {
-      rootLink.href = selfLink.href;
-      rootLink.type = 'application/json';
-    } else {
-      collection.links.unshift({ rel: 'root', href: selfLink.href, type: 'application/json' });
-    }
 
     // Write the file to targetCollection
-    await fsa.write(collectionPath, await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT));
 
     execFileSync('git', ['add', collectionPath], { cwd: gitRepo });
     logger.info({ path: collectionPath }, 'git:add');
@@ -99,6 +73,46 @@ export const commandStacGithubImport = command({
 
     // Push branch
     execFileSync('git', ['push', 'origin', 'HEAD', '--force'], { cwd: gitRepo });
+
+    // 00000000000000000000000000000000000000000000000000000000000000000
+
+    const gh = new GithubApi(args.repoName);
+    const branch = `feat/bot-${collection.id}`;
+    const title = `feat: import ${collection.title}`;
+    // Load information from the template inside the repo
+    logger.info({ template: path.join(gitRepo, 'template', 'catalog.json') }, 'Stac:ReadTemplate');
+    const catalogPath = fsa.joinAll('template', 'catalog.json');
+    const catalog = await gh.getContent(catalogPath);
+    const catalogJson = JSON.parse(catalog) as st.StacCatalog;
+    // Catalog template should have a absolute link to itself
+    const selfLink = catalogJson.links.find((f) => f.rel === 'self');
+    if (selfLink == null) throw new Error('unable to find self link in catalog');
+
+    logger.info({ href: selfLink.href }, 'Stac:SetRoot');
+    // Update the root link in the collection to the one defined in the repo template
+
+    const sourceCollection = new URL('collection.json', args.source);
+    const targetCollection = new URL('collection.json', args.target);
+
+    const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
+    const collectionPath = path.join('stac', targetCollection.pathname);
+
+    const rootLink = collection.links.find((f) => f.rel === 'root');
+    if (rootLink) {
+      rootLink.href = selfLink.href;
+      rootLink.type = 'application/json';
+    } else {
+      collection.links.unshift({ rel: 'root', href: selfLink.href, type: 'application/json' });
+    }
+
+    sortLinks(collection.links);
+
+    // this will need to be a string
+    // await fsa.write(collectionPath, await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT));
+
+    // pass the file content as a string
+    // await createPR(gh, branch, title, [file]);
+
   },
 });
 
