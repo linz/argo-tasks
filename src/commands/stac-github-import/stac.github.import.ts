@@ -38,7 +38,7 @@ export const commandStacGithubImport = command({
       type: string,
       long: 'repo-name',
       description: 'Repository name either linz/imagery or linz/elevation',
-      defaultValue: () => 'linz/imagery-test',
+      defaultValue: () => 'linz/imagery',
       defaultValueIsSerializable: true,
     }),
   },
