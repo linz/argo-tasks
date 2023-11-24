@@ -2,7 +2,7 @@ import { Octokit } from '@octokit/core';
 import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
 import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
 
-import { logger } from '../../log.js';
+import { logger } from '../log.js';
 
 export interface Job {
   imagery: string;

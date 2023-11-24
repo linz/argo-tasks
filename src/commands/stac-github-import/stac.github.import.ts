@@ -5,7 +5,7 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { createPR, GithubApi } from '../basemaps-github/github.js';
+import { createPR, GithubApi } from '../../utils/github.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
 
