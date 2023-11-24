@@ -9,8 +9,8 @@ import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { prettyPrint } from '../format/pretty.print.js';
 import { createPR, GithubApi } from '../../utils/github.js';
+import { prettyPrint } from '../format/pretty.print.js';
 
 export enum Category {
   Urban = 'Urban Aerial Photos',
