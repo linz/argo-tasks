@@ -196,9 +196,6 @@ Format and push a STAC collection.json file to a GitHub repository. Used by the 
 
 #### Example
 
-Environment variable:
-GITHUB_API_TOKEN="pat_token_string"
-
 ```bash
 stac github-import --source s3://path/to/collection/ --target s3://linz-imagery/path/to/dataset/ --repo-name "linz/imagery-test)" (`--repo-name` is optional and defaults to linz/imagery).
 ```
