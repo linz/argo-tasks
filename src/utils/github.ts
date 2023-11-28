@@ -205,7 +205,7 @@ export async function createPR(gh: GithubApi, branch: string, title: string, fil
   const commitSha = await gh.createCommit(blobs, title, sha);
 
   // git push
-  logger.info({ branch }, 'GitHub: Push commit to Brach');
+  logger.info({ branch }, 'GitHub: Push commit to Branch');
   await gh.updateBranch(branch, commitSha);
 
   // git pr create
