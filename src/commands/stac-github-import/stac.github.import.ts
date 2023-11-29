@@ -1,13 +1,11 @@
-import path from 'node:path';
-
 import { fsa } from '@chunkd/fs';
-import { execFileSync } from 'child_process';
 import { command, option, string, Type } from 'cmd-ts';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
+import { createPR, GithubApi } from '../../utils/github.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
 
@@ -48,35 +46,26 @@ export const commandStacGithubImport = command({
   async handler(args) {
     registerCli(this, args);
 
-    const gitName = process.env['GIT_AUTHOR_NAME'] ?? 'imagery[bot]';
-    const gitEmail = process.env['GIT_AUTHOR_EMAIL'] ?? 'imagery@linz.govt.nz';
+    const gh = new GithubApi(args.repoName);
+
+    // Load information from the template inside the repo
+    logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
+    const catalogPath = fsa.joinAll('template', 'catalog.json');
+    const catalog = await gh.getContent(catalogPath);
+    const catalogJson = JSON.parse(catalog) as st.StacCatalog;
+
+    // Catalog template should have a absolute link to itself
+    const selfLink = catalogJson.links.find((f) => f.rel === 'self');
+    if (selfLink == null) throw new Error('unable to find self link in catalog');
+    logger.info({ href: selfLink.href }, 'Stac:SetRoot');
+    // Update the root link in the collection to the one defined in the repo template
 
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
+    const targetCollectionPath = fsa.joinAll('stac', targetCollection.pathname);
 
     const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
 
-    const gitRepo = '/tmp/gitrepo/';
-    const collectionPath = path.join(gitRepo, 'stac', targetCollection.pathname);
-
-    // Clone the GitHub repo
-    logger.info({ repo: args.repoName }, 'Git:clone');
-    execFileSync('git', ['clone', `git@github.com:${args.repoName}`, gitRepo]);
-    execFileSync('git', ['config', 'user.email', gitEmail], { cwd: gitRepo });
-    execFileSync('git', ['config', 'user.name', gitName], { cwd: gitRepo });
-
-    logger.info({ template: path.join(gitRepo, 'template', 'catalog.json') }, 'Stac:ReadTemplate');
-    // Load information from the template inside the repo
-    const catalog = await fsa.readJson<st.StacCatalog>(path.join(gitRepo, 'template', 'catalog.json'));
-    // Catalog template should have a absolute link to its self
-    const selfLink = catalog.links.find((f) => f.rel === 'self');
-    if (selfLink == null) throw new Error('unable to find self link in catalog');
-
-    logger.info({ href: selfLink.href }, 'Stac:SetRoot');
-
-    sortLinks(collection.links);
-
-    // Update the root link in the collection to the one defined in the repo template
     const rootLink = collection.links.find((f) => f.rel === 'root');
     if (rootLink) {
       rootLink.href = selfLink.href;
@@ -84,21 +73,17 @@ export const commandStacGithubImport = command({
     } else {
       collection.links.unshift({ rel: 'root', href: selfLink.href, type: 'application/json' });
     }
-
-    // Write the file to targetCollection
-    await fsa.write(collectionPath, await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT));
-
-    execFileSync('git', ['add', collectionPath], { cwd: gitRepo });
-    logger.info({ path: collectionPath }, 'git:add');
+    sortLinks(collection.links);
 
     // branch: "feat/bot-01GYXCC7823GVKF6BJA6K354TR"
-    execFileSync('git', ['checkout', '-B', `feat/bot-${collection.id}`], { cwd: gitRepo });
-    // commit: "feat: import Manawatū-Whanganui 0.4m Rural Aerial Photos (2010-2011)"
-    execFileSync('git', ['commit', '-am', `feat: import ${collection.title}`], { cwd: gitRepo });
-    logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'git:commit');
-
-    // Push branch
-    execFileSync('git', ['push', 'origin', 'HEAD', '--force'], { cwd: gitRepo });
+    const branch = `feat/bot-${collection.id}`;
+    // commit and pull request title: "feat: import Manawatū-Whanganui 0.4m Rural Aerial Photos (2010-2011)"
+    const title = `feat: import ${collection.title}`;
+    const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
+    const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
+    logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
+    // create pull request
+    await createPR(gh, branch, title, [collectionFile]);
   },
 });
 

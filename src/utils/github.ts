@@ -2,7 +2,7 @@ import { Octokit } from '@octokit/core';
 import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
 import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
 
-import { logger } from '../../log.js';
+import { logger } from '../log.js';
 
 export interface Job {
   imagery: string;
@@ -205,7 +205,7 @@ export async function createPR(gh: GithubApi, branch: string, title: string, fil
   const commitSha = await gh.createCommit(blobs, title, sha);
 
   // git push
-  logger.info({ branch }, 'GitHub: Push commit to Brach');
+  logger.info({ branch }, 'GitHub: Push commit to Branch');
   await gh.updateBranch(branch, commitSha);
 
   // git pr create
