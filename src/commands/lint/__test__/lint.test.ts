@@ -20,9 +20,7 @@ describe('lintPath', () => {
     }, Error('Too many keys in Path: /auckland/auckland_2012_0.075m/rgb/2193/extra-args/'));
   });
   it('Should Pass', () => {
-    assert.ok(() => {
-      lintPath('s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/');
-    });
+    lintPath('s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/');
   });
 });
 
@@ -48,8 +46,6 @@ describe('lintImageryPaths', () => {
     }, Error('Trailing 0 in resolution of dataset name: auckland_2020_0.20m'));
   });
   it('Should Pass', () => {
-    assert.ok(() => {
-      lintImageryPath('/auckland/auckland_2020_0.2m/rgb/2193/');
-    });
+    lintImageryPath('/auckland/auckland_2020_0.2m/rgb/2193/');
   });
 });
