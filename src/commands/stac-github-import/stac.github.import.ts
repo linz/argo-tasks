@@ -53,6 +53,7 @@ export const commandStacGithubImport = command({
     const catalogPath = fsa.joinAll('template', 'catalog.json');
     const catalog = await gh.getContent(catalogPath);
     const catalogJson = JSON.parse(catalog) as st.StacCatalog;
+
     // Catalog template should have a absolute link to itself
     const selfLink = catalogJson.links.find((f) => f.rel === 'self');
     if (selfLink == null) throw new Error('unable to find self link in catalog');
@@ -61,9 +62,9 @@ export const commandStacGithubImport = command({
 
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
+    const targetCollectionPath = fsa.joinAll('stac', targetCollection.pathname);
 
     const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
-    const collectionPath = fsa.joinAll('stac', targetCollection.pathname);
 
     const rootLink = collection.links.find((f) => f.rel === 'root');
     if (rootLink) {
@@ -79,7 +80,7 @@ export const commandStacGithubImport = command({
     // commit and pull request title: "feat: import Manawatū-Whanganui 0.4m Rural Aerial Photos (2010-2011)"
     const title = `feat: import ${collection.title}`;
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
-    const collectionFile = { path: collectionPath, content: collectionFileContent };
+    const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
     await createPR(gh, branch, title, [collectionFile]);
