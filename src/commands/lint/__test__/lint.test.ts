@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { lintImageryPath, lintPath } from '../lint.s3.paths.js';
 
-describe('lintImageryPaths', () => {
+describe('lintPath', () => {
   it('Should Fail - Incorrect Bucket Name', () => {
     assert.throws(() => {
       lintPath('s3://n-imagery/auckland/auckland_2012_0.075m/rgb/2193/');
