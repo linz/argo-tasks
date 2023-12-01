@@ -65,7 +65,8 @@ export function lintImageryPath(pathName: string): void {
     throw new Error(`crs not in crs list: ${crs}`);
   }
   const resolution = dataset.split('_').pop()?.replace('m', '');
-  if (resolution?.endsWith('0')) {
-    throw new Error(`Trailing 0 in resolution of dataset name: ${dataset}`);
+  const resolutionFraction = resolution?.split('.', 2)[1];
+  if (resolutionFraction?.endsWith('0')) {
+    throw new Error(`Trailing 0 in resolution fraction of dataset name: ${dataset}`);
   }
 }

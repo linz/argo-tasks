@@ -43,9 +43,12 @@ describe('lintImageryPaths', () => {
   it('Should Fail - Trailing 0', () => {
     assert.throws(() => {
       lintImageryPath('/auckland/auckland_2020_0.20m/rgb/2193/');
-    }, Error('Trailing 0 in resolution of dataset name: auckland_2020_0.20m'));
+    }, Error('Trailing 0 in resolution fraction of dataset name: auckland_2020_0.20m'));
   });
-  it('Should Pass', () => {
+  it('Should pass with fractional resolution', () => {
     lintImageryPath('/auckland/auckland_2020_0.2m/rgb/2193/');
+  });
+  it('should pass with resolution multiple of 10', () => {
+    lintImageryPath('/auckland/auckland_2020_20m/rgb/2193/');
   });
 });
