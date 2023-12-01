@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.18.0](https://github.com/linz/argo-tasks/compare/v2.17.0...v2.18.0) (2023-12-01)
+
+
+### Features
+
+* Pin Node.js Docker image TDE-958 ([#766](https://github.com/linz/argo-tasks/issues/766)) ([98f1d1c](https://github.com/linz/argo-tasks/commit/98f1d1cbca395ff5a46f7e66244d744fd8bb3758))
+
+
+### Bug Fixes
+
+* Handle resolution multiple of 10 TDE-968 ([#780](https://github.com/linz/argo-tasks/issues/780)) ([2a2921f](https://github.com/linz/argo-tasks/commit/2a2921f33ea79f12184b918fcadc2b83549d809c))
+
 ## [2.17.0](https://github.com/linz/argo-tasks/compare/v2.16.0...v2.17.0) (2023-11-29)
 
 
