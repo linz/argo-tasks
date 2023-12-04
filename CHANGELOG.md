@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.1](https://github.com/linz/argo-tasks/compare/v2.18.0...v2.18.1) (2023-12-04)
+
+
+### Bug Fixes
+
+* specify bot email address in Pull Requests TDE-983 ([#786](https://github.com/linz/argo-tasks/issues/786)) ([ec8848d](https://github.com/linz/argo-tasks/commit/ec8848d9635cbfda138fd660b0e8fe3d176005af))
+
 ## [2.18.0](https://github.com/linz/argo-tasks/compare/v2.17.0...v2.18.0) (2023-12-01)
 
 
