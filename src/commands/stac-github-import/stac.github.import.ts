@@ -52,8 +52,7 @@ export const commandStacGithubImport = command({
 
     if (validRepos.includes(args.repoName)) {
       botEmail = `${args.repoName.split('/')[1]}@linz.govt.nz`;
-    }
-    else {
+    } else {
       throw new Error(`${args.repoName} is not a valid GitHub repository`);
     }
 
