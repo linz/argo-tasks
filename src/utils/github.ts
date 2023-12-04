@@ -115,7 +115,7 @@ export class GithubApi {
   /**
    * Create a file imagery config file into basemaps-config/config/imagery and commit
    */
-  async createCommit(blobs: Blob[], message: string, authorEmail: string, sha: string): Promise<string> {
+  async createCommit(blobs: Blob[], message: string, botEmail: string, sha: string): Promise<string> {
     // Create a tree which defines the folder structure
     logger.debug({ sha }, 'GitHub API: Create Tree');
     const treeRes = await this.octokit.rest.git.createTree({
@@ -136,7 +136,7 @@ export class GithubApi {
       message,
       author: {
         name: 'linz-li-bot',
-        email: authorEmail,
+        email: botEmail,
       },
       parents: [sha],
       tree: treeSha,
@@ -191,7 +191,7 @@ export async function createPR(
   gh: GithubApi,
   branch: string,
   title: string,
-  authorEmail: string,
+  botEmail: string,
   files: GithubFiles[],
 ): Promise<number> {
   // git checkout -b
@@ -212,7 +212,7 @@ export async function createPR(
 
   // git commit
   logger.info({ branch }, 'GitHub: Commit to Branch');
-  const commitSha = await gh.createCommit(blobs, title, authorEmail, sha);
+  const commitSha = await gh.createCommit(blobs, title, botEmail, sha);
 
   // git push
   logger.info({ branch }, 'GitHub: Push commit to Branch');
