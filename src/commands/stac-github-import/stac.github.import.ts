@@ -47,6 +47,15 @@ export const commandStacGithubImport = command({
     registerCli(this, args);
 
     const gh = new GithubApi(args.repoName);
+    const validRepos = ['linz/elevation', 'linz/imagery'];
+    let botEmail: string;
+
+    if (validRepos.includes(args.repoName)) {
+      botEmail = `${args.repoName.split('/')[1]}@linz.govt.nz`;
+    }
+    else {
+      throw new Error(`${args.repoName} is not a valid GitHub repository`);
+    }
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
@@ -83,7 +92,7 @@ export const commandStacGithubImport = command({
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await createPR(gh, branch, title, [collectionFile]);
+    await createPR(gh, branch, title, botEmail, [collectionFile]);
   },
 });
 
