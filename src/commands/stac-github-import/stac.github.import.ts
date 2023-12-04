@@ -47,14 +47,14 @@ export const commandStacGithubImport = command({
     registerCli(this, args);
 
     const gh = new GithubApi(args.repoName);
-    const validRepos = ['linz/elevation', 'linz/imagery'];
-    let botEmail: string;
 
-    if (validRepos.includes(args.repoName)) {
-      botEmail = `${args.repoName.split('/')[1]}@linz.govt.nz`;
-    } else {
-      throw new Error(`${args.repoName} is not a valid GitHub repository`);
-    }
+    const BotEmails: Record<string, string> = {
+      'linz/elevation': 'elevation@linz.govt.nz',
+      'linz/imagery': 'imagery@linz.govt.nz',
+    };
+
+    const botEmail = BotEmails[args.repoName];
+    if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
