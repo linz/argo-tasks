@@ -48,6 +48,14 @@ export const commandStacGithubImport = command({
 
     const gh = new GithubApi(args.repoName);
 
+    const BotEmails: Record<string, string> = {
+      'linz/elevation': 'elevation@linz.govt.nz',
+      'linz/imagery': 'imagery@linz.govt.nz',
+    };
+
+    const botEmail = BotEmails[args.repoName];
+    if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
+
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
     const catalogPath = fsa.joinAll('template', 'catalog.json');
@@ -83,7 +91,7 @@ export const commandStacGithubImport = command({
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await createPR(gh, branch, title, [collectionFile]);
+    await createPR(gh, branch, title, botEmail, [collectionFile]);
   },
 });
 
