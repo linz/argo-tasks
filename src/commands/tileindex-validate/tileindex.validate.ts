@@ -156,25 +156,27 @@ export const commandTileIndexValidate = command({
           });
         }),
       });
-      await fsa.write('/tmp/tile-index-validate/output.geojson', {
-        type: 'FeatureCollection',
-        features: [...outputs.values()].map((locs) => {
-          const firstLoc = locs[0];
-          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
-          const extract = MapSheet.extract(firstLoc.tileName);
-          if (extract == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
-          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract.bbox), {
-            source: locs.map((l) => l.source),
-            tileName: firstLoc.tileName,
-          });
+      await Promise.all([
+        fsa.write('/tmp/tile-index-validate/output.geojson', {
+          type: 'FeatureCollection',
+          features: [...outputs.values()].map((locs) => {
+            const firstLoc = locs[0];
+            if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
+            const extract = MapSheet.extract(firstLoc.tileName);
+            if (extract == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
+            return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract.bbox), {
+              source: locs.map((l) => l.source),
+              tileName: firstLoc.tileName,
+            });
+          }),
         }),
-      });
-      await fsa.write(
-        '/tmp/tile-index-validate/file-list.json',
-        [...outputs.values()].map((locs) => {
-          return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
-        }),
-      );
+        fsa.write(
+          '/tmp/tile-index-validate/file-list.json',
+          [...outputs.values()].map((locs) => {
+            return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
+          }),
+        ),
+      ]);
     }
 
     let retileNeeded = false;
