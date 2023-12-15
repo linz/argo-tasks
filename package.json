@@ -53,7 +53,7 @@
     "flatgeobuf": "^3.23.1",
     "p-limit": "^5.0.0",
     "pino": "^8.17.0",
-    "prettier": "^3.1.0",
+    "prettier": "^3.1.1",
     "pretty-json-log": "^1.4.0",
     "ulid": "^2.3.0",
     "zod": "^3.22.4"
