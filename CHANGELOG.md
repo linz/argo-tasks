@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.2](https://github.com/linz/argo-tasks/compare/v2.18.1...v2.18.2) (2023-12-15)
+
+
+### Bug Fixes
+
+* upgrade to latest cogeotiff to fix a number of bugs TDE-835 TDE-945 ([#753](https://github.com/linz/argo-tasks/issues/753)) ([b5856b1](https://github.com/linz/argo-tasks/commit/b5856b1a3f565682222f31bf6a6af6a5a65861e4))
+
 ## [2.18.1](https://github.com/linz/argo-tasks/compare/v2.18.0...v2.18.1) (2023-12-04)
 
 
