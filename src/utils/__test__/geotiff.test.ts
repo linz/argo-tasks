@@ -3,8 +3,9 @@ import { describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import { CogTiff } from '@cogeotiff/core';
+import { CogTiff, CogTiffImage, Source } from '@cogeotiff/core';
 
+import { createTiff } from '../../commands/common.js';
 import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';
 
 describe('geotiff', () => {
@@ -66,19 +67,18 @@ describe('geotiff', () => {
     );
     fsa.register('memory://', source);
 
-    const tiff = await new CogTiff(fsa.source('memory://BX20_500_023098.tif')).init(true);
+    const tiff = await createTiff('memory://BX20_500_023098.tif');
     const bbox = await findBoundingBox(tiff);
 
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 
+  const fakeSource: Source = { url: new URL('memory://BX20_500_023098.tif'), fetch: async () => new ArrayBuffer(1) };
   it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
     const bbox = await findBoundingBox({
-      source: { uri: 'memory://BX20_500_023098.tif' },
-      getImage() {
-        return {};
-      },
+      source: fakeSource,
+      images: [],
     } as unknown as CogTiff);
     assert.deepEqual(bbox, null);
   });
@@ -88,10 +88,8 @@ describe('geotiff', () => {
     await fsa.write('memory://BX20_500_023098.tfw', `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
     // tiff with no location information and no TFW
     const bbox = await findBoundingBox({
-      source: { uri: 'memory://BX20_500_023098.tif' },
-      getImage() {
-        return { size: { width: 3200, height: 4800 } };
-      },
+      source: fakeSource,
+      images: [{ size: { width: 3200, height: 4800 } }] as unknown as CogTiffImage,
     } as unknown as CogTiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
     await fsa.delete('memory://BX20_500_023098.tfw');
@@ -99,9 +97,9 @@ describe('geotiff', () => {
 
   it('should parse standard tiff', async () => {
     const bbox = await findBoundingBox({
-      source: { uri: 'memory://BX20_500_023098.tif' },
-      getImage() {
-        return {
+      source: fakeSource,
+      images: [
+        {
           isGeoLocated: true,
           size: { width: 3200, height: 4800 },
           resolution: [0.075, -0.075],
@@ -109,25 +107,25 @@ describe('geotiff', () => {
           valueGeo(): number {
             return 1; // PixelIsArea
           },
-        };
-      },
+        } as unknown as CogTiffImage,
+      ],
     } as unknown as CogTiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
   it('should parse with pixel offset', async () => {
     const bbox = await findBoundingBox({
-      source: { uri: 'memory://BX20_500_023098.tif' },
-      getImage() {
-        return {
+      source: fakeSource,
+      images: [
+        {
           isGeoLocated: true,
           size: { width: 3200, height: 4800 },
-          resolution: [0.075, -0.075],
-          origin: [1460800.0375, 5079479.9625], // PixelIsPoint offsets points by 1/2 a pixel
+          resolution: [0.075, -0.075, 0],
+          origin: [1460800.0375, 5079479.9625, 0], // PixelIsPoint offsets points by 1/2 a pixel
           valueGeo(): number {
             return PixelIsPoint;
           },
-        };
-      },
+        } as unknown as CogTiffImage,
+      ],
     } as unknown as CogTiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });

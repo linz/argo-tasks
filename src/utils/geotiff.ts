@@ -1,6 +1,8 @@
 import { fsa } from '@chunkd/fs';
 import { CogTiff, TiffTagGeo } from '@cogeotiff/core';
 
+import { urlToString } from '../commands/common.js';
+
 /**
  * Attempt to parse a tiff world file
  *
@@ -51,7 +53,8 @@ export const PixelIsPoint = 2;
  * @returns [minX, minY, maxX, maxY] bounding box
  */
 export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, number, number] | null> {
-  const img = tiff.getImage(0);
+  const img = tiff.images[0];
+  if (img == null) return null;
   const size = img.size;
 
   // If the tiff has geo location information just read it from the tiff
@@ -73,7 +76,8 @@ export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, n
   }
 
   // Attempt to read a TFW next to the tiff
-  const tfwPath = tiff.source.uri.slice(0, tiff.source.uri.lastIndexOf('.')) + '.tfw';
+  const sourcePath = urlToString(tiff.source.url);
+  const tfwPath = sourcePath.slice(0, sourcePath.lastIndexOf('.')) + '.tfw';
   const tfwData = await fsa.read(tfwPath).catch(() => null);
   if (tfwData) {
     const tfw = parseTfw(String(tfwData));

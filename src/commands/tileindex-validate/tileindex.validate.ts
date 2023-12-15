@@ -9,7 +9,7 @@ import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
-import { config, forceOutput, registerCli, verbose } from '../common.js';
+import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
@@ -23,12 +23,37 @@ export function isTiff(x: string): boolean {
 }
 
 export const TiffLoader = {
+  /**
+   * Concurrently load a collection of tiffs in the locations provided.
+   *
+   * @param locations list of locations to find tiffs in.
+   * @param args filter the tiffs
+   * @returns Initialized tiff
+   */
   async load(locations: string[], args?: FileFilter): Promise<CogTiff[]> {
     const files = await getFiles(locations, args);
-    const tiffFiles = files.flat().filter(isTiff);
-    if (tiffFiles.length === 0) throw new Error('No Files found');
-    if (tiffFiles[0]) await fsa.head(tiffFiles[0]);
-    return await Promise.all(tiffFiles.map((f: string) => new CogTiff(fsa.source(f)).init(true)));
+    const tiffLocations = files.flat().filter(isTiff);
+    if (tiffLocations.length === 0) throw new Error('No Files found');
+    // Ensure credentials are loaded before concurrently loading tiffs
+    if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
+
+    const promises = await Promise.allSettled(
+      tiffLocations.map((loc: string) => {
+        return createTiff(loc).catch((e) => {
+          // Ensure tiff loading errors include the location of the tiff
+          logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
+          throw e;
+        });
+      }),
+    );
+    // Ensure all the tiffs loaded successfully
+    const output = [];
+    for (const prom of promises) {
+      // All the errors are logged above so just throw the first error
+      if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
+      output.push(prom.value);
+    }
+    return output;
   },
 };
 
@@ -262,10 +287,10 @@ export async function extractTiffLocations(
     tiffs.map(async (f): Promise<TiffLocation | null> => {
       try {
         const bbox = await findBoundingBox(f);
-        if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.uri}`);
+        if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.url}`);
 
         const sourceEpsg = forceSourceEpsg ?? f.images[0]?.epsg;
-        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.uri}`);
+        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.url}`);
         const centerX = (bbox[0] + bbox[2]) / 2;
         const centerY = (bbox[1] + bbox[3]) / 2;
         // bbox is not epsg:2193
@@ -273,7 +298,7 @@ export async function extractTiffLocations(
         const sourceProjection = Projection.get(sourceEpsg);
 
         const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        if (x == null || y == null) throw new Error(`Failed to reproject point: ${f.source.uri}`);
+        if (x == null || y == null) throw new Error(`Failed to reproject point: ${f.source.url}`);
         // Tilename from center
         const tileName = getTileName(x, y, scale);
 
@@ -282,12 +307,12 @@ export async function extractTiffLocations(
         //   // Also need to allow for ~1.5cm of error between bounding boxes.
         //   // assert bbox == MapSheet.extract(tileName).bbox
         // }
-        return { bbox, source: f.source.uri, tileName, epsg: f.images[0]?.epsg };
+        return { bbox, source: f.source.url.href, tileName, epsg: f.images[0]?.epsg };
       } catch (e) {
-        console.log(f.source.uri, e);
+        console.log(f.source.url, e);
         return null;
       } finally {
-        await f.close?.();
+        await f.source.close?.();
       }
     }),
   );
