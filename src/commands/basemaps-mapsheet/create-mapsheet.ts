@@ -86,7 +86,7 @@ export const basemapsCreateMapSheet = command({
     const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
-    fsa.write('features.json', JSON.stringify(rest));
+    const featuresWritePromise = fsa.write('features.json', JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
@@ -95,7 +95,9 @@ export const basemapsCreateMapSheet = command({
     const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
 
     logger.info({ outputPath }, 'MapSheet:WriteOutput');
-    fsa.write(outputPath, JSON.stringify(outputs, null, 2));
+    const outputWritePromise = fsa.write(outputPath, JSON.stringify(outputs, null, 2));
+
+    await Promise.all([featuresWritePromise, outputWritePromise]);
   },
 });
 
