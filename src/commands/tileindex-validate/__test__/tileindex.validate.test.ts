@@ -3,6 +3,7 @@ import { before, beforeEach, describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
+import { FeatureCollection } from 'geojson';
 
 import { MapSheet } from '../../../utils/mapsheet.js';
 import {
@@ -115,7 +116,7 @@ describe('validate', () => {
     assert.equal(stub.mock.callCount(), 1);
     assert.deepEqual(stub.mock.calls[0]?.arguments[0], ['s3://test']);
 
-    const outputFileList: GeoJSON.FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson');
+    const outputFileList: FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson');
     assert.equal(outputFileList.features.length, 1);
     const firstFeature = outputFileList.features[0];
     assert.equal(firstFeature?.properties?.['tileName'], 'AS21_1000_0101');

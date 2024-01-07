@@ -75,10 +75,8 @@ export async function formatFile(path: string, target = ''): Promise<void> {
  * @returns the stringify JSON pretty printed
  */
 export async function prettyPrint(jsonStr: string, config: prettier.Options): Promise<string> {
-  const formatted = await prettier.format(jsonStr, {
+  return await prettier.format(jsonStr, {
     ...config,
     parser: 'json',
   });
-
-  return formatted;
 }
