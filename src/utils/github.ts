@@ -4,12 +4,6 @@ import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
 
 import { logger } from '../log.js';
 
-export interface Job {
-  imagery: string;
-  tileMatrix: string;
-  content: string;
-}
-
 export interface Blob {
   path: string;
   mode: '100644';
@@ -34,7 +28,6 @@ export class GithubApi {
   }
 
   isOk = (s: number): boolean => s >= 200 && s <= 299;
-  isNotFound = (s: number): boolean => s === 404;
   toRef = (branch: string): string => `heads/${branch}`;
 
   /**

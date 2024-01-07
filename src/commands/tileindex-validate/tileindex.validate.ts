@@ -57,10 +57,6 @@ export const TiffLoader = {
   },
 };
 
-export interface FileList {
-  tileName: string;
-  uris: string[];
-}
 /**
  * Validate list of tiffs match a LINZ Mapsheet tile index
  *

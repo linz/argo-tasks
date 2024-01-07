@@ -1,5 +1,3 @@
-export type Actions = ActionCopy;
-
 export interface ActionCopy {
   action: 'copy';
   parameters: {
