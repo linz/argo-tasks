@@ -63,6 +63,19 @@ export const commandGeneratePath = command({
   },
 });
 
+/**
+ * Generates Target Path based on category
+ *
+ * @param {string} targetBucketName
+ * @param {string} category
+ * @param {string} geospaital_description
+ * @param {string} region
+ * @param {string} event
+ * @param {string} date
+ * @param {string} gsd
+ * @param {string} epsg
+ * @returns {string}
+ */
 export function generatePath(
   targetBucketName: string,
   category: string,
@@ -89,11 +102,15 @@ export function generatePath(
   }
 }
 
+/**
+ * Generates specific dataset name based on metadata inputs
+ *
+ * @param {string} region
+ * @param {string} geospaital_description
+ * @param {string} event
+ * @returns {string}
+ */
 export function generateName(region: string, geospaital_description: string, event: string): string {
-  /* Function to:
-    - Determine if region or geospatial description should be the dataset name
-    - Add event to name
-  */
   let name = region;
   if (geospaital_description) {
     name = geospaital_description.toLowerCase().replace(/\s+/g, '-');
@@ -146,15 +163,22 @@ export function getDate(collection: StacCollection): string {
   return `${startYear.slice(0, 4)}-${endYear.slice(0, 4)}`;
 }
 
-/* 
-  18/01/2024
-  nb: The following functions: 'loadFirstTiff', 'extractGsd', and 'extractEpsg' are workarounds
-  to manage the block information from being added to the collection (eo stac extension).
-  Once this is fixed the following functions can be replaced.
-*/
+/*
+ *  18/01/2024
+ *  nb: The following functions: 'loadFirstTiff', 'extractGsd', and 'extractEpsg' are workarounds
+ *  to manage the block information from being added to the collection (eo stac extension).
+ *  Once this is fixed the following functions can be replaced.
+ */
 
+/**
+ * Gets first item & tiff listed in collection
+ *
+ * @async
+ * @param {string} source
+ * @param {StacCollection} collection
+ * @returns {Promise<CogTiff>}
+ */
 export async function loadFirstTiff(source: string, collection: StacCollection): Promise<CogTiff> {
-  // gets the first item and tiff from the collection in order to extract gsd & epsg
   const itemLink = collection.links[2]?.href.replace('./', ''); // [2] to skip root & self links
   if (itemLink == null) {
     throw new Error(`No items in collection from: ${source}`);
