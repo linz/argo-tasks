@@ -42,6 +42,8 @@ lds-fetch-layer  --target ./output 51002 51000
 ### `generate-path`
 
 Generate target path for ODR buckets using collection metadata.
+For imagery naming conventions see: https://github.com/linz/imagery/blob/master/docs/naming.md
+For elevation naming conventions see: https://github.com/linz/elevation/blob/master/docs/naming.md
 
 #### Example
 
