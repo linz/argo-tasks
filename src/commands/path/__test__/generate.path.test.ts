@@ -155,24 +155,64 @@ describe('category', async () => {
 describe('geospatialDescription', async () => {
   it('Should return geographic description', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
-    assert.equal(getGeographicDescription(collection), 'Palmerston North');
+    const gd = getGeographicDescription(collection);
+    assert.equal(gd, 'Palmerston North');
+    assert.equal(
+      generatePath('bucket', 'urban-aerial-photos', gd, 'manawatu-whanganui', '', '2020', '0.05m', '2193'),
+      's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/',
+    );
   });
-  it('Should return undefined for geographic description', async () => {
+  it('Should return undefined - no geographic description metadata', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     delete collection['linz:geographic_description'];
-    assert.equal(getGeographicDescription(collection), undefined);
+    const gd = getGeographicDescription(collection);
+    assert.equal(gd, undefined);
+    assert.equal(
+      generatePath('bucket', 'urban-aerial-photos', gd, 'manawatu-whanganui', '', '2020', '0.05m', '2193'),
+      's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/',
+    );
+  });
+  it('Should return undefined - geographic description = null', async () => {
+    const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
+    collection['linz:geographic_description'] = null;
+    const gd = getGeographicDescription(collection);
+    assert.equal(gd, undefined);
+    assert.equal(
+      generatePath('bucket', 'urban-aerial-photos', gd, 'manawatu-whanganui', '', '2020', '0.05m', '2193'),
+      's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/',
+    );
   });
 });
 
 describe('event', async () => {
   it('Should return event', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
-    assert.equal(getEvent(collection), 'Storm');
+    const event = getEvent(collection);
+    assert.equal(event, 'Storm');
+    assert.equal(
+      generatePath('bucket', 'urban-aerial-photos', '', 'nelson', event, '2020', '0.05m', '2193'),
+      's3://bucket/nelson/nelson-storm_2020_0.05m/rgb/2193/',
+    );
   });
-  it('Should return undefined for event', async () => {
+  it('Should return undefined - no event metadata', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     delete collection['linz:event_name'];
-    assert.equal(getEvent(collection), undefined);
+    const event = getEvent(collection);
+    assert.equal(event, undefined);
+    assert.equal(
+      generatePath('bucket', 'urban-aerial-photos', '', 'nelson', event, '2020', '0.05m', '2193'),
+      's3://bucket/nelson/nelson_2020_0.05m/rgb/2193/',
+    );
+  });
+  it('Should return undefined - event = null', async () => {
+    const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
+    collection['linz:event_name'] = null;
+    const event = getEvent(collection);
+    assert.equal(event, undefined);
+    assert.equal(
+      generatePath('bucket', 'urban-aerial-photos', '', 'nelson', event, '2020', '0.05m', '2193'),
+      's3://bucket/nelson/nelson_2020_0.05m/rgb/2193/',
+    );
   });
 });
 
