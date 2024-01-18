@@ -16,7 +16,10 @@ class UnhandledCharactersError extends Error {
   public characters: string[];
 
   constructor(characters: string[]) {
-    super(`Unhandled characters: "${characters.join('", "')}"`);
+    const formattedCharacters = characters.map((character) => {
+      return JSON.stringify(character).replaceAll('\\\\', '\\');
+    });
+    super(`Unhandled characters: ${formattedCharacters.join(', ')}`);
     this.name = 'UnhandledCharactersError';
     this.characters = characters;
   }

@@ -22,12 +22,12 @@ describe('slugify', () => {
   it('should treat any unhandled characters as an error', () => {
     assert.throws(
       () => {
-        slugify('a\\b//c');
+        slugify('a\\b//c;\n');
       },
       {
         name: 'UnhandledCharactersError',
-        message: 'Unhandled characters: "/", "\\"',
-        characters: ['/', '\\'],
+        message: 'Unhandled characters: "\\n", "/", ";", "\\"',
+        characters: ['\n', '/', ';', '\\'],
       },
     );
   });
