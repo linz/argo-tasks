@@ -123,6 +123,10 @@ export const MapSheet = {
       out.y = Number(match[3]?.slice(0, 2));
       out.x = Number(match[3]?.slice(2));
     }
+    // 1:50_000 uses map sheet as filename e.g. CK08.tiff
+    if (out.gridSize === 50_000) {
+      out.name = out.mapSheet;
+    }
     if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
 
     const origin = MapSheet.offset(out.mapSheet);
