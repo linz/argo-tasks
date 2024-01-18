@@ -26,7 +26,7 @@ export const commandGeneratePath = command({
     source: positional({
       type: string,
       displayName: 'path',
-      description: 'path to source data including collection.json file',
+      description: 'path to source data where collection.json file is located',
     }),
   },
 
