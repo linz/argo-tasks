@@ -23,11 +23,16 @@ describe('slugify', () => {
     ['ì', 'Ì', 'ī', 'Ī'].forEach((value) => {
       assert.equal(slugify(value), 'i');
     });
-    ['ó', 'Ó', 'ô', 'Ô', 'ö', 'Ö', 'ø', 'Ø', 'ō', 'Ō'].forEach((value) => {
+    ['ó', 'Ó', 'ô', 'Ô', 'ö', 'Ö', 'ō', 'Ō'].forEach((value) => {
       assert.equal(slugify(value), 'o');
     });
     ['ü', 'Ü', 'ū', 'Ū'].forEach((value) => {
       assert.equal(slugify(value), 'u');
+    });
+  });
+  it('should convert "ø" (U+00F8) and "Ø" (U+00D8) to "o"', () => {
+    ['ø', 'Ø'].forEach((value) => {
+      assert.equal(slugify(value), 'o');
     });
   });
   it('should handle decomposed characters', () => {
