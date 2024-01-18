@@ -8,8 +8,8 @@ import { commandCreateManifest } from './create-manifest/create-manifest.js';
 import { commandPrettyPrint } from './format/pretty.print.js';
 import { commandGroup } from './group/group.js';
 import { commandLdsFetch } from './lds-cache/lds.cache.js';
-import { commandLintInputs } from './lint/lint.s3.paths.js';
 import { commandList } from './list/list.js';
+import { commandGeneratePath } from './path/path.generate.js';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.js';
 import { commandStacGithubImport } from './stac-github-import/stac.github.import.js';
 import { commandStacSync } from './stac-sync/stac.sync.js';
@@ -50,6 +50,6 @@ export const cmd = subcommands({
       },
     }),
     'pretty-print': commandPrettyPrint,
-    'lint-inputs': commandLintInputs,
+    'generate-path': commandGeneratePath,
   },
 });
