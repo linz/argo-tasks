@@ -1,3 +1,15 @@
+export function slugify(input: string): string {
+  const result = removeDiacritics(input).replaceAll(' ', '-').toLowerCase();
+
+  const unhandledCharacters = result.match(unhandledCharactersRegExp);
+  if (unhandledCharacters) {
+    const sortedUniqueCharacters = Array.from(new Set(unhandledCharacters)).sort();
+    throw new UnhandledCharactersError(sortedUniqueCharacters);
+  }
+
+  return result;
+}
+
 const unhandledCharactersRegExp = /[^abcdefghijklmnopqrstuvwxyz0123456789_.-]/g;
 
 const combiningDiacriticalMarks = /[\u0300-\u036F]/g;
@@ -22,16 +34,4 @@ class UnhandledCharactersError extends Error {
     this.name = 'UnhandledCharactersError';
     this.characters = characters;
   }
-}
-
-export function slugify(input: string): string {
-  const result = removeDiacritics(input).replaceAll(' ', '-').toLowerCase();
-
-  const unhandledCharacters = result.match(unhandledCharactersRegExp);
-  if (unhandledCharacters) {
-    const sortedUniqueCharacters = Array.from(new Set(unhandledCharacters)).sort();
-    throw new UnhandledCharactersError(sortedUniqueCharacters);
-  }
-
-  return result;
 }
