@@ -23,7 +23,7 @@ function removeDiacritics(input: string): string {
 }
 
 class UnhandledCharactersError extends Error {
-  public characters: string[];
+  public characters: string[]; // For ease of use in callers which might want to provide a more helpful message
 
   constructor(characters: string[]) {
     const formattedCharacters = characters.map((character) => {
