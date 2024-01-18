@@ -1,7 +1,9 @@
-import { fsa } from '@chunkd/fs';
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
+
+import { fsa } from '@chunkd/fs';
 import { StacCollection } from 'stac-ts';
+
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
 import {
   extractEpsg,

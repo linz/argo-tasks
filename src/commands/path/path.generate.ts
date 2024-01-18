@@ -3,6 +3,7 @@ import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
 import { command, option, positional, string } from 'cmd-ts';
 import { StacCollection, StacItem } from 'stac-ts';
+
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { config, createTiff, registerCli, verbose } from '../common.js';
@@ -74,12 +75,12 @@ export function generatePath(
 ): string {
   const name = generateName(region, geospaital_description, event);
 
-  if (category == dataCategories.SCANNED_AERIAL_PHOTOS) {
+  if (category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata (15/02/24)
     throw new Error(`Automated target generation not implemented for historic imagery`);
   } else if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(category)) {
     return `s3://${targetBucketName}/${region}/${name}_${date}_${gsd}/rgb/${epsg}/`;
-  } else if (category == dataCategories.SATELLITE_IMAGERY) {
+  } else if (category === dataCategories.SATELLITE_IMAGERY) {
     return `s3://${targetBucketName}/${region}/${name}_${date}_${gsd}/rgb/${epsg}/`;
   } else if ([dataCategories.DEM, dataCategories.DSM].includes(category)) {
     return `s3://${targetBucketName}/${region}/${name}_${date}/${category}_${gsd}/${epsg}/`;
@@ -139,7 +140,7 @@ export function getDate(collection: StacCollection): string {
   if (!startYear || !endYear) {
     throw new Error(`Missing datetime in interval: ${interval}`);
   }
-  if (startYear.slice(0, 4) == endYear.slice(0, 4)) {
+  if (startYear.slice(0, 4) === endYear.slice(0, 4)) {
     return startYear.slice(0, 4);
   }
   return `${startYear.slice(0, 4)}-${endYear.slice(0, 4)}`;
