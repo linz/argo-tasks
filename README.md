@@ -48,7 +48,7 @@ For elevation naming conventions see: https://github.com/linz/elevation/blob/mas
 #### Example
 
 ```bash
-generate-path --target-bucket-name nz-imagery s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/
+generate-path --target-bucket-name nz-imagery s3://linz-workflows-scratch/2024-01/04-is-niwe-hawkes-bay-l7tt4/flat/
 ```
 
 ### `list`
