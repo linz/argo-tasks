@@ -23,7 +23,7 @@ describe('slugify', () => {
     ['ì', 'Ì', 'ī', 'Ī'].forEach((value) => {
       assert.equal(slugify(value), 'i');
     });
-    ['ó', 'Ó', 'ô', 'Ô', 'ö', 'Ö', 'ō', 'Ō'].forEach((value) => {
+    ['ó', 'Ó', 'ô', 'Ô', 'ö', 'Ö', 'ø', 'Ø', 'ō', 'Ō'].forEach((value) => {
       assert.equal(slugify(value), 'o');
     });
     ['ü', 'Ü', 'ū', 'Ū'].forEach((value) => {
