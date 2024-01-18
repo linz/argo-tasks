@@ -110,7 +110,7 @@ export function generatePath(
  * @param {string} event
  * @returns {string}
  */
-export function generateName(region: string, geospaital_description: string, event: string): string {
+export function generateName(region: string, geospatial_description: string, event: string): string {
   let name = region;
   if (geospaital_description) {
     name = geospaital_description.toLowerCase().replace(/\s+/g, '-');
