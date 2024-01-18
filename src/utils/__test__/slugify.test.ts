@@ -14,7 +14,21 @@ describe('slugify', () => {
     assert.equal(slugify('Upper North Island'), 'upper-north-island');
   });
   it('should remove diacritics', () => {
-    assert.equal(slugify('äéìôūÄÉÌÔŪ'), 'aeiouaeiou');
+    ['á', 'Á', 'ä', 'Ä', 'ā', 'Ā'].forEach((value) => {
+      assert.equal(slugify(value), 'a');
+    });
+    ['é', 'É', 'ē', 'Ē'].forEach((value) => {
+      assert.equal(slugify(value), 'e');
+    });
+    ['ì', 'Ì', 'ī', 'Ī'].forEach((value) => {
+      assert.equal(slugify(value), 'i');
+    });
+    ['ó', 'Ó', 'ô', 'Ô', 'ö', 'Ö', 'ō', 'Ō'].forEach((value) => {
+      assert.equal(slugify(value), 'o');
+    });
+    ['ü', 'Ü', 'ū', 'Ū'].forEach((value) => {
+      assert.equal(slugify(value), 'u');
+    });
   });
   it('should handle decomposed characters', () => {
     assert.equal(slugify('\u0041\u0304'), 'a');
