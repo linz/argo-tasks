@@ -68,7 +68,7 @@ export const commandGeneratePath = command({
  *
  * @param {string} targetBucketName
  * @param {string} category
- * @param {string} geospaital_description
+ * @param {string} geospatial_description
  * @param {string} region
  * @param {string} event
  * @param {string} date
@@ -79,14 +79,14 @@ export const commandGeneratePath = command({
 export function generatePath(
   targetBucketName: string,
   category: string,
-  geospaital_description: string,
+  geospatial_description: string,
   region: string,
   event: string,
   date: string,
   gsd: string,
   epsg: string,
 ): string {
-  const name = generateName(region, geospaital_description, event);
+  const name = generateName(region, geospatial_description, event);
 
   if (category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata (15/02/24)
@@ -106,14 +106,14 @@ export function generatePath(
  * Generates specific dataset name based on metadata inputs
  *
  * @param {string} region
- * @param {string} geospaital_description
+ * @param {string} geospatial_description
  * @param {string} event
  * @returns {string}
  */
 export function generateName(region: string, geospatial_description: string, event: string): string {
   let name = region;
-  if (geospaital_description) {
-    name = geospaital_description.toLowerCase().replace(/\s+/g, '-');
+  if (geospatial_description) {
+    name = geospatial_description.toLowerCase().replace(/\s+/g, '-');
   }
   if (event) {
     name = `${name}-${event.toLowerCase().replace(/\s+/g, '-')}`;
