@@ -1,9 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { slugify } from '../slugify.js';
-
-const outputAlphabet = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
+import { outputAlphabet, slugify } from '../slugify.js';
 
 describe('slugify', () => {
   it('should pass through output alphabet unchanged', () => {
@@ -20,5 +18,17 @@ describe('slugify', () => {
   });
   it('should handle decomposed characters', () => {
     assert.equal(slugify('\u0041\u0304'), 'a');
+  });
+  it('should treat any unhandled characters as an error', () => {
+    assert.throws(
+      () => {
+        slugify('a\\b//c');
+      },
+      {
+        name: 'UnhandledCharactersError',
+        message: 'Unhandled characters: "/", "\\"',
+        characters: ['/', '\\'],
+      },
+    );
   });
 });
