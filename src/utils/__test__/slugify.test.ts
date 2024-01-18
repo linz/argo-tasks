@@ -9,4 +9,7 @@ describe('slugify', () => {
   it('should pass through output alphabet unchanged', () => {
     assert.equal(slugify(outputAlphabet), outputAlphabet);
   });
+  it('should lowercase uppercase ASCII characters', () => {
+    assert.equal(slugify('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'abcdefghijklmnopqrstuvwxyz');
+  });
 });
