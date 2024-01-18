@@ -12,7 +12,10 @@ describe('slugify', () => {
   it('should lowercase uppercase ASCII characters', () => {
     assert.equal(slugify('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'abcdefghijklmnopqrstuvwxyz');
   });
-  it('should transliterate macronated characters', () => {
-    assert.equal(slugify('āēīōūĀĒĪŌŪ'), 'aeiouaeiou');
+  it('should remove diacritics', () => {
+    assert.equal(slugify('äéìôūÄÉÌÔŪ'), 'aeiouaeiou');
+  });
+  it('should handle decomposed characters', () => {
+    assert.equal(slugify('\u0041\u0304'), 'a');
   });
 });
