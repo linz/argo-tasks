@@ -89,7 +89,7 @@ export function generatePath(
   const name = generateName(region, geospatial_description, event);
 
   if (category === dataCategories.SCANNED_AERIAL_PHOTOS) {
-    // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata (15/02/24)
+    // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated target generation not implemented for historic imagery`);
   } else if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(category)) {
     return `s3://${targetBucketName}/${region}/${name}_${date}_${gsd}/rgb/${epsg}/`;
@@ -164,7 +164,6 @@ export function getDate(collection: StacCollection): string {
 }
 
 /*
- *  18/01/2024
  *  nb: The following functions: 'loadFirstTiff', 'extractGsd', and 'extractEpsg' are workarounds
  *  to manage the block information from being added to the collection (eo stac extension).
  *  Once this is fixed the following functions can be replaced.
