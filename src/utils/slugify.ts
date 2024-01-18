@@ -1,5 +1,4 @@
-export const outputAlphabet = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
-const unhandledCharactersRegExp = new RegExp(`[^${outputAlphabet}]`, 'g');
+const unhandledCharactersRegExp = /[^abcdefghijklmnopqrstuvwxyz0123456789_.-]/g;
 
 const combiningDiacriticalMarks = /[\u0300-\u036F]/g;
 

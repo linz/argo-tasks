@@ -1,11 +1,11 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { outputAlphabet, slugify } from '../slugify.js';
+import { slugify } from '../slugify.js';
 
 describe('slugify', () => {
   it('should pass through output alphabet unchanged', () => {
-    assert.equal(slugify(outputAlphabet), outputAlphabet);
+    assert.equal(slugify('abcdefghijklmnopqrstuvwxyz0123456789_.-'), 'abcdefghijklmnopqrstuvwxyz0123456789_.-');
   });
   it('should lowercase uppercase ASCII characters', () => {
     assert.equal(slugify('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'abcdefghijklmnopqrstuvwxyz');
