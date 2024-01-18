@@ -6,5 +6,5 @@ export function slugify(input: string): string {
    [combining diacritical mark](https://www.unicode.org/charts/PDF/U0300.pdf) and the character which is being modified
    by the diacritic. This way we can remove the macron from "ā", the accent from "é", and the like.
    */
-  return input.normalize('NFD').replaceAll(combiningDiacriticalMarks, '').toLowerCase();
+  return input.normalize('NFD').replaceAll(combiningDiacriticalMarks, '').replaceAll(' ', '-').toLowerCase();
 }

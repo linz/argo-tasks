@@ -12,6 +12,9 @@ describe('slugify', () => {
   it('should lowercase uppercase ASCII characters', () => {
     assert.equal(slugify('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'abcdefghijklmnopqrstuvwxyz');
   });
+  it('should replace spaces with hyphens', () => {
+    assert.equal(slugify('Upper North Island'), 'upper-north-island');
+  });
   it('should remove diacritics', () => {
     assert.equal(slugify('äéìôūÄÉÌÔŪ'), 'aeiouaeiou');
   });
