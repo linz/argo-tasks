@@ -36,12 +36,12 @@ describe('slugify', () => {
   it('should treat any unhandled characters as an error', () => {
     assert.throws(
       () => {
-        slugify('“a\\b//c;\n”');
+        slugify('“a\\b//c—;\n”');
       },
       {
         name: 'UnhandledCharactersError',
-        message: 'Unhandled characters: "\\n", "/", ";", "\\", "“", "”"',
-        characters: ['\n', '/', ';', '\\', '“', '”'],
+        message: 'Unhandled characters: "\\n", "/", ";", "\\", "—", "“", "”"',
+        characters: ['\n', '/', ';', '\\', '—', '“', '”'],
       },
     );
   });
