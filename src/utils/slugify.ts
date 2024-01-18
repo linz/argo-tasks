@@ -1,5 +1,8 @@
 export function slugify(input: string): string {
-  // See src/utils/__test__/slugify.test.ts for examples
+  /**
+   * @param input Human-readable string
+   * @returns String slug. See src/utils/__test__/slugify.test.ts for examples.
+   */
 
   const result = removeDiacritics(input).replaceAll('ø', 'o').replaceAll('Ø', 'O').replaceAll(' ', '-').toLowerCase();
 
