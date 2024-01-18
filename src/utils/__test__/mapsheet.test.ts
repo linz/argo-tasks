@@ -19,6 +19,20 @@ describe('MapSheets', () => {
     });
   });
 
+  it('should generate 1:50k name', () => {
+    assert.deepEqual(MapSheet.extract('CK08_50000_0101.tiff'), {
+      mapSheet: 'CK08',
+      gridSize: 50000,
+      x: 1,
+      y: 1,
+      name: 'CK08',
+      origin: { x: 1180000, y: 4758000 },
+      width: 24000,
+      height: 36000,
+      bbox: [1180000, 4722000, 1204000, 4758000],
+    });
+  });
+
   it('should iterate mapsheets', () => {
     const sheets = [...MapSheet.iterate()];
     assert.deepEqual(sheets, ExpectedCodes);
@@ -29,6 +43,7 @@ describe('MapSheets', () => {
     assert.deepEqual(MapSheet.offset('AS21'), { x: 1492000, y: 6234000 });
     assert.deepEqual(MapSheet.offset('BG33'), { x: 1780000, y: 5730000 });
     assert.deepEqual(MapSheet.offset('BW14'), { x: 1324000, y: 5226000 });
+    assert.deepEqual(MapSheet.offset('CK08'), { x: 1180000, y: 4758000 });
   });
 
   for (const ms of MapSheetData) {

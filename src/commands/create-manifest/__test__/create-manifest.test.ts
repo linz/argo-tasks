@@ -87,12 +87,12 @@ describe('createManifest', () => {
     ]);
   });
   describe('validatePaths', () => {
-    it('Should throw error for Missmatch Paths', () => {
+    it('Should throw error for Mismatched Paths', () => {
       assert.throws(() => {
         validatePaths('memory://source/', 'memory://target/sub/test.tiff');
       }, Error);
     });
-    it('Should also throw error for Missmatch Paths', () => {
+    it('Should also throw error for Mismatched Paths', () => {
       assert.throws(() => {
         validatePaths('memory://source/test.tiff', 'memory://target/sub/');
       }, Error);
