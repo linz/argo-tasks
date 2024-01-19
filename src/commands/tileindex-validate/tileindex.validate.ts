@@ -373,10 +373,5 @@ export function getTileName(centerX: number, centerY: number, grid_size: number)
   const letters = Object.keys(SheetRanges)[offset_y];
   const sheet_code = `${letters}${`${offset_x}`.padStart(2, '0')}`;
   const tile_id = `${`${tile_y}`.padStart(nb_digits, '0')}${`${tile_x}`.padStart(nb_digits, '0')}`;
-  // if (grid_size === 50_000) {
-  //   return sheet_code;
-  // } else {
-  //   return `${sheet_code}_${grid_size}_${tile_id}`;
-  // }
   return `${sheet_code}_${grid_size}_${tile_id}`;
 }
