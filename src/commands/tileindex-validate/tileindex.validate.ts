@@ -14,7 +14,7 @@ import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
-const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
+const SHEET_MIN_Y = MapSheet.origin.y - 42 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
 const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
 export function isTiff(x: string): boolean {
@@ -341,7 +341,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
   return true;
 }
 
-export function getTileName(originX: number, originY: number, grid_size: number): string {
+export function getTileName(centerX: number, centerY: number, grid_size: number): string {
   if (!MapSheet.gridSizes.includes(grid_size)) {
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
@@ -354,24 +354,29 @@ export function getTileName(originX: number, originY: number, grid_size: number)
     nb_digits = 3;
   }
 
-  if (!(SHEET_MIN_X <= originX && originX <= SHEET_MAX_X)) {
-    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${originX}`);
+  if (!(SHEET_MIN_X <= centerX && centerX <= SHEET_MAX_X)) {
+    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${centerX}`);
   }
-  if (!(SHEET_MIN_Y <= originY && originY <= SHEET_MAX_Y)) {
-    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${originY}`);
+  if (!(SHEET_MIN_Y <= centerY && centerY <= SHEET_MAX_Y)) {
+    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${centerY}`);
   }
 
   // Do some maths
-  const offset_x = Math.round(Math.floor((originX - MapSheet.origin.x) / MapSheet.width));
-  const offset_y = Math.round(Math.floor((MapSheet.origin.y - originY) / MapSheet.height));
+  const offset_x = Math.round(Math.floor((centerX - MapSheet.origin.x) / MapSheet.width));
+  const offset_y = Math.round(Math.floor((MapSheet.origin.y - centerY) / MapSheet.height));
   const max_y = MapSheet.origin.y - offset_y * MapSheet.height;
   const min_x = MapSheet.origin.x + offset_x * MapSheet.width;
-  const tile_x = Math.round(Math.floor((originX - min_x) / tile_width + 1));
-  const tile_y = Math.round(Math.floor((max_y - originY) / tile_height + 1));
+  const tile_x = Math.round(Math.floor((centerX - min_x) / tile_width + 1));
+  const tile_y = Math.round(Math.floor((max_y - centerY) / tile_height + 1));
 
   // Build name
   const letters = Object.keys(SheetRanges)[offset_y];
   const sheet_code = `${letters}${`${offset_x}`.padStart(2, '0')}`;
   const tile_id = `${`${tile_y}`.padStart(nb_digits, '0')}${`${tile_x}`.padStart(nb_digits, '0')}`;
+  // if (grid_size === 50_000) {
+  //   return sheet_code;
+  // } else {
+  //   return `${sheet_code}_${grid_size}_${tile_id}`;
+  // }
   return `${sheet_code}_${grid_size}_${tile_id}`;
 }

@@ -36,12 +36,16 @@ describe('getTileName', () => {
     assert.equal(convertTileName('CH11_1000_0501', 5000), 'CH11_5000_0101');
     assert.equal(convertTileName('CH11_1000_0505', 5000), 'CH11_5000_0101');
   });
-
   it('should get correct parent tile 1:10k', () => {
     assert.equal(convertTileName('CH11_1000_0101', 10000), 'CH11_10000_0101');
     assert.equal(convertTileName('CH11_1000_0110', 10000), 'CH11_10000_0101');
     assert.equal(convertTileName('CH11_1000_1010', 10000), 'CH11_10000_0101');
     assert.equal(convertTileName('CH11_1000_1001', 10000), 'CH11_10000_0101');
+  });
+  it('should get correct parent tile 1:50k', () => {
+    assert.equal(convertTileName('AT24_50000_0101', 50000), 'AT24_50000_0101');
+    assert.equal(convertTileName('AT25_50000_0101', 50000), 'AT25_50000_0101');
+    assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08_50000_0101');
   });
 });
 describe('tiffLocation', () => {
