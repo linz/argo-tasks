@@ -1,9 +1,8 @@
+/**
+ * @param input Human-readable string
+ * @returns String slug. See src/utils/__test__/slugify.test.ts for examples.
+ */
 export function slugify(input: string): string {
-  /**
-   * @param input Human-readable string
-   * @returns String slug. See src/utils/__test__/slugify.test.ts for examples.
-   */
-
   const result = removeDiacritics(input).replaceAll('ø', 'o').replaceAll('Ø', 'O').replaceAll(' ', '-').toLowerCase();
 
   const unhandledCharacters = result.match(/[^abcdefghijklmnopqrstuvwxyz0123456789_.-]/g);
@@ -20,12 +19,12 @@ export function slugify(input: string): string {
   return result;
 }
 
+/**
+ * Normalization form decomposition (NFD) splits characters like into their
+ * [combining diacritical mark](https://www.unicode.org/charts/PDF/U0300.pdf) and the character which is being modified
+ * by the diacritic. This way we can remove the macron from "ā", the accent from "é", and the like.
+ */
 function removeDiacritics(input: string): string {
-  /**
-   * Normalization form decomposition (NFD) splits characters like into their
-   * [combining diacritical mark](https://www.unicode.org/charts/PDF/U0300.pdf) and the character which is being modified
-   * by the diacritic. This way we can remove the macron from "ā", the accent from "é", and the like.
-   */
   const combiningDiacriticalMarks = /[\u0300-\u036F]/g;
   return input.normalize('NFD').replaceAll(combiningDiacriticalMarks, '');
 }
