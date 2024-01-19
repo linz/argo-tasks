@@ -9,7 +9,12 @@ export function slugify(input: string): string {
   const unhandledCharacters = result.match(/[^abcdefghijklmnopqrstuvwxyz0123456789_.-]/g);
   if (unhandledCharacters) {
     const sortedUniqueCharacters = Array.from(new Set(unhandledCharacters)).sort();
-    throw new UnhandledCharactersError(sortedUniqueCharacters);
+    const formattedCharacters = sortedUniqueCharacters.map((character) => {
+      return JSON.stringify(character).replaceAll('\\\\', '\\');
+    });
+    throw Error(`Unhandled characters: ${formattedCharacters.join(', ')}`, {
+      cause: { characters: sortedUniqueCharacters },
+    });
   }
 
   return result;
@@ -23,17 +28,4 @@ function removeDiacritics(input: string): string {
    */
   const combiningDiacriticalMarks = /[\u0300-\u036F]/g;
   return input.normalize('NFD').replaceAll(combiningDiacriticalMarks, '');
-}
-
-class UnhandledCharactersError extends Error {
-  public characters: string[]; // For ease of use in callers which might want to provide a more helpful message
-
-  constructor(characters: string[]) {
-    const formattedCharacters = characters.map((character) => {
-      return JSON.stringify(character).replaceAll('\\\\', '\\');
-    });
-    super(`Unhandled characters: ${formattedCharacters.join(', ')}`);
-    this.name = 'UnhandledCharactersError';
-    this.characters = characters;
-  }
 }

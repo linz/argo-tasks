@@ -44,9 +44,9 @@ describe('slugify', () => {
         slugify('“a\\b//c—;\n”');
       },
       {
-        name: 'UnhandledCharactersError',
+        name: 'Error',
         message: 'Unhandled characters: "\\n", "/", ";", "\\", "—", "“", "”"',
-        characters: ['\n', '/', ';', '\\', '—', '“', '”'],
+        cause: { characters: ['\n', '/', ';', '\\', '—', '“', '”'] },
       },
     );
   });
