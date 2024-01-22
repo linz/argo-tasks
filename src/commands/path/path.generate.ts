@@ -9,6 +9,17 @@ import { logger } from '../../log.js';
 import { config, createTiff, registerCli, verbose } from '../common.js';
 import { dataCategories, regions } from './path.constants.js';
 
+export interface PathMetadata {
+  targetBucketName: string;
+  category: string;
+  geographicDescription?: string;
+  region: string;
+  event?: string;
+  date: string;
+  gsd: string;
+  epsg: number;
+}
+
 export const commandGeneratePath = command({
   name: 'generate-path',
   description: 'Generate target path from collection metadata',
@@ -49,56 +60,44 @@ export const commandGeneratePath = command({
 
     const tiff = await loadFirstTiff(args.source, collection);
 
-    const category = getCategory(collection);
-    const geographicDescription = getGeographicDescription(collection);
-    const region = getRegion(collection);
-    const event = getEvent(collection);
-    const date = getDate(collection);
-    const gsd = extractGsd(tiff);
-    const epsg = extractEpsg(tiff);
+    const metadata: PathMetadata = {
+      targetBucketName: args.targetBucketName,
+      category: getCategory(collection),
+      geographicDescription: getGeographicDescription(collection),
+      region: getRegion(collection),
+      event: getEvent(collection),
+      date: getDate(collection),
+      gsd: extractGsd(tiff),
+      epsg: extractEpsg(tiff),
+    };
 
-    const target = generatePath(args.targetBucketName, category, geographicDescription, region, event, date, gsd, epsg);
+    const target = generatePath(metadata);
     logger.info({ duration: performance.now() - startTime, target: target }, 'GeneratePath:Done');
     return target;
   },
 });
 
 /**
- * Generates Target Path based on category
- *
- * @param {string} targetBucketName
- * @param {string} category
- * @param {string} geospatial_description
- * @param {string} region
- * @param {string} event
- * @param {string} date
- * @param {string} gsd
- * @param {string} epsg
+ *Generates target path based on dataset category.
+
+ * @param {PathMetadata} metadata
  * @returns {string}
  */
-export function generatePath(
-  targetBucketName: string,
-  category: string,
-  geospatial_description: string,
-  region: string,
-  event: string,
-  date: string,
-  gsd: string,
-  epsg: string,
-): string {
-  const name = generateName(region, geospatial_description, event);
-
-  if (category === dataCategories.SCANNED_AERIAL_PHOTOS) {
+export function generatePath(metadata: PathMetadata): string {
+  console.log(metadata);
+  console.log('\n\n\n\n\n\n');
+  const name = generateName(metadata.region, metadata.geographicDescription, metadata.event);
+  if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated target generation not implemented for historic imagery`);
-  } else if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(category)) {
-    return `s3://${targetBucketName}/${region}/${name}_${date}_${gsd}/rgb/${epsg}/`;
-  } else if (category === dataCategories.SATELLITE_IMAGERY) {
-    return `s3://${targetBucketName}/${region}/${name}_${date}_${gsd}/rgb/${epsg}/`;
-  } else if ([dataCategories.DEM, dataCategories.DSM].includes(category)) {
-    return `s3://${targetBucketName}/${region}/${name}_${date}/${category}_${gsd}/${epsg}/`;
+  } else if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(metadata.category)) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}/rgb/${metadata.epsg}/`;
+  } else if (metadata.category === dataCategories.SATELLITE_IMAGERY) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}/rgb/${metadata.epsg}/`;
+  } else if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}/${metadata.category}_${metadata.gsd}/${metadata.epsg}/`;
   } else {
-    throw new Error(`Path Can't be generated from collection as no matching category: ${category}.`);
+    throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.category}.`);
   }
 }
 
@@ -110,7 +109,11 @@ export function generatePath(
  * @param {string} event
  * @returns {string}
  */
-export function generateName(region: string, geospatial_description: string, event: string): string {
+export function generateName(
+  region: string,
+  geospatial_description: string | undefined,
+  event: string | undefined,
+): string {
   let name = region;
   if (geospatial_description) {
     name = geospatial_description.toLowerCase().replace(/\s+/g, '-');
@@ -203,12 +206,12 @@ export function extractGsd(tiff: CogTiff): string {
   return `${gsd}m`;
 }
 
-export function extractEpsg(tiff: CogTiff): string {
+export function extractEpsg(tiff: CogTiff): number {
   const epsg = tiff.images[0]?.epsg;
   if (!epsg) {
     throw new Error(`Missing epsg tiff tag`);
   } else if (!Epsg.Codes.has(epsg)) {
     throw new Error(`Invalid EPSG code: ${epsg}`);
   }
-  return `${epsg}`;
+  return epsg;
 }

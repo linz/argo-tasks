@@ -15,66 +15,97 @@ import {
   getEvent,
   getGeographicDescription,
   getRegion,
+  PathMetadata,
 } from '../path.generate.js';
 
 describe('GeneratePathImagery', () => {
   it('Should match - geospatial description', () => {
-    assert.equal(
-      generatePath('nz-imagery', 'urban-aerial-photos', 'Napier', 'hawkes-bay', '', '2017-2018', '0.05m', '2193'),
-      's3://nz-imagery/hawkes-bay/napier_2017-2018_0.05m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      category: 'urban-aerial-photos',
+      geographicDescription: 'Napier',
+      region: 'hawkes-bay',
+      event: '',
+      date: '2017-2018',
+      gsd: '0.05m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-imagery/hawkes-bay/napier_2017-2018_0.05m/rgb/2193/');
   });
   it('Should match - event', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      category: 'rural-aerial-photos',
+      geographicDescription: '',
+      region: 'hawkes-bay',
+      event: 'North Island Weather Event',
+      date: '2023',
+      gsd: '0.25m',
+      epsg: 2193,
+    };
     assert.equal(
-      generatePath(
-        'nz-imagery',
-        'rural-aerial-photos',
-        '',
-        'hawkes-bay',
-        'North Island Weather Event',
-        '2023',
-        '0.25m',
-        '2193',
-      ),
+      generatePath(metadata),
       's3://nz-imagery/hawkes-bay/hawkes-bay-north-island-weather-event_2023_0.25m/rgb/2193/',
     );
   });
   it('Should match - no optional metadata', () => {
-    assert.equal(
-      generatePath('nz-imagery', 'urban-aerial-photos', '', 'auckland', '', '2023', '0.3m', '2193'),
-      's3://nz-imagery/auckland/auckland_2023_0.3m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      category: 'urban-aerial-photos',
+      geographicDescription: '',
+      region: 'auckland',
+      event: '',
+      date: '2023',
+      gsd: '0.3m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgb/2193/');
   });
 });
 
 describe('GeneratePathElevation', () => {
   it('Should match - dem (no optional metadata)', () => {
-    assert.equal(
-      generatePath('nz-elevation', 'dem', '', 'auckland', '', '2023', '1m', '2193'),
-      's3://nz-elevation/auckland/auckland_2023/dem_1m/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      category: 'dem',
+      geographicDescription: '',
+      region: 'auckland',
+      event: '',
+      date: '2023',
+      gsd: '1m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-elevation/auckland/auckland_2023/dem_1m/2193/');
   });
+  const metadata: PathMetadata = {
+    targetBucketName: 'nz-elevation',
+    category: 'dsm',
+    geographicDescription: '',
+    region: 'auckland',
+    event: '',
+    date: '2023',
+    gsd: '1m',
+    epsg: 2193,
+  };
   it('Should match - dsm (no optional metadata)', () => {
-    assert.equal(
-      generatePath('nz-elevation', 'dsm', '', 'auckland', '', '2023', '1m', '2193'),
-      's3://nz-elevation/auckland/auckland_2023/dsm_1m/2193/',
-    );
+    assert.equal(generatePath(metadata), 's3://nz-elevation/auckland/auckland_2023/dsm_1m/2193/');
   });
 });
 
 describe('GeneratePathSatelliteImagery', () => {
   it('Should match - geospatial description & event', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      category: 'satellite-imagery',
+      geographicDescription: 'North Island',
+      region: 'new-zealand',
+      event: 'Cyclone Gabrielle',
+      date: '2023',
+      gsd: '0.5m',
+      epsg: 2193,
+    };
     assert.equal(
-      generatePath(
-        'nz-imagery',
-        'satellite-imagery',
-        'North Island',
-        'new-zealand',
-        'Cyclone Gabrielle',
-        '2023',
-        '0.5m',
-        '2193',
-      ),
+      generatePath(metadata),
       's3://nz-imagery/new-zealand/north-island-cyclone-gabrielle_2023_0.5m/rgb/2193/',
     );
   });
@@ -82,8 +113,18 @@ describe('GeneratePathSatelliteImagery', () => {
 
 describe('GeneratePathHistoricImagery', () => {
   it('Should error', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      category: 'scanned-aerial-imagery',
+      geographicDescription: '',
+      region: 'wellington',
+      event: '',
+      date: '1963',
+      gsd: '0.5m',
+      epsg: 2193,
+    };
     assert.throws(() => {
-      generatePath('nz-imagery', 'scanned-aerial-imagery', '', 'wellington', '', '1963', '0.5m', '2193'), Error;
+      generatePath(metadata), Error;
     });
   });
 });
@@ -157,30 +198,51 @@ describe('geospatialDescription', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     const gd = getGeographicDescription(collection);
     assert.equal(gd, 'Palmerston North');
-    assert.equal(
-      generatePath('bucket', 'urban-aerial-photos', gd, 'manawatu-whanganui', '', '2020', '0.05m', '2193'),
-      's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      category: 'urban-aerial-photos',
+      geographicDescription: gd,
+      region: 'manawatu-whanganui',
+      event: '',
+      date: '2020',
+      gsd: '0.05m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/');
   });
   it('Should return undefined - no geographic description metadata', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     delete collection['linz:geographic_description'];
     const gd = getGeographicDescription(collection);
     assert.equal(gd, undefined);
-    assert.equal(
-      generatePath('bucket', 'urban-aerial-photos', gd, 'manawatu-whanganui', '', '2020', '0.05m', '2193'),
-      's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      category: 'urban-aerial-photos',
+      geographicDescription: gd,
+      region: 'manawatu-whanganui',
+      event: '',
+      date: '2020',
+      gsd: '0.05m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/');
   });
   it('Should return undefined - geographic description = null', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     collection['linz:geographic_description'] = null;
     const gd = getGeographicDescription(collection);
     assert.equal(gd, undefined);
-    assert.equal(
-      generatePath('bucket', 'urban-aerial-photos', gd, 'manawatu-whanganui', '', '2020', '0.05m', '2193'),
-      's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      category: 'urban-aerial-photos',
+      geographicDescription: gd,
+      region: 'manawatu-whanganui',
+      event: '',
+      date: '2020',
+      gsd: '0.05m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/');
   });
 });
 
@@ -189,30 +251,51 @@ describe('event', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     const event = getEvent(collection);
     assert.equal(event, 'Storm');
-    assert.equal(
-      generatePath('bucket', 'urban-aerial-photos', '', 'nelson', event, '2020', '0.05m', '2193'),
-      's3://bucket/nelson/nelson-storm_2020_0.05m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      category: 'urban-aerial-photos',
+      geographicDescription: '',
+      region: 'nelson',
+      event: event,
+      date: '2020',
+      gsd: '0.05m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/nelson/nelson-storm_2020_0.05m/rgb/2193/');
   });
   it('Should return undefined - no event metadata', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     delete collection['linz:event_name'];
     const event = getEvent(collection);
     assert.equal(event, undefined);
-    assert.equal(
-      generatePath('bucket', 'urban-aerial-photos', '', 'nelson', event, '2020', '0.05m', '2193'),
-      's3://bucket/nelson/nelson_2020_0.05m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      category: 'urban-aerial-photos',
+      geographicDescription: '',
+      region: 'nelson',
+      event: event,
+      date: '2020',
+      gsd: '0.05m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/nelson/nelson_2020_0.05m/rgb/2193/');
   });
   it('Should return undefined - event = null', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     collection['linz:event_name'] = null;
     const event = getEvent(collection);
     assert.equal(event, undefined);
-    assert.equal(
-      generatePath('bucket', 'urban-aerial-photos', '', 'nelson', event, '2020', '0.05m', '2193'),
-      's3://bucket/nelson/nelson_2020_0.05m/rgb/2193/',
-    );
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      category: 'urban-aerial-photos',
+      geographicDescription: '',
+      region: 'nelson',
+      event: event,
+      date: '2020',
+      gsd: '0.05m',
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/nelson/nelson_2020_0.05m/rgb/2193/');
   });
 });
 
