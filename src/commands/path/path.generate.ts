@@ -45,14 +45,6 @@ export const commandGeneratePath = command({
     registerCli(this, args);
     const startTime = performance.now();
 
-    if (args.targetBucketName.startsWith('s3://')) {
-      throw new Error(
-        `target-bucket-name entered as path, did you mean ${args.targetBucketName
-          .replace('s3://', '')
-          .replace('/', '')}?`,
-      );
-    }
-
     logger.info({ source: args.source }, 'GeneratePath:Start');
 
     const collection = await fsa.readJson<StacCollection>(fsa.join(args.source, 'collection.json'));
@@ -61,7 +53,7 @@ export const commandGeneratePath = command({
     const tiff = await loadFirstTiff(args.source, collection);
 
     const metadata: PathMetadata = {
-      targetBucketName: args.targetBucketName,
+      targetBucketName: formatBucketName(args.targetBucketName),
       category: getCategory(collection),
       geographicDescription: getGeographicDescription(collection),
       region: getRegion(collection),
@@ -84,8 +76,6 @@ export const commandGeneratePath = command({
  * @returns {string}
  */
 export function generatePath(metadata: PathMetadata): string {
-  console.log(metadata);
-  console.log('\n\n\n\n\n\n');
   const name = generateName(metadata.region, metadata.geographicDescription, metadata.event);
   if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
@@ -99,6 +89,13 @@ export function generatePath(metadata: PathMetadata): string {
   } else {
     throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.category}.`);
   }
+}
+
+function formatBucketName(bucketName: string): string {
+  if (bucketName.startsWith('s3://')) {
+    return bucketName.replace('s3://', '').replace('/', '');
+  }
+  return bucketName;
 }
 
 /**
