@@ -119,28 +119,29 @@ export function generateName(
 }
 
 export function getCategory(collection: StacCollection): string {
-  const category = collection['linz:geospatial_category'] as string;
+  const category = (collection['linz:geospatial_category'] as string) || undefined;
   if (!category) {
     throw new Error('No category in collection');
   }
   return category;
 }
 
-export function getGeographicDescription(collection: StacCollection): string {
+export function getGeographicDescription(collection: StacCollection): string | undefined {
   // This is optional metadata, therefore returning nothing is ok.
-  return collection['linz:geographic_description'] as string;
+  return (collection['linz:geographic_description'] as string) || undefined;
 }
 
-export function getEvent(collection: StacCollection): string {
+export function getEvent(collection: StacCollection): string | undefined {
   // This is optional metadata, therefore returning nothing is ok.
-  return collection['linz:event_name'] as string;
+  return (collection['linz:event_name'] as string) || undefined;
 }
 
 export function getRegion(collection: StacCollection): string {
-  const region = collection['linz:region'] as string;
+  const region = (collection['linz:region'] as string) || undefined;
   if (!region) {
     throw new Error('No region in collection');
-  } else if (!regions.includes(region)) {
+  }
+  if (!regions.includes(region)) {
     throw new Error(`Invalid region: ${region}`);
   }
   return region;
