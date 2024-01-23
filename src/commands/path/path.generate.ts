@@ -138,12 +138,8 @@ export function getEvent(collection: StacCollection): string | undefined {
 
 export function getRegion(collection: StacCollection): string {
   const region = (collection['linz:region'] as string) || undefined;
-  if (!region) {
-    throw new Error('No region in collection');
-  }
-  if (!regions.includes(region)) {
-    throw new Error(`Invalid region: ${region}`);
-  }
+  if (!region) throw new Error('No region in collection');
+  if (!regions.includes(region)) throw new Error(`Invalid region: ${region}`);
   return region;
 }
 
