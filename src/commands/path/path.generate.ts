@@ -6,6 +6,7 @@ import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { slugify } from '../../utils/slugify.js';
 import { config, createTiff, registerCli, verbose } from '../common.js';
 import { dataCategories, regions } from './path.constants.js';
 
@@ -102,8 +103,8 @@ function formatBucketName(bucketName: string): string {
  * Generates specific dataset name based on metadata inputs
  *
  * @param {string} region
- * @param {string} geographicDescription
- * @param {string} event
+ * @param {string | undefined} geographicDescription
+ * @param {string | undefined} event
  * @returns {string}
  */
 export function generateName(
@@ -111,14 +112,10 @@ export function generateName(
   geographicDescription: string | undefined,
   event: string | undefined,
 ): string {
-  let name = region;
   if (geographicDescription) {
-    name = geographicDescription.toLowerCase().replace(/\s+/g, '-');
+    return slugify([geographicDescription, event].filter(Boolean).join('-'));
   }
-  if (event) {
-    name = `${name}-${event.toLowerCase().replace(/\s+/g, '-')}`;
-  }
-  return name;
+  return slugify([region, event].filter(Boolean).join('-'));
 }
 
 export function getCategory(collection: StacCollection): string {
