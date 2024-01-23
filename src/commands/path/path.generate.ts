@@ -105,18 +105,18 @@ export function generatePath(metadata: PathMetadata): string {
  * Generates specific dataset name based on metadata inputs
  *
  * @param {string} region
- * @param {string} geospatial_description
+ * @param {string} geographicDescription
  * @param {string} event
  * @returns {string}
  */
 export function generateName(
   region: string,
-  geospatial_description: string | undefined,
+  geographicDescription: string | undefined,
   event: string | undefined,
 ): string {
   let name = region;
-  if (geospatial_description) {
-    name = geospatial_description.toLowerCase().replace(/\s+/g, '-');
+  if (geographicDescription) {
+    name = geographicDescription.toLowerCase().replace(/\s+/g, '-');
   }
   if (event) {
     name = `${name}-${event.toLowerCase().replace(/\s+/g, '-')}`;

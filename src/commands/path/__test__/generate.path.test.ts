@@ -19,7 +19,7 @@ import {
 } from '../path.generate.js';
 
 describe('GeneratePathImagery', () => {
-  it('Should match - geospatial description', () => {
+  it('Should match - geographic description', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'urban-aerial-photos',
@@ -93,7 +93,7 @@ describe('GeneratePathElevation', () => {
 });
 
 describe('GeneratePathSatelliteImagery', () => {
-  it('Should match - geospatial description & event', () => {
+  it('Should match - geographic description & event', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'satellite-imagery',
@@ -133,7 +133,7 @@ describe('GenerateName', () => {
   it('Should match - region', () => {
     assert.equal(generateName('hawkes-bay', '', ''), 'hawkes-bay');
   });
-  it('Should match - region & geospatial description', () => {
+  it('Should match - region & geographic description', () => {
     assert.equal(generateName('hawkes-bay', 'Napier', ''), 'napier');
   });
   it('Should match - region & event', () => {
@@ -193,7 +193,7 @@ describe('category', async () => {
   });
 });
 
-describe('geospatialDescription', async () => {
+describe('geographicDescription', async () => {
   it('Should return geographic description', async () => {
     const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
     const gd = getGeographicDescription(collection);
