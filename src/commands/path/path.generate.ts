@@ -158,9 +158,8 @@ export function getDate(collection: StacCollection): string {
 }
 
 /*
- *  nb: The following functions: 'loadFirstTiff', 'extractGsd', and 'extractEpsg' are workarounds
- *  to manage the block information from being added to the collection (eo stac extension).
- *  Once this is fixed the following functions can be replaced.
+ *  nb: The following functions: 'loadFirstTiff', 'extractGsd', and 'extractEpsg' are
+ *  workarounds for use until the eo stac extension is added to the collection.json.
  */
 
 /**
