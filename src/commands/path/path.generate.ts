@@ -172,18 +172,14 @@ export function getDate(collection: StacCollection): string {
  * @returns {Promise<CogTiff>}
  */
 export async function loadFirstTiff(source: string, collection: StacCollection): Promise<CogTiff> {
-  const itemLink = collection.links[2]?.href.replace('./', ''); // [2] to skip root & self links
-  if (itemLink == null) {
-    throw new Error(`No items in collection from: ${source}`);
-  }
-  const itemPath = fsa.join(source, itemLink);
+  const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
+  if (itemLink == null) throw new Error(`No items in collection from ${source}.`);
+  const itemPath = new URL(itemLink, source).href;
   const item = await fsa.readJson<StacItem>(itemPath);
   if (item == null) throw new Error(`Failed to get item.json from ${itemPath}.`);
-  const tiffLink = item.assets['visual']?.href.replace('./', '');
-  if (tiffLink == null) {
-    throw new Error(`No tiff assets in Item: ${itemPath}`);
-  }
-  const tiffPath = fsa.join(source, tiffLink);
+  const tiffLink = item.assets['visual']?.href;
+  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemPath}`);
+  const tiffPath = new URL(tiffLink, source).href;
   const tiff = await createTiff(tiffPath);
   if (tiff == null) throw new Error(`Failed to get tiff from ${tiffPath}.`);
   return tiff;
