@@ -67,6 +67,7 @@ export const commandGeneratePath = command({
 
     const target = generatePath(metadata);
     logger.info({ duration: performance.now() - startTime, target: target }, 'GeneratePath:Done');
+
     if (isArgo()) {
       // Path to where the target is located
       await fsa.write('/tmp/generate-path/target', target);
@@ -107,16 +108,13 @@ function formatBucketName(bucketName: string): string {
 /**
  * Generates specific dataset name based on metadata inputs
  *
+ * @export
  * @param {string} region
- * @param {string | undefined} geographicDescription
- * @param {string | undefined} event
+ * @param {?string} [geographicDescription]
+ * @param {?string} [event]
  * @returns {string}
  */
-export function generateName(
-  region: string,
-  geographicDescription: string | undefined,
-  event: string | undefined,
-): string {
+export function generateName(region: string, geographicDescription?: string, event?: string): string {
   if (geographicDescription) {
     return slugify([geographicDescription, event].filter(Boolean).join('-'));
   }
@@ -124,8 +122,8 @@ export function generateName(
 }
 
 export function getCategory(collection: StacCollection): string {
-  const category = (collection['linz:geospatial_category'] as string) || undefined;
-  if (!category) {
+  const category = (collection['linz:geospatial_category'] as string) ?? undefined;
+  if (category == null) {
     throw new Error('No category in collection');
   }
   return category;
@@ -133,17 +131,17 @@ export function getCategory(collection: StacCollection): string {
 
 export function getGeographicDescription(collection: StacCollection): string | undefined {
   // This is optional metadata, therefore returning nothing is ok.
-  return (collection['linz:geographic_description'] as string) || undefined;
+  return (collection['linz:geographic_description'] as string) ?? undefined;
 }
 
 export function getEvent(collection: StacCollection): string | undefined {
   // This is optional metadata, therefore returning nothing is ok.
-  return (collection['linz:event_name'] as string) || undefined;
+  return (collection['linz:event_name'] as string) ?? undefined;
 }
 
 export function getRegion(collection: StacCollection): string {
-  const region = (collection['linz:region'] as string) || undefined;
-  if (!region) throw new Error('No region in collection');
+  const region = (collection['linz:region'] as string) ?? undefined;
+  if (region == null) throw new Error('No region in collection');
   if (!regions.includes(region)) throw new Error(`Invalid region: ${region}`);
   return region;
 }
@@ -153,7 +151,7 @@ export function getDate(collection: StacCollection): string {
   const startYear = interval[0]?.slice(0, 4);
   const endYear = interval[1]?.slice(0, 4);
 
-  if (!startYear || !endYear) {
+  if (startYear == null || endYear == null) {
     throw new Error(`Missing datetime in interval: ${interval}`);
   }
   if (startYear === endYear) {
@@ -191,7 +189,7 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
 
 export function extractGsd(tiff: CogTiff): string {
   const gsd = tiff.images[0]?.resolution[0];
-  if (!gsd) {
+  if (gsd == null) {
     throw new Error(`Missing resolution tiff tag`);
   }
   return `${gsd}m`;
@@ -199,7 +197,7 @@ export function extractGsd(tiff: CogTiff): string {
 
 export function extractEpsg(tiff: CogTiff): number {
   const epsg = tiff.images[0]?.epsg;
-  if (!epsg) {
+  if (epsg == null) {
     throw new Error(`Missing epsg tiff tag`);
   } else if (!Epsg.Codes.has(epsg)) {
     throw new Error(`Invalid EPSG code: ${epsg}`);
