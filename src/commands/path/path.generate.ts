@@ -147,7 +147,7 @@ export function getRegion(collection: StacCollection): string {
 }
 
 export function getDate(collection: StacCollection): string {
-  const interval = collection.extent.temporal.interval?.[0];
+  const interval = collection.extent?.temporal?.interval?.[0];
   const startYear = interval[0]?.slice(0, 4);
   const endYear = interval[1]?.slice(0, 4);
 
