@@ -126,7 +126,6 @@ export const MapSheet = {
     if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
 
     const origin = MapSheet.offset(out.mapSheet);
-    if (origin == null) return null;
 
     const tileOffset = MapSheet.tileSize(out.gridSize, out.x, out.y);
     out.origin.x = origin.x + tileOffset.x;
@@ -145,7 +144,7 @@ export const MapSheet = {
    * MapSheet.offset("AZ") // { x: 988000, y: 5982000 }
    * ```
    */
-  offset(sheetCode: string): { x: number; y: number } | null {
+  offset(sheetCode: string): { x: number; y: number } {
     const ms = sheetCode.slice(0, 2);
     const x = Number(sheetCode.slice(2));
 
