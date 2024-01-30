@@ -9,7 +9,7 @@ import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { slugify } from '../../utils/slugify.js';
 import { config, createTiff, registerCli, verbose } from '../common.js';
-import { dataCategories, regions } from './path.constants.js';
+import { dataCategories } from './path.constants.js';
 
 export interface PathMetadata {
   targetBucketName: string;
@@ -18,8 +18,17 @@ export interface PathMetadata {
   region: string;
   event?: string;
   date: string;
-  gsd: string;
+  gsd: number;
   epsg: number;
+}
+
+export interface StacCollectionLinz {
+  'linz:lifecycle': string;
+  'linz:geospatial_category': string;
+  'linz:region': string;
+  'linz:security_classification': string;
+  'linz:event_name'?: string;
+  'linz:geographic_description'?: string;
 }
 
 export const commandGeneratePath = command({
@@ -49,18 +58,20 @@ export const commandGeneratePath = command({
 
     logger.info({ source: args.source }, 'GeneratePath:Start');
 
-    const collection = await fsa.readJson<StacCollection>(fsa.join(args.source, 'collection.json'));
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
+      fsa.join(args.source, 'collection.json'),
+    );
     if (collection == null) throw new Error(`Failed to get collection.json from ${args.source}.`);
 
     const tiff = await loadFirstTiff(args.source, collection);
 
     const metadata: PathMetadata = {
       targetBucketName: formatBucketName(args.targetBucketName),
-      category: getCategory(collection),
-      geographicDescription: getGeographicDescription(collection),
-      region: getRegion(collection),
-      event: getEvent(collection),
-      date: getDate(collection),
+      category: collection['linz:geospatial_category'],
+      region: collection['linz:region'],
+      geographicDescription: collection['linz:geographic_description'],
+      event: collection['linz:event_name'],
+      date: formatDate(collection),
       gsd: extractGsd(tiff),
       epsg: extractEpsg(tiff),
     };
@@ -78,21 +89,21 @@ export const commandGeneratePath = command({
 
 /**
  *Generates target path based on dataset category.
-
+ *
  * @param {PathMetadata} metadata
  * @returns {string}
  */
 export function generatePath(metadata: PathMetadata): string {
-  const name = generateName(metadata.region, metadata.geographicDescription, metadata.event);
+  const name = formatName(metadata.region, metadata.geographicDescription, metadata.event);
   if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated target generation not implemented for historic imagery`);
   } else if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(metadata.category)) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}/rgb/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
   } else if (metadata.category === dataCategories.SATELLITE_IMAGERY) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}/rgb/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
   } else if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}/${metadata.category}_${metadata.gsd}/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}/${metadata.category}_${metadata.gsd}m/${metadata.epsg}/`;
   } else {
     throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.category}.`);
   }
@@ -114,39 +125,14 @@ function formatBucketName(bucketName: string): string {
  * @param {?string} [event]
  * @returns {string}
  */
-export function generateName(region: string, geographicDescription?: string, event?: string): string {
+export function formatName(region: string, geographicDescription?: string, event?: string): string {
   if (geographicDescription) {
     return slugify([geographicDescription, event].filter(Boolean).join('-'));
   }
   return slugify([region, event].filter(Boolean).join('-'));
 }
 
-export function getCategory(collection: StacCollection): string {
-  const category = (collection['linz:geospatial_category'] as string) ?? undefined;
-  if (category == null) {
-    throw new Error('No category in collection');
-  }
-  return category;
-}
-
-export function getGeographicDescription(collection: StacCollection): string | undefined {
-  // This is optional metadata, therefore returning nothing is ok.
-  return (collection['linz:geographic_description'] as string) ?? undefined;
-}
-
-export function getEvent(collection: StacCollection): string | undefined {
-  // This is optional metadata, therefore returning nothing is ok.
-  return (collection['linz:event_name'] as string) ?? undefined;
-}
-
-export function getRegion(collection: StacCollection): string {
-  const region = (collection['linz:region'] as string) ?? undefined;
-  if (region == null) throw new Error('No region in collection');
-  if (!regions.includes(region)) throw new Error(`Invalid region: ${region}`);
-  return region;
-}
-
-export function getDate(collection: StacCollection): string {
+export function formatDate(collection: StacCollection): string {
   const interval = collection.extent?.temporal?.interval?.[0];
   const startYear = interval[0]?.slice(0, 4);
   const endYear = interval[1]?.slice(0, 4);
@@ -166,7 +152,7 @@ export function getDate(collection: StacCollection): string {
  */
 
 /**
- * Gets first item & tiff listed in collection
+ * Gets tiff of first item listed in collection
  *
  * @async
  * @param {string} source
@@ -187,12 +173,12 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
   return tiff;
 }
 
-export function extractGsd(tiff: CogTiff): string {
+export function extractGsd(tiff: CogTiff): number {
   const gsd = tiff.images[0]?.resolution[0];
   if (gsd == null) {
     throw new Error(`Missing resolution tiff tag`);
   }
-  return `${gsd}m`;
+  return gsd;
 }
 
 export function extractEpsg(tiff: CogTiff): number {
