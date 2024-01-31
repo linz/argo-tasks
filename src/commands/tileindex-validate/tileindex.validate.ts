@@ -283,7 +283,6 @@ export async function extractTiffLocations(
     tiffs.map(async (f): Promise<TiffLocation | null> => {
       try {
         const bbox = await findBoundingBox(f);
-        if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.url}`);
 
         const sourceEpsg = forceSourceEpsg ?? f.images[0]?.epsg;
         if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.url}`);

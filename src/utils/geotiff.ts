@@ -52,9 +52,9 @@ export const PixelIsPoint = 2;
  *
  * @returns [minX, minY, maxX, maxY] bounding box
  */
-export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, number, number] | null> {
+export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, number, number]> {
   const img = tiff.images[0];
-  if (img == null) return null;
+  if (img == null) throw new Error(`Failed to find bounding box/origin - no images found in file: ${tiff.source.url}`);
   const size = img.size;
 
   // If the tiff has geo location information just read it from the tiff
@@ -78,19 +78,14 @@ export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, n
   // Attempt to read a TFW next to the tiff
   const sourcePath = urlToString(tiff.source.url);
   const tfwPath = sourcePath.slice(0, sourcePath.lastIndexOf('.')) + '.tfw';
-  const tfwData = await fsa.read(tfwPath).catch(() => null);
-  if (tfwData) {
-    const tfw = parseTfw(String(tfwData));
+  const tfwData = await fsa.read(tfwPath);
+  const tfw = parseTfw(String(tfwData));
 
-    const x1 = tfw.origin.x;
-    const y1 = tfw.origin.y;
+  const x1 = tfw.origin.x;
+  const y1 = tfw.origin.y;
 
-    const x2 = x1 + tfw.scale.x * size.width;
-    const y2 = y1 + tfw.scale.y * size.height;
+  const x2 = x1 + tfw.scale.x * size.width;
+  const y2 = y1 + tfw.scale.y * size.height;
 
-    return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
-  }
-
-  // Unable to find any bounding box
-  return null;
+  return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
 }
