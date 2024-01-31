@@ -6,7 +6,7 @@ import { MapSheetData } from './mapsheet.data.js';
 
 describe('MapSheets', () => {
   it('should extract mapsheet', () => {
-    assert.deepEqual(MapSheet.extract('2022_CG10_500_080037.tiff'), {
+    assert.deepEqual(MapSheet.getMapTileIndex('2022_CG10_500_080037.tiff'), {
       mapSheet: 'CG10',
       gridSize: 500,
       x: 37,
@@ -17,11 +17,6 @@ describe('MapSheets', () => {
       height: 360,
       bbox: [1236640, 4837200, 1236880, 4837560],
     });
-  });
-
-  it('should iterate mapsheets', () => {
-    const sheets = [...MapSheet.iterate()];
-    assert.deepEqual(sheets, ExpectedCodes);
   });
 
   it('should calculate offsets', () => {
@@ -37,7 +32,6 @@ describe('MapSheets', () => {
     });
   }
 
-  const ExpectedCodes = [...new Set(MapSheetData.map((f) => f.code.slice(0, 2)))];
   const TestBounds = [
     { name: 'CG10_500_079035', bbox: [1236160, 4837560, 1236400, 4837920] },
     { name: 'CG10_500_079036', bbox: [1236400, 4837560, 1236640, 4837920] },
@@ -45,16 +39,16 @@ describe('MapSheets', () => {
 
   for (const test of TestBounds) {
     it('should get expected size with file ' + test.name, () => {
-      const extract = MapSheet.extract(test.name) as MapTileIndex;
-      assert.equal(extract.origin.x, test.bbox[0]);
-      assert.equal(extract.origin.y, test.bbox[3]);
-      assert.equal(extract.width, test.bbox[2] - test.bbox[0]);
-      assert.equal(extract.height, test.bbox[3] - test.bbox[1]);
+      const mapTileIndex = MapSheet.getMapTileIndex(test.name) as MapTileIndex;
+      assert.equal(mapTileIndex.origin.x, test.bbox[0]);
+      assert.equal(mapTileIndex.origin.y, test.bbox[3]);
+      assert.equal(mapTileIndex.width, test.bbox[2] - test.bbox[0]);
+      assert.equal(mapTileIndex.height, test.bbox[3] - test.bbox[1]);
     });
 
     it('should get expected bounds with file ' + test.name, () => {
-      const extract = MapSheet.extract(test.name) as MapTileIndex;
-      assert.equal(String(extract.bbox), String(test.bbox));
+      const mapTileIndex = MapSheet.getMapTileIndex(test.name) as MapTileIndex;
+      assert.equal(String(mapTileIndex.bbox), String(test.bbox));
     });
   }
 });

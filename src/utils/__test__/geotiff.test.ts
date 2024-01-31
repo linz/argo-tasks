@@ -73,14 +73,11 @@ describe('geotiff', () => {
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 
-  const fakeSource: Source = { url: new URL('memory://BX20_500_023098.tif'), fetch: async () => new ArrayBuffer(1) };
-  it('should not parse a tiff with no information ', async () => {
+  const url = new URL('memory://BX20_500_023098.tif');
+  const fakeSource: Source = { url: url, fetch: async () => new ArrayBuffer(1) };
+  it('should not parse a tiff with no information ', () => {
     // tiff with no location information and no TFW
-    const bbox = await findBoundingBox({
-      source: fakeSource,
-      images: [],
-    } as unknown as CogTiff);
-    assert.deepEqual(bbox, null);
+    assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as CogTiff));
   });
 
   it('should parse a tiff with TFW', async () => {

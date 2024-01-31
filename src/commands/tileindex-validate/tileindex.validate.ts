@@ -182,9 +182,9 @@ export const commandTileIndexValidate = command({
         features: [...outputs.values()].map((locs) => {
           const firstLoc = locs[0];
           if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
-          const extract = MapSheet.extract(firstLoc.tileName);
-          if (extract == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
-          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract.bbox), {
+          const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
+          if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
+          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
             source: locs.map((l) => l.source),
             tileName: firstLoc.tileName,
           });
@@ -276,17 +276,16 @@ export interface TiffLocation {
  */
 export async function extractTiffLocations(
   tiffs: CogTiff[],
-  scale: number,
+  gridSize: number,
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {
   const result = await Promise.all(
-    tiffs.map(async (f): Promise<TiffLocation | null> => {
+    tiffs.map(async (tiff): Promise<TiffLocation | null> => {
       try {
-        const bbox = await findBoundingBox(f);
-        if (bbox == null) throw new Error(`Failed to find Bounding Box/Origin: ${f.source.url}`);
+        const bbox = await findBoundingBox(tiff);
 
-        const sourceEpsg = forceSourceEpsg ?? f.images[0]?.epsg;
-        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.url}`);
+        const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
+        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${tiff.source.url}`);
         const centerX = (bbox[0] + bbox[2]) / 2;
         const centerY = (bbox[1] + bbox[3]) / 2;
         // bbox is not epsg:2193
@@ -294,21 +293,21 @@ export async function extractTiffLocations(
         const sourceProjection = Projection.get(sourceEpsg);
 
         const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        if (x == null || y == null) throw new Error(`Failed to reproject point: ${f.source.url}`);
+        if (x == null || y == null) throw new Error(`Failed to reproject point: ${tiff.source.url}`);
         // Tilename from center
-        const tileName = getTileName(x, y, scale);
+        const tileName = getTileName(x, y, gridSize);
 
         // if (shouldValidate) {
         //   // Is the tiff bounding box the same as the mapsheet bounding box!
         //   // Also need to allow for ~1.5cm of error between bounding boxes.
         //   // assert bbox == MapSheet.extract(tileName).bbox
         // }
-        return { bbox, source: f.source.url.href, tileName, epsg: f.images[0]?.epsg };
+        return { bbox, source: tiff.source.url.href, tileName, epsg: tiff.images[0]?.epsg };
       } catch (e) {
-        console.log(f.source.url, e);
+        console.log(tiff.source.url, e);
         return null;
       } finally {
-        await f.source.close?.();
+        await tiff.source.close?.();
       }
     }),
   );
@@ -322,36 +321,38 @@ export function getSize(extent: [number, number, number, number]): Size {
 }
 
 export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015): true | Error {
-  const extract = MapSheet.extract(tiff.tileName);
-  if (extract == null) throw new Error('Failed to extract bounding box from: ' + tiff.tileName);
+  const mapTileIndex = MapSheet.getMapTileIndex(tiff.tileName);
+  if (mapTileIndex == null) throw new Error('Failed to extract bounding box from: ' + tiff.tileName);
   // Top Left
-  const errX = Math.abs(tiff.bbox[0] - extract.bbox[0]);
-  const errY = Math.abs(tiff.bbox[3] - extract.bbox[3]);
+  const errX = Math.abs(tiff.bbox[0] - mapTileIndex.bbox[0]);
+  const errY = Math.abs(tiff.bbox[3] - mapTileIndex.bbox[3]);
   if (errX > allowedError || errY > allowedError)
     return new Error(`The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]} source:${tiff.source}`);
 
   // TODO do we validate bottom right
   const tiffSize = getSize(tiff.bbox);
-  if (tiffSize.width !== extract.width)
-    return new Error(`Tiff size is invalid width:${tiffSize.width}, expected:${extract.width} source:${tiff.source}`);
-  if (tiffSize.height !== extract.height)
+  if (tiffSize.width !== mapTileIndex.width)
     return new Error(
-      `Tiff size is invalid height:${tiffSize.height}, expected:${extract.height} source:${tiff.source}`,
+      `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width} source:${tiff.source}`,
+    );
+  if (tiffSize.height !== mapTileIndex.height)
+    return new Error(
+      `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height} source:${tiff.source}`,
     );
   return true;
 }
 
-export function getTileName(originX: number, originY: number, grid_size: number): string {
-  if (!MapSheet.gridSizes.includes(grid_size)) {
+export function getTileName(originX: number, originY: number, gridSize: number): string {
+  if (!MapSheet.gridSizes.includes(gridSize)) {
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
 
-  const scale = Math.floor(MapSheet.gridSizeMax / grid_size);
-  const tile_width = Math.floor(MapSheet.width / scale);
-  const tile_height = Math.floor(MapSheet.height / scale);
-  let nb_digits = 2;
-  if (grid_size === 500) {
-    nb_digits = 3;
+  const tilesPerMapSheet = Math.floor(MapSheet.gridSizeMax / gridSize);
+  const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheet);
+  const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheet);
+  let nbDigits = 2;
+  if (gridSize === 500) {
+    nbDigits = 3;
   }
 
   if (!(SHEET_MIN_X <= originX && originX <= SHEET_MAX_X)) {
@@ -362,16 +363,16 @@ export function getTileName(originX: number, originY: number, grid_size: number)
   }
 
   // Do some maths
-  const offset_x = Math.round(Math.floor((originX - MapSheet.origin.x) / MapSheet.width));
-  const offset_y = Math.round(Math.floor((MapSheet.origin.y - originY) / MapSheet.height));
-  const max_y = MapSheet.origin.y - offset_y * MapSheet.height;
-  const min_x = MapSheet.origin.x + offset_x * MapSheet.width;
-  const tile_x = Math.round(Math.floor((originX - min_x) / tile_width + 1));
-  const tile_y = Math.round(Math.floor((max_y - originY) / tile_height + 1));
+  const offsetX = Math.round(Math.floor((originX - MapSheet.origin.x) / MapSheet.width));
+  const offsetY = Math.round(Math.floor((MapSheet.origin.y - originY) / MapSheet.height));
+  const maxY = MapSheet.origin.y - offsetY * MapSheet.height;
+  const minX = MapSheet.origin.x + offsetX * MapSheet.width;
+  const tileX = Math.round(Math.floor((originX - minX) / tileWidth + 1));
+  const tileY = Math.round(Math.floor((maxY - originY) / tileHeight + 1));
 
   // Build name
-  const letters = Object.keys(SheetRanges)[offset_y];
-  const sheet_code = `${letters}${`${offset_x}`.padStart(2, '0')}`;
-  const tile_id = `${`${tile_y}`.padStart(nb_digits, '0')}${`${tile_x}`.padStart(nb_digits, '0')}`;
-  return `${sheet_code}_${grid_size}_${tile_id}`;
+  const letters = Object.keys(SheetRanges)[offsetY];
+  const sheetCode = `${letters}${`${offsetX}`.padStart(2, '0')}`;
+  const tileId = `${`${tileY}`.padStart(nbDigits, '0')}${`${tileX}`.padStart(nbDigits, '0')}`;
+  return `${sheetCode}_${gridSize}_${tileId}`;
 }

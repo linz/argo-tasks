@@ -56,9 +56,6 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
-/** Three sheets codes are not used and should be skipped */
-const Skipped = new Set(['BI', 'BO', 'CI']);
-
 /**
  * Topographic 1:50k map sheet calculator
  *
@@ -99,7 +96,7 @@ export const MapSheet = {
    * MapSheet.extract("BP27_1000_4817.tiff") // { mapSheet: "BP27", gridSize: 1000, x: 17, y:48 }
    * ```
    */
-  extract(fileName: string): MapTileIndex | null {
+  getMapTileIndex(fileName: string): MapTileIndex | null {
     const match = fileName.match(MapSheetRegex);
     if (match == null) return null;
     if (match[1] == null) return null;
@@ -126,7 +123,6 @@ export const MapSheet = {
     if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
 
     const origin = MapSheet.offset(out.mapSheet);
-    if (origin == null) return null;
 
     const tileOffset = MapSheet.tileSize(out.gridSize, out.x, out.y);
     out.origin.x = origin.x + tileOffset.x;
@@ -145,7 +141,7 @@ export const MapSheet = {
    * MapSheet.offset("AZ") // { x: 988000, y: 5982000 }
    * ```
    */
-  offset(sheetCode: string): { x: number; y: number } | null {
+  offset(sheetCode: string): { x: number; y: number } {
     const ms = sheetCode.slice(0, 2);
     const x = Number(sheetCode.slice(2));
 
@@ -169,26 +165,6 @@ export const MapSheet = {
     const offsetX = MapSheet.width * scale;
     const offsetY = MapSheet.height * scale;
     return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
-  },
-
-  /**
-   * Iterate mapsheet codes
-   * @example
-   * ```typescript
-   * [...MapSheet.iterate()] // [ 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', ... ]
-   * ````
-   */
-  *iterate(): Generator<string> {
-    for (let first = 0; first < 3; first++) {
-      for (let second = 0; second < 26; second++) {
-        if (first === 0 && second < charS - charA) continue;
-        const mapSheet = `${String.fromCharCode(charA + first)}${String.fromCharCode(charA + second)}`;
-        if (Skipped.has(mapSheet)) continue;
-
-        yield mapSheet;
-        if (mapSheet === MapSheet.code.end) return;
-      }
-    }
   },
 };
 

@@ -33,12 +33,12 @@ export class FakeCogTiff extends CogTiff {
   }
 
   static fromTileName(tileName: string): FakeCogTiff {
-    const extract = MapSheet.extract(tileName);
-    if (extract == null) throw new Error('invalid tile name: ' + tileName);
+    const mapTileIndex = MapSheet.getMapTileIndex(tileName);
+    if (mapTileIndex == null) throw new Error('invalid tile name: ' + tileName);
 
     return new FakeCogTiff(`s3://path/${tileName}.tiff`, {
-      origin: [extract.origin.x, extract.origin.y],
-      size: { width: extract.width, height: extract.height },
+      origin: [mapTileIndex.origin.x, mapTileIndex.origin.y],
+      size: { width: mapTileIndex.width, height: mapTileIndex.height },
       epsg: 2193,
     });
   }
