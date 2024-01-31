@@ -19,11 +19,6 @@ describe('MapSheets', () => {
     });
   });
 
-  it('should iterate mapsheets', () => {
-    const sheets = [...MapSheet.iterate()];
-    assert.deepEqual(sheets, ExpectedCodes);
-  });
-
   it('should calculate offsets', () => {
     assert.deepEqual(MapSheet.offset('AS00'), { x: 988000, y: 6234000 });
     assert.deepEqual(MapSheet.offset('AS21'), { x: 1492000, y: 6234000 });
@@ -37,7 +32,6 @@ describe('MapSheets', () => {
     });
   }
 
-  const ExpectedCodes = [...new Set(MapSheetData.map((f) => f.code.slice(0, 2)))];
   const TestBounds = [
     { name: 'CG10_500_079035', bbox: [1236160, 4837560, 1236400, 4837920] },
     { name: 'CG10_500_079036', bbox: [1236400, 4837560, 1236640, 4837920] },

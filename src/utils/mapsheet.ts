@@ -56,9 +56,6 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
-/** Three sheets codes are not used and should be skipped */
-const Skipped = new Set(['BI', 'BO', 'CI']);
-
 /**
  * Topographic 1:50k map sheet calculator
  *
@@ -168,26 +165,6 @@ export const MapSheet = {
     const offsetX = MapSheet.width * scale;
     const offsetY = MapSheet.height * scale;
     return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
-  },
-
-  /**
-   * Iterate mapsheet codes
-   * @example
-   * ```typescript
-   * [...MapSheet.iterate()] // [ 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', ... ]
-   * ````
-   */
-  *iterate(): Generator<string> {
-    for (let first = 0; first < 3; first++) {
-      for (let second = 0; second < 26; second++) {
-        if (first === 0 && second < charS - charA) continue;
-        const mapSheet = `${String.fromCharCode(charA + first)}${String.fromCharCode(charA + second)}`;
-        if (Skipped.has(mapSheet)) continue;
-
-        yield mapSheet;
-        if (mapSheet === MapSheet.code.end) return;
-      }
-    }
   },
 };
 
