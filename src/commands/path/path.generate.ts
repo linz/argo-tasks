@@ -126,10 +126,13 @@ function formatBucketName(bucketName: string): string {
  * @returns {string}
  */
 export function formatName(region: string, geographicDescription?: string, event?: string): string {
-  if (geographicDescription) {
-    return slugify([geographicDescription, event].filter(Boolean).join('-'));
+  if (event) {
+    return slugify(event.replace(' ', '-'));
   }
-  return slugify([region, event].filter(Boolean).join('-'));
+  if (geographicDescription) {
+    return slugify(geographicDescription.replace(' ', '-'));
+  }
+  return slugify(region.replace(' ', '-'));
 }
 
 export function formatDate(collection: StacCollection): string {
