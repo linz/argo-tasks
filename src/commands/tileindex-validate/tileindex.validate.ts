@@ -342,7 +342,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
   return true;
 }
 
-export function getTileName(originX: number, originY: number, gridSize: number): string {
+export function getTileName(x: number, y: number, gridSize: number): string {
   if (!MapSheet.gridSizes.includes(gridSize)) {
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
@@ -355,20 +355,20 @@ export function getTileName(originX: number, originY: number, gridSize: number):
     nbDigits = 3;
   }
 
-  if (!(SHEET_MIN_X <= originX && originX <= SHEET_MAX_X)) {
-    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${originX}`);
+  if (!(SHEET_MIN_X <= x && x <= SHEET_MAX_X)) {
+    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${x}`);
   }
-  if (!(SHEET_MIN_Y <= originY && originY <= SHEET_MAX_Y)) {
-    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${originY}`);
+  if (!(SHEET_MIN_Y <= y && y <= SHEET_MAX_Y)) {
+    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${y}`);
   }
 
   // Do some maths
-  const offsetX = Math.round(Math.floor((originX - MapSheet.origin.x) / MapSheet.width));
-  const offsetY = Math.round(Math.floor((MapSheet.origin.y - originY) / MapSheet.height));
+  const offsetX = Math.round(Math.floor((x - MapSheet.origin.x) / MapSheet.width));
+  const offsetY = Math.round(Math.floor((MapSheet.origin.y - y) / MapSheet.height));
   const maxY = MapSheet.origin.y - offsetY * MapSheet.height;
   const minX = MapSheet.origin.x + offsetX * MapSheet.width;
-  const tileX = Math.round(Math.floor((originX - minX) / tileWidth + 1));
-  const tileY = Math.round(Math.floor((maxY - originY) / tileHeight + 1));
+  const tileX = Math.round(Math.floor((x - minX) / tileWidth + 1));
+  const tileY = Math.round(Math.floor((maxY - y) / tileHeight + 1));
 
   // Build name
   const letters = Object.keys(SheetRanges)[offsetY];
