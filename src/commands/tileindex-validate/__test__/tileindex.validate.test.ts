@@ -17,8 +17,8 @@ import { FakeCogTiff } from './tileindex.validate.data.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-function convertTileName(x: string, scale: number): string | null {
-  const mapTileIndex = MapSheet.getMapTileIndex(x);
+function convertTileName(fileName: string, scale: number): string | null {
+  const mapTileIndex = MapSheet.getMapTileIndex(fileName);
   if (mapTileIndex == null) return null;
   return getTileName(mapTileIndex.bbox[0], mapTileIndex.bbox[3], scale);
 }
