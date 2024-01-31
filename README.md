@@ -11,7 +11,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 - [lds-fetch-layer](#lds-fetch-layer)
 - [create-manifest](#create-manifest)
 - [group](#group)
-- [lint-inputs](#lint-inputs)
+- [generate-path](#generate-path)
 - [list](#list)
 - [pretty-print](#pretty-print)
 - [stac catalog](#stac-catalog)
@@ -39,14 +39,16 @@ Multiple layers can be fetched at the same time, fetch `51002` and `51000`:
 lds-fetch-layer  --target ./output 51002 51000
 ```
 
-### `lint-inputs`
+### `generate-path`
 
-Lint imagery s3 target paths
+Generate target path for ODR buckets using collection metadata.
+For imagery naming conventions see: https://github.com/linz/imagery/blob/master/docs/naming.md
+For elevation naming conventions see: https://github.com/linz/elevation/blob/master/docs/naming.md
 
 #### Example
 
 ```bash
-lint-inputs s3://nz-imagery/auckland/auckland_2012_0.075m/rgb/2193/
+generate-path --target-bucket-name nz-imagery s3://linz-workflows-scratch/2024-01/04-is-niwe-hawkes-bay-l7tt4/flat/
 ```
 
 ### `list`
