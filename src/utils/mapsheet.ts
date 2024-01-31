@@ -96,7 +96,7 @@ export const MapSheet = {
    * MapSheet.extract("BP27_1000_4817.tiff") // { mapSheet: "BP27", gridSize: 1000, x: 17, y:48 }
    * ```
    */
-  extract(fileName: string): MapTileIndex | null {
+  getMapTileIndex(fileName: string): MapTileIndex | null {
     const match = fileName.match(MapSheetRegex);
     if (match == null) return null;
     if (match[1] == null) return null;

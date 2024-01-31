@@ -182,9 +182,9 @@ export const commandTileIndexValidate = command({
         features: [...outputs.values()].map((locs) => {
           const firstLoc = locs[0];
           if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
-          const extract = MapSheet.extract(firstLoc.tileName);
-          if (extract == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
-          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(extract.bbox), {
+          const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
+          if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
+          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
             source: locs.map((l) => l.source),
             tileName: firstLoc.tileName,
           });
@@ -322,21 +322,23 @@ export function getSize(extent: [number, number, number, number]): Size {
 }
 
 export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015): true | Error {
-  const extract = MapSheet.extract(tiff.tileName);
-  if (extract == null) throw new Error('Failed to extract bounding box from: ' + tiff.tileName);
+  const mapTileIndex = MapSheet.getMapTileIndex(tiff.tileName);
+  if (mapTileIndex == null) throw new Error('Failed to extract bounding box from: ' + tiff.tileName);
   // Top Left
-  const errX = Math.abs(tiff.bbox[0] - extract.bbox[0]);
-  const errY = Math.abs(tiff.bbox[3] - extract.bbox[3]);
+  const errX = Math.abs(tiff.bbox[0] - mapTileIndex.bbox[0]);
+  const errY = Math.abs(tiff.bbox[3] - mapTileIndex.bbox[3]);
   if (errX > allowedError || errY > allowedError)
     return new Error(`The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]} source:${tiff.source}`);
 
   // TODO do we validate bottom right
   const tiffSize = getSize(tiff.bbox);
-  if (tiffSize.width !== extract.width)
-    return new Error(`Tiff size is invalid width:${tiffSize.width}, expected:${extract.width} source:${tiff.source}`);
-  if (tiffSize.height !== extract.height)
+  if (tiffSize.width !== mapTileIndex.width)
     return new Error(
-      `Tiff size is invalid height:${tiffSize.height}, expected:${extract.height} source:${tiff.source}`,
+      `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width} source:${tiff.source}`,
+    );
+  if (tiffSize.height !== mapTileIndex.height)
+    return new Error(
+      `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height} source:${tiff.source}`,
     );
   return true;
 }
