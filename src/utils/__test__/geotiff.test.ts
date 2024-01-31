@@ -75,9 +75,9 @@ describe('geotiff', () => {
 
   const url = new URL('memory://BX20_500_023098.tif');
   const fakeSource: Source = { url: url, fetch: async () => new ArrayBuffer(1) };
-  it('should not parse a tiff with no information ', () => {
+  it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
-    assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as CogTiff));
+    await assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as CogTiff));
   });
 
   it('should parse a tiff with TFW', async () => {
