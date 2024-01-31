@@ -5,11 +5,12 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import { FeatureCollection } from 'geojson';
 
-import { MapSheet } from '../../../utils/mapsheet.js';
+import { GridSize, MapSheet } from '../../../utils/mapsheet.js';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
   getTileName,
+  GridSizeFromString,
   groupByTileName,
   TiffLoader,
 } from '../tileindex.validate.js';
@@ -17,10 +18,10 @@ import { FakeCogTiff } from './tileindex.validate.data.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-function convertTileName(fileName: string, scale: number): string | null {
+function convertTileName(fileName: string, gridSize: GridSize): string | null {
   const mapTileIndex = MapSheet.getMapTileIndex(fileName);
   if (mapTileIndex == null) return null;
-  return getTileName(mapTileIndex.bbox[0], mapTileIndex.bbox[3], scale);
+  return getTileName(mapTileIndex.bbox[0], mapTileIndex.bbox[3], gridSize);
 }
 
 describe('getTileName', () => {
@@ -220,4 +221,16 @@ describe('validate', () => {
       }
     });
   }
+});
+
+describe('GridSizeFromString', () => {
+  it('should return grid size number', async () => {
+    assert.equal(await GridSizeFromString.from('500'), 500);
+  });
+  it('should throw error when converting invalid grid size', async () => {
+    await assert.rejects(
+      GridSizeFromString.from('-1'),
+      new Error('Invalid grid size "-1"; valid values: "10000", "5000", "2000", "1000", "500"'),
+    );
+  });
 });

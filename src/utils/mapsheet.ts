@@ -56,6 +56,9 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
+export const gridSizes = [10_000, 5_000, 2_000, 1_000, 500] as const;
+export type GridSize = (typeof gridSizes)[number];
+
 /**
  * Topographic 1:50k map sheet calculator
  *
@@ -86,7 +89,7 @@ export const MapSheet = {
   gridSizeMax: 50000,
   roundCorrection: 0.01,
   /** Allowed grid sizes, these should exist in the LINZ Data service (meters) */
-  gridSizes: [10_000, 5_000, 2_000, 1_000, 500],
+  gridSizes: gridSizes,
 
   /**
    * Get the expected origin and mapsheet information from a file name

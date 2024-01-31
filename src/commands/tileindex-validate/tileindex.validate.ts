@@ -1,14 +1,14 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { CogTiff, Size } from '@cogeotiff/core';
-import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, number, option, optional, restPositionals, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
-import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
+import { GridSize, gridSizes, MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
@@ -104,6 +104,16 @@ export const TiffLoader = {
  * ```
  */
 
+export const GridSizeFromString: Type<string, GridSize> = {
+  async from(value) {
+    const gridSize = Number(value) as GridSize;
+    if (!gridSizes.includes(gridSize)) {
+      throw new Error(`Invalid grid size "${value}"; valid values: "${gridSizes.join('", "')}"`);
+    }
+    return gridSize;
+  },
+};
+
 export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description: 'List input files and validate there are no duplicates.',
@@ -112,7 +122,7 @@ export const commandTileIndexValidate = command({
     config,
     verbose,
     include: CommandListArgs.include,
-    scale: option({ type: number, long: 'scale', description: 'Tile grid scale to align output tile to' }),
+    scale: option({ type: GridSizeFromString, long: 'scale', description: 'Tile grid scale to align output tile to' }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
     retile: flag({
       type: boolean,
@@ -276,7 +286,7 @@ export interface TiffLocation {
  */
 export async function extractTiffLocations(
   tiffs: CogTiff[],
-  gridSize: number,
+  gridSize: GridSize,
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {
   const result = await Promise.all(
@@ -342,11 +352,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
   return true;
 }
 
-export function getTileName(x: number, y: number, gridSize: number): string {
-  if (!MapSheet.gridSizes.includes(gridSize)) {
-    throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
-  }
-
+export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const tilesPerMapSheet = Math.floor(MapSheet.gridSizeMax / gridSize);
   const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheet);
   const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheet);
