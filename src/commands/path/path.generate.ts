@@ -176,7 +176,7 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
 export function extractGsd(tiff: CogTiff): number {
   const gsd = tiff.images[0]?.resolution[0];
   if (gsd == null) {
-    throw new Error(`Missing resolution tiff tag`);
+    throw new Error(`Missing resolution tiff tag: ${tiff.source.url}`);
   }
   return gsd;
 }
@@ -184,9 +184,9 @@ export function extractGsd(tiff: CogTiff): number {
 export function extractEpsg(tiff: CogTiff): number {
   const epsg = tiff.images[0]?.epsg;
   if (epsg == null) {
-    throw new Error(`Missing epsg tiff tag`);
+    throw new Error(`Missing epsg tiff tag: ${tiff.source.url}`);
   } else if (!Epsg.Codes.has(epsg)) {
-    throw new Error(`Invalid EPSG code: ${epsg}`);
+    throw new Error(`Invalid EPSG code: ${epsg} on tiff: ${tiff.source.url}`);
   }
   return epsg;
 }
