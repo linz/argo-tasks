@@ -276,7 +276,7 @@ export interface TiffLocation {
  */
 export async function extractTiffLocations(
   tiffs: CogTiff[],
-  scale: number,
+  gridSize: number,
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {
   const result = await Promise.all(
@@ -295,7 +295,7 @@ export async function extractTiffLocations(
         const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
         if (x == null || y == null) throw new Error(`Failed to reproject point: ${tiff.source.url}`);
         // Tilename from center
-        const tileName = getTileName(x, y, scale);
+        const tileName = getTileName(x, y, gridSize);
 
         // if (shouldValidate) {
         //   // Is the tiff bounding box the same as the mapsheet bounding box!
@@ -347,9 +347,9 @@ export function getTileName(originX: number, originY: number, gridSize: number):
     throw new Error(`The scale has to be one of the following values: ${MapSheet.gridSizes}`);
   }
 
-  const scale = Math.floor(MapSheet.gridSizeMax / gridSize);
-  const tileWidth = Math.floor(MapSheet.width / scale);
-  const tileHeight = Math.floor(MapSheet.height / scale);
+  const tilesPerMapSheet = Math.floor(MapSheet.gridSizeMax / gridSize);
+  const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheet);
+  const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheet);
   let nbDigits = 2;
   if (gridSize === 500) {
     nbDigits = 3;
