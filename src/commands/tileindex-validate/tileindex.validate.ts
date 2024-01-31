@@ -280,12 +280,12 @@ export async function extractTiffLocations(
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {
   const result = await Promise.all(
-    tiffs.map(async (f): Promise<TiffLocation | null> => {
+    tiffs.map(async (tiff): Promise<TiffLocation | null> => {
       try {
-        const bbox = await findBoundingBox(f);
+        const bbox = await findBoundingBox(tiff);
 
-        const sourceEpsg = forceSourceEpsg ?? f.images[0]?.epsg;
-        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${f.source.url}`);
+        const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
+        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${tiff.source.url}`);
         const centerX = (bbox[0] + bbox[2]) / 2;
         const centerY = (bbox[1] + bbox[3]) / 2;
         // bbox is not epsg:2193
@@ -293,7 +293,7 @@ export async function extractTiffLocations(
         const sourceProjection = Projection.get(sourceEpsg);
 
         const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        if (x == null || y == null) throw new Error(`Failed to reproject point: ${f.source.url}`);
+        if (x == null || y == null) throw new Error(`Failed to reproject point: ${tiff.source.url}`);
         // Tilename from center
         const tileName = getTileName(x, y, scale);
 
@@ -302,12 +302,12 @@ export async function extractTiffLocations(
         //   // Also need to allow for ~1.5cm of error between bounding boxes.
         //   // assert bbox == MapSheet.extract(tileName).bbox
         // }
-        return { bbox, source: f.source.url.href, tileName, epsg: f.images[0]?.epsg };
+        return { bbox, source: tiff.source.url.href, tileName, epsg: tiff.images[0]?.epsg };
       } catch (e) {
-        console.log(f.source.url, e);
+        console.log(tiff.source.url, e);
         return null;
       } finally {
-        await f.source.close?.();
+        await tiff.source.close?.();
       }
     }),
   );
