@@ -4,6 +4,7 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
+import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
 import { config, registerCli, verbose } from '../common.js';
 
 export const CommandListArgs = {
@@ -23,7 +24,11 @@ export const CommandListArgs = {
     description: 'Limit the file count to this amount, -1 is no limit',
   }),
   output: option({ type: optional(string), long: 'output', description: 'Output location for the listing' }),
-  location: restPositionals({ type: string, displayName: 'location', description: 'Where to list' }),
+  location: restPositionals({
+    type: PathStringOrUrlStringFromString,
+    displayName: 'location',
+    description: 'Where to list',
+  }),
 };
 
 export const commandList = command({

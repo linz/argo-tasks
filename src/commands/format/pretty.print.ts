@@ -1,16 +1,18 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, optional, positional, string } from 'cmd-ts';
+import { command, option, optional, positional } from 'cmd-ts';
 import { basename } from 'path';
 import prettier from 'prettier';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
+import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
+import { PathString, UrlString } from '../../utils/types.js';
 import { config, registerCli, verbose } from '../common.js';
 
-function isJson(x: string): boolean {
-  const search = x.toLowerCase();
+function isJson(path: PathString | UrlString): boolean {
+  const search = path.toLowerCase();
   return search.endsWith('.json');
 }
 
@@ -22,11 +24,15 @@ export const commandPrettyPrint = command({
     config,
     verbose,
     target: option({
-      type: optional(string),
+      type: optional(PathStringOrUrlStringFromString),
       long: 'target',
       description: 'Use if files have to be saved somewhere else instead of overwriting the source (testing)',
     }),
-    path: positional({ type: string, displayName: 'path', description: 'Path of the files to pretty print' }),
+    path: positional({
+      type: PathStringOrUrlStringFromString,
+      displayName: 'path',
+      description: 'Path of the files to pretty print',
+    }),
   },
 
   async handler(args) {
@@ -45,7 +51,7 @@ export const commandPrettyPrint = command({
     if (jsonFiles[0]) await fsa.head(jsonFiles[0]);
 
     // format files
-    await Promise.all(jsonFiles.map((f: string) => formatFile(f, args.target)));
+    await Promise.all(jsonFiles.map((f: PathString | UrlString) => formatFile(f, args.target)));
     logger.info({ fileCount: jsonFiles.length, duration: performance.now() - startTime }, 'PrettyPrint:Done');
   },
 });
@@ -56,12 +62,15 @@ export const commandPrettyPrint = command({
  * @param path of the file to format
  * @param target where to save the output. If not specified, overwrite the original file.
  */
-export async function formatFile(path: string, target = ''): Promise<void> {
+export async function formatFile(
+  path: PathString | UrlString,
+  target: PathString | UrlString = '' as UrlString,
+): Promise<void> {
   logger.debug({ file: path }, 'PrettyPrint:RunPrettier');
   const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(path)), DEFAULT_PRETTIER_FORMAT);
   if (target) {
     // FIXME: can be duplicate files
-    path = fsa.join(target, basename(path));
+    path = fsa.join(target, basename(path)) as PathString | UrlString;
   }
 
   await fsa.write(path, Buffer.from(prettyPrinted));

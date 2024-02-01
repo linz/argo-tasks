@@ -9,6 +9,8 @@ import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
+import { PathString, UrlString } from '../../utils/types.js';
 import { registerCli, verbose } from '../common.js';
 
 const gunzipProm = promisify(gunzip);
@@ -22,7 +24,7 @@ export function isGzip(b: Buffer): boolean {
  *
  * If the file ends with .gz or is a GZIP like {@link isGzip} file it will automatically be decompressed.
  */
-async function readConfig(config: string): Promise<ConfigBundled> {
+async function readConfig(config: PathString | UrlString): Promise<ConfigBundled> {
   const obj = await fsa.read(config);
   if (config.endsWith('.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
@@ -39,17 +41,17 @@ interface Output {
 export const CommandCreateMapSheetArgs = {
   verbose,
   path: option({
-    type: string,
+    type: PathStringOrUrlStringFromString,
     long: 'path',
     description: 'Path of flatgeobuf, this can be both a local path or s3 location',
   }),
   bmConfig: option({
-    type: string,
+    type: PathStringOrUrlStringFromString,
     long: 'bm-config',
     description: 'Path of basemaps config json, this can be both a local path or s3 location',
   }),
   output: option({
-    type: string,
+    type: PathStringOrUrlStringFromString,
     long: 'output',
     description: 'Output of the mapsheet file',
   }),

@@ -5,9 +5,10 @@ import { createGunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { PathString, UrlString } from '../../utils/types.js';
 import { config, registerCli, verbose } from '../common.js';
 
-function getTargetPath(source: string, path: string): string {
+function getTargetPath(source: PathString | UrlString, path: PathString | UrlString): string {
   if (path.startsWith('./')) return fsa.join(source, path.slice(2));
   throw new Error('No relative path found: ' + path);
 }
@@ -50,7 +51,10 @@ export const commandLdsFetch = command({
 
       const targetFile = fsa.join(args.target, lastItem.href.replace('.json', '.gpkg'));
 
-      const targetPath = getTargetPath(`s3://linz-lds-cache/${layerId}/`, lastItem.href).replace('.json', '.gpkg');
+      const targetPath = getTargetPath(
+        `s3://linz-lds-cache/${layerId}/` as UrlString,
+        lastItem.href as UrlString,
+      ).replace('.json', '.gpkg');
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.stream(targetPath).pipe(createGunzip()));
     }

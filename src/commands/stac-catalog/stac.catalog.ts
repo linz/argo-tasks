@@ -6,6 +6,7 @@ import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
 import { config, registerCli, verbose } from '../common.js';
 
 /** is a path a URL */
@@ -54,7 +55,10 @@ export const commandStacCatalog = command({
       description: 'JSON template file location for the Catalog metadata',
     }),
     output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
-    path: positional({ type: string, description: 'Location to search for collection.json paths' }),
+    path: positional({
+      type: PathStringOrUrlStringFromString,
+      description: 'Location to search for collection.json paths',
+    }),
   },
 
   async handler(args) {

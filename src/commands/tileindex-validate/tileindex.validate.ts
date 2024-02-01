@@ -1,14 +1,16 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { CogTiff, Size } from '@cogeotiff/core';
-import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, number, option, optional, restPositionals } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
+import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
+import { PathString, UrlString } from '../../utils/types.js';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
@@ -17,8 +19,8 @@ const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x co
 const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
 const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
-export function isTiff(x: string): boolean {
-  const search = x.toLowerCase();
+export function isTiff(path: PathString | UrlString): boolean {
+  const search = path.toLowerCase();
   return search.endsWith('.tiff') || search.endsWith('.tif');
 }
 
@@ -30,7 +32,7 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: string[], args?: FileFilter): Promise<CogTiff[]> {
+  async load(locations: (PathString | UrlString)[], args?: FileFilter): Promise<CogTiff[]> {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
@@ -129,7 +131,11 @@ export const commandTileIndexValidate = command({
       defaultValueIsSerializable: true,
     }),
     forceOutput,
-    location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
+    location: restPositionals({
+      type: PathStringOrUrlStringFromString,
+      displayName: 'location',
+      description: 'Location of the source files',
+    }),
   },
   async handler(args) {
     registerCli(this, args);
@@ -316,6 +322,7 @@ export async function extractTiffLocations(
   for (const o of result) if (o) output.push(o);
   return output;
 }
+
 export function getSize(extent: [number, number, number, number]): Size {
   return { width: extent[2] - extent[0], height: extent[3] - extent[1] };
 }

@@ -2,9 +2,10 @@ import { fsa } from '@chunkd/fs';
 
 import { parseSize } from '../commands/common.js';
 import { logger } from '../log.js';
+import { PathString, UrlString } from './types.js';
 
 export interface FileSizeInfo {
-  path: string;
+  path: PathString | UrlString;
   size?: number;
 }
 
@@ -23,11 +24,11 @@ export async function* asyncFilter<T extends { path: string; size?: number }>(
 }
 
 /** Chunk files into a max size (eg 1GB chunks) or max count (eg 100 files) or what ever comes first when both are defined */
-export function chunkFiles(values: FileSizeInfo[], count: number, size: number): string[][] {
+export function chunkFiles(values: FileSizeInfo[], count: number, size: number): (PathString | UrlString)[][] {
   if (count == null && size == null) return [values.map((c) => c.path)];
 
-  const output: string[][] = [];
-  let current: string[] = [];
+  const output: (PathString | UrlString)[][] = [];
+  let current: (PathString | UrlString)[] = [];
   let totalSize = 0;
   for (const v of values) {
     current.push(v.path);
@@ -42,7 +43,10 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
   return output;
 }
 export type FileFilter = { include?: string; exclude?: string; limit?: number; group?: number; groupSize?: string };
-export async function getFiles(paths: string[], args: FileFilter = {}): Promise<string[][]> {
+export async function getFiles(
+  paths: (PathString | UrlString)[],
+  args: FileFilter = {},
+): Promise<(PathString | UrlString)[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const maxSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
@@ -58,7 +62,7 @@ export async function getFiles(paths: string[], args: FileFilter = {}): Promise<
       // Skip empty files
       if (file.size === 0) continue;
       if (file.size != null) size += file.size;
-      outputFiles.push(file);
+      outputFiles.push({ path: file.path, size: file.size } as FileSizeInfo);
       if (limit > 0 && outputFiles.length >= limit) break;
     }
     if (limit > 0 && outputFiles.length >= limit) break;

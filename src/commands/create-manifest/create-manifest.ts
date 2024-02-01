@@ -8,6 +8,8 @@ import { CliInfo } from '../../cli.info.js';
 import { getActionLocation } from '../../utils/action.storage.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
+import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
+import { PathString, UrlString } from '../../utils/types.js';
 import { config, registerCli, verbose } from '../common.js';
 
 export const commandCreateManifest = command({
@@ -37,16 +39,24 @@ export const commandCreateManifest = command({
       long: 'limit',
       description: 'Limit the file count to this amount, -1 is no limit',
     }),
-    output: option({ type: string, long: 'output', description: 'Output location for the listing' }),
-    target: option({ type: string, long: 'target', description: 'Copy destination' }),
-    source: restPositionals({ type: string, displayName: 'source', description: 'Where to list' }),
+    output: option({
+      type: PathStringOrUrlStringFromString,
+      long: 'output',
+      description: 'Output location for the listing',
+    }),
+    target: option({ type: PathStringOrUrlStringFromString, long: 'target', description: 'Copy destination' }),
+    source: restPositionals({
+      type: PathStringOrUrlStringFromString,
+      displayName: 'source',
+      description: 'Where to list',
+    }),
   },
   async handler(args) {
     registerCli(this, args);
 
-    const outputCopy: string[] = [];
+    const outputCopy: (PathString | UrlString)[] = [];
 
-    const targetPath: string = args.target;
+    const targetPath = args.target;
     const actionLocation = getActionLocation();
     for (const source of args.source) {
       const outputFiles = await createManifest(source, targetPath, args);
@@ -59,9 +69,9 @@ export const commandCreateManifest = command({
           const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
-          outputCopy.push(targetLocation);
+          outputCopy.push(targetLocation as PathString | UrlString);
         } else {
-          outputCopy.push(gzipSync(outBuf).toString('base64url'));
+          outputCopy.push(gzipSync(outBuf).toString('base64url') as PathString | UrlString);
         }
       }
     }
@@ -69,7 +79,7 @@ export const commandCreateManifest = command({
   },
 });
 
-export type SourceTarget = { source: string; target: string };
+export type SourceTarget = { source: PathString | UrlString; target: PathString | UrlString };
 export type ManifestFilter = FileFilter & { flatten: boolean; transform?: string };
 
 function createTransformFunc(transform: string): (f: string) => string {
@@ -78,8 +88,8 @@ function createTransformFunc(transform: string): (f: string) => string {
 }
 
 export async function createManifest(
-  source: string,
-  targetPath: string,
+  source: PathString | UrlString,
+  targetPath: PathString | UrlString,
   args: ManifestFilter,
 ): Promise<SourceTarget[][]> {
   const outputFiles = await getFiles([source], args);
@@ -94,7 +104,7 @@ export async function createManifest(
       const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
       let target = targetPath;
       if (baseFile) {
-        target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
+        target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile) as PathString | UrlString;
       }
       validatePaths(filePath, target);
       current.push({ source: filePath, target });
@@ -105,7 +115,7 @@ export async function createManifest(
   return outputCopy;
 }
 
-export function validatePaths(source: string, target: string): void {
+export function validatePaths(source: PathString | UrlString, target: PathString | UrlString): void {
   // Throws error if the source and target paths are not:
   // - both directories
   // - both paths

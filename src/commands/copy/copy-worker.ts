@@ -7,6 +7,7 @@ import { WorkerRpc } from '@wtrpc/core';
 
 import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+import { PathString, UrlString } from '../../utils/types.js';
 import { registerCli } from '../common.js';
 import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
@@ -23,7 +24,7 @@ export const FixableContentType = new Set(['binary/octet-stream', 'application/o
  * @param meta File metadata
  * @returns New fixed file metadata if fixed other wise source file metadata
  */
-export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
+export function fixFileMetadata(path: PathString | UrlString, meta: FileInfo): FileInfo {
   // If the content is encoded we do not know what the content-type should be
   if (meta.contentEncoding != null) return meta;
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
@@ -46,7 +47,7 @@ export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
  * @param retryCount number of times to retry
  * @returns file size if it exists or null
  */
-async function tryHead(filePath: string, retryCount = 3): Promise<number | null> {
+async function tryHead(filePath: PathString | UrlString, retryCount = 3): Promise<number | null> {
   for (let i = 0; i < retryCount; i++) {
     const ret = await fsa.head(filePath);
     if (ret?.size) return ret.size;
