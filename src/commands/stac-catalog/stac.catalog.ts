@@ -6,7 +6,7 @@ import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
 
 /** is a path a URL */
@@ -56,7 +56,7 @@ export const commandStacCatalog = command({
     }),
     output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
     path: positional({
-      type: PathStringOrUrlStringFromString,
+      type: UrlParser,
       description: 'Location to search for collection.json paths',
     }),
   },
@@ -83,12 +83,12 @@ export const commandStacCatalog = command({
   },
 });
 
-export async function createLinks(basePath: string, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
-  const collections = await fsa.toArray(fsa.list(basePath));
+export async function createLinks(baseUrl: URL, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
+  const collections = await fsa.toArray(fsa.list(baseUrl.href));
 
   for (const coll of collections) {
     if (coll.endsWith('/collection.json')) {
-      const relPath = makeRelative(basePath, coll);
+      const relPath = makeRelative(baseUrl.href, coll);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
       // Muktihash header 0x12 - Sha256 0x20 - 32 bits of hex digest

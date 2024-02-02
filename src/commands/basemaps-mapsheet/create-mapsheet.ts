@@ -9,8 +9,7 @@ import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
-import { PathString, UrlString } from '../../utils/types.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { registerCli, verbose } from '../common.js';
 
 const gunzipProm = promisify(gunzip);
@@ -24,9 +23,9 @@ export function isGzip(b: Buffer): boolean {
  *
  * If the file ends with .gz or is a GZIP like {@link isGzip} file it will automatically be decompressed.
  */
-async function readConfig(config: PathString | UrlString): Promise<ConfigBundled> {
-  const obj = await fsa.read(config);
-  if (config.endsWith('.gz') || isGzip(obj)) {
+async function readConfig(config: URL): Promise<ConfigBundled> {
+  const obj = await fsa.read(config.href);
+  if (config.href.endsWith('.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
     return JSON.parse(data.toString());
   }
@@ -41,17 +40,17 @@ interface Output {
 export const CommandCreateMapSheetArgs = {
   verbose,
   path: option({
-    type: PathStringOrUrlStringFromString,
+    type: UrlParser,
     long: 'path',
     description: 'Path of flatgeobuf, this can be both a local path or s3 location',
   }),
   bmConfig: option({
-    type: PathStringOrUrlStringFromString,
+    type: UrlParser,
     long: 'bm-config',
     description: 'Path of basemaps config json, this can be both a local path or s3 location',
   }),
   output: option({
-    type: PathStringOrUrlStringFromString,
+    type: UrlParser,
     long: 'output',
     description: 'Output of the mapsheet file',
   }),
@@ -82,7 +81,7 @@ export const basemapsCreateMapSheet = command({
     const exclude = args.exclude ? new RegExp(args.exclude.toLowerCase(), 'i') : undefined;
 
     logger.info({ path }, 'MapSheet:LoadFgb');
-    const buf = await fsa.read(path);
+    const buf = await fsa.read(path.href);
     logger.info({ config }, 'MapSheet:LoadConfig');
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
@@ -97,7 +96,7 @@ export const basemapsCreateMapSheet = command({
     const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
 
     logger.info({ outputPath }, 'MapSheet:WriteOutput');
-    const outputWritePromise = fsa.write(outputPath, JSON.stringify(outputs, null, 2));
+    const outputWritePromise = fsa.write(outputPath.href, JSON.stringify(outputs, null, 2));
 
     await Promise.all([featuresWritePromise, outputWritePromise]);
   },

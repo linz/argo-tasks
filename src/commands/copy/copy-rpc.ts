@@ -1,5 +1,3 @@
-import { PathString, UrlString } from '../../utils/types.js';
-
 export type CopyContract = {
   copy(args: CopyContractArgs): Promise<CopyStats>;
 };
@@ -8,7 +6,7 @@ export interface CopyContractArgs {
   /** Copy ID for tracing */
   id: string;
   /** List of files that need to be copied */
-  manifest: { source: PathString | UrlString; target: PathString | UrlString }[];
+  manifest: { source: URL; target: URL }[];
   /** Offset into the manifest to start at */
   start: number;
   /** Number of records to copy */

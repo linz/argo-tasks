@@ -17,7 +17,7 @@ describe('stacCatalog', () => {
     await fs.write('m://base/directory1/collection.json', JSON.stringify({ title: 'CollectionA' }));
     await fs.write('m://base/directory2/collection.json', JSON.stringify({ title: 'CollectionB' }));
 
-    const links = await createLinks('m://base/', [
+    const links = await createLinks(new URL('m://base/'), [
       { rel: 'self', href: './catalog.json' },
       { rel: 'root', href: './catalog.json' },
     ]);

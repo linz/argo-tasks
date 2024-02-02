@@ -8,8 +8,7 @@ import { CliInfo } from '../../cli.info.js';
 import { getActionLocation } from '../../utils/action.storage.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
-import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
-import { PathString, UrlString } from '../../utils/types.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
 
 export const commandCreateManifest = command({
@@ -40,13 +39,13 @@ export const commandCreateManifest = command({
       description: 'Limit the file count to this amount, -1 is no limit',
     }),
     output: option({
-      type: PathStringOrUrlStringFromString,
+      type: UrlParser,
       long: 'output',
       description: 'Output location for the listing',
     }),
-    target: option({ type: PathStringOrUrlStringFromString, long: 'target', description: 'Copy destination' }),
+    target: option({ type: UrlParser, long: 'target', description: 'Copy destination' }),
     source: restPositionals({
-      type: PathStringOrUrlStringFromString,
+      type: UrlParser,
       displayName: 'source',
       description: 'Where to list',
     }),
@@ -54,7 +53,7 @@ export const commandCreateManifest = command({
   async handler(args) {
     registerCli(this, args);
 
-    const outputCopy: (PathString | UrlString)[] = [];
+    const outputCopy: URL[] = [];
 
     const targetPath = args.target;
     const actionLocation = getActionLocation();
@@ -66,20 +65,20 @@ export const commandCreateManifest = command({
 
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
-          const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
+          const targetLocation = fsa.join(actionLocation.href, `actions/manifest-${targetHash}.json`);
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
-          outputCopy.push(targetLocation as PathString | UrlString);
+          outputCopy.push(new URL(targetLocation));
         } else {
-          outputCopy.push(gzipSync(outBuf).toString('base64url') as PathString | UrlString);
+          outputCopy.push(new URL(gzipSync(outBuf).toString('base64url')));
         }
       }
     }
-    await fsa.write(args.output, JSON.stringify(outputCopy));
+    await fsa.write(args.output.href, JSON.stringify(outputCopy));
   },
 });
 
-export type SourceTarget = { source: PathString | UrlString; target: PathString | UrlString };
+export type SourceTarget = { source: URL; target: URL };
 export type ManifestFilter = FileFilter & { flatten: boolean; transform?: string };
 
 function createTransformFunc(transform: string): (f: string) => string {
@@ -87,27 +86,23 @@ function createTransformFunc(transform: string): (f: string) => string {
   return new Function('f', 'return ' + transform) as (f: string) => string;
 }
 
-export async function createManifest(
-  source: PathString | UrlString,
-  targetPath: PathString | UrlString,
-  args: ManifestFilter,
-): Promise<SourceTarget[][]> {
-  const outputFiles = await getFiles([source], args);
+export async function createManifest(sourceUrl: URL, targetUrl: URL, args: ManifestFilter): Promise<SourceTarget[][]> {
+  const chunks = await getFiles([sourceUrl], args);
   const outputCopy: SourceTarget[][] = [];
 
   const transformFunc = args.transform ? createTransformFunc(args.transform) : null;
 
-  for (const chunk of outputFiles) {
+  for (const chunk of chunks) {
     const current: SourceTarget[] = [];
 
-    for (const filePath of chunk) {
-      const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
-      let target = targetPath;
+    for (const chunkUrl of chunk) {
+      const baseFile = args.flatten ? path.basename(chunkUrl.href) : chunkUrl.href.slice(sourceUrl.href.length);
+      let target = targetUrl;
       if (baseFile) {
-        target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile) as PathString | UrlString;
+        target = new URL(fsa.joinAll(targetUrl.href, transformFunc ? transformFunc(baseFile) : baseFile));
       }
-      validatePaths(filePath, target);
-      current.push({ source: filePath, target });
+      validatePaths(chunkUrl, target);
+      current.push({ source: chunkUrl, target });
     }
     outputCopy.push(current);
   }
@@ -115,15 +110,15 @@ export async function createManifest(
   return outputCopy;
 }
 
-export function validatePaths(source: PathString | UrlString, target: PathString | UrlString): void {
+export function validatePaths(source: URL, target: URL): void {
   // Throws error if the source and target paths are not:
   // - both directories
   // - both paths
-  if (source.endsWith('/') && target.endsWith('/')) {
+  if (source.href.endsWith('/') && target.href.endsWith('/')) {
     return;
   }
-  if (!source.endsWith('/') && !target.endsWith('/')) {
+  if (!source.href.endsWith('/') && !target.href.endsWith('/')) {
     return;
   }
-  throw new Error(`Path Mismatch - source: ${source}, target: ${target}`);
+  throw new Error(`Path Mismatch - source: ${source.href}, target: ${target.href}`);
 }

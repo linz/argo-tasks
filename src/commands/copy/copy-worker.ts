@@ -7,7 +7,6 @@ import { WorkerRpc } from '@wtrpc/core';
 
 import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { PathString, UrlString } from '../../utils/types.js';
 import { registerCli } from '../common.js';
 import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
@@ -20,20 +19,20 @@ export const FixableContentType = new Set(['binary/octet-stream', 'application/o
  * If the file has been written with a unknown binary contentType attempt to fix it with common content types
  *
  *
- * @param path File path to fix the metadata of
+ * @param url File path to fix the metadata of
  * @param meta File metadata
  * @returns New fixed file metadata if fixed other wise source file metadata
  */
-export function fixFileMetadata(path: PathString | UrlString, meta: FileInfo): FileInfo {
+export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
   // If the content is encoded we do not know what the content-type should be
   if (meta.contentEncoding != null) return meta;
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
 
   // Assume our tiffs are cloud optimized
-  if (isTiff(path)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+  if (isTiff(url)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
 
   // overwrite with application/json
-  if (path.endsWith('.json')) return { ...meta, contentType: 'application/json' };
+  if (url.href.endsWith('.json')) return { ...meta, contentType: 'application/json' };
 
   return meta;
 }
@@ -43,13 +42,13 @@ export function fixFileMetadata(path: PathString | UrlString, meta: FileInfo): F
  *
  * try reading the path {retryCount} times before aborting, with a delay of 250ms between requests
  *
- * @param filePath File to head
+ * @param url File to head
  * @param retryCount number of times to retry
  * @returns file size if it exists or null
  */
-async function tryHead(filePath: PathString | UrlString, retryCount = 3): Promise<number | null> {
+async function tryHead(url: URL, retryCount = 3): Promise<number | null> {
   for (let i = 0; i < retryCount; i++) {
-    const ret = await fsa.head(filePath);
+    const ret = await fsa.head(url.href);
     if (ret?.size) return ret.size;
     await new Promise((r) => setTimeout(r, 250));
   }
@@ -67,7 +66,7 @@ export const worker = new WorkerRpc<CopyContract>({
       if (todo == null) continue;
 
       Q.push(async () => {
-        const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
+        const [source, target] = await Promise.all([fsa.head(todo.source.href), fsa.head(todo.target.href)]);
         if (source == null) return;
         if (source.size == null) return;
         if (target != null) {
@@ -87,8 +86,8 @@ export const worker = new WorkerRpc<CopyContract>({
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
         await fsa.write(
-          todo.target,
-          fsa.stream(todo.source),
+          todo.target.href,
+          fsa.stream(todo.source.href),
           args.fixContentType ? fixFileMetadata(todo.source, source) : source,
         );
 
@@ -97,7 +96,7 @@ export const worker = new WorkerRpc<CopyContract>({
         if (targetSize !== source.size) {
           log.fatal({ ...todo }, 'Copy:Failed');
           // Cleanup the failed copy so it can be retried
-          if (targetSize != null) await fsa.delete(todo.target);
+          if (targetSize != null) await fsa.delete(todo.target.href);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
         log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');

@@ -7,8 +7,7 @@ import * as z from 'zod';
 import { CliInfo } from '../../cli.info.js';
 import { logger, logId } from '../../log.js';
 import { ActionCopy } from '../../utils/actions.js';
-import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
-import { PathString, UrlString } from '../../utils/types.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
 import { CopyContract } from './copy-rpc.js';
 
@@ -52,7 +51,7 @@ export const commandCopy = command({
     }),
     concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
     manifest: restPositionals({
-      type: PathStringOrUrlStringFromString,
+      type: UrlParser,
       displayName: 'location',
       description: 'Manifest of file to copy',
     }),
@@ -76,10 +75,12 @@ export const commandCopy = command({
     const chunks = [];
     const startTime = performance.now();
     for (const m of args.manifest) {
-      const json = await fsa.readJson<ActionCopy>(m);
+      const json = await fsa.readJson<ActionCopy>(m.href);
       if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + m);
-      const data = json.parameters.manifest;
-      const manifest = CopyManifest.parse(data) as { source: PathString | UrlString; target: PathString | UrlString }[];
+      const data = CopyManifest.parse(json.parameters.manifest);
+      const manifest: ActionCopy['parameters']['manifest'] = data.map(({ source, target }) => {
+        return { source: new URL(source), target: new URL(target) };
+      });
 
       const chunkSize = Math.ceil(manifest.length / args.concurrency);
       for (let i = 0; i < manifest.length; i += chunkSize) {

@@ -6,13 +6,12 @@ import prettier from 'prettier';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
-import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { PathString, UrlString } from '../../utils/types.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
 
-function isJson(path: PathString | UrlString): boolean {
-  const search = path.toLowerCase();
+function isJson(url: URL): boolean {
+  const search = url.href.toLowerCase();
   return search.endsWith('.json');
 }
 
@@ -24,12 +23,12 @@ export const commandPrettyPrint = command({
     config,
     verbose,
     target: option({
-      type: optional(PathStringOrUrlStringFromString),
+      type: optional(UrlParser),
       long: 'target',
       description: 'Use if files have to be saved somewhere else instead of overwriting the source (testing)',
     }),
     path: positional({
-      type: PathStringOrUrlStringFromString,
+      type: UrlParser,
       displayName: 'path',
       description: 'Path of the files to pretty print',
     }),
@@ -48,10 +47,10 @@ export const commandPrettyPrint = command({
     if (jsonFiles.length === 0) throw new Error('No Files found');
 
     // test if can access one of the file
-    if (jsonFiles[0]) await fsa.head(jsonFiles[0]);
+    if (jsonFiles[0]) await fsa.head(jsonFiles[0].href);
 
     // format files
-    await Promise.all(jsonFiles.map((f: PathString | UrlString) => formatFile(f, args.target)));
+    await Promise.all(jsonFiles.map((url: URL) => formatFile(url, args.target)));
     logger.info({ fileCount: jsonFiles.length, duration: performance.now() - startTime }, 'PrettyPrint:Done');
   },
 });
@@ -59,21 +58,18 @@ export const commandPrettyPrint = command({
 /**
  * Format the file
  *
- * @param path of the file to format
+ * @param source of the file to format
  * @param target where to save the output. If not specified, overwrite the original file.
  */
-export async function formatFile(
-  path: PathString | UrlString,
-  target: PathString | UrlString = '' as UrlString,
-): Promise<void> {
-  logger.debug({ file: path }, 'PrettyPrint:RunPrettier');
-  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(path)), DEFAULT_PRETTIER_FORMAT);
+export async function formatFile(source: URL, target: URL | null = null): Promise<void> {
+  logger.debug({ file: source }, 'PrettyPrint:RunPrettier');
+  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(source.href)), DEFAULT_PRETTIER_FORMAT);
   if (target) {
     // FIXME: can be duplicate files
-    path = fsa.join(target, basename(path)) as PathString | UrlString;
+    source = new URL(fsa.join(target.href, basename(source.href)));
   }
 
-  await fsa.write(path, Buffer.from(prettyPrinted));
+  await fsa.write(source.href, Buffer.from(prettyPrinted));
 }
 
 /**

@@ -2,10 +2,10 @@ import { fsa } from '@chunkd/fs';
 
 import { parseSize } from '../commands/common.js';
 import { logger } from '../log.js';
-import { PathString, UrlString } from './types.js';
+import { UrlParser } from './parsers.js';
 
 export interface FileSizeInfo {
-  path: PathString | UrlString;
+  path: URL;
   size?: number;
 }
 
@@ -24,11 +24,11 @@ export async function* asyncFilter<T extends { path: string; size?: number }>(
 }
 
 /** Chunk files into a max size (eg 1GB chunks) or max count (eg 100 files) or what ever comes first when both are defined */
-export function chunkFiles(values: FileSizeInfo[], count: number, size: number): (PathString | UrlString)[][] {
+export function chunkFiles(values: FileSizeInfo[], count: number, size: number): URL[][] {
   if (count == null && size == null) return [values.map((c) => c.path)];
 
-  const output: (PathString | UrlString)[][] = [];
-  let current: (PathString | UrlString)[] = [];
+  const output: URL[][] = [];
+  let current: URL[] = [];
   let totalSize = 0;
   for (const v of values) {
     current.push(v.path);
@@ -43,16 +43,13 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
   return output;
 }
 export type FileFilter = { include?: string; exclude?: string; limit?: number; group?: number; groupSize?: string };
-export async function getFiles(
-  paths: (PathString | UrlString)[],
-  args: FileFilter = {},
-): Promise<(PathString | UrlString)[][]> {
+export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const maxSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
   const outputFiles: FileSizeInfo[] = [];
   for (const rawPath of paths) {
-    const targetPath = rawPath.trim();
+    const targetPath = rawPath.href.trim();
     logger.debug({ path: targetPath }, 'List');
     const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), args));
     logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
@@ -62,7 +59,7 @@ export async function getFiles(
       // Skip empty files
       if (file.size === 0) continue;
       if (file.size != null) size += file.size;
-      outputFiles.push({ path: file.path, size: file.size } as FileSizeInfo);
+      outputFiles.push({ path: await UrlParser.from(file.path), size: file.size } as FileSizeInfo);
       if (limit > 0 && outputFiles.length >= limit) break;
     }
     if (limit > 0 && outputFiles.length >= limit) break;

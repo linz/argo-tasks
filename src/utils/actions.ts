@@ -1,6 +1,6 @@
 export interface ActionCopy {
   action: 'copy';
   parameters: {
-    manifest: { source: string; target: string }[];
+    manifest: { source: URL; target: URL }[];
   };
 }

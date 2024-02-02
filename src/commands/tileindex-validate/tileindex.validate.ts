@@ -7,10 +7,9 @@ import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
-import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { MapSheet, SheetRanges } from '../../utils/mapsheet.js';
-import { PathString, UrlString } from '../../utils/types.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
@@ -19,8 +18,8 @@ const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x co
 const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
 const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
-export function isTiff(path: PathString | UrlString): boolean {
-  const search = path.toLowerCase();
+export function isTiff(url: URL): boolean {
+  const search = url.href.toLowerCase();
   return search.endsWith('.tiff') || search.endsWith('.tif');
 }
 
@@ -32,16 +31,16 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: (PathString | UrlString)[], args?: FileFilter): Promise<CogTiff[]> {
+  async load(locations: URL[], args?: FileFilter): Promise<CogTiff[]> {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
     // Ensure credentials are loaded before concurrently loading tiffs
-    if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
+    if (tiffLocations[0]) await fsa.head(tiffLocations[0].href);
 
     const promises = await Promise.allSettled(
-      tiffLocations.map((loc: string) => {
-        return createTiff(loc).catch((e) => {
+      tiffLocations.map((loc: URL) => {
+        return createTiff(loc.href).catch((e) => {
           // Ensure tiff loading errors include the location of the tiff
           logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
           throw e;
@@ -132,7 +131,7 @@ export const commandTileIndexValidate = command({
     }),
     forceOutput,
     location: restPositionals({
-      type: PathStringOrUrlStringFromString,
+      type: UrlParser,
       displayName: 'location',
       description: 'Location of the source files',
     }),

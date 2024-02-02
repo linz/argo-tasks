@@ -4,7 +4,6 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { UrlString } from '../../../utils/types.js';
 import { worker } from '../copy-worker.js';
 
 describe('copyFiles', () => {
@@ -27,12 +26,12 @@ describe('copyFiles', () => {
       id: '1',
       manifest: [
         {
-          source: 'memory://source/topographic.json' as UrlString,
-          target: 'memory://target/topographic.json' as UrlString,
+          source: new URL('memory://source/topographic.json'),
+          target: new URL('memory://target/topographic.json'),
         },
         {
-          source: 'memory://source/foo/bar/topographic.png' as UrlString,
-          target: 'memory://target/topographic.png' as UrlString,
+          source: new URL('memory://source/foo/bar/topographic.png'),
+          target: new URL('memory://target/topographic.png'),
         },
       ],
       start: 0,
@@ -78,12 +77,12 @@ describe('copyFiles', () => {
       id: '1',
       manifest: [
         {
-          source: 'memory://source/topographic.json' as UrlString,
-          target: 'memory://target/topographic.json' as UrlString,
+          source: new URL('memory://source/topographic.json'),
+          target: new URL('memory://target/topographic.json'),
         },
         {
-          source: 'memory://source/foo/bar/topographic.tiff' as UrlString,
-          target: 'memory://target/topographic.tiff' as UrlString,
+          source: new URL('memory://source/foo/bar/topographic.tiff'),
+          target: new URL('memory://target/topographic.tiff'),
         },
       ],
       start: 0,
@@ -122,12 +121,12 @@ describe('copyFiles', () => {
       id: '1',
       manifest: [
         {
-          source: 'memory://source/topographic.json' as UrlString,
-          target: 'memory://target/topographic.json' as UrlString,
+          source: new URL('memory://source/topographic.json'),
+          target: new URL('memory://target/topographic.json'),
         },
         {
-          source: 'memory://source/foo/bar/topographic.tiff' as UrlString,
-          target: 'memory://target/topographic.tiff' as UrlString,
+          source: new URL('memory://source/foo/bar/topographic.tiff'),
+          target: new URL('memory://target/topographic.tiff'),
         },
       ],
       start: 0,

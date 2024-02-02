@@ -4,7 +4,7 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { getFiles } from '../../utils/chunk.js';
-import { PathStringOrUrlStringFromString } from '../../utils/cmd-ts-types.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
 
 export const CommandListArgs = {
@@ -25,7 +25,7 @@ export const CommandListArgs = {
   }),
   output: option({ type: optional(string), long: 'output', description: 'Output location for the listing' }),
   location: restPositionals({
-    type: PathStringOrUrlStringFromString,
+    type: UrlParser,
     displayName: 'location',
     description: 'Where to list',
   }),
