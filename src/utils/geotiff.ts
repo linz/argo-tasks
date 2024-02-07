@@ -1,8 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { Tiff, TiffTagGeo } from '@cogeotiff/core';
 
-import { urlToString } from '../commands/common.js';
-
 /**
  * Attempt to parse a tiff world file
  *
@@ -76,9 +74,9 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   }
 
   // Attempt to read a TFW next to the tiff
-  const sourcePath = urlToString(tiff.source.url);
-  const tfwPath = sourcePath.slice(0, sourcePath.lastIndexOf('.')) + '.tfw';
-  const tfwData = await fsa.read(new URL(`file://${tfwPath}`));
+  const sourceUrl = tiff.source.url.href;
+  const tfwUrl = sourceUrl.slice(0, sourceUrl.lastIndexOf('.')) + '.tfw';
+  const tfwData = await fsa.read(new URL(tfwUrl));
   const tfw = parseTfw(String(tfwData));
 
   const x1 = tfw.origin.x;

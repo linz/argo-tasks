@@ -10,7 +10,7 @@ import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { GridSize, gridSizes, MapSheet, SheetRanges } from '../../utils/mapsheet.js';
 import { UrlParser } from '../../utils/parsers.js';
-import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
+import { config, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
@@ -40,7 +40,7 @@ export const TiffLoader = {
 
     const promises = await Promise.allSettled(
       tiffLocations.map((loc: URL) => {
-        return createTiff(loc).catch((e) => {
+        return Tiff.create(fsa.source(loc)).catch((e) => {
           // Ensure tiff loading errors include the location of the tiff
           logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
           throw e;

@@ -8,7 +8,7 @@ import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { slugify } from '../../utils/slugify.js';
-import { config, createTiff, registerCli, verbose } from '../common.js';
+import { config, registerCli, verbose } from '../common.js';
 import { dataCategories } from './path.constants.js';
 
 export interface PathMetadata {
@@ -166,7 +166,7 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
   const tiffLink = item.assets['visual']?.href;
   if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemUrl}`);
   const tiffPath = new URL(tiffLink, source);
-  const tiff = await createTiff(tiffPath);
+  const tiff = await Tiff.create(fsa.source(tiffPath));
   if (tiff == null) throw new Error(`Failed to get tiff from ${tiffPath}.`);
   return tiff;
 }

@@ -1,7 +1,4 @@
-import { fsa } from '@chunkd/fs';
-import { Tiff } from '@cogeotiff/core';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
-import pLimit from 'p-limit';
 import { fileURLToPath } from 'url';
 
 import { CliInfo } from '../cli.info.js';
@@ -77,31 +74,6 @@ export function parseSize(size: string): number {
   const fileSize = Number(textString);
   if (isNaN(fileSize)) throw new Error(`Failed to parse: ${size} as a file size`);
   return Math.round(fileSize);
-}
-
-/** Limit fetches to 25 concurrently **/
-const TiffQueue = pLimit(25);
-
-/**
- * There is a minor difference between @chunkd/core and @cogeotiff/core
- * because @chunkd/core is a major version behind, when it upgrades this can be removed
- *
- * Because the major version upgrade for chunkd is a lot of work skip it for now (2023-11)
- *
- * @param loc location to load the tiff from
- * @returns Initialized tiff
- */
-export async function createTiff(loc: URL): Promise<Tiff> {
-  const source = fsa.source(loc);
-
-  const tiff = new Tiff({
-    url: loc,
-    fetch: (offset, length): Promise<ArrayBuffer> => {
-      /** Limit fetches concurrency see {@link TiffQueue} **/
-      return TiffQueue(() => source.fetch(offset, length));
-    },
-  });
-  return tiff.init();
 }
 
 /**

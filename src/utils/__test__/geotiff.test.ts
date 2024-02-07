@@ -4,7 +4,6 @@ import { describe, it } from 'node:test';
 import { fsa, FsMemory } from '@chunkd/fs';
 import { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
-import { createTiff } from '../../commands/common.js';
 import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';
 
 describe('geotiff', () => {
@@ -66,7 +65,7 @@ describe('geotiff', () => {
     );
     fsa.register('memory://', source);
 
-    const tiff = await createTiff(new URL('memory://BX20_500_023098.tif'));
+    const tiff = await Tiff.create(fsa.source(new URL('memory://BX20_500_023098.tif')));
     const bbox = await findBoundingBox(tiff);
 
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
