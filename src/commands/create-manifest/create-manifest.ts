@@ -53,7 +53,7 @@ export const commandCreateManifest = command({
   async handler(args) {
     registerCli(this, args);
 
-    const outputCopy: URL[] = [];
+    const outputCopy: string[] = [];
 
     const targetPath = args.target;
     const actionLocation = getActionLocation();
@@ -68,9 +68,9 @@ export const commandCreateManifest = command({
           const targetLocation = fsa.join(actionLocation.href, `actions/manifest-${targetHash}.json`);
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
-          outputCopy.push(new URL(targetLocation));
+          outputCopy.push(targetLocation);
         } else {
-          outputCopy.push(new URL(gzipSync(outBuf).toString('base64url')));
+          outputCopy.push(gzipSync(outBuf).toString('base64url'));
         }
       }
     }
