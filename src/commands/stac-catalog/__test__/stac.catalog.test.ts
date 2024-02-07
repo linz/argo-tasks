@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import { createLinks, makeRelative } from '../stac.catalog.js';
 
@@ -44,18 +43,34 @@ describe('stacCatalog', () => {
 
 describe('makeRelative', () => {
   it('should make relative urls', () => {
-    assert.equal(makeRelative('s3://linz-imagery/', 's3://linz-imagery/catalog.json'), 'catalog.json');
+    assert.equal(
+      makeRelative(fsa.toUrl('s3://linz-imagery/'), fsa.toUrl('s3://linz-imagery/catalog.json')),
+      './catalog.json',
+    );
   });
 
   it('should make relative from absolute paths', () => {
-    assert.equal(makeRelative('/home/blacha/', '/home/blacha/catalog.json'), 'catalog.json');
+    assert.equal(makeRelative(fsa.toUrl('/home/blacha/'), fsa.toUrl('/home/blacha/catalog.json')), './catalog.json');
   });
 
-  it('should make relative relative paths', () => {
-    assert.equal(makeRelative('/home/blacha/', './catalog.json'), './catalog.json');
+  it('should not make relative on different hosts', () => {
+    assert.throws(
+      () => makeRelative(fsa.toUrl('https://google.com/blacha/'), fsa.toUrl('https://fake.com/test/catalog.json')),
+      Error,
+    );
   });
 
-  it('should not make relative on different paths', () => {
-    assert.throws(() => makeRelative('/home/blacha/', '/home/test/catalog.json'), Error);
+  it('should not make relative on different protocols', () => {
+    assert.throws(
+      () => makeRelative(fsa.toUrl('s3://fake.com/blacha/'), fsa.toUrl('file://fake.com/test/catalog.json')),
+      Error,
+    );
+  });
+
+  it('should not make relative on different ports', () => {
+    assert.throws(
+      () => makeRelative(fsa.toUrl('s3://fake.com:443/blacha/'), fsa.toUrl('s3://fake.com:883/test/catalog.json')),
+      Error,
+    );
   });
 });

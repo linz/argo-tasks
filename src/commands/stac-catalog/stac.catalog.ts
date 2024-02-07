@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional } from 'cmd-ts';
 import { createHash } from 'crypto';
-import { isAbsolute } from 'path';
+import path from 'path';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -30,14 +30,17 @@ export function isUrl(path: string): boolean {
  * @param filePath target file
  * @returns relative path to file
  */
-export function makeRelative(basePath: string, filePath: string): string {
-  if (isUrl(filePath) || isAbsolute(filePath)) {
-    if (!filePath.startsWith(basePath)) {
-      throw new Error(`FilePaths are not relative base: ${basePath} file: ${filePath}`);
-    }
-    return filePath.slice(basePath.length);
+export function makeRelative(basePath: URL, filePath: URL): string {
+  if (filePath.host !== basePath.host) {
+    throw new Error(`Relative host mismatch "${basePath.href}" vs "${filePath.href}"`);
   }
-  return filePath;
+  if (filePath.protocol !== basePath.protocol) {
+    throw new Error(`Relative protocol mismatch "${basePath.href}" vs "${filePath.href}"`);
+  }
+
+  const relPath = path.relative(basePath.href, filePath.href);
+  if (!relPath.startsWith('.')) return './' + relPath;
+  return relPath;
 }
 
 const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/schema.json';
@@ -88,14 +91,13 @@ export async function createLinks(baseUrl: URL, templateLinks: st.StacLink[]): P
 
   for (const coll of collections) {
     if (coll.href.endsWith('/collection.json')) {
-      const relPath = makeRelative(baseUrl.href, coll.href);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
       // Muktihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
       const checksum = '1220' + createHash('sha256').update(buf).digest('hex');
       const collLink: st.StacLink = {
         rel: 'child',
-        href: new URL(relPath, 'file://').href,
+        href: makeRelative(baseUrl, coll),
         title: collection.title,
         'file:checksum': checksum,
         'file:size': buf.length,
