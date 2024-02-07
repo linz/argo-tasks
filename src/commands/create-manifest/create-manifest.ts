@@ -99,7 +99,7 @@ export async function createManifest(sourceUrl: URL, targetUrl: URL, args: Manif
       const baseFile = args.flatten ? path.basename(chunkUrl.href) : chunkUrl.href.slice(sourceUrl.href.length);
       let target = targetUrl;
       if (baseFile) {
-        target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetUrl.href);
+        target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetUrl);
       }
       validatePaths(chunkUrl, target);
       current.push({ source: chunkUrl, target });

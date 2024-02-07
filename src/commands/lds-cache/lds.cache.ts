@@ -5,8 +5,8 @@ import { createGunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
-import {UrlParser} from "../../utils/parsers.js";
 
 function getTargetPath(source: URL, path: string): string {
   if (path.startsWith('./')) return new URL(path.slice(2), source.href).href;
@@ -43,7 +43,9 @@ export const commandLdsFetch = command({
         await fsa.write(targetLocation, fsa.readStream(source).pipe(createGunzip()));
       }
 
-      const collectionJson = await fsa.readJson<stac.StacCollection>(new URL(`s3://linz-lds-cache/${layerId}/collection.json`));
+      const collectionJson = await fsa.readJson<stac.StacCollection>(
+        new URL(`s3://linz-lds-cache/${layerId}/collection.json`),
+      );
       logger.info({ layerId, title: collectionJson.title }, 'Collection:Download:Done');
 
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
