@@ -2,12 +2,13 @@ import { fsa } from '@chunkd/fs';
 import { CogTiff } from '@cogeotiff/core';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { fileURLToPath } from 'url';
 
 import { CliInfo } from '../cli.info.js';
 import { registerFileSystem } from '../fs.register.js';
 import { logger, registerLogger } from '../log.js';
 import { isArgo } from '../utils/argo.js';
+import { UrlParser } from '../utils/parsers.js';
 
 export const config = option({
   long: 'config',
@@ -91,30 +92,17 @@ const TiffQueue = pLimit(25);
  * @param loc location to load the tiff from
  * @returns Initialized tiff
  */
-export function createTiff(loc: string): Promise<CogTiff> {
+export async function createTiff(loc: string): Promise<CogTiff> {
   const source = fsa.source(loc);
 
   const tiff = new CogTiff({
-    url: tryParseUrl(loc),
+    url: await UrlParser.from(loc),
     fetch: (offset, length): Promise<ArrayBuffer> => {
       /** Limit fetches concurrency see {@link TiffQueue} **/
       return TiffQueue(() => source.fetchBytes(offset, length));
     },
   });
   return tiff.init();
-}
-
-/**
- * Attempt to parse a location as a string as a URL,
- *
- * Relative paths will be converted into file urls.
- */
-function tryParseUrl(loc: string): URL {
-  try {
-    return new URL(loc);
-  } catch (e) {
-    return pathToFileURL(loc);
-  }
 }
 
 /**
