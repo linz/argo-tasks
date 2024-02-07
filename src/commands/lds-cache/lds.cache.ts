@@ -6,9 +6,10 @@ import { createGunzip } from 'zlib';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { config, registerCli, verbose } from '../common.js';
+import {UrlParser} from "../../utils/parsers.js";
 
 function getTargetPath(source: URL, path: string): string {
-  if (path.startsWith('./')) return fsa.join(source.href, path.slice(2));
+  if (path.startsWith('./')) return new URL(path.slice(2), source.href).href;
   throw new Error('No relative path found: ' + path);
 }
 
@@ -20,7 +21,7 @@ export const commandLdsFetch = command({
     config,
     verbose,
     layers: restPositionals({ type: string, description: 'Layer id and optional version "layer@version"' }),
-    target: option({ type: string, long: 'target', description: 'Target directory to save files' }),
+    target: option({ type: UrlParser, long: 'target', description: 'Target directory to save files' }),
   },
   async handler(args) {
     registerCli(this, args);
@@ -33,29 +34,29 @@ export const commandLdsFetch = command({
 
       if (layerVersion != null) {
         if (isNaN(Number(layerVersion))) throw new Error('Invalid LayerVersion:' + layerVersion);
-        const source = `s3://linz-lds-cache/${layerId}/${layerId}_${layerVersion}.gpkg`;
+        const source = new URL(`s3://linz-lds-cache/${layerId}/${layerId}_${layerVersion}.gpkg`);
         await fsa.head(source); // Ensure we have read permission for the source
 
         logger.info({ layerId, layerVersion, source }, 'Collection:Item:Fetch');
         const fileName = `./${layerId}_${layerVersion}.gpkg`;
-        const targetLocation = fsa.join(args.target, fileName);
-        await fsa.write(targetLocation, fsa.stream(source).pipe(createGunzip()));
+        const targetLocation = new URL(fileName, args.target.href);
+        await fsa.write(targetLocation, fsa.readStream(source).pipe(createGunzip()));
       }
 
-      const collectionJson = await fsa.readJson<stac.StacCollection>(`s3://linz-lds-cache/${layerId}/collection.json`);
+      const collectionJson = await fsa.readJson<stac.StacCollection>(new URL(`s3://linz-lds-cache/${layerId}/collection.json`));
       logger.info({ layerId, title: collectionJson.title }, 'Collection:Download:Done');
 
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
       if (lastItem == null) throw new Error('No items found');
 
-      const targetFile = fsa.join(args.target, lastItem.href.replace('.json', '.gpkg'));
+      const targetFile = new URL(lastItem.href.replace('.json', '.gpkg'), args.target.href);
 
       const targetPath = getTargetPath(new URL(`s3://linz-lds-cache/${layerId}/`), lastItem.href).replace(
         '.json',
         '.gpkg',
       );
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
-      await fsa.write(targetFile, fsa.stream(targetPath).pipe(createGunzip()));
+      await fsa.write(targetFile, fsa.readStream(new URL(targetPath)).pipe(createGunzip()));
     }
   },
 });

@@ -59,7 +59,7 @@ export const commandCopy = command({
   async handler(args) {
     registerCli(this, args);
 
-    const workerUrl = new URL('./copy-worker.js', import.meta.url);
+    const workerUrl = new URL('copy-worker.js', import.meta.url);
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
 
     const stats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
@@ -75,7 +75,7 @@ export const commandCopy = command({
     const chunks = [];
     const startTime = performance.now();
     for (const m of args.manifest) {
-      const json = await fsa.readJson<ActionCopy>(m.href);
+      const json = await fsa.readJson<ActionCopy>(m);
       if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + m);
       const data = CopyManifest.parse(json.parameters.manifest);
       const manifest: ActionCopy['parameters']['manifest'] = data.map(({ source, target }) => {

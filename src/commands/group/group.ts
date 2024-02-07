@@ -5,6 +5,7 @@ import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
+import {UrlParser} from "../../utils/parsers.js";
 
 /** Chunk an array into a group size
  * @example
@@ -45,7 +46,7 @@ export const CommandGroupArgs = {
     description: 'list of items to group, can be a JSON array',
   }),
   fromFile: option({
-    type: optional(string),
+    type: optional(UrlParser),
     long: 'from-file',
     description: 'JSON file to load inputs from, must be a JSON Array',
   }),
@@ -86,13 +87,13 @@ export const commandGroup = command({
           },
           'Group:Output:File',
         );
-        await fsa.write(`/tmp/group/output/${groupId}.json`, JSON.stringify(grouped[i], null, 2));
+        await fsa.write(new URL(`file:///tmp/group/output/${groupId}.json`), JSON.stringify(grouped[i], null, 2));
         items.push(groupId);
       }
 
       // output.json contains ["001","002","003","004","005","006","007"...]
       logger.debug({ target: '/tmp/group/output.json', groups: items }, 'Group:Output');
-      await fsa.write('/tmp/group/output.json', JSON.stringify(items));
+      await fsa.write(new URL('file:///tmp/group/output.json'), JSON.stringify(items));
     }
   },
 });

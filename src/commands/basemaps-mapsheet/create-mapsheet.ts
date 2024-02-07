@@ -24,7 +24,7 @@ export function isGzip(b: Buffer): boolean {
  * If the file ends with .gz or is a GZIP like {@link isGzip} file it will automatically be decompressed.
  */
 async function readConfig(config: URL): Promise<ConfigBundled> {
-  const obj = await fsa.read(config.href);
+  const obj = await fsa.read(config);
   if (config.href.endsWith('.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
     return JSON.parse(data.toString());
@@ -73,30 +73,30 @@ export const basemapsCreateMapSheet = command({
   args: CommandCreateMapSheetArgs,
   async handler(args) {
     registerCli(this, args);
-    const path = args.path;
+    const url = args.path;
     const config = args.bmConfig;
-    const outputPath = args.output;
+    const outputUrl = args.output;
 
     const include = args.include ? new RegExp(args.include.toLowerCase(), 'i') : undefined;
     const exclude = args.exclude ? new RegExp(args.exclude.toLowerCase(), 'i') : undefined;
 
-    logger.info({ path }, 'MapSheet:LoadFgb');
-    const buf = await fsa.read(path.href);
+    logger.info({ path: url }, 'MapSheet:LoadFgb');
+    const buf = await fsa.read(url);
     logger.info({ config }, 'MapSheet:LoadConfig');
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
-    const featuresWritePromise = fsa.write('features.json', JSON.stringify(rest));
+    const featuresWritePromise = fsa.write(new URL('file://features.json'), JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
 
-    logger.info({ path, config }, 'MapSheet:CreateMapSheet');
+    logger.info({ path: url, config }, 'MapSheet:CreateMapSheet');
     const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
 
-    logger.info({ outputPath }, 'MapSheet:WriteOutput');
-    const outputWritePromise = fsa.write(outputPath.href, JSON.stringify(outputs, null, 2));
+    logger.info({ outputPath: outputUrl }, 'MapSheet:WriteOutput');
+    const outputWritePromise = fsa.write(outputUrl, JSON.stringify(outputs, null, 2));
 
     await Promise.all([featuresWritePromise, outputWritePromise]);
   },

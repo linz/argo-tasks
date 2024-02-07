@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { before, describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import {FsMemory} from "@chunkd/fs/build/src/systems/memory.js";
 
 import { commandGroup, groupItems } from '../group.js';
 
@@ -34,8 +34,8 @@ describe('group', () => {
 
   it('should load from a JSON array', async () => {
     await commandGroup.handler({ inputs: [JSON.stringify([1, 2, 3, 4])], forceOutput: true, size: 50, ...values });
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000']);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3, 4]);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output.json')), ['000']);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output/000.json')), [1, 2, 3, 4]);
   });
 
   const values = {
@@ -52,9 +52,9 @@ describe('group', () => {
       ...values,
     });
 
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3]);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [4, 'alpha']);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output.json')), ['000', '001']);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output/000.json')), [1, 2, 3]);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output/001.json')), [4, 'alpha']);
   });
 
   it('should load from strings', async () => {
@@ -64,23 +64,23 @@ describe('group', () => {
       size: 3,
       ...values,
     });
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), ['s3://foo/bar', 1, 2]);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [3, 4, 'alpha']);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output.json')), ['000', '001']);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output/000.json')), ['s3://foo/bar', 1, 2]);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output/001.json')), [3, 4, 'alpha']);
   });
 
   it('should load from a file', async () => {
-    await fsa.write('/tmp/group/input.json', Buffer.from(JSON.stringify([1, 2, 3, 4, 5])));
+    await fsa.write(new URL('file:///tmp/group/input.json'), Buffer.from(JSON.stringify([1, 2, 3, 4, 5])));
     await commandGroup.handler({
       inputs: [],
-      fromFile: '/tmp/group/input.json',
+      fromFile: new URL('file:///tmp/group/input.json'),
       forceOutput: true,
       size: 3,
       config: undefined,
       verbose: false,
     });
-    assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000', '001']);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3]);
-    assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [4, 5]);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output.json')), ['000', '001']);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output/000.json')), [1, 2, 3]);
+    assert.deepEqual(await fsa.readJson(new URL('file:///tmp/group/output/001.json')), [4, 5]);
   });
 });

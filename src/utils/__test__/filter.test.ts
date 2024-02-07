@@ -6,9 +6,9 @@ import { fsa } from '@chunkd/fs';
 import { asyncFilter } from '../chunk.js';
 
 describe('AsyncFilter', () => {
-  function makeGenerator(list: string[]): () => AsyncGenerator<{ path: string }> {
-    return async function* gen(): AsyncGenerator<{ path: string }> {
-      for (const path of list) yield { path };
+  function makeGenerator(paths: string[]): () => AsyncGenerator<{ url: URL }> {
+    return async function* gen(): AsyncGenerator<{ url: URL }> {
+      for (const path of paths) yield { url: new URL(`file://${path}`) };
     };
   }
 

@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { CogTiff, TiffTagGeo } from '@cogeotiff/core';
+import { Tiff, TiffTagGeo } from '@cogeotiff/core';
 
 import { urlToString } from '../commands/common.js';
 
@@ -52,7 +52,7 @@ export const PixelIsPoint = 2;
  *
  * @returns [minX, minY, maxX, maxY] bounding box
  */
-export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, number, number]> {
+export async function findBoundingBox(tiff: Tiff): Promise<[number, number, number, number]> {
   const img = tiff.images[0];
   if (img == null) throw new Error(`Failed to find bounding box/origin - no images found in file: ${tiff.source.url}`);
   const size = img.size;
@@ -78,7 +78,7 @@ export async function findBoundingBox(tiff: CogTiff): Promise<[number, number, n
   // Attempt to read a TFW next to the tiff
   const sourcePath = urlToString(tiff.source.url);
   const tfwPath = sourcePath.slice(0, sourcePath.lastIndexOf('.')) + '.tfw';
-  const tfwData = await fsa.read(tfwPath);
+  const tfwData = await fsa.read(new URL(`file://${tfwPath}`));
   const tfw = parseTfw(String(tfwData));
 
   const x1 = tfw.origin.x;

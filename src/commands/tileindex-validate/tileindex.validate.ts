@@ -1,6 +1,6 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { CogTiff, Size } from '@cogeotiff/core';
+import { Tiff, Size } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -31,16 +31,16 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: URL[], args?: FileFilter): Promise<CogTiff[]> {
+  async load(locations: URL[], args?: FileFilter): Promise<Tiff[]> {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
     // Ensure credentials are loaded before concurrently loading tiffs
-    if (tiffLocations[0]) await fsa.head(tiffLocations[0].href);
+    if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
 
     const promises = await Promise.allSettled(
       tiffLocations.map((loc: URL) => {
-        return createTiff(loc.href).catch((e) => {
+        return createTiff(loc).catch((e) => {
           // Ensure tiff loading errors include the location of the tiff
           logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
           throw e;
@@ -177,7 +177,7 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await fsa.write('/tmp/tile-index-validate/input.geojson', {
+      await fsa.write(new URL('file:///tmp/tile-index-validate/input.geojson'), JSON.stringify({
         type: 'FeatureCollection',
         features: locations.map((loc) => {
           const epsg = args.sourceEpsg ?? loc.epsg;
@@ -191,8 +191,8 @@ export const commandTileIndexValidate = command({
             isDuplicate: (outputs.get(loc.tileName)?.length ?? 1) > 1,
           });
         }),
-      });
-      await fsa.write('/tmp/tile-index-validate/output.geojson', {
+      }));
+      await fsa.write(new URL('file:///tmp/tile-index-validate/output.geojson'), JSON.stringify({
         type: 'FeatureCollection',
         features: [...outputs.values()].map((locs) => {
           const firstLoc = locs[0];
@@ -204,13 +204,13 @@ export const commandTileIndexValidate = command({
             tileName: firstLoc.tileName,
           });
         }),
-      });
+      }));
       await fsa.write(
-        '/tmp/tile-index-validate/file-list.json',
-        [...outputs.values()].map((locs) => {
+        new URL('file:///tmp/tile-index-validate/file-list.json'),
+        JSON.stringify([...outputs.values()].map((locs) => {
           return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
         }),
-      );
+      ));
     }
 
     let retileNeeded = false;
@@ -290,7 +290,7 @@ export interface TiffLocation {
  *
  */
 export async function extractTiffLocations(
-  tiffs: CogTiff[],
+  tiffs: Tiff[],
   gridSize: GridSize,
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {

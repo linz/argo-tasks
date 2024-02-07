@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, positional, string } from 'cmd-ts';
+import { command, option, positional } from 'cmd-ts';
 import { createHash } from 'crypto';
 import { isAbsolute } from 'path';
 import * as st from 'stac-ts';
@@ -50,11 +50,11 @@ export const commandStacCatalog = command({
     config,
     verbose,
     template: option({
-      type: string,
+      type: UrlParser,
       long: 'template',
       description: 'JSON template file location for the Catalog metadata',
     }),
-    output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
+    output: option({ type: UrlParser, long: 'output', description: 'Output location for the catalog' }),
     path: positional({
       type: UrlParser,
       description: 'Location to search for collection.json paths',
@@ -84,18 +84,18 @@ export const commandStacCatalog = command({
 });
 
 export async function createLinks(baseUrl: URL, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
-  const collections = await fsa.toArray(fsa.list(baseUrl.href));
+  const collections = await fsa.toArray(fsa.list(baseUrl));
 
   for (const coll of collections) {
-    if (coll.endsWith('/collection.json')) {
-      const relPath = makeRelative(baseUrl.href, coll);
+    if (coll.href.endsWith('/collection.json')) {
+      const relPath = makeRelative(baseUrl.href, coll.href);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
       // Muktihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
       const checksum = '1220' + createHash('sha256').update(buf).digest('hex');
       const collLink: st.StacLink = {
         rel: 'child',
-        href: fsa.join('./', relPath),
+        href: new URL(relPath, 'file://').href,
         title: collection.title,
         'file:checksum': checksum,
         'file:size': buf.length,

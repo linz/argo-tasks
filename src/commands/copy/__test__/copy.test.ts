@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import {FsMemory} from "@chunkd/fs/build/src/systems/memory.js";
 
 import { worker } from '../copy-worker.js';
 
@@ -16,10 +16,10 @@ describe('copyFiles', () => {
 
   it('should copy to the target location', async () => {
     await Promise.all([
-      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+      fsa.write(new URL('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/json',
       }),
-      fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test'), { contentType: 'image/png' }),
+      fsa.write(new URL('memory://source/foo/bar/topographic.png'), Buffer.from('test'), { contentType: 'image/png' }),
     ]);
 
     await worker.routes.copy({
@@ -42,16 +42,16 @@ describe('copyFiles', () => {
     });
 
     const [jsonSource, jsonTarget] = await Promise.all([
-      fsa.head('memory://source/topographic.json'),
-      fsa.head('memory://target/topographic.json'),
+      fsa.head(new URL('memory://source/topographic.json')),
+      fsa.head(new URL('memory://target/topographic.json')),
     ]);
 
     assert.equal(jsonTarget?.contentType, 'application/json');
     assert.equal(jsonSource?.contentType, 'application/json');
 
     const [pngSource, pngTarget] = await Promise.all([
-      fsa.head('memory://source/foo/bar/topographic.png'),
-      fsa.head('memory://target/topographic.png'),
+      fsa.head(new URL('memory://source/foo/bar/topographic.png')),
+      fsa.head(new URL('memory://target/topographic.png')),
     ]);
 
     assert.equal(pngTarget?.contentType, 'image/png');
@@ -66,10 +66,10 @@ describe('copyFiles', () => {
 
   it('should default to COG/json', async () => {
     await Promise.all([
-      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+      fsa.write(new URL('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/octet-stream',
       }),
-      fsa.write('memory://source/foo/bar/topographic.tiff', Buffer.from('test'), {
+      fsa.write(new URL('memory://source/foo/bar/topographic.tiff'), Buffer.from('test'), {
         contentType: 'binary/octet-stream',
       }),
     ]);
@@ -92,16 +92,16 @@ describe('copyFiles', () => {
       fixContentType: true,
     });
     const [jsonSource, jsonTarget] = await Promise.all([
-      fsa.head('memory://source/topographic.json'),
-      fsa.head('memory://target/topographic.json'),
+      fsa.head(new URL('memory://source/topographic.json')),
+      fsa.head(new URL('memory://target/topographic.json')),
     ]);
 
     assert.equal(jsonSource?.contentType, 'application/octet-stream');
     assert.equal(jsonTarget?.contentType, 'application/json');
 
     const [tiffSource, tiffTarget] = await Promise.all([
-      fsa.head('memory://source/foo/bar/topographic.tiff'),
-      fsa.head('memory://target/topographic.tiff'),
+      fsa.head(new URL('memory://source/foo/bar/topographic.tiff')),
+      fsa.head(new URL('memory://target/topographic.tiff')),
     ]);
 
     assert.equal(tiffSource?.contentType, 'binary/octet-stream');
@@ -110,10 +110,10 @@ describe('copyFiles', () => {
 
   it('should not default COG/json when fixContentType=false', async () => {
     await Promise.all([
-      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+      fsa.write(new URL('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/octet-stream',
       }),
-      fsa.write('memory://source/foo/bar/topographic.tiff', Buffer.from('test'), {
+      fsa.write(new URL('memory://source/foo/bar/topographic.tiff'), Buffer.from('test'), {
         contentType: 'binary/octet-stream',
       }),
     ]);
@@ -136,16 +136,16 @@ describe('copyFiles', () => {
       fixContentType: false,
     });
     const [jsonSource, jsonTarget] = await Promise.all([
-      fsa.head('memory://source/topographic.json'),
-      fsa.head('memory://target/topographic.json'),
+      fsa.head(new URL('memory://source/topographic.json')),
+      fsa.head(new URL('memory://target/topographic.json')),
     ]);
 
     assert.equal(jsonSource?.contentType, 'application/octet-stream');
     assert.equal(jsonTarget?.contentType, 'application/octet-stream');
 
     const [tiffSource, tiffTarget] = await Promise.all([
-      fsa.head('memory://source/foo/bar/topographic.tiff'),
-      fsa.head('memory://target/topographic.tiff'),
+      fsa.head(new URL('memory://source/foo/bar/topographic.tiff')),
+      fsa.head(new URL('memory://target/topographic.tiff')),
     ]);
 
     assert.equal(tiffSource?.contentType, 'binary/octet-stream');

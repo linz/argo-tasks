@@ -48,7 +48,7 @@ export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
  */
 async function tryHead(url: URL, retryCount = 3): Promise<number | null> {
   for (let i = 0; i < retryCount; i++) {
-    const ret = await fsa.head(url.href);
+    const ret = await fsa.head(url);
     if (ret?.size) return ret.size;
     await new Promise((r) => setTimeout(r, 250));
   }
@@ -66,7 +66,7 @@ export const worker = new WorkerRpc<CopyContract>({
       if (todo == null) continue;
 
       Q.push(async () => {
-        const [source, target] = await Promise.all([fsa.head(todo.source.href), fsa.head(todo.target.href)]);
+        const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
         if (source == null) return;
         if (source.size == null) return;
         if (target != null) {
@@ -78,7 +78,7 @@ export const worker = new WorkerRpc<CopyContract>({
           }
 
           if (!args.force) {
-            log.error({ target: target.path, source: source.path }, 'File:Overwrite');
+            log.error({ target: target, source: source }, 'File:Overwrite');
             throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
           }
         }
@@ -86,8 +86,8 @@ export const worker = new WorkerRpc<CopyContract>({
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
         await fsa.write(
-          todo.target.href,
-          fsa.stream(todo.source.href),
+          todo.target,
+          fsa.readStream(todo.source),
           args.fixContentType ? fixFileMetadata(todo.source, source) : source,
         );
 
@@ -96,7 +96,7 @@ export const worker = new WorkerRpc<CopyContract>({
         if (targetSize !== source.size) {
           log.fatal({ ...todo }, 'Copy:Failed');
           // Cleanup the failed copy so it can be retried
-          if (targetSize != null) await fsa.delete(todo.target.href);
+          if (targetSize != null) await fsa.delete(todo.target);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
         log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');

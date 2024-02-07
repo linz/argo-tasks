@@ -65,16 +65,16 @@ export const commandCreateManifest = command({
 
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
-          const targetLocation = fsa.join(actionLocation.href, `actions/manifest-${targetHash}.json`);
+          const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation.href);
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
-          outputCopy.push(targetLocation);
+          outputCopy.push(targetLocation.href);
         } else {
           outputCopy.push(gzipSync(outBuf).toString('base64url'));
         }
       }
     }
-    await fsa.write(args.output.href, JSON.stringify(outputCopy));
+    await fsa.write(args.output, JSON.stringify(outputCopy));
   },
 });
 
@@ -99,7 +99,7 @@ export async function createManifest(sourceUrl: URL, targetUrl: URL, args: Manif
       const baseFile = args.flatten ? path.basename(chunkUrl.href) : chunkUrl.href.slice(sourceUrl.href.length);
       let target = targetUrl;
       if (baseFile) {
-        target = new URL(fsa.joinAll(targetUrl.href, transformFunc ? transformFunc(baseFile) : baseFile));
+        target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetUrl.href);
       }
       validatePaths(chunkUrl, target);
       current.push({ source: chunkUrl, target });

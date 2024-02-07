@@ -72,7 +72,7 @@ export const commandStacValidate = command({
       loadSchema: (uri: string): Promise<SchemaObject> => {
         let existing = Schemas.get(uri);
         if (existing == null) {
-          existing = fsa.readJson(uri);
+          existing = fsa.readJson(new URL(uri));
           Schemas.set(uri, existing);
         }
         return existing;
@@ -92,7 +92,7 @@ export const commandStacValidate = command({
       if (schema != null) return schema;
       let existing = ajvSchema.get(uri);
       if (existing == null) {
-        existing = fsa.readJson<object>(uri).then((json) => ajv.compileAsync(json));
+        existing = fsa.readJson<object>(new URL(uri)).then((json) => ajv.compileAsync(json));
         ajvSchema.set(uri, existing);
       }
       return existing;
@@ -109,7 +109,7 @@ export const commandStacValidate = command({
       const stacSchemas: string[] = [];
       let stacJson;
       try {
-        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(new URL(`file://${path}`));
       } catch (err) {
         logger.error({ path, err }, 'readStacJsonFile:Error');
         failures.push(path);
@@ -162,12 +162,12 @@ export const commandStacValidate = command({
           if (!checksum.startsWith('1220')) continue;
 
           let source = asset.href;
-          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+          if (source.startsWith('./')) source = new URL(dirname(path), source.replace('./', ''));
 
           logger.debug({ source, checksum }, 'Validate:Asset');
           const startTime = performance.now();
 
-          const hash = await hashStream(fsa.stream(source));
+          const hash = await hashStream(fsa.readStream(new URL(source)));
           const duration = performance.now() - startTime;
 
           if (hash === checksum) {
@@ -246,7 +246,7 @@ const validRels = new Set(['child', 'item']);
 
 export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
-    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => new URL(f.href, path).href);
+    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => new URL(path, f.href).href);
   }
   if (stacJson.type === 'Feature') {
     return [];

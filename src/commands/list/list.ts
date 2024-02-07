@@ -23,7 +23,7 @@ export const CommandListArgs = {
     long: 'limit',
     description: 'Limit the file count to this amount, -1 is no limit',
   }),
-  output: option({ type: optional(string), long: 'output', description: 'Output location for the listing' }),
+  output: option({ type: optional(UrlParser), long: 'output', description: 'Output location for the listing' }),
   location: restPositionals({
     type: UrlParser,
     displayName: 'location',

@@ -47,7 +47,7 @@ export const commandPrettyPrint = command({
     if (jsonFiles.length === 0) throw new Error('No Files found');
 
     // test if can access one of the file
-    if (jsonFiles[0]) await fsa.head(jsonFiles[0].href);
+    if (jsonFiles[0]) await fsa.head(jsonFiles[0]);
 
     // format files
     await Promise.all(jsonFiles.map((url: URL) => formatFile(url, args.target)));
@@ -63,13 +63,13 @@ export const commandPrettyPrint = command({
  */
 export async function formatFile(source: URL, target: URL | null = null): Promise<void> {
   logger.debug({ file: source }, 'PrettyPrint:RunPrettier');
-  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(source.href)), DEFAULT_PRETTIER_FORMAT);
+  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(source)), DEFAULT_PRETTIER_FORMAT);
   if (target) {
     // FIXME: can be duplicate files
-    source = new URL(fsa.join(target.href, basename(source.href)));
+    source = new URL(basename(source.href), target.href);
   }
 
-  await fsa.write(source.href, Buffer.from(prettyPrinted));
+  await fsa.write(source, Buffer.from(prettyPrinted));
 }
 
 /**

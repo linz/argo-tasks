@@ -31,7 +31,7 @@ async function parseTargetInfo(
   }
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
-  const collectionPath = fsa.join(target, 'collection.json');
+  const collectionPath = new URL('collection.json', target);
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const title = collection.title;

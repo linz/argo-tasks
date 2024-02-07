@@ -1,4 +1,4 @@
-import { CogTiff, CogTiffImage, Size } from '@cogeotiff/core';
+import { Tiff, TiffImage, Size } from '@cogeotiff/core';
 
 import { MapSheet } from '../../../utils/mapsheet.js';
 
@@ -16,27 +16,27 @@ const DefaultTiffImage = {
   isGeoLocated: true,
 };
 
-export interface FakeCogTiffImage extends CogTiffImage {
+export interface FakeTiffImage extends TiffImage {
   epsg: number;
   origin: [number, number, number];
 }
 
-export class FakeCogTiff extends CogTiff {
-  override images: [FakeCogTiffImage, ...FakeCogTiffImage[]];
+export class FakeTiff extends Tiff {
+  override images: [FakeTiffImage, ...FakeTiffImage[]];
 
   constructor(
-    uri: string,
+    uri: URL,
     image: Partial<{ origin: number[]; epsg: number; resolution: number[]; size: Size; isGeoLocated: boolean }>,
   ) {
-    super({ url: new URL(uri) } as any);
+    super({ url: uri } as any);
     this.images = [{ ...structuredClone(DefaultTiffImage), valueGeo, ...image } as any];
   }
 
-  static fromTileName(tileName: string): FakeCogTiff {
+  static fromTileName(tileName: string): FakeTiff {
     const mapTileIndex = MapSheet.getMapTileIndex(tileName);
     if (mapTileIndex == null) throw new Error('invalid tile name: ' + tileName);
 
-    return new FakeCogTiff(`s3://path/${tileName}.tiff`, {
+    return new FakeTiff(new URL(`s3://path/${tileName}.tiff`), {
       origin: [mapTileIndex.origin.x, mapTileIndex.origin.y],
       size: { width: mapTileIndex.width, height: mapTileIndex.height },
       epsg: 2193,

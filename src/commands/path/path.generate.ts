@@ -1,6 +1,6 @@
 import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { CogTiff } from '@cogeotiff/core';
+import { Tiff } from '@cogeotiff/core';
 import { command, option, positional, string } from 'cmd-ts';
 import { StacCollection, StacItem } from 'stac-ts';
 
@@ -59,7 +59,7 @@ export const commandGeneratePath = command({
     logger.info({ source: args.source }, 'GeneratePath:Start');
 
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      fsa.join(args.source, 'collection.json'),
+      new URL('collection.json', args.source),
     );
     if (collection == null) throw new Error(`Failed to get collection.json from ${args.source}.`);
 
@@ -81,7 +81,7 @@ export const commandGeneratePath = command({
 
     if (isArgo()) {
       // Path to where the target is located
-      await fsa.write('/tmp/generate-path/target', target);
+      await fsa.write(new URL('file:///tmp/generate-path/target'), target);
       logger.info({ location: '/tmp/generate-path/target', target: target }, 'GeneratePath:Written');
     }
   },
@@ -157,23 +157,23 @@ export function formatDate(collection: StacCollection): string {
  * @async
  * @param {string} source
  * @param {StacCollection} collection
- * @returns {Promise<CogTiff>}
+ * @returns {Promise<Tiff>}
  */
-export async function loadFirstTiff(source: string, collection: StacCollection): Promise<CogTiff> {
+export async function loadFirstTiff(source: string, collection: StacCollection): Promise<Tiff> {
   const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
   if (itemLink == null) throw new Error(`No items in collection from ${source}.`);
-  const itemPath = new URL(itemLink, source).href;
-  const item = await fsa.readJson<StacItem>(itemPath);
-  if (item == null) throw new Error(`Failed to get item.json from ${itemPath}.`);
+  const itemUrl = new URL(itemLink, source);
+  const item = await fsa.readJson<StacItem>(itemUrl);
+  if (item == null) throw new Error(`Failed to get item.json from ${itemUrl}.`);
   const tiffLink = item.assets['visual']?.href;
-  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemPath}`);
-  const tiffPath = new URL(tiffLink, source).href;
+  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemUrl}`);
+  const tiffPath = new URL(tiffLink, source);
   const tiff = await createTiff(tiffPath);
   if (tiff == null) throw new Error(`Failed to get tiff from ${tiffPath}.`);
   return tiff;
 }
 
-export function extractGsd(tiff: CogTiff): number {
+export function extractGsd(tiff: Tiff): number {
   const gsd = tiff.images[0]?.resolution[0];
   if (gsd == null) {
     throw new Error(`Missing resolution tiff tag: ${tiff.source.url}`);
@@ -181,7 +181,7 @@ export function extractGsd(tiff: CogTiff): number {
   return gsd;
 }
 
-export function extractEpsg(tiff: CogTiff): number {
+export function extractEpsg(tiff: Tiff): number {
   const epsg = tiff.images[0]?.epsg;
   if (epsg == null) {
     throw new Error(`Missing epsg tiff tag: ${tiff.source.url}`);
