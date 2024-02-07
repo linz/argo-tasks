@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
-import {FsMemory} from "@chunkd/fs/build/src/systems/memory.js";
+import { FsMemory } from '@chunkd/fs/build/src/systems/memory.js';
 
 import { createManifest, validatePaths } from '../create-manifest.js';
 
@@ -76,7 +76,9 @@ describe('createManifest', () => {
   });
 
   it('should copy single file to the target location without a trailing /', async () => {
-    await Promise.all([fsa.write(new URL('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true })))]);
+    await Promise.all([
+      fsa.write(new URL('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
+    ]);
 
     const outputFiles = await createManifest(
       new URL('memory://source/topographic.json'),

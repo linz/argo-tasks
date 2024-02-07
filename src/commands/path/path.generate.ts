@@ -58,9 +58,7 @@ export const commandGeneratePath = command({
 
     logger.info({ source: args.source }, 'GeneratePath:Start');
 
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      new URL('collection.json', args.source),
-    );
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(new URL('collection.json', args.source));
     if (collection == null) throw new Error(`Failed to get collection.json from ${args.source}.`);
 
     const tiff = await loadFirstTiff(args.source, collection);

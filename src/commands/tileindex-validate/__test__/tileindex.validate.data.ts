@@ -1,4 +1,4 @@
-import { Tiff, TiffImage, Size } from '@cogeotiff/core';
+import { Size, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { MapSheet } from '../../../utils/mapsheet.js';
 

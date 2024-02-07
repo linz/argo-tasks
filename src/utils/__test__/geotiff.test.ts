@@ -2,8 +2,8 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
-import {FsMemory} from "@chunkd/fs/build/src/systems/memory.js";
-import { Tiff, TiffImage, Source } from '@cogeotiff/core';
+import { FsMemory } from '@chunkd/fs/build/src/systems/memory.js';
+import { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { createTiff } from '../../commands/common.js';
 import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';

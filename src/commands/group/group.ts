@@ -4,8 +4,8 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
-import {UrlParser} from "../../utils/parsers.js";
 
 /** Chunk an array into a group size
  * @example

@@ -1,6 +1,6 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { Tiff, Size } from '@cogeotiff/core';
+import { Size, Tiff } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -177,40 +177,48 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await fsa.write(new URL('file:///tmp/tile-index-validate/input.geojson'), JSON.stringify({
-        type: 'FeatureCollection',
-        features: locations.map((loc) => {
-          const epsg = args.sourceEpsg ?? loc.epsg;
-          if (epsg == null) {
-            logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
-            return;
-          }
-          return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
-            source: loc.source,
-            tileName: loc.tileName,
-            isDuplicate: (outputs.get(loc.tileName)?.length ?? 1) > 1,
-          });
+      await fsa.write(
+        new URL('file:///tmp/tile-index-validate/input.geojson'),
+        JSON.stringify({
+          type: 'FeatureCollection',
+          features: locations.map((loc) => {
+            const epsg = args.sourceEpsg ?? loc.epsg;
+            if (epsg == null) {
+              logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
+              return;
+            }
+            return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
+              source: loc.source,
+              tileName: loc.tileName,
+              isDuplicate: (outputs.get(loc.tileName)?.length ?? 1) > 1,
+            });
+          }),
         }),
-      }));
-      await fsa.write(new URL('file:///tmp/tile-index-validate/output.geojson'), JSON.stringify({
-        type: 'FeatureCollection',
-        features: [...outputs.values()].map((locs) => {
-          const firstLoc = locs[0];
-          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
-          const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
-          if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
-          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
-            source: locs.map((l) => l.source),
-            tileName: firstLoc.tileName,
-          });
+      );
+      await fsa.write(
+        new URL('file:///tmp/tile-index-validate/output.geojson'),
+        JSON.stringify({
+          type: 'FeatureCollection',
+          features: [...outputs.values()].map((locs) => {
+            const firstLoc = locs[0];
+            if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
+            const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
+            if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
+            return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
+              source: locs.map((l) => l.source),
+              tileName: firstLoc.tileName,
+            });
+          }),
         }),
-      }));
+      );
       await fsa.write(
         new URL('file:///tmp/tile-index-validate/file-list.json'),
-        JSON.stringify([...outputs.values()].map((locs) => {
-          return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
-        }),
-      ));
+        JSON.stringify(
+          [...outputs.values()].map((locs) => {
+            return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
+          }),
+        ),
+      );
     }
 
     let retileNeeded = false;
