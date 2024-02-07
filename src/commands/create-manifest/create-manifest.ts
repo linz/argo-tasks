@@ -56,7 +56,7 @@ export const commandCreateManifest = command({
     const outputCopy: string[] = [];
 
     const targetPath = args.target;
-    const actionLocation = getActionLocation();
+    const actionLocation = await getActionLocation();
     for (const source of args.source) {
       const outputFiles = await createManifest(source, targetPath, args);
       for (const current of outputFiles) {

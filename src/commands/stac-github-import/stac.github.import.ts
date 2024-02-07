@@ -6,9 +6,9 @@ import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
 import { createPR, GithubApi } from '../../utils/github.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
-import {UrlParser} from "../../utils/parsers.js";
 
 export const commandStacGithubImport = command({
   name: 'stac-github-import',

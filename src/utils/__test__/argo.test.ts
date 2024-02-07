@@ -8,23 +8,23 @@ describe('argoLocation', () => {
     delete process.env['ARGO_TEMPLATE'];
     delete process.env['ARGO_NODE_ID'];
   });
-  it("should not die if ARGO_TEMPLATE doesn't exist", () => {
+  it("should not die if ARGO_TEMPLATE doesn't exist", async () => {
     delete process.env['ARGO_TEMPLATE'];
-    assert.equal(getActionLocation(), null);
+    assert.equal(await getActionLocation(), null);
   });
 
-  it('should not die if ARGO_TEMPLATE in missing keys', () => {
+  it('should not die if ARGO_TEMPLATE in missing keys', async () => {
     process.env['ARGO_TEMPLATE'] = '{}';
-    assert.equal(getActionLocation(), null);
+    assert.equal(await getActionLocation(), null);
 
     process.env['ARGO_TEMPLATE'] = JSON.stringify({ archiveLocation: {} });
-    assert.equal(getActionLocation(), null);
+    assert.equal(await getActionLocation(), null);
 
     process.env['ARGO_TEMPLATE'] = JSON.stringify({ archiveLocation: { s3: {} } });
-    assert.equal(getActionLocation(), null);
+    assert.equal(await getActionLocation(), null);
   });
 
-  it('should actually parse the ARGO_TEMPLATE', () => {
+  it('should actually parse the ARGO_TEMPLATE', async () => {
     process.env['ARGO_NODE_ID'] = 'test-env-n9d2x';
     process.env['ARGO_TEMPLATE'] = JSON.stringify({
       name: 'env',
@@ -47,6 +47,6 @@ describe('argoLocation', () => {
       },
     });
 
-    assert.equal(getActionLocation(), 's3://linz-nonprod-workflow-artifacts/2022-11/02-test-env-n9d2x');
+    assert.equal(await getActionLocation(), 's3://linz-nonprod-workflow-artifacts/2022-11/02-test-env-n9d2x');
   });
 });
