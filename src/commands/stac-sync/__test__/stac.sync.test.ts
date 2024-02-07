@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs/build/src/systems/memory.js';
+import { fsa, FsMemory } from '@chunkd/fs';
 import { createHash } from 'crypto';
 
 import { HashKey, synchroniseFiles } from '../stac.sync.js';

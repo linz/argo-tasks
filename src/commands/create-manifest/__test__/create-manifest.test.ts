@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs/build/src/systems/memory.js';
+import { FsMemory } from '@chunkd/fs';
 
 import { createManifest, validatePaths } from '../create-manifest.js';
 
