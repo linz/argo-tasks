@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { getStacSchemaUrl, isURL, listLocation, normaliseHref } from '../stac.validate.js';
+import { getStacSchemaUrl, listLocation } from '../stac.validate.js';
 
 describe('stacValidate', function () {
   it('listLocation', async function () {
@@ -42,22 +42,5 @@ describe('stacValidate', function () {
     it('should return null on invalid type', () => {
       assert.equal(getStacSchemaUrl('CollectionItem', '1.0.0', 'placeholder path'), null);
     });
-  });
-
-  it('isURL', () => {
-    assert.equal(isURL('s3://test-bucket/test-survey/collection.json'), true);
-    assert.equal(isURL('data/test-survey/collection.json'), false);
-  });
-  it('normaliseHref', () => {
-    assert.equal(
-      normaliseHref('./item.json', 's3://test-bucket/test-survey/collection.json'),
-      's3://test-bucket/test-survey/item.json',
-    );
-    assert.equal(normaliseHref('./item.json', 'data/test-survey/collection.json'), 'data/test-survey/item.json');
-    assert.equal(
-      normaliseHref('./sub-folder/item.json', 'data/test-survey/collection.json'),
-      'data/test-survey/sub-folder/item.json',
-    );
-    assert.equal(normaliseHref('./item.json', 'collection.json'), 'item.json');
   });
 });

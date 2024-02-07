@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 import { performance } from 'perf_hooks';
 import * as st from 'stac-ts';
 
@@ -246,28 +246,12 @@ const validRels = new Set(['child', 'item']);
 
 export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
-    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => normaliseHref(f.href, path));
+    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => fsa.join(f.href, path));
   }
   if (stacJson.type === 'Feature') {
     return [];
   }
   throw new Error(`Unknown Stac Type: ${path}`);
-}
-
-export function normaliseHref(href: string, path: string): string {
-  if (isURL(path)) {
-    return new URL(href, path).href;
-  }
-  return join(dirname(path), href);
-}
-
-export function isURL(path: string): boolean {
-  try {
-    new URL(path);
-    return true;
-  } catch (err) {
-    return false;
-  }
 }
 
 // Handle list of lists that results from using the 'list' command to supply location
