@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, string, Type } from 'cmd-ts';
+import { command, option, string } from 'cmd-ts';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -8,12 +8,7 @@ import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
 import { createPR, GithubApi } from '../../utils/github.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
-
-const Url: Type<string, URL> = {
-  async from(str) {
-    return new URL(str);
-  },
-};
+import {UrlParser} from "../../utils/parsers.js";
 
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
@@ -24,13 +19,13 @@ export const commandStacGithubImport = command({
     verbose,
     //example: s3://linz-workflow-artifacts/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/
     source: option({
-      type: Url,
+      type: UrlParser,
       long: 'source',
       description: 'Source location of the collection.json file',
     }),
     // example: s3://linz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/
     target: option({
-      type: Url,
+      type: UrlParser,
       long: 'target',
       description: 'Target location for the collection.json file',
     }),
