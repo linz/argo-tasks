@@ -1,12 +1,11 @@
-import { FileInfo } from '@chunkd/core';
-import { fsa } from '@chunkd/fs';
+import { FileInfo, fsa } from '@chunkd/fs';
 import { command, positional, Type } from 'cmd-ts';
 import { createHash } from 'crypto';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
-import {UrlParser} from "../../utils/parsers.js";
 
 const S3Path: Type<string, URL> = {
   async from(str) {
@@ -72,7 +71,7 @@ export async function synchroniseFiles(sourceUrl: URL, destinationPath: URL): Pr
  */
 export async function uploadFileToS3(sourceFileInfo: FileInfo, url: URL): Promise<boolean> {
   const destinationHead = await fsa.head(url);
-  const sourceData = await fsa.read(new URL(`file://${sourceFileInfo.path}`));
+  const sourceData = await fsa.read(sourceFileInfo.url);
   const sourceHash = '1220' + createHash('sha256').update(sourceData).digest('hex');
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;

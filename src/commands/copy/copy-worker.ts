@@ -1,8 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
 
-import { FileInfo } from '@chunkd/core';
-import { fsa } from '@chunkd/fs';
+import { FileInfo, fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 
 import { baseLogger } from '../../log.js';
