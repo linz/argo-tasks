@@ -246,7 +246,7 @@ const validRels = new Set(['child', 'item']);
 
 export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
-    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => fsa.join(f.href, path));
+    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => new URL(f.href, path).href);
   }
   if (stacJson.type === 'Feature') {
     return [];
