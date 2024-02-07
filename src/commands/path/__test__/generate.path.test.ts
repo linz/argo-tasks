@@ -1,19 +1,9 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { StacCollection } from 'stac-ts';
-
 import { FakeTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
-import {
-  extractEpsg,
-  extractGsd,
-  formatDate,
-  formatName,
-  generatePath,
-  PathMetadata,
-  StacCollectionLinz,
-} from '../path.generate.js';
+import { extractEpsg, extractGsd, formatDate, formatName, generatePath, PathMetadata } from '../path.generate.js';
+import { getSample } from './sample.js';
 
 describe('GeneratePathImagery', () => {
   it('Should match - geographic description', () => {
@@ -178,18 +168,14 @@ describe('gsd', () => {
 
 describe('category', async () => {
   it('Should return category', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      new URL('file://src/commands/path/__test__/sample.json'),
-    );
+    const collection = getSample();
     assert.equal(collection['linz:geospatial_category'], 'urban-aerial-photos');
   });
 });
 
 describe('geographicDescription', async () => {
   it('Should return geographic description', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      new URL('file://src/commands/path/__test__/sample.json'),
-    );
+    const collection = getSample();
     const gd = collection['linz:geographic_description'];
     assert.equal(gd, 'Palmerston North');
     const metadata: PathMetadata = {
@@ -205,9 +191,7 @@ describe('geographicDescription', async () => {
     assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/');
   });
   it('Should return undefined - no geographic description metadata', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      new URL('file://src/commands/path/__test__/sample.json'),
-    );
+    const collection = getSample();
     delete collection['linz:geographic_description'];
     assert.equal(collection['linz:geographic_description'], undefined);
     const metadata: PathMetadata = {
@@ -226,9 +210,7 @@ describe('geographicDescription', async () => {
 
 describe('event', async () => {
   it('Should return event', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      new URL('file://src/commands/path/__test__/sample.json'),
-    );
+    const collection = getSample();
     assert.equal(collection['linz:event_name'], 'Storm');
     const metadata: PathMetadata = {
       targetBucketName: 'bucket',
@@ -243,9 +225,7 @@ describe('event', async () => {
     assert.equal(generatePath(metadata), 's3://bucket/nelson/nelson-storm_2020_0.05m/rgb/2193/');
   });
   it('Should return undefined - no event metadata', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      new URL('file://src/commands/path/__test__/sample.json'),
-    );
+    const collection = getSample();
     delete collection['linz:event_name'];
     assert.equal(collection['linz:event_name'], undefined);
     const metadata: PathMetadata = {
@@ -264,25 +244,23 @@ describe('event', async () => {
 
 describe('region', async () => {
   it('Should return region', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      new URL('file://src/commands/path/__test__/sample.json'),
-    );
+    const collection = getSample();
     assert.equal(collection['linz:region'], 'manawatu-whanganui');
   });
 });
 
 describe('formatDate', async () => {
   it('Should return date as single year', async () => {
-    const collection = await fsa.readJson<StacCollection>(new URL('file://src/commands/path/__test__/sample.json'));
+    const collection = getSample();
     assert.equal(formatDate(collection), '2022');
   });
   it('Should return date as two years', async () => {
-    const collection = await fsa.readJson<StacCollection>(new URL('file://src/commands/path/__test__/sample.json'));
+    const collection = getSample();
     collection.extent.temporal.interval[0] = ['2022-12-31T11:00:00Z', '2023-12-31T11:00:00Z'];
     assert.equal(formatDate(collection), '2022-2023');
   });
   it('Should fail - unable to retrieve date', async () => {
-    const collection = await fsa.readJson<StacCollection>(new URL('file://src/commands/path/__test__/sample.json'));
+    const collection = getSample();
     collection.extent.temporal.interval[0] = [null, null];
     assert.throws(() => {
       formatDate(collection), Error;
