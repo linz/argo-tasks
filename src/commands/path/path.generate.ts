@@ -16,7 +16,6 @@ export interface PathMetadata {
   category: string;
   geographicDescription?: string;
   region: string;
-  event?: string;
   date: string;
   gsd: number;
   epsg: number;
@@ -68,7 +67,6 @@ export const commandGeneratePath = command({
       category: collection['linz:geospatial_category'],
       region: collection['linz:region'],
       geographicDescription: collection['linz:geographic_description'],
-      event: collection['linz:event_name'],
       date: formatDate(collection),
       gsd: extractGsd(tiff),
       epsg: extractEpsg(tiff),
@@ -92,7 +90,7 @@ export const commandGeneratePath = command({
  * @returns {string}
  */
 export function generatePath(metadata: PathMetadata): string {
-  const name = formatName(metadata.region, metadata.geographicDescription, metadata.event);
+  const name = formatName(metadata.region, metadata.geographicDescription);
   if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated target generation not implemented for historic imagery`);
@@ -120,14 +118,13 @@ function formatBucketName(bucketName: string): string {
  * @export
  * @param {string} region
  * @param {?string} [geographicDescription]
- * @param {?string} [event]
  * @returns {string}
  */
-export function formatName(region: string, geographicDescription?: string, event?: string): string {
+export function formatName(region: string, geographicDescription?: string): string {
   if (geographicDescription) {
-    return slugify([geographicDescription, event].filter(Boolean).join('-'));
+    return slugify(geographicDescription);
   }
-  return slugify([region, event].filter(Boolean).join('-'));
+  return slugify(region);
 }
 
 export function formatDate(collection: StacCollection): string {
