@@ -22,7 +22,6 @@ describe('GeneratePathImagery', () => {
       category: 'urban-aerial-photos',
       geographicDescription: 'Napier',
       region: 'hawkes-bay',
-      event: undefined,
       date: '2017-2018',
       gsd: 0.05,
       epsg: 2193,
@@ -33,17 +32,13 @@ describe('GeneratePathImagery', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'rural-aerial-photos',
-      geographicDescription: undefined,
+      geographicDescription: 'North Island Weather Event',
       region: 'hawkes-bay',
-      event: 'North Island Weather Event',
       date: '2023',
       gsd: 0.25,
       epsg: 2193,
     };
-    assert.equal(
-      generatePath(metadata),
-      's3://nz-imagery/hawkes-bay/hawkes-bay-north-island-weather-event_2023_0.25m/rgb/2193/',
-    );
+    assert.equal(generatePath(metadata), 's3://nz-imagery/hawkes-bay/north-island-weather-event_2023_0.25m/rgb/2193/');
   });
   it('Should match - no optional metadata', () => {
     const metadata: PathMetadata = {
@@ -51,7 +46,6 @@ describe('GeneratePathImagery', () => {
       category: 'urban-aerial-photos',
       geographicDescription: undefined,
       region: 'auckland',
-      event: undefined,
       date: '2023',
       gsd: 0.3,
       epsg: 2193,
@@ -67,7 +61,6 @@ describe('GeneratePathElevation', () => {
       category: 'dem',
       geographicDescription: undefined,
       region: 'auckland',
-      event: undefined,
       date: '2023',
       gsd: 1,
       epsg: 2193,
@@ -80,7 +73,6 @@ describe('GeneratePathElevation', () => {
       category: 'dsm',
       geographicDescription: undefined,
       region: 'auckland',
-      event: undefined,
       date: '2023',
       gsd: 1,
       epsg: 2193,
@@ -94,9 +86,8 @@ describe('GeneratePathSatelliteImagery', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'satellite-imagery',
-      geographicDescription: 'North Island',
+      geographicDescription: 'North Island Cyclone Gabrielle',
       region: 'new-zealand',
-      event: 'Cyclone Gabrielle',
       date: '2023',
       gsd: 0.5,
       epsg: 2193,
@@ -115,7 +106,6 @@ describe('GeneratePathHistoricImagery', () => {
       category: 'scanned-aerial-imagery',
       geographicDescription: undefined,
       region: 'wellington',
-      event: undefined,
       date: '1963',
       gsd: 0.5,
       epsg: 2193,
@@ -128,13 +118,13 @@ describe('GeneratePathHistoricImagery', () => {
 
 describe('formatName', () => {
   it('Should match - region', () => {
-    assert.equal(formatName('hawkes-bay', '', ''), 'hawkes-bay');
+    assert.equal(formatName('hawkes-bay', undefined), 'hawkes-bay');
   });
   it('Should match - region & geographic description', () => {
-    assert.equal(formatName('hawkes-bay', 'Napier', ''), 'napier');
+    assert.equal(formatName('hawkes-bay', 'Napier'), 'napier');
   });
   it('Should match - region & event', () => {
-    assert.equal(formatName('canterbury', '', 'Christchurch Earthquake'), 'canterbury-christchurch-earthquake');
+    assert.equal(formatName('canterbury', 'Christchurch Earthquake'), 'christchurch-earthquake');
   });
 });
 
@@ -190,14 +180,12 @@ describe('geographicDescription', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
-    const gd = collection['linz:geographic_description'];
-    assert.equal(gd, 'Palmerston North');
+    assert.equal(collection['linz:geographic_description'], 'Palmerston North');
     const metadata: PathMetadata = {
       targetBucketName: 'bucket',
       category: 'urban-aerial-photos',
-      geographicDescription: gd,
+      geographicDescription: collection['linz:geographic_description'],
       region: 'manawatu-whanganui',
-      event: '',
       date: '2020',
       gsd: 0.05,
       epsg: 2193,
@@ -215,50 +203,11 @@ describe('geographicDescription', async () => {
       category: 'urban-aerial-photos',
       geographicDescription: collection['linz:geographic_description'],
       region: 'manawatu-whanganui',
-      event: undefined,
       date: '2020',
       gsd: 0.05,
       epsg: 2193,
     };
     assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/');
-  });
-});
-
-describe('event', async () => {
-  it('Should return event', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
-    assert.equal(collection['linz:event_name'], 'Storm');
-    const metadata: PathMetadata = {
-      targetBucketName: 'bucket',
-      category: 'urban-aerial-photos',
-      geographicDescription: undefined,
-      region: 'nelson',
-      event: collection['linz:event_name'],
-      date: '2020',
-      gsd: 0.05,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://bucket/nelson/nelson-storm_2020_0.05m/rgb/2193/');
-  });
-  it('Should return undefined - no event metadata', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
-    delete collection['linz:event_name'];
-    assert.equal(collection['linz:event_name'], undefined);
-    const metadata: PathMetadata = {
-      targetBucketName: 'bucket',
-      category: 'urban-aerial-photos',
-      geographicDescription: undefined,
-      region: 'nelson',
-      event: collection['linz:event_name'],
-      date: '2020',
-      gsd: 0.05,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://bucket/nelson/nelson_2020_0.05m/rgb/2193/');
   });
 });
 
@@ -273,16 +222,22 @@ describe('region', async () => {
 
 describe('formatDate', async () => {
   it('Should return date as single year', async () => {
-    const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
+      './src/commands/path/__test__/sample.json',
+    );
     assert.equal(formatDate(collection), '2022');
   });
   it('Should return date as two years', async () => {
-    const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
+      './src/commands/path/__test__/sample.json',
+    );
     collection.extent.temporal.interval[0] = ['2022-12-31T11:00:00Z', '2023-12-31T11:00:00Z'];
     assert.equal(formatDate(collection), '2022-2023');
   });
   it('Should fail - unable to retrieve date', async () => {
-    const collection = await fsa.readJson<StacCollection>('./src/commands/path/__test__/sample.json');
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
+      './src/commands/path/__test__/sample.json',
+    );
     collection.extent.temporal.interval[0] = [null, null];
     assert.throws(() => {
       formatDate(collection), Error;
