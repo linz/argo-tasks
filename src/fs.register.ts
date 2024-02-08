@@ -1,6 +1,5 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import { FileSystem } from '@chunkd/fs';
-import { fsa } from '@chunkd/fs';
+import { FileSystem, fsa } from '@chunkd/fs';
 import { AwsCredentialConfig, AwsS3CredentialProvider, FsAwsS3 } from '@chunkd/fs-aws';
 
 import { logger } from './log.js';
