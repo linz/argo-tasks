@@ -1,5 +1,5 @@
 /** Parse topographic mapsheet names in the format `${mapSheet}_${gridSize}_${y}${x}` */
-const MapSheetRegex = /([A-Z]{2}\d{2})_(\d+)_(\d+)/;
+const MapSheetRegex = /(?<sheetCode>[A-Z]{2}\d{2})(_(?<gridSize>\d+)_(?<tileId>\d+))?/;
 
 export interface MapTileIndex {
   /**
@@ -103,11 +103,14 @@ export const MapSheet = {
   getMapTileIndex(fileName: string): MapTileIndex | null {
     const match = fileName.match(MapSheetRegex);
     if (match == null) return null;
-    if (match[1] == null) return null;
 
+    const sheetCode = match?.groups?.['sheetCode'];
+    if (sheetCode == null) return null;
+
+    const gridSize = Number(match?.groups?.['gridSize'] ?? mapSheetTileGridSize);
     const out: MapTileIndex = {
-      mapSheet: match[1],
-      gridSize: Number(match[2]),
+      mapSheet: sheetCode,
+      gridSize: gridSize,
       x: -1,
       y: -1,
       name: match[0],
@@ -118,11 +121,11 @@ export const MapSheet = {
     };
     // 1:500 has X/Y is 3 digits not 2
     if (out.gridSize === 500) {
-      out.y = Number(match[3]?.slice(0, 3));
-      out.x = Number(match[3]?.slice(3));
+      out.y = Number(match?.groups?.['tileId']?.slice(0, 3));
+      out.x = Number(match?.groups?.['tileId']?.slice(3));
     } else {
-      out.y = Number(match[3]?.slice(0, 2));
-      out.x = Number(match[3]?.slice(2));
+      out.y = Number(match?.groups?.['tileId']?.slice(0, 2));
+      out.x = Number(match?.groups?.['tileId']?.slice(2));
     }
     if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
 
