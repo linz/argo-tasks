@@ -44,6 +44,11 @@ describe('getTileName', () => {
     assert.equal(convertTileName('CH11_1000_1010', 10000), 'CH11_10000_0101');
     assert.equal(convertTileName('CH11_1000_1001', 10000), 'CH11_10000_0101');
   });
+  it('should get correct parent tile 1:50k', () => {
+    assert.equal(convertTileName('AT24_50000_0101', 50000), 'AT24');
+    assert.equal(convertTileName('AT25_50000_0101', 50000), 'AT25');
+    assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08');
+  });
 });
 describe('tiffLocation', () => {
   it('get location from tiff', async () => {
@@ -230,7 +235,7 @@ describe('GridSizeFromString', () => {
   it('should throw error when converting invalid grid size', async () => {
     await assert.rejects(
       GridSizeFromString.from('-1'),
-      new Error('Invalid grid size "-1"; valid values: "10000", "5000", "2000", "1000", "500"'),
+      new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500"'),
     );
   });
 });

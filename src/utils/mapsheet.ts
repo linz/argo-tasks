@@ -56,7 +56,7 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
-export const gridSizes = [10_000, 5_000, 2_000, 1_000, 500] as const;
+export const gridSizes = [50_000, 10_000, 5_000, 2_000, 1_000, 500] as const;
 export type GridSize = (typeof gridSizes)[number];
 
 /**
