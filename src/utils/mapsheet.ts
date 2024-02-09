@@ -96,7 +96,7 @@ export const MapSheet = {
    *
    * @example
    * ```typescript
-   * MapSheet.extract("BP27_1000_4817.tiff") // { mapSheet: "BP27", gridSize: 1000, x: 17, y:48 }
+   * MapSheet.getMapTileIndex("BP27_1000_4817.tiff") // { mapSheet: "BP27", gridSize: 1000, x: 17, y:48 }
    * ```
    */
   getMapTileIndex(fileName: string): MapTileIndex | null {

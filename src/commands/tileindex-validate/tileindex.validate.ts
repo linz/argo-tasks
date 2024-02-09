@@ -310,7 +310,7 @@ export async function extractTiffLocations(
         // if (shouldValidate) {
         //   // Is the tiff bounding box the same as the mapsheet bounding box!
         //   // Also need to allow for ~1.5cm of error between bounding boxes.
-        //   // assert bbox == MapSheet.extract(tileName).bbox
+        //   // assert bbox == MapSheet.getMapTileIndex(tileName).bbox
         // }
         return { bbox, source: tiff.source.url.href, tileName, epsg: tiff.images[0]?.epsg };
       } catch (e) {
