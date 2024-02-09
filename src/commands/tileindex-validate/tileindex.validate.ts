@@ -8,7 +8,7 @@ import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
-import { GridSize, gridSizes, MapSheet, SheetRanges } from '../../utils/mapsheet.js';
+import { GridSize, gridSizes, MapSheet, mapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
@@ -366,7 +366,7 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
   // Build name
   const letters = Object.keys(SheetRanges)[offsetY];
   const sheetCode = `${letters}${`${offsetX}`.padStart(2, '0')}`;
-  if (gridSize === 50_000) {
+  if (gridSize === mapSheetTileGridSize) {
     // Shorter tile names for 1:50k
     return sheetCode;
   }

@@ -56,7 +56,8 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
-export const gridSizes = [50_000, 10_000, 5_000, 2_000, 1_000, 500] as const;
+export const mapSheetTileGridSize = 50_000;
+export const gridSizes = [mapSheetTileGridSize, 10_000, 5_000, 2_000, 1_000, 500] as const;
 export type GridSize = (typeof gridSizes)[number];
 
 /**
@@ -81,12 +82,12 @@ export const MapSheet = {
   /** Width of Topo 1:50k mapsheets (meters) */
   width: 24_000,
   /** Base scale Topo 1:50k mapsheets (meters) */
-  scale: 50_000,
+  scale: mapSheetTileGridSize,
   /** Map Sheets start at AS and end at CK */
   code: { start: 'AS', end: 'CK' },
   /** The top left point for where map sheets start from in NZTM2000 (EPSG:2193) */
   origin: { x: 988000, y: 6234000 },
-  gridSizeMax: 50000,
+  gridSizeMax: mapSheetTileGridSize,
   roundCorrection: 0.01,
   /** Allowed grid sizes, these should exist in the LINZ Data service (meters) */
   gridSizes: gridSizes,
