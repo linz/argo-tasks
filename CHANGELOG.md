@@ -153,7 +153,7 @@
 
 ### Bug Fixes
 
-* check for missmatching paths in manifest TDE-764 ([#479](https://github.com/linz/argo-tasks/issues/479)) ([bcf9446](https://github.com/linz/argo-tasks/commit/bcf9446debfbf31bcc34b8881783a1d5eade2ae5))
+* check for mismatching paths in manifest TDE-764 ([#479](https://github.com/linz/argo-tasks/issues/479)) ([bcf9446](https://github.com/linz/argo-tasks/commit/bcf9446debfbf31bcc34b8881783a1d5eade2ae5))
 * collection had catalog type should be collection ([#466](https://github.com/linz/argo-tasks/issues/466)) ([c19c36e](https://github.com/linz/argo-tasks/commit/c19c36e694b6d297d568af88b8c2288c85ddd63c))
 
 ## [2.9.0](https://github.com/linz/argo-tasks/compare/v2.8.0...v2.9.0) (2023-05-22)
