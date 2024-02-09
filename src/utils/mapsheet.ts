@@ -119,6 +119,19 @@ export const MapSheet = {
       height: 0,
       bbox: [0, 0, 0, 0],
     };
+
+    const mapSheetOffset = MapSheet.offset(sheetCode);
+    if (out.gridSize === mapSheetTileGridSize) {
+      out.y = mapSheetOffset.y;
+      out.x = mapSheetOffset.x;
+      out.origin = mapSheetOffset;
+      out.width = MapSheet.width;
+      out.height = MapSheet.height;
+      // As in NZTM negative Y goes north, the minY is actually the bottom right point
+      out.bbox = [out.origin.x, out.origin.y - out.height, out.origin.x + out.width, out.origin.y];
+      return out;
+    }
+
     // 1:500 has X/Y is 3 digits not 2
     if (out.gridSize === 500) {
       out.y = Number(match?.groups?.['tileId']?.slice(0, 3));

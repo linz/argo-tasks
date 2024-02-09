@@ -5,7 +5,7 @@ import { MapSheet, MapTileIndex } from '../mapsheet.js';
 import { MapSheetData } from './mapsheet.data.js';
 
 describe('MapSheets', () => {
-  it('should extract mapsheet', () => {
+  it('should extract MapTileIndex from 1:500 tile filename', () => {
     assert.deepEqual(MapSheet.getMapTileIndex('2022_CG10_500_080037.tiff'), {
       mapSheet: 'CG10',
       gridSize: 500,
@@ -16,6 +16,24 @@ describe('MapSheets', () => {
       width: 240,
       height: 360,
       bbox: [1236640, 4837200, 1236880, 4837560],
+    });
+  });
+  it('should extract MapTileIndex from 1:50k tile filename', () => {
+    assert.deepEqual(MapSheet.getMapTileIndex('AS21.tiff'), {
+      mapSheet: 'AS21',
+      gridSize: 50_000,
+      x: 1_492_000, // MapSheet.offset('AS21').x
+      y: 6_234_000, // MapSheet.offset('AS21').y
+      name: 'AS21',
+      origin: { x: 1_492_000, y: 6_234_000 }, // MapSheet.offset('AS21')
+      width: 24_000, // MapSheet.width
+      height: 36_000, // MapSheet.height
+      bbox: [
+        1_492_000, // MapSheet.offset('AS21').x
+        6_198_000, // MapSheet.offset('AS21').y - MapSheet.height
+        1_516_000, // MapSheet.offset('AS21').x + MapSheet.width
+        6_234_000, // MapSheet.offset('AS21').y
+      ],
     });
   });
 
