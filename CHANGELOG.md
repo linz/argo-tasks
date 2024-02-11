@@ -173,7 +173,7 @@
 
 ### Bug Fixes
 
-* check for missmatching paths in manifest TDE-764 ([#479](https://github.com/linz/argo-tasks/issues/479)) ([bcf9446](https://github.com/linz/argo-tasks/commit/bcf9446debfbf31bcc34b8881783a1d5eade2ae5))
+* check for mismatching paths in manifest TDE-764 ([#479](https://github.com/linz/argo-tasks/issues/479)) ([bcf9446](https://github.com/linz/argo-tasks/commit/bcf9446debfbf31bcc34b8881783a1d5eade2ae5))
 * collection had catalog type should be collection ([#466](https://github.com/linz/argo-tasks/issues/466)) ([c19c36e](https://github.com/linz/argo-tasks/commit/c19c36e694b6d297d568af88b8c2288c85ddd63c))
 
 ## [2.9.0](https://github.com/linz/argo-tasks/compare/v2.8.0...v2.9.0) (2023-05-22)
@@ -355,7 +355,7 @@
 ### Bug Fixes
 
 * add the entire source and stop bundling the CLI ([#108](https://github.com/linz/argo-tasks/issues/108)) ([caa00e2](https://github.com/linz/argo-tasks/commit/caa00e2b2bac609baa99d85dede510f4aa1a6053))
-* concurrenct queue should not stack trace on error ([#156](https://github.com/linz/argo-tasks/issues/156)) ([80b8d18](https://github.com/linz/argo-tasks/commit/80b8d18796a56f96ae5ed31f2cd1fbf0a0cbaae3))
+* concurrent queue should not stack trace on error ([#156](https://github.com/linz/argo-tasks/issues/156)) ([80b8d18](https://github.com/linz/argo-tasks/commit/80b8d18796a56f96ae5ed31f2cd1fbf0a0cbaae3))
 * **copy:** duration should not be negative ([#101](https://github.com/linz/argo-tasks/issues/101)) ([34cdc0a](https://github.com/linz/argo-tasks/commit/34cdc0abbbd02706edeb57a6b50156df6840a642))
 * create-manifest command name typo ([#127](https://github.com/linz/argo-tasks/issues/127)) ([10e90df](https://github.com/linz/argo-tasks/commit/10e90df12e457bf81ae78d4fd79d2834c981d678))
 * error if tileset validation fails TDE-586 ([#135](https://github.com/linz/argo-tasks/issues/135)) ([09ca6ea](https://github.com/linz/argo-tasks/commit/09ca6eaf19b142aec7424da543c2ed6386db0213))

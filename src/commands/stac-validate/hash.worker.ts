@@ -4,7 +4,7 @@ import { Readable } from 'stream';
 /**
  * Create a multihash from a stream
  *
- * @returns sha256 mulithash string of the stream
+ * @returns sha256 multihash string of the stream
  *
  */
 export async function hashStream(stream: Readable): Promise<string> {

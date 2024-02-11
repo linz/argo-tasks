@@ -259,7 +259,7 @@ Outputs files for visualisation of the tiles and as an list for [topo-imagery](h
 - `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
 
 `--validate`
-Validate list of tiffs match a LINZ Mapsheet tile index and assert that there will be no duplicates. Example:
+Validate list of tiffs match a LINZ map sheet tile index and assert that there will be no duplicates. Example:
 
 ```bash
 tileindex-validate --validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
