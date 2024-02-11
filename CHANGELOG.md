@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.0.0](https://github.com/linz/argo-tasks/compare/v2.18.2...v3.0.0) (2024-02-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* automate target path TDE-961 ([#828](https://github.com/linz/argo-tasks/issues/828))
+
+### Features
+
+* automate target path TDE-961 ([#828](https://github.com/linz/argo-tasks/issues/828)) ([7dd206a](https://github.com/linz/argo-tasks/commit/7dd206a7153ae9ff22369da09974f565bbd4845e))
+* Handle 1:50k imagery TDE-1014 ([#855](https://github.com/linz/argo-tasks/issues/855)) ([8be7266](https://github.com/linz/argo-tasks/commit/8be726663c6f4002d76d97e3e40b62c0dcd35057))
+* Slugify strings TDE-1019 ([#827](https://github.com/linz/argo-tasks/issues/827)) ([b0a7874](https://github.com/linz/argo-tasks/commit/b0a7874df994c473ccbfb0cb106886e4ea34bd50))
+
+
+### Bug Fixes
+
+* add tiff url to error messages TDE-961 ([#844](https://github.com/linz/argo-tasks/issues/844)) ([3f4b174](https://github.com/linz/argo-tasks/commit/3f4b174e00963676304b79e94f19bfd1f54f5ad1))
+* interim fix for Rakiura Stewart Island tiles TDE-1015 ([#857](https://github.com/linz/argo-tasks/issues/857)) ([3b6e23f](https://github.com/linz/argo-tasks/commit/3b6e23f4d4d4b86cd95b4a2d6831538be3a52480))
+* update target path naming hierarchy TDE-955 ([#845](https://github.com/linz/argo-tasks/issues/845)) ([5a8678d](https://github.com/linz/argo-tasks/commit/5a8678dc238f1deeb41e874c95778e60d5178123))
+
 ## [2.18.2](https://github.com/linz/argo-tasks/compare/v2.18.1...v2.18.2) (2023-12-15)
 
 
