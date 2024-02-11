@@ -111,8 +111,8 @@ describe('GeneratePathHistoricImagery', () => {
       epsg: 2193,
     };
     assert.throws(() => {
-      generatePath(metadata), Error;
-    });
+      generatePath(metadata);
+    }, Error);
   });
 });
 
@@ -138,14 +138,14 @@ describe('epsg', () => {
   const TiffNoEPSG = new FakeCogTiff('s3://path/fake.tiff', { epsg: undefined });
   it('Should fail - unable to find EPSG code', () => {
     assert.throws(() => {
-      extractEpsg(TiffNoEPSG), Error;
-    });
+      extractEpsg(TiffNoEPSG);
+    }, Error);
   });
   const TiffInvalidEPSG = new FakeCogTiff('s3://path/fake.tiff', { epsg: 2319 });
   it('Should fail - invalid EPSG code', () => {
     assert.throws(() => {
-      extractEpsg(TiffInvalidEPSG), Error;
-    });
+      extractEpsg(TiffInvalidEPSG);
+    }, Error);
   });
 });
 
@@ -161,8 +161,8 @@ describe('gsd', () => {
   });
   it('Should fail - unable to find resolution', () => {
     assert.throws(() => {
-      extractGsd(TiffNoGsd), Error;
-    });
+      extractGsd(TiffNoGsd);
+    }, Error);
   });
 });
 
@@ -240,7 +240,7 @@ describe('formatDate', async () => {
     );
     collection.extent.temporal.interval[0] = [null, null];
     assert.throws(() => {
-      formatDate(collection), Error;
-    });
+      formatDate(collection);
+    }, Error);
   });
 });
