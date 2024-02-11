@@ -1,5 +1,5 @@
 /** Parse topographic mapsheet names in the format `${mapSheet}_${gridSize}_${y}${x}` */
-const MapSheetRegex = /([A-Z]{2}\d{2})_(\d+)_(\d+)/;
+const MapSheetRegex = /(?<sheetCode>[A-Z]{2}\d{2})(_(?<gridSize>\d+)_(?<tileId>\d+))?/;
 
 export interface MapTileIndex {
   /**
@@ -56,7 +56,8 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
-export const gridSizes = [10_000, 5_000, 2_000, 1_000, 500] as const;
+export const mapSheetTileGridSize = 50_000;
+export const gridSizes = [mapSheetTileGridSize, 10_000, 5_000, 2_000, 1_000, 500] as const;
 export type GridSize = (typeof gridSizes)[number];
 
 /**
@@ -81,12 +82,12 @@ export const MapSheet = {
   /** Width of Topo 1:50k mapsheets (meters) */
   width: 24_000,
   /** Base scale Topo 1:50k mapsheets (meters) */
-  scale: 50_000,
+  scale: mapSheetTileGridSize,
   /** Map Sheets start at AS and end at CK */
   code: { start: 'AS', end: 'CK' },
   /** The top left point for where map sheets start from in NZTM2000 (EPSG:2193) */
   origin: { x: 988000, y: 6234000 },
-  gridSizeMax: 50000,
+  gridSizeMax: mapSheetTileGridSize,
   roundCorrection: 0.01,
   /** Allowed grid sizes, these should exist in the LINZ Data service (meters) */
   gridSizes: gridSizes,
@@ -96,17 +97,20 @@ export const MapSheet = {
    *
    * @example
    * ```typescript
-   * MapSheet.extract("BP27_1000_4817.tiff") // { mapSheet: "BP27", gridSize: 1000, x: 17, y:48 }
+   * MapSheet.getMapTileIndex("BP27_1000_4817.tiff") // { mapSheet: "BP27", gridSize: 1000, x: 17, y:48 }
    * ```
    */
   getMapTileIndex(fileName: string): MapTileIndex | null {
     const match = fileName.match(MapSheetRegex);
     if (match == null) return null;
-    if (match[1] == null) return null;
 
+    const sheetCode = match?.groups?.['sheetCode'];
+    if (sheetCode == null) return null;
+
+    const gridSize = Number(match?.groups?.['gridSize'] ?? mapSheetTileGridSize);
     const out: MapTileIndex = {
-      mapSheet: match[1],
-      gridSize: Number(match[2]),
+      mapSheet: sheetCode,
+      gridSize: gridSize,
       x: -1,
       y: -1,
       name: match[0],
@@ -115,13 +119,26 @@ export const MapSheet = {
       height: 0,
       bbox: [0, 0, 0, 0],
     };
+
+    const mapSheetOffset = MapSheet.offset(sheetCode);
+    if (out.gridSize === mapSheetTileGridSize) {
+      out.y = mapSheetOffset.y;
+      out.x = mapSheetOffset.x;
+      out.origin = mapSheetOffset;
+      out.width = MapSheet.width;
+      out.height = MapSheet.height;
+      // As in NZTM negative Y goes north, the minY is actually the bottom right point
+      out.bbox = [out.origin.x, out.origin.y - out.height, out.origin.x + out.width, out.origin.y];
+      return out;
+    }
+
     // 1:500 has X/Y is 3 digits not 2
     if (out.gridSize === 500) {
-      out.y = Number(match[3]?.slice(0, 3));
-      out.x = Number(match[3]?.slice(3));
+      out.y = Number(match?.groups?.['tileId']?.slice(0, 3));
+      out.x = Number(match?.groups?.['tileId']?.slice(3));
     } else {
-      out.y = Number(match[3]?.slice(0, 2));
-      out.x = Number(match[3]?.slice(2));
+      out.y = Number(match?.groups?.['tileId']?.slice(0, 2));
+      out.x = Number(match?.groups?.['tileId']?.slice(2));
     }
     if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
 
