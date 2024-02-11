@@ -1,4 +1,4 @@
-/** Parse topographic mapsheet names in the format `${mapSheet}_${gridSize}_${y}${x}` */
+/** Parse topographic map sheet names in the format `${mapSheet}_${gridSize}_${y}${x}` */
 const MapSheetRegex = /(?<sheetCode>[A-Z]{2}\d{2})(_(?<gridSize>\d+)_(?<tileId>\d+))?/;
 
 export interface MapTileIndex {
@@ -63,7 +63,7 @@ export type GridSize = (typeof gridSizes)[number];
 /**
  * Topographic 1:50k map sheet calculator
  *
- * Useful for working with LINZ's Topo 1:50k mapsheet names and any of the tile indexes
+ * Useful for working with LINZ's Topo 1:50k map sheet names and any of the tile indexes
  *
  * LINZ Topo50:
  * - https://www.linz.govt.nz/products-services/maps/new-zealand-topographic-maps/topo50-map-chooser/topo50-sheet-index
@@ -77,11 +77,11 @@ export type GridSize = (typeof gridSizes)[number];
  * - https://data.linz.govt.nz/layer/106965-nz-1500-tile-index/ 1:500
  **/
 export const MapSheet = {
-  /** Height of Topo 1:50k mapsheets (meters) */
+  /** Height of Topo 1:50k map sheets (meters) */
   height: 36_000,
-  /** Width of Topo 1:50k mapsheets (meters) */
+  /** Width of Topo 1:50k map sheets (meters) */
   width: 24_000,
-  /** Base scale Topo 1:50k mapsheets (meters) */
+  /** Base scale Topo 1:50k map sheets (meters) */
   scale: mapSheetTileGridSize,
   /** Map Sheets start at AS and end at CK */
   code: { start: 'AS', end: 'CK' },
@@ -93,7 +93,7 @@ export const MapSheet = {
   gridSizes: gridSizes,
 
   /**
-   * Get the expected origin and mapsheet information from a file name
+   * Get the expected origin and map sheet information from a file name
    *
    * @example
    * ```typescript
