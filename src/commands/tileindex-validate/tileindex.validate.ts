@@ -14,7 +14,7 @@ import { CommandListArgs } from '../list/list.js';
 
 const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
 const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
-const SHEET_MIN_Y = MapSheet.origin.y - 41 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
+const SHEET_MIN_Y = MapSheet.origin.y - 42 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
 const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
 export function isTiff(x: string): boolean {
