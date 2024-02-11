@@ -87,7 +87,7 @@ export async function createLinks(basePath: string, templateLinks: st.StacLink[]
       const relPath = makeRelative(basePath, coll);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
-      // Muktihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
+      // Multihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
       const checksum = '1220' + createHash('sha256').update(buf).digest('hex');
       const collLink: st.StacLink = {
         rel: 'child',
