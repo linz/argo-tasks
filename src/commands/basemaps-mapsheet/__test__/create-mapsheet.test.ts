@@ -123,7 +123,7 @@ describe('copyFiles', () => {
   mem.put(satellite);
   mem.put(southland);
 
-  it('Should create the correct mapsheets', async () => {
+  it('Should create the correct map sheets', async () => {
     const outputs = await createMapSheet(aerial, mem, rest, undefined, undefined);
 
     assert.deepEqual(outputs, [

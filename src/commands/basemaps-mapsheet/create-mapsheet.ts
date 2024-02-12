@@ -52,7 +52,7 @@ export const CommandCreateMapSheetArgs = {
   output: option({
     type: UrlParser,
     long: 'output',
-    description: 'Output of the mapsheet file',
+    description: 'Output of the map sheet file',
   }),
   include: option({
     type: optional(string),
@@ -69,7 +69,7 @@ export const CommandCreateMapSheetArgs = {
 export const basemapsCreateMapSheet = command({
   name: 'bm-create-mapsheet',
   version: CliInfo.version,
-  description: 'Create a cog mapsheet from provided flatgeobuf',
+  description: 'Create a cog map sheet from provided flatgeobuf',
   args: CommandCreateMapSheetArgs,
   async handler(args) {
     registerCli(this, args);

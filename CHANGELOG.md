@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.0.0](https://github.com/linz/argo-tasks/compare/v2.18.2...v3.0.0) (2024-02-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* automate target path TDE-961 ([#828](https://github.com/linz/argo-tasks/issues/828))
+
+### Features
+
+* automate target path TDE-961 ([#828](https://github.com/linz/argo-tasks/issues/828)) ([7dd206a](https://github.com/linz/argo-tasks/commit/7dd206a7153ae9ff22369da09974f565bbd4845e))
+* Handle 1:50k imagery TDE-1014 ([#855](https://github.com/linz/argo-tasks/issues/855)) ([8be7266](https://github.com/linz/argo-tasks/commit/8be726663c6f4002d76d97e3e40b62c0dcd35057))
+* Slugify strings TDE-1019 ([#827](https://github.com/linz/argo-tasks/issues/827)) ([b0a7874](https://github.com/linz/argo-tasks/commit/b0a7874df994c473ccbfb0cb106886e4ea34bd50))
+
+
+### Bug Fixes
+
+* add tiff url to error messages TDE-961 ([#844](https://github.com/linz/argo-tasks/issues/844)) ([3f4b174](https://github.com/linz/argo-tasks/commit/3f4b174e00963676304b79e94f19bfd1f54f5ad1))
+* interim fix for Rakiura Stewart Island tiles TDE-1015 ([#857](https://github.com/linz/argo-tasks/issues/857)) ([3b6e23f](https://github.com/linz/argo-tasks/commit/3b6e23f4d4d4b86cd95b4a2d6831538be3a52480))
+* update target path naming hierarchy TDE-955 ([#845](https://github.com/linz/argo-tasks/issues/845)) ([5a8678d](https://github.com/linz/argo-tasks/commit/5a8678dc238f1deeb41e874c95778e60d5178123))
+
 ## [2.18.2](https://github.com/linz/argo-tasks/compare/v2.18.1...v2.18.2) (2023-12-15)
 
 
@@ -153,7 +173,7 @@
 
 ### Bug Fixes
 
-* check for missmatching paths in manifest TDE-764 ([#479](https://github.com/linz/argo-tasks/issues/479)) ([bcf9446](https://github.com/linz/argo-tasks/commit/bcf9446debfbf31bcc34b8881783a1d5eade2ae5))
+* check for mismatching paths in manifest TDE-764 ([#479](https://github.com/linz/argo-tasks/issues/479)) ([bcf9446](https://github.com/linz/argo-tasks/commit/bcf9446debfbf31bcc34b8881783a1d5eade2ae5))
 * collection had catalog type should be collection ([#466](https://github.com/linz/argo-tasks/issues/466)) ([c19c36e](https://github.com/linz/argo-tasks/commit/c19c36e694b6d297d568af88b8c2288c85ddd63c))
 
 ## [2.9.0](https://github.com/linz/argo-tasks/compare/v2.8.0...v2.9.0) (2023-05-22)
@@ -335,7 +355,7 @@
 ### Bug Fixes
 
 * add the entire source and stop bundling the CLI ([#108](https://github.com/linz/argo-tasks/issues/108)) ([caa00e2](https://github.com/linz/argo-tasks/commit/caa00e2b2bac609baa99d85dede510f4aa1a6053))
-* concurrenct queue should not stack trace on error ([#156](https://github.com/linz/argo-tasks/issues/156)) ([80b8d18](https://github.com/linz/argo-tasks/commit/80b8d18796a56f96ae5ed31f2cd1fbf0a0cbaae3))
+* concurrent queue should not stack trace on error ([#156](https://github.com/linz/argo-tasks/issues/156)) ([80b8d18](https://github.com/linz/argo-tasks/commit/80b8d18796a56f96ae5ed31f2cd1fbf0a0cbaae3))
 * **copy:** duration should not be negative ([#101](https://github.com/linz/argo-tasks/issues/101)) ([34cdc0a](https://github.com/linz/argo-tasks/commit/34cdc0abbbd02706edeb57a6b50156df6840a642))
 * create-manifest command name typo ([#127](https://github.com/linz/argo-tasks/issues/127)) ([10e90df](https://github.com/linz/argo-tasks/commit/10e90df12e457bf81ae78d4fd79d2834c981d678))
 * error if tileset validation fails TDE-586 ([#135](https://github.com/linz/argo-tasks/issues/135)) ([09ca6ea](https://github.com/linz/argo-tasks/commit/09ca6eaf19b142aec7424da543c2ed6386db0213))
