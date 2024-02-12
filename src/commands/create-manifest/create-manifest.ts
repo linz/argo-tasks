@@ -65,7 +65,7 @@ export const commandCreateManifest = command({
 
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
-          const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation.href);
+          const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation);
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
           outputCopy.push(targetLocation.href);

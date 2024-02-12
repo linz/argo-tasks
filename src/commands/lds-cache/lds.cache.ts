@@ -9,7 +9,7 @@ import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
 
 function getTargetPath(source: URL, path: string): string {
-  if (path.startsWith('./')) return new URL(path.slice(2), source.href).href;
+  if (path.startsWith('./')) return new URL(path.slice(2), source).href;
   throw new Error('No relative path found: ' + path);
 }
 
@@ -39,7 +39,7 @@ export const commandLdsFetch = command({
 
         logger.info({ layerId, layerVersion, source }, 'Collection:Item:Fetch');
         const fileName = `./${layerId}_${layerVersion}.gpkg`;
-        const targetLocation = new URL(fileName, args.target.href);
+        const targetLocation = new URL(fileName, args.target);
         await fsa.write(targetLocation, fsa.readStream(source).pipe(createGunzip()));
       }
 
@@ -51,7 +51,7 @@ export const commandLdsFetch = command({
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
       if (lastItem == null) throw new Error('No items found');
 
-      const targetFile = new URL(lastItem.href.replace('.json', '.gpkg'), args.target.href);
+      const targetFile = new URL(lastItem.href.replace('.json', '.gpkg'), args.target);
 
       const targetPath = getTargetPath(new URL(`s3://linz-lds-cache/${layerId}/`), lastItem.href).replace(
         '.json',

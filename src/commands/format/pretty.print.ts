@@ -66,7 +66,7 @@ export async function formatFile(source: URL, target: URL | null = null): Promis
   const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(source)), DEFAULT_PRETTIER_FORMAT);
   if (target) {
     // FIXME: can be duplicate files
-    source = new URL(basename(source.href), target.href);
+    source = new URL(basename(source.href), target);
   }
 
   await fsa.write(source, Buffer.from(prettyPrinted));
