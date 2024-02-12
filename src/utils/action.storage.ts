@@ -1,4 +1,4 @@
-import { UrlParser } from './parsers.js';
+import { fsa } from '@chunkd/fs';
 
 /**
  * Store actions as JSON documents on a file system rather than passing huge JSON documents around
@@ -6,8 +6,8 @@ import { UrlParser } from './parsers.js';
  * Uses $ACTION_PATH if set to store the actions to a user defined location
  * This parses $ARGO_TEMPLATE looking for a `archiveLocation`
  */
-export async function getActionLocation(): Promise<URL | null> {
-  if (process.env['ACTION_PATH']) return UrlParser.from(process.env['ACTION_PATH']);
+export function getActionLocation(): URL | null {
+  if (process.env['ACTION_PATH']) return fsa.toUrl(process.env['ACTION_PATH']);
   const loc = JSON.parse(process.env['ARGO_TEMPLATE'] ?? '{}')?.archiveLocation?.s3;
   if (loc == null) return null;
   if (typeof loc.key !== 'string') return null;
