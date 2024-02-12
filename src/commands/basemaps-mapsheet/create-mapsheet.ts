@@ -87,7 +87,7 @@ export const basemapsCreateMapSheet = command({
     const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
-    const featuresWritePromise = fsa.write(new URL('file://features.json'), JSON.stringify(rest));
+    const featuresWritePromise = fsa.write(new URL(`file://${process.cwd()}/features.json`), JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
