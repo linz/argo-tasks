@@ -12,11 +12,11 @@ describe('AsyncFilter', () => {
     };
   }
 
-  // it('should include all', async () => {
-  //   const gen = makeGenerator(['a.tiff', 'b.tiff', 'c.tiff']);
-  //   const result = await fsa.toArray(asyncFilter(gen()));
-  //   assert.equal(result.length, 3);
-  // });
+  it('should include all', async () => {
+    const gen = makeGenerator(['a.tiff', 'b.tiff', 'c.tiff']);
+    const result = await fsa.toArray(asyncFilter(gen()));
+    assert.equal(result.length, 3);
+  });
 
   it('should match include exact', async () => {
     const gen = makeGenerator(['a.tiff', 'b.tiff', 'c.tiff']);
