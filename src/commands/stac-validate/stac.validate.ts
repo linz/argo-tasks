@@ -2,7 +2,6 @@ import { fsa } from '@chunkd/fs';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
-import { dirname } from 'path';
 import { performance } from 'perf_hooks';
 import * as st from 'stac-ts';
 
@@ -161,13 +160,12 @@ export const commandStacValidate = command({
           // 12-20 is the starting prefix for all sha256 multihashes
           if (!checksum.startsWith('1220')) continue;
 
-          let source = asset.href;
-          if (source.startsWith('./')) source = new URL(dirname(path), source.replace('./', ''));
+          const source = new URL(path, asset.href);
 
           logger.debug({ source, checksum }, 'Validate:Asset');
           const startTime = performance.now();
 
-          const hash = await hashStream(fsa.readStream(new URL(source)));
+          const hash = await hashStream(fsa.readStream(source));
           const duration = performance.now() - startTime;
 
           if (hash === checksum) {
