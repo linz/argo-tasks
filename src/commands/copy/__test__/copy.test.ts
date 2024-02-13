@@ -25,12 +25,12 @@ describe('copyFiles', () => {
       id: '1',
       manifest: [
         {
-          source: new URL('memory://source/topographic.json'),
-          target: new URL('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
         {
-          source: new URL('memory://source/foo/bar/topographic.png'),
-          target: new URL('memory://target/topographic.png'),
+          source: 'memory://source/foo/bar/topographic.png',
+          target: 'memory://target/topographic.png',
         },
       ],
       start: 0,
@@ -76,12 +76,12 @@ describe('copyFiles', () => {
       id: '1',
       manifest: [
         {
-          source: new URL('memory://source/topographic.json'),
-          target: new URL('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
         {
-          source: new URL('memory://source/foo/bar/topographic.tiff'),
-          target: new URL('memory://target/topographic.tiff'),
+          source: 'memory://source/foo/bar/topographic.tiff',
+          target: 'memory://target/topographic.tiff',
         },
       ],
       start: 0,
@@ -120,12 +120,12 @@ describe('copyFiles', () => {
       id: '1',
       manifest: [
         {
-          source: new URL('memory://source/topographic.json'),
-          target: new URL('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
         {
-          source: new URL('memory://source/foo/bar/topographic.tiff'),
-          target: new URL('memory://target/topographic.tiff'),
+          source: 'memory://source/foo/bar/topographic.tiff',
+          target: 'memory://target/topographic.tiff',
         },
       ],
       start: 0,

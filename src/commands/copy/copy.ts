@@ -9,7 +9,7 @@ import { logger, logId } from '../../log.js';
 import { ActionCopy } from '../../utils/actions.js';
 import { UrlParser } from '../../utils/parsers.js';
 import { config, registerCli, verbose } from '../common.js';
-import { CopyContract } from './copy-rpc.js';
+import { CopyContract, CopyContractArgs } from './copy-rpc.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
 const CopyManifest = z.array(CopyValidator);
@@ -77,10 +77,7 @@ export const commandCopy = command({
     for (const m of args.manifest) {
       const json = await fsa.readJson<ActionCopy>(m);
       if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from: ' + m);
-      const data = CopyManifest.parse(json.parameters.manifest);
-      const manifest: ActionCopy['parameters']['manifest'] = data.map(({ source, target }) => {
-        return { source: new URL(source), target: new URL(target) };
-      });
+      const manifest: CopyContractArgs['manifest'] = CopyManifest.parse(json.parameters.manifest);
 
       const chunkSize = Math.ceil(manifest.length / args.concurrency);
       for (let i = 0; i < manifest.length; i += chunkSize) {

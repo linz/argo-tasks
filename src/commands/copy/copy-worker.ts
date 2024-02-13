@@ -61,8 +61,9 @@ export const worker = new WorkerRpc<CopyContract>({
     const log = baseLogger.child({ id: args.id, threadId });
 
     for (let i = args.start; i < end; i++) {
-      const todo = args.manifest[i];
-      if (todo == null) continue;
+      const manifest = args.manifest[i];
+      if (manifest == null) continue;
+      const todo = { source: new URL(manifest.source), target: new URL(manifest.target) };
 
       Q.push(async () => {
         const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
