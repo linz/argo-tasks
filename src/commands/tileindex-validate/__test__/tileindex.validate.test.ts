@@ -49,7 +49,6 @@ describe('getTileName', () => {
     assert.equal(convertTileName('AT24_50000_0101', 50000), 'AT24');
     assert.equal(convertTileName('AT25_50000_0101', 50000), 'AT25');
     assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08');
-    assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08');
   });
 
   for (const sheet of MapSheetData) {

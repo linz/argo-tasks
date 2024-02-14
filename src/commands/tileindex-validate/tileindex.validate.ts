@@ -355,7 +355,6 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const letters = Object.keys(SheetRanges)[offsetY];
   const sheetCode = `${letters}${`${offsetX}`.padStart(2, '0')}`;
   // Shorter tile names for 1:50k
-
   if (gridSize === MapSheetTileGridSize) return sheetCode;
 
   const tilesPerMapSheet = Math.floor(MapSheet.gridSizeMax / gridSize);
