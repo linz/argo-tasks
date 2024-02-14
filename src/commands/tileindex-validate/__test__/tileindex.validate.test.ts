@@ -52,7 +52,7 @@ describe('getTileName', () => {
   });
 
   for (const sheet of MapSheetData) {
-    it('should get the top left 1:50k, 1:10k, 1:5k and 1:1k 1:500 for ' + sheet.code, () => {
+    it('should get the top left 1:50k, 1:10k, 1:5k, 1:1k, and 1:500 for ' + sheet.code, () => {
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 50000), sheet.code);
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 10000), sheet.code + '_10000_0101');
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 5000), sheet.code + '_5000_0101');
