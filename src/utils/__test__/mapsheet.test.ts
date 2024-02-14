@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { MapSheet, MapTileIndex } from '../mapsheet.js';
+import { MapSheet, MapTileIndex, SheetRanges } from '../mapsheet.js';
 import { MapSheetData } from './mapsheet.data.js';
 
 describe('MapSheets', () => {
@@ -47,6 +47,18 @@ describe('MapSheets', () => {
   for (const ms of MapSheetData) {
     it('should calculate for ' + ms.code, () => {
       assert.deepEqual(MapSheet.offset(ms.code), ms.origin);
+    });
+
+    it('should validate mapsheet range:' + ms.code, () => {
+      const range = SheetRanges[ms.code.slice(0, 2) as keyof typeof SheetRanges];
+      assert.notEqual(range, undefined);
+
+      const index = Number(ms.code.slice(2));
+      for (const [low, high] of range) {
+        if (low <= index && high >= index) return;
+      }
+
+      assert.fail('index not found: ' + ms.code);
     });
   }
 

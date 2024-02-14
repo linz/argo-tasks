@@ -249,4 +249,4 @@ export const SheetRanges = {
   CH: [[5, 14]],
   CJ: [[7, 11]],
   CK: [[7, 9]],
-};
+} as const;
