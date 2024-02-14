@@ -186,11 +186,30 @@ export const MapSheet = {
     const offsetY = MapSheet.height * scale;
     return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
   },
+
+  /**
+   * Is this mapsheet part of the known mapsheet ranges
+   *
+   * {@link SheetRanges}
+   */
+  isKnown(sheet: string): boolean {
+    const key = sheet.slice(0, 2);
+    const index = Number(sheet.slice(2, 4));
+    if (Number.isNaN(index)) return false;
+    const ranges = SheetRanges[key as keyof typeof SheetRanges];
+    if (ranges == null) return false;
+    for (const [low, high] of ranges) {
+      if (low <= index && index <= high) return true;
+    }
+    return false;
+  },
 };
 
-// Ranges of valid sheet columns for each sheet row. Keys are the row names, and values are ranges
-// between which there are valid rows. For example `"AS": [(21, 22), (24, 24)]` means the valid
-// sheets in row AS are AS21, AS22, and AS24.
+/**
+ * Ranges of valid sheet columns for each sheet row. Keys are the row names, and values are ranges
+ * between which there are valid rows. For example `"AS": [(21, 22), (24, 24)]` means the valid
+ * sheets in row AS are AS21, AS22, and AS24.
+ */
 export const SheetRanges = {
   AS: [
     [21, 22],
