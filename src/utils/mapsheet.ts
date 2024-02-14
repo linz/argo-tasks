@@ -56,9 +56,9 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
-export const mapSheetTileGridSize = 50_000;
-export const gridSizes = [mapSheetTileGridSize, 10_000, 5_000, 2_000, 1_000, 500] as const;
-export type GridSize = (typeof gridSizes)[number];
+export const MapSheetTileGridSize = 50_000;
+export const GridSizes = [MapSheetTileGridSize, 10_000, 5_000, 2_000, 1_000, 500] as const;
+export type GridSize = (typeof GridSizes)[number];
 
 /**
  * Topographic 1:50k map sheet calculator
@@ -82,15 +82,15 @@ export const MapSheet = {
   /** Width of Topo 1:50k map sheets (meters) */
   width: 24_000,
   /** Base scale Topo 1:50k map sheets (meters) */
-  scale: mapSheetTileGridSize,
+  scale: MapSheetTileGridSize,
   /** Map Sheets start at AS and end at CK */
   code: { start: 'AS', end: 'CK' },
   /** The top left point for where map sheets start from in NZTM2000 (EPSG:2193) */
   origin: { x: 988000, y: 6234000 },
-  gridSizeMax: mapSheetTileGridSize,
+  gridSizeMax: MapSheetTileGridSize,
   roundCorrection: 0.01,
   /** Allowed grid sizes, these should exist in the LINZ Data service (meters) */
-  gridSizes: gridSizes,
+  gridSizes: GridSizes,
 
   /**
    * Get the expected origin and map sheet information from a file name
@@ -107,7 +107,7 @@ export const MapSheet = {
     const sheetCode = match?.groups?.['sheetCode'];
     if (sheetCode == null) return null;
 
-    const gridSize = Number(match?.groups?.['gridSize'] ?? mapSheetTileGridSize);
+    const gridSize = Number(match?.groups?.['gridSize'] ?? MapSheetTileGridSize);
     const out: MapTileIndex = {
       mapSheet: sheetCode,
       gridSize: gridSize,
@@ -121,7 +121,7 @@ export const MapSheet = {
     };
 
     const mapSheetOffset = MapSheet.offset(sheetCode);
-    if (out.gridSize === mapSheetTileGridSize) {
+    if (out.gridSize === MapSheetTileGridSize) {
       out.y = mapSheetOffset.y;
       out.x = mapSheetOffset.x;
       out.origin = mapSheetOffset;
