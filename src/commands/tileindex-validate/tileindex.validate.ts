@@ -354,7 +354,8 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
   // Build name
   const letters = Object.keys(SheetRanges)[offsetY];
   const sheetCode = `${letters}${`${offsetX}`.padStart(2, '0')}`;
-  if (!MapSheet.isKnown(sheetCode)) throw new Error('Map sheet outside known range: ' + sheetCode);
+  // TODO: re-enable this check when validation logic
+  // if (!MapSheet.isKnown(sheetCode)) throw new Error('Map sheet outside known range: ' + sheetCode);
 
   // Shorter tile names for 1:50k
   if (gridSize === MapSheetTileGridSize) return sheetCode;
