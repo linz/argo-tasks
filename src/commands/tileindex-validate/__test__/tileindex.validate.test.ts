@@ -51,6 +51,10 @@ describe('getTileName', () => {
     assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08');
   });
 
+  it('should not validate invalid mapsheets', () => {
+    assert.throws(() => convertTileName('BC39_10000_0101', 50000), Error);
+  });
+
   for (const sheet of MapSheetData) {
     it('should get the top left 1:50k, 1:10k, 1:5k and 1:1k 1:500 for ' + sheet.code, () => {
       // getTileName
