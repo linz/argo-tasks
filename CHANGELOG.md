@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/linz/argo-tasks/compare/v3.0.0...v3.0.1) (2024-02-16)
+
+
+### Reverts
+
+* "refactor: Move default value up the stack TDE-1030 ([#854](https://github.com/linz/argo-tasks/issues/854))" ([#867](https://github.com/linz/argo-tasks/issues/867)) ([bd2c505](https://github.com/linz/argo-tasks/commit/bd2c5053b004882026cd24d2692fa34d20e6c05f))
+
 ## [3.0.0](https://github.com/linz/argo-tasks/compare/v2.18.2...v3.0.0) (2024-02-11)
 
 
