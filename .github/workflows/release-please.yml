@@ -23,6 +23,9 @@ jobs:
     environment:
       name: prod
 
+    env:
+      AWS_CI_ROLE: ${{ secrets.AWS_CI_ROLE }}
+
     permissions:
       id-token: write
       contents: read
