@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.2](https://github.com/linz/argo-tasks/compare/v3.0.1...v3.0.2) (2024-02-18)
+
+
+### Bug Fixes
+
+* CI missing environment variable for secret ([#872](https://github.com/linz/argo-tasks/issues/872)) ([75ed70f](https://github.com/linz/argo-tasks/commit/75ed70fcb6d43bd30cb5481d00626a73d57f993e))
+
 ## [3.0.1](https://github.com/linz/argo-tasks/compare/v3.0.0...v3.0.1) (2024-02-16)
 
 
