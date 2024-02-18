@@ -22,6 +22,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "npx eslint . --ignore-path .gitignore",
+    "format": "npx prettier . -w",
     "test": "node --test build/"
   },
   "publishConfig": {
