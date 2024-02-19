@@ -223,10 +223,10 @@ export const commandTileIndexValidate = command({
     if (args.validate) {
       let validationFailed = false;
       for (const tiff of locations) {
-        const ret = validateTiffAlignment(tiff);
-        if (ret === true) continue;
-        logger.error({ reason: ret.message, source: tiff.source }, 'TileInvalid:Validation:Failed');
-        validationFailed = true;
+        const valid = validateTiffAlignment(tiff);
+        if (valid === false) {
+          validationFailed = true;
+        }
       }
       if (validationFailed) throw new Error(`Tile alignment validation failed`);
     }
@@ -295,7 +295,11 @@ export async function extractTiffLocations(
         const bbox = await findBoundingBox(tiff);
 
         const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
-        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${tiff.source.url}`);
+        if (sourceEpsg == null) {
+          logger.error({ reason: 'EPSG is missing', source: tiff.source }, 'MissingEPSG:ExtracTiffLocations:Failed');
+          return null;
+        }
+
         const centerX = (bbox[0] + bbox[2]) / 2;
         const centerY = (bbox[1] + bbox[3]) / 2;
         // bbox is not epsg:2193
@@ -303,7 +307,14 @@ export async function extractTiffLocations(
         const sourceProjection = Projection.get(sourceEpsg);
 
         const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        if (x == null || y == null) throw new Error(`Failed to reproject point: ${tiff.source.url}`);
+        if (x == null || y == null) {
+          logger.error(
+            { reason: 'Failed to reproject point', source: tiff.source },
+            'Reprojection:ExtracTiffLocations:Failed',
+          );
+          return null;
+        }
+
         // Tilename from center
         const tileName = getTileName(x, y, gridSize);
 
@@ -314,7 +325,7 @@ export async function extractTiffLocations(
         // }
         return { bbox, source: tiff.source.url.href, tileName, epsg: tiff.images[0]?.epsg };
       } catch (e) {
-        console.log(tiff.source.url, e);
+        logger.error({ reason: e, source: tiff.source }, 'ExtractTiffLocation:Failed');
         return null;
       } finally {
         await tiff.source.close?.();
@@ -330,25 +341,47 @@ export function getSize(extent: [number, number, number, number]): Size {
   return { width: extent[2] - extent[0], height: extent[3] - extent[1] };
 }
 
-export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015): true | Error {
+export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015): boolean {
   const mapTileIndex = MapSheet.getMapTileIndex(tiff.tileName);
-  if (mapTileIndex == null) throw new Error('Failed to extract bounding box from: ' + tiff.tileName);
+  if (mapTileIndex == null) {
+    logger.error(
+      { reason: `Failed to extract bounding box from: ${tiff.tileName}`, source: tiff.source },
+      'TileInvalid:Validation:Failed',
+    );
+    return false;
+  }
   // Top Left
   const errX = Math.abs(tiff.bbox[0] - mapTileIndex.bbox[0]);
   const errY = Math.abs(tiff.bbox[3] - mapTileIndex.bbox[3]);
-  if (errX > allowedError || errY > allowedError)
-    return new Error(`The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]} source:${tiff.source}`);
+  if (errX > allowedError || errY > allowedError) {
+    logger.error(
+      { reason: `The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]}`, source: tiff.source },
+      'TileInvalid:Validation:Failed',
+    );
+    return false;
+  }
 
   // TODO do we validate bottom right
   const tiffSize = getSize(tiff.bbox);
-  if (tiffSize.width !== mapTileIndex.width)
-    return new Error(
-      `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width} source:${tiff.source}`,
+  if (tiffSize.width !== mapTileIndex.width) {
+    logger.error(
+      { reason: `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width}`, source: tiff.source },
+      'TileInvalid:Validation:Failed',
     );
-  if (tiffSize.height !== mapTileIndex.height)
-    return new Error(
-      `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height} source:${tiff.source}`,
+    return false;
+  }
+
+  if (tiffSize.height !== mapTileIndex.height) {
+    logger.error(
+      {
+        reason: `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height}`,
+        source: tiff.source,
+      },
+      'TileInvalid:Validation:Failed',
     );
+    return false;
+  }
+
   return true;
 }
 
