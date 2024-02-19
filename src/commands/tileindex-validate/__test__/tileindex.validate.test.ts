@@ -5,6 +5,7 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import { FeatureCollection } from 'geojson';
 
+import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
 import { GridSize, MapSheet } from '../../../utils/mapsheet.js';
 import {
   commandTileIndexValidate,
@@ -49,7 +50,17 @@ describe('getTileName', () => {
     assert.equal(convertTileName('AT25_50000_0101', 50000), 'AT25');
     assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08');
   });
+
+  for (const sheet of MapSheetData) {
+    it('should get the 1:50k, 1:10k, 1:5k and 1:1k for ' + sheet.code, () => {
+      assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 50000), sheet.code);
+      assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 10000), sheet.code + '_10000_0101');
+      assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 5000), sheet.code + '_5000_0101');
+      assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 1000), sheet.code + '_1000_0101');
+    });
+  }
 });
+
 describe('tiffLocation', () => {
   it('get location from tiff', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
