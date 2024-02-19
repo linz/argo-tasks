@@ -7,8 +7,8 @@ export function slugify(input: string): string {
     .replaceAll("'", '')
     .replaceAll('ø', 'o')
     .replaceAll('Ø', 'O')
-    .replaceAll('&', '-and-')
     .replaceAll(/[ ',/]/g, '-')
+    .replaceAll('&', '-and-')
     .replaceAll(/--+/g, '-')
     .toLowerCase();
 
