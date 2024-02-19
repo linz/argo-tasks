@@ -6,7 +6,7 @@ export function slugify(input: string): string {
   const result = removeDiacritics(input)
     .replaceAll('ø', 'o')
     .replaceAll('Ø', 'O')
-    .replaceAll(/[ ',/]/g, '-')
+    .replaceAll(/[ &',/]/g, '-')
     .replaceAll(/--+/g, '-')
     .toLowerCase();
 
