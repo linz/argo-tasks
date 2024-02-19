@@ -20,12 +20,13 @@ function splitConfig(x: string): string[] {
   return x.split(',');
 }
 
-export function registerFileSystem(config?: string): void {
+export function registerFileSystem(opts: { config?: string }): void {
   fsa.register('s3://', s3Fs);
 
-  if (config == null || config === '') return;
+  const configPath = opts.config ?? process.env['AWS_ROLE_CONFIG_PATH'];
+  if (configPath == null || configPath === '') return;
 
-  const paths = splitConfig(config);
+  const paths = splitConfig(configPath);
 
   for (const path of paths) credentials.registerConfig(fsa.toUrl(path), fsa);
 }

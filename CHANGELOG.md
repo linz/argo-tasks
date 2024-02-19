@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.1.0](https://github.com/linz/argo-tasks/compare/v3.0.2...v3.1.0) (2024-02-19)
+
+
+### Features
+
+* Slugify more characters TDE-1044 ([#875](https://github.com/linz/argo-tasks/issues/875)) ([66020a4](https://github.com/linz/argo-tasks/commit/66020a487952a73c706c62730f58a8f6089a0f60))
+
+## [3.0.2](https://github.com/linz/argo-tasks/compare/v3.0.1...v3.0.2) (2024-02-18)
+
+
+### Bug Fixes
+
+* CI missing environment variable for secret ([#872](https://github.com/linz/argo-tasks/issues/872)) ([75ed70f](https://github.com/linz/argo-tasks/commit/75ed70fcb6d43bd30cb5481d00626a73d57f993e))
+
+## [3.0.1](https://github.com/linz/argo-tasks/compare/v3.0.0...v3.0.1) (2024-02-16)
+
+
+### Reverts
+
+* "refactor: Move default value up the stack TDE-1030 ([#854](https://github.com/linz/argo-tasks/issues/854))" ([#867](https://github.com/linz/argo-tasks/issues/867)) ([bd2c505](https://github.com/linz/argo-tasks/commit/bd2c5053b004882026cd24d2692fa34d20e6c05f))
+
 ## [3.0.0](https://github.com/linz/argo-tasks/compare/v2.18.2...v3.0.0) (2024-02-11)
 
 

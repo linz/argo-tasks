@@ -7,7 +7,6 @@ import { logger, registerLogger } from '../log.js';
 import { isArgo } from '../utils/argo.js';
 
 export const config = option({
-  defaultValue: () => process.env['AWS_ROLE_CONFIG_PATH'],
   long: 'config',
   description: 'Location of role configuration file',
   type: optional(string),
@@ -29,7 +28,7 @@ export const forceOutput = flag({
 export function registerCli(cli: { name: string }, args: { verbose?: boolean; config?: string }): void {
   cleanArgs(args);
   registerLogger(args);
-  registerFileSystem(args.config);
+  registerFileSystem(args);
 
   logger.info({ package: CliInfo, cli: cli.name, args, isArgo: isArgo() }, 'Cli:Start');
 }
