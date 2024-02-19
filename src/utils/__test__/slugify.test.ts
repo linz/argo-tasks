@@ -13,6 +13,9 @@ describe('slugify', () => {
   it('should replace spaces with hyphens', () => {
     assert.equal(slugify('Upper North Island'), 'upper-north-island');
   });
+  it('should replace apostrophes with hyphens', () => {
+    assert.equal(slugify("Hawke's Bay"), 'hawke-s-bay');
+  });
   it('should remove diacritics', () => {
     ['á', 'Á', 'ä', 'Ä', 'ā', 'Ā'].forEach((value) => {
       assert.equal(slugify(value), 'a');

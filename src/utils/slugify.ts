@@ -3,7 +3,11 @@
  * @returns String slug. See src/utils/__test__/slugify.test.ts for examples.
  */
 export function slugify(input: string): string {
-  const result = removeDiacritics(input).replaceAll('ø', 'o').replaceAll('Ø', 'O').replaceAll(' ', '-').toLowerCase();
+  const result = removeDiacritics(input)
+    .replaceAll('ø', 'o')
+    .replaceAll('Ø', 'O')
+    .replaceAll(/[ ']/g, '-')
+    .toLowerCase();
 
   const unhandledCharacters = result.match(/[^abcdefghijklmnopqrstuvwxyz0123456789_.-]/g);
   if (unhandledCharacters) {
