@@ -19,6 +19,9 @@ describe('slugify', () => {
   it('should replace slashes with hyphens', () => {
     assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
   });
+  it('should replace commas with hyphens', () => {
+    assert.equal(slugify('Omere, Janus or Toby Rock'), 'omere-janus-or-toby-rock');
+  });
   it('should collapse multiple hyphens', () => {
     assert.equal(slugify("Butlers 'V' Hut"), 'butlers-v-hut');
   });
