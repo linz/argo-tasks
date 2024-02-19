@@ -108,7 +108,7 @@ export const commandStacValidate = command({
       const stacSchemas: string[] = [];
       let stacJson;
       try {
-        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(new URL(`file://${path}`));
+        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(fsa.toUrl(path));
       } catch (err) {
         logger.error({ path, err }, 'readStacJsonFile:Error');
         failures.push(path);
