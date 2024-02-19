@@ -4,6 +4,7 @@
  */
 export function slugify(input: string): string {
   const result = removeDiacritics(input)
+    .replaceAll("'", '')
     .replaceAll('ø', 'o')
     .replaceAll('Ø', 'O')
     .replaceAll('&', '-and-')

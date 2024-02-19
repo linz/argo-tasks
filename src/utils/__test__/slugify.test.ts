@@ -13,8 +13,8 @@ describe('slugify', () => {
   it('should replace spaces with hyphens', () => {
     assert.equal(slugify('Upper North Island'), 'upper-north-island');
   });
-  it('should replace apostrophes with hyphens', () => {
-    assert.equal(slugify("Hawke's Bay"), 'hawke-s-bay');
+  it('should remove apostrophes', () => {
+    assert.equal(slugify("Hawke's Bay"), 'hawkes-bay');
   });
   it('should replace slashes with hyphens', () => {
     assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
