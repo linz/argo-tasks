@@ -13,6 +13,21 @@ describe('slugify', () => {
   it('should replace spaces with hyphens', () => {
     assert.equal(slugify('Upper North Island'), 'upper-north-island');
   });
+  it('should remove apostrophes', () => {
+    assert.equal(slugify("Hawke's Bay"), 'hawkes-bay');
+  });
+  it('should replace slashes with hyphens', () => {
+    assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
+  });
+  it('should replace commas with hyphens', () => {
+    assert.equal(slugify('Omere, Janus or Toby Rock'), 'omere-janus-or-toby-rock');
+  });
+  it('should replace ampersands with "and"', () => {
+    assert.equal(slugify('Gore A&P Showgrounds'), 'gore-a-and-p-showgrounds');
+  });
+  it('should collapse multiple hyphens', () => {
+    assert.equal(slugify("Butlers 'V' Hut"), 'butlers-v-hut');
+  });
   it('should remove diacritics', () => {
     ['á', 'Á', 'ä', 'Ä', 'ā', 'Ā'].forEach((value) => {
       assert.equal(slugify(value), 'a');
@@ -45,8 +60,8 @@ describe('slugify', () => {
       },
       {
         name: 'Error',
-        message: 'Unhandled characters: "\\n", "/", ";", "\\", "—", "“", "”"',
-        cause: { characters: ['\n', '/', ';', '\\', '—', '“', '”'] },
+        message: 'Unhandled characters: "\\n", ";", "\\", "—", "“", "”"',
+        cause: { characters: ['\n', ';', '\\', '—', '“', '”'] },
       },
     );
   });
