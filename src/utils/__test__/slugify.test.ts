@@ -16,6 +16,9 @@ describe('slugify', () => {
   it('should replace apostrophes with hyphens', () => {
     assert.equal(slugify("Hawke's Bay"), 'hawke-s-bay');
   });
+  it('should replace slashes with hyphens', () => {
+    assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
+  });
   it('should remove diacritics', () => {
     ['á', 'Á', 'ä', 'Ä', 'ā', 'Ā'].forEach((value) => {
       assert.equal(slugify(value), 'a');
@@ -48,8 +51,8 @@ describe('slugify', () => {
       },
       {
         name: 'Error',
-        message: 'Unhandled characters: "\\n", "/", ";", "\\", "—", "“", "”"',
-        cause: { characters: ['\n', '/', ';', '\\', '—', '“', '”'] },
+        message: 'Unhandled characters: "\\n", ";", "\\", "—", "“", "”"',
+        cause: { characters: ['\n', ';', '\\', '—', '“', '”'] },
       },
     );
   });
