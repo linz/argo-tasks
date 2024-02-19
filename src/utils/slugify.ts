@@ -7,6 +7,7 @@ export function slugify(input: string): string {
     .replaceAll('ø', 'o')
     .replaceAll('Ø', 'O')
     .replaceAll(/[ '/]/g, '-')
+    .replaceAll(/--+/g, '-')
     .toLowerCase();
 
   const unhandledCharacters = result.match(/[^abcdefghijklmnopqrstuvwxyz0123456789_.-]/g);

@@ -19,6 +19,9 @@ describe('slugify', () => {
   it('should replace slashes with hyphens', () => {
     assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
   });
+  it('should collapse multiple hyphens', () => {
+    assert.equal(slugify("Butlers 'V' Hut"), 'butlers-v-hut');
+  });
   it('should remove diacritics', () => {
     ['á', 'Á', 'ä', 'Ä', 'ā', 'Ā'].forEach((value) => {
       assert.equal(slugify(value), 'a');
