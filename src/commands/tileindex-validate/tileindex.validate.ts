@@ -221,14 +221,11 @@ export const commandTileIndexValidate = command({
 
     // Validate that all tiffs align to tile grid
     if (args.validate) {
-      let validationFailed = false;
+      let allValid = true;
       for (const tiff of locations) {
-        const valid = validateTiffAlignment(tiff);
-        if (valid === false) {
-          validationFailed = true;
-        }
+        allValid = allValid && validateTiffAlignment(tiff);
       }
-      if (validationFailed) throw new Error(`Tile alignment validation failed`);
+      if (!allValid) throw new Error(`Tile alignment validation failed`);
     }
 
     if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
