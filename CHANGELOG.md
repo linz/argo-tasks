@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/linz/argo-tasks/compare/v3.0.2...v3.1.0) (2024-02-19)
+
+
+### Features
+
+* Slugify more characters TDE-1044 ([#875](https://github.com/linz/argo-tasks/issues/875)) ([66020a4](https://github.com/linz/argo-tasks/commit/66020a487952a73c706c62730f58a8f6089a0f60))
+
 ## [3.0.2](https://github.com/linz/argo-tasks/compare/v3.0.1...v3.0.2) (2024-02-18)
 
 
