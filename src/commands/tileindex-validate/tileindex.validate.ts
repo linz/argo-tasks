@@ -331,7 +331,11 @@ export async function extractTiffLocations(
   );
 
   const output: TiffLocation[] = [];
-  for (const o of result) if (o) output.push(o);
+  for (const o of result) {
+    if (o === null) throw new Error('All TIFF locations have not been extracted.');
+    output.push(o);
+  }
+
   return output;
 }
 export function getSize(extent: [number, number, number, number]): Size {
