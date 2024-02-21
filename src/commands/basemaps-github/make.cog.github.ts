@@ -4,7 +4,7 @@ import {
   ConfigTileSetVector,
   TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
-import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
+import { TileSetConfigSchema } from '@basemaps/config-loader/build/json/parse.tile.set.js';
 import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
@@ -57,50 +57,55 @@ export class MakeCogGithub {
   /**
    * Prepare and create pull request for the aerial tileset config
    */
-  async updateRasterTileSet(
-    filename: string,
-    layer: ConfigLayer,
-    category: Category,
-    region: string | undefined,
-  ): Promise<void> {
+  async updateAerialTileSet(filename: string, layer: ConfigLayer, category: Category): Promise<void> {
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-raster-${this.imagery}`;
     const title = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
 
     // Clone the basemaps-config repo and checkout branch
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
-    if (region) {
-      // Prepare new standalone tileset config
-      layer.category = category;
-      layer.minZoom = 0;
-      layer.maxZoom = 32;
-      const tileSet: TileSetConfigSchema = {
-        type: TileSetType.Raster,
-        id: `ts_${layer.name}`,
-        title: layer.title,
-        background: '#00000000',
-        category,
-        layers: [layer],
-      };
-      const content = await prettyPrint(JSON.stringify(tileSet, null, 2), ConfigPrettierFormat);
-      const tileSetPath = fsa.joinAll('config', 'tileset', region, `${layer.name}.json`);
-      const file = { path: tileSetPath, content };
-      // Github create pull request
-      await createPR(gh, branch, title, botEmail, [file]);
-    } else {
-      // Prepare new aerial tileset config
-      const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-      const tileSetContent = await gh.getContent(tileSetPath);
-      const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
-      const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
-      // skip pull request if not an urban or rural imagery
-      if (newTileSet == null) return;
-      // Github
-      const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
-      const file = { path: tileSetPath, content };
-      // Github create pull request
-      await createPR(gh, branch, title, botEmail, [file]);
-    }
+
+    // Prepare new aerial tileset config
+    const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
+    const tileSetContent = await gh.getContent(tileSetPath);
+    const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
+    const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
+    // skip pull request if not an urban or rural imagery
+    if (newTileSet == null) return;
+    // Github
+    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
+    const file = { path: tileSetPath, content };
+    // Github create pull request
+    await createPR(gh, branch, title, botEmail, [file]);
+  }
+
+  /**
+   * Prepare and create pull request for the individual tileset config
+   */
+  async updateIndividualTileSet(filename: string, layer: ConfigLayer, category: Category): Promise<void> {
+    const gh = new GithubApi(this.repository);
+    const branch = `feat/bot-config-raster-${this.imagery}`;
+    const title = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
+
+    // Clone the basemaps-config repo and checkout branch
+    logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
+    // Prepare new standalone tileset config
+    layer.category = category;
+    layer.minZoom = 0;
+    layer.maxZoom = 32;
+    const tileSet: TileSetConfigSchema = {
+      type: TileSetType.Raster,
+      id: `ts_${layer.name}`,
+      title: layer.title,
+      background: '#00000000',
+      category,
+      layers: [layer],
+    };
+    const content = await prettyPrint(JSON.stringify(tileSet, null, 2), ConfigPrettierFormat);
+    const tileSetPath = fsa.joinAll('config', 'tileset', filename, `${layer.name}.json`);
+    const file = { path: tileSetPath, content };
+    // Github create pull request
+    await createPR(gh, branch, title, botEmail, [file]);
   }
 
   /**
@@ -203,5 +208,29 @@ export class MakeCogGithub {
       }
     }
     return tileSet;
+  }
+
+  /**
+   * Prepare and create pull request for the aerial tileset config
+   */
+  async updateElevationTileSet(filename: string, layer: ConfigLayer): Promise<void> {
+    const gh = new GithubApi(this.repository);
+    const branch = `feat/bot-config-raster-${this.imagery}`;
+    const title = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
+
+    // Clone the basemaps-config repo and checkout branch
+    logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
+    // Prepare new elevation tileset config
+    const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
+    const tileSetContent = await gh.getContent(tileSetPath);
+    const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
+
+    // Just insert the new elevation at the bottom of config
+    tileSet.layers.push(layer);
+    // Github
+    const content = await prettyPrint(JSON.stringify(tileSet, null, 2), ConfigPrettierFormat);
+    const file = { path: tileSetPath, content };
+    // Github create pull request
+    await createPR(gh, branch, title, botEmail, [file]);
   }
 }
