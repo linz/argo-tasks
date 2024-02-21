@@ -126,7 +126,7 @@ export const basemapsCreatePullRequest = command({
       }
       layer.category = category;
     }
-    if(region == null) region=ConfigFile.Individual;
+    if (region == null) region = ConfigFile.Individual;
 
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
@@ -134,8 +134,7 @@ export const basemapsCreatePullRequest = command({
     if (args.configFile === ConfigFile.Vector) await git.updateVectorTileSet(ConfigFile.Vector, layer);
     else if (args.configFile === ConfigFile.Aerial) await git.updateAerialTileSet(ConfigFile.Aerial, layer, category);
     else if (args.configFile === ConfigFile.Elevation) await git.updateElevationTileSet(ConfigFile.Elevation, layer);
-    else if (args.configFile === ConfigFile.Individual)
-      await git.updateIndividualTileSet(region, layer, category);
+    else if (args.configFile === ConfigFile.Individual) await git.updateIndividualTileSet(region, layer, category);
     else throw new Error(`Invalid Config File target: ${args.configFile}`);
   },
 });
