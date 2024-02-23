@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { MapSheet, MapTileIndex } from '../mapsheet.js';
+import { MapSheet, MapTileIndex, SheetRanges } from '../mapsheet.js';
 import { MapSheetData } from './mapsheet.data.js';
 
 describe('MapSheets', () => {
@@ -47,8 +47,36 @@ describe('MapSheets', () => {
   for (const ms of MapSheetData) {
     it('should calculate for ' + ms.code, () => {
       assert.deepEqual(MapSheet.offset(ms.code), ms.origin);
+      assert.equal(MapSheet.isKnown(ms.code), true);
     });
   }
+
+  it('should not know invalid mapsheets', () => {
+    assert.equal(MapSheet.isKnown('BC39'), false);
+    assert.equal(MapSheet.isKnown('AAAA'), false);
+    assert.equal(MapSheet.isKnown('A'), false);
+    assert.equal(MapSheet.isKnown('BC99'), false);
+    assert.equal(MapSheet.isKnown('bw14'), false);
+    assert.equal(MapSheet.isKnown('AA14'), false);
+  });
+
+  it('should validate map sheet range', () => {
+    const validSheet = new Set();
+    for (const [key, ranges] of Object.entries(SheetRanges)) {
+      for (const [low, high] of ranges) {
+        for (let i = low; i <= high; i++) {
+          const code = String(i).padStart(2, '0');
+          validSheet.add(`${key}${code}`);
+        }
+      }
+    }
+
+    for (const sheet of MapSheetData) {
+      assert.equal(validSheet.has(sheet.code), true, 'Sheetcode missing: ' + sheet.code);
+      validSheet.delete(sheet.code);
+    }
+    assert.equal(validSheet.size, 0);
+  });
 
   const TestBounds = [
     { name: 'CG10_500_079035', bbox: [1236160, 4837560, 1236400, 4837920] },

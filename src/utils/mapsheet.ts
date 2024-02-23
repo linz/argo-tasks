@@ -56,9 +56,9 @@ export type Bounds = Point & Size;
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
-export const mapSheetTileGridSize = 50_000;
-export const gridSizes = [mapSheetTileGridSize, 10_000, 5_000, 2_000, 1_000, 500] as const;
-export type GridSize = (typeof gridSizes)[number];
+export const MapSheetTileGridSize = 50_000;
+export const GridSizes = [MapSheetTileGridSize, 10_000, 5_000, 2_000, 1_000, 500] as const;
+export type GridSize = (typeof GridSizes)[number];
 
 /**
  * Topographic 1:50k map sheet calculator
@@ -82,15 +82,15 @@ export const MapSheet = {
   /** Width of Topo 1:50k map sheets (meters) */
   width: 24_000,
   /** Base scale Topo 1:50k map sheets (meters) */
-  scale: mapSheetTileGridSize,
+  scale: MapSheetTileGridSize,
   /** Map Sheets start at AS and end at CK */
   code: { start: 'AS', end: 'CK' },
   /** The top left point for where map sheets start from in NZTM2000 (EPSG:2193) */
   origin: { x: 988000, y: 6234000 },
-  gridSizeMax: mapSheetTileGridSize,
+  gridSizeMax: MapSheetTileGridSize,
   roundCorrection: 0.01,
   /** Allowed grid sizes, these should exist in the LINZ Data service (meters) */
-  gridSizes: gridSizes,
+  gridSizes: GridSizes,
 
   /**
    * Get the expected origin and map sheet information from a file name
@@ -107,7 +107,7 @@ export const MapSheet = {
     const sheetCode = match?.groups?.['sheetCode'];
     if (sheetCode == null) return null;
 
-    const gridSize = Number(match?.groups?.['gridSize'] ?? mapSheetTileGridSize);
+    const gridSize = Number(match?.groups?.['gridSize'] ?? MapSheetTileGridSize);
     const out: MapTileIndex = {
       mapSheet: sheetCode,
       gridSize: gridSize,
@@ -121,7 +121,7 @@ export const MapSheet = {
     };
 
     const mapSheetOffset = MapSheet.offset(sheetCode);
-    if (out.gridSize === mapSheetTileGridSize) {
+    if (out.gridSize === MapSheetTileGridSize) {
       out.y = mapSheetOffset.y;
       out.x = mapSheetOffset.x;
       out.origin = mapSheetOffset;
@@ -186,11 +186,30 @@ export const MapSheet = {
     const offsetY = MapSheet.height * scale;
     return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
   },
+
+  /**
+   * Is this mapsheet part of the known mapsheet ranges
+   *
+   * {@link SheetRanges}
+   */
+  isKnown(sheet: string): boolean {
+    const key = sheet.slice(0, 2);
+    const index = Number(sheet.slice(2, 4));
+    if (Number.isNaN(index)) return false;
+    const ranges = SheetRanges[key as keyof typeof SheetRanges];
+    if (ranges == null) return false;
+    for (const [low, high] of ranges) {
+      if (low <= index && index <= high) return true;
+    }
+    return false;
+  },
 };
 
-// Ranges of valid sheet columns for each sheet row. Keys are the row names, and values are ranges
-// between which there are valid rows. For example `"AS": [(21, 22), (24, 24)]` means the valid
-// sheets in row AS are AS21, AS22, and AS24.
+/**
+ * Ranges of valid sheet columns for each sheet row. Keys are the row names, and values are ranges
+ * between which there are valid rows. For example `"AS": [(21, 22), (24, 24)]` means the valid
+ * sheets in row AS are AS21, AS22, and AS24.
+ */
 export const SheetRanges = {
   AS: [
     [21, 22],
@@ -249,4 +268,4 @@ export const SheetRanges = {
   CH: [[5, 14]],
   CJ: [[7, 11]],
   CK: [[7, 9]],
-};
+} as const;
