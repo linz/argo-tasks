@@ -51,11 +51,26 @@ describe('getTileName', () => {
   });
 
   for (const sheet of MapSheetData) {
-    it('should get the 1:50k, 1:10k, 1:5k and 1:1k for ' + sheet.code, () => {
+    it('should get the top left 1:50k, 1:10k, 1:5k, 1:1k, and 1:500 for ' + sheet.code, () => {
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 50000), sheet.code);
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 10000), sheet.code + '_10000_0101');
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 5000), sheet.code + '_5000_0101');
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 1000), sheet.code + '_1000_0101');
+      assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 500), sheet.code + '_500_001001');
+    });
+
+    it('should get the bottom right 1:50k, 1:10k, 1:5k, 1:1k for ' + sheet.code, () => {
+      // for each scale calculate the bottom right tile then find the mid point of it
+      // then look up the tile name from the midpoint and ensure it is the same
+      for (const scale of [10_000, 5_000, 1_000, 500] as const) {
+        const tileCount = 50_000 / scale;
+        const tileName = `${tileCount - 1}`.padStart(scale === 500 ? 3 : 2, '0');
+        const sheetName = `${sheet.code}_${scale}_${tileName}${tileName}`;
+        const ret = MapSheet.getMapTileIndex(sheetName)!;
+        const midPointX = ret.origin.x + ret.width / 2;
+        const midPointY = ret.origin.y - ret.height / 2;
+        assert.equal(getTileName(midPointX, midPointY, scale), sheetName);
+      }
     });
   }
 });
@@ -99,6 +114,17 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[1] = -4032710.6009459053;
     const location = await extractTiffLocations([TiffAy29], 1000);
     assert.equal(location[0]?.tileName, 'AS21_1000_0101');
+  });
+
+  it('should fail if one location is not extracted', async () => {
+    const TiffAs21 = FakeTiff.fromTileName('AS21_1000_0101');
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
+    const TiffAy29 = FakeTiff.fromTileName('AY29_1000_0101');
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
+    TiffAy29.images[0].epsg = 0; // make the projection failing
+    await assert.rejects(extractTiffLocations([TiffAs21, TiffAy29], 1000));
   });
 });
 

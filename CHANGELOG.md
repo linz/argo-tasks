@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/linz/argo-tasks/compare/v3.1.0...v3.1.1) (2024-02-19)
+
+
+### Bug Fixes
+
+* tileindex-validate errors should not been thrown asap TDE-1013 ([#877](https://github.com/linz/argo-tasks/issues/877)) ([0f95e4f](https://github.com/linz/argo-tasks/commit/0f95e4fa707fc41eea5805955a5d1a47e3a25afd))
+
 ## [3.1.0](https://github.com/linz/argo-tasks/compare/v3.0.2...v3.1.0) (2024-02-19)
 
 

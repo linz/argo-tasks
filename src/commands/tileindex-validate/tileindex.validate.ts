@@ -8,15 +8,10 @@ import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
-import { GridSize, gridSizes, MapSheet, mapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
+import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
 import { UrlParser } from '../../utils/parsers.js';
 import { config, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
-
-const SHEET_MIN_X = MapSheet.origin.x + 4 * MapSheet.width; // The minimum x coordinate of a valid sheet / tile
-const SHEET_MAX_X = MapSheet.origin.x + 46 * MapSheet.width; // The maximum x coordinate of a valid sheet / tile
-const SHEET_MIN_Y = MapSheet.origin.y - 42 * MapSheet.height; // The minimum y coordinate of a valid sheet / tile
-const SHEET_MAX_Y = MapSheet.origin.y; // The maximum y coordinate of a valid sheet / tile
 
 export function isTiff(url: URL): boolean {
   const search = url.href.toLowerCase();
@@ -108,13 +103,40 @@ export const TiffLoader = {
 export const GridSizeFromString: Type<string, GridSize> = {
   async from(value) {
     const gridSize = Number(value) as GridSize;
-    if (!gridSizes.includes(gridSize)) {
-      throw new Error(`Invalid grid size "${value}"; valid values: "${gridSizes.join('", "')}"`);
+    if (!GridSizes.includes(gridSize)) {
+      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}"`);
     }
     return gridSize;
   },
 };
 
+/**
+ *
+ * --validate // Validates all inputs align to output grid
+ * --retile // Creates a list of files that need to be retiled
+ *
+ *
+ * input: 1:1000
+ * scale: 1:1000
+ * // --retile=false --validate=true
+ * // Validate the top left points of every input align to the 1:1000 grid and no duplicates
+ *
+ * input: 1:1000
+ * scale: 1:1000
+ * // --retile=true --validate=true
+ * // Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
+ *
+ * input: 1:1000
+ * scale: 1:5000, 1:10_000
+ * // --retile=true --validate=false
+ * // create a re-tiling output of {tileName, input: string[] }
+ *
+ * -- Not handled (yet!)
+ * input: 1:10_000
+ * scale: 1:1000
+ * // create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
+ *
+ */
 export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description: 'List input files and validate there are no duplicates.',
@@ -234,14 +256,11 @@ export const commandTileIndexValidate = command({
 
     // Validate that all tiffs align to tile grid
     if (args.validate) {
-      let validationFailed = false;
+      let allValid = true;
       for (const tiff of locations) {
-        const ret = validateTiffAlignment(tiff);
-        if (ret === true) continue;
-        logger.error({ reason: ret.message, source: tiff.source }, 'TileInvalid:Validation:Failed');
-        validationFailed = true;
+        allValid = allValid && validateTiffAlignment(tiff);
       }
-      if (validationFailed) throw new Error(`Tile alignment validation failed`);
+      if (!allValid) throw new Error(`Tile alignment validation failed`);
     }
 
     if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
@@ -271,31 +290,12 @@ export interface TiffLocation {
 }
 
 /**
+ * Create a list of `TiffLocation` from a list of TIFFs (`CogTiff`) by extracting their bounding box and generated their tile name from their origin based on a provided `GridSize`.
  *
- * --validate // Validates all inputs align to output grid
- * --retile // Creates a list of files that need to be retiled
- *
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=false --validate=true
- * // Validate the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=true --validate=true
- * // Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:5000, 1:10_000
- * // --retile=true --validate=false
- * // create a re-tiling output of {tileName, input: string[] }
- *
- * -- Not handled (yet!)
- * input: 1:10_000
- * scale: 1:1000
- * // create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
- *
+ * @param tiffs
+ * @param gridSize
+ * @param forceSourceEpsg
+ * @returns {TiffLocation[]}
  */
 export async function extractTiffLocations(
   tiffs: Tiff[],
@@ -308,7 +308,11 @@ export async function extractTiffLocations(
         const bbox = await findBoundingBox(tiff);
 
         const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
-        if (sourceEpsg == null) throw new Error(`EPSG is missing: ${tiff.source.url}`);
+        if (sourceEpsg == null) {
+          logger.error({ reason: 'EPSG is missing', source: tiff.source }, 'MissingEPSG:ExtracTiffLocations:Failed');
+          return null;
+        }
+
         const centerX = (bbox[0] + bbox[2]) / 2;
         const centerY = (bbox[1] + bbox[3]) / 2;
         // bbox is not epsg:2193
@@ -316,7 +320,14 @@ export async function extractTiffLocations(
         const sourceProjection = Projection.get(sourceEpsg);
 
         const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        if (x == null || y == null) throw new Error(`Failed to reproject point: ${tiff.source.url}`);
+        if (x == null || y == null) {
+          logger.error(
+            { reason: 'Failed to reproject point', source: tiff.source },
+            'Reprojection:ExtracTiffLocations:Failed',
+          );
+          return null;
+        }
+
         // Tilename from center
         const tileName = getTileName(x, y, gridSize);
 
@@ -327,7 +338,7 @@ export async function extractTiffLocations(
         // }
         return { bbox, source: tiff.source.url.href, tileName, epsg: tiff.images[0]?.epsg };
       } catch (e) {
-        console.log(tiff.source.url, e);
+        logger.error({ reason: e, source: tiff.source }, 'ExtractTiffLocation:Failed');
         return null;
       } finally {
         await tiff.source.close?.();
@@ -336,7 +347,11 @@ export async function extractTiffLocations(
   );
 
   const output: TiffLocation[] = [];
-  for (const o of result) if (o) output.push(o);
+  for (const o of result) {
+    if (o === null) throw new Error('All TIFF locations have not been extracted.');
+    output.push(o);
+  }
+
   return output;
 }
 
@@ -344,55 +359,69 @@ export function getSize(extent: [number, number, number, number]): Size {
   return { width: extent[2] - extent[0], height: extent[3] - extent[1] };
 }
 
-export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015): true | Error {
+export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015): boolean {
   const mapTileIndex = MapSheet.getMapTileIndex(tiff.tileName);
-  if (mapTileIndex == null) throw new Error('Failed to extract bounding box from: ' + tiff.tileName);
+  if (mapTileIndex == null) {
+    logger.error(
+      { reason: `Failed to extract bounding box from: ${tiff.tileName}`, source: tiff.source },
+      'TileInvalid:Validation:Failed',
+    );
+    return false;
+  }
   // Top Left
   const errX = Math.abs(tiff.bbox[0] - mapTileIndex.bbox[0]);
   const errY = Math.abs(tiff.bbox[3] - mapTileIndex.bbox[3]);
-  if (errX > allowedError || errY > allowedError)
-    return new Error(`The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]} source:${tiff.source}`);
+  if (errX > allowedError || errY > allowedError) {
+    logger.error(
+      { reason: `The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]}`, source: tiff.source },
+      'TileInvalid:Validation:Failed',
+    );
+    return false;
+  }
 
   // TODO do we validate bottom right
   const tiffSize = getSize(tiff.bbox);
-  if (tiffSize.width !== mapTileIndex.width)
-    return new Error(
-      `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width} source:${tiff.source}`,
+  if (tiffSize.width !== mapTileIndex.width) {
+    logger.error(
+      { reason: `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width}`, source: tiff.source },
+      'TileInvalid:Validation:Failed',
     );
-  if (tiffSize.height !== mapTileIndex.height)
-    return new Error(
-      `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height} source:${tiff.source}`,
+    return false;
+  }
+
+  if (tiffSize.height !== mapTileIndex.height) {
+    logger.error(
+      {
+        reason: `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height}`,
+        source: tiff.source,
+      },
+      'TileInvalid:Validation:Failed',
     );
+    return false;
+  }
+
   return true;
 }
 
 export function getTileName(x: number, y: number, gridSize: GridSize): string {
-  if (!(SHEET_MIN_X <= x && x <= SHEET_MAX_X)) {
-    throw new Error(`x must be between ${SHEET_MIN_X} and ${SHEET_MAX_X}, was ${x}`);
-  }
-  if (!(SHEET_MIN_Y <= y && y <= SHEET_MAX_Y)) {
-    throw new Error(`y must be between ${SHEET_MIN_Y} and ${SHEET_MAX_Y}, was ${y}`);
-  }
-
   const offsetX = Math.round(Math.floor((x - MapSheet.origin.x) / MapSheet.width));
   const offsetY = Math.round(Math.floor((MapSheet.origin.y - y) / MapSheet.height));
 
   // Build name
   const letters = Object.keys(SheetRanges)[offsetY];
   const sheetCode = `${letters}${`${offsetX}`.padStart(2, '0')}`;
-  if (gridSize === mapSheetTileGridSize) {
-    // Shorter tile names for 1:50k
-    return sheetCode;
-  }
+  // TODO: re-enable this check when validation logic
+  // if (!MapSheet.isKnown(sheetCode)) throw new Error('Map sheet outside known range: ' + sheetCode);
+
+  // Shorter tile names for 1:50k
+  if (gridSize === MapSheetTileGridSize) return sheetCode;
 
   const tilesPerMapSheet = Math.floor(MapSheet.gridSizeMax / gridSize);
   const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheet);
   const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheet);
 
-  let nbDigits = 2;
-  if (gridSize === 500) {
-    nbDigits = 3;
-  }
+  const nbDigits = gridSize === 500 ? 3 : 2;
+
   const maxY = MapSheet.origin.y - offsetY * MapSheet.height;
   const minX = MapSheet.origin.x + offsetX * MapSheet.width;
   const tileX = Math.round(Math.floor((x - minX) / tileWidth + 1));
