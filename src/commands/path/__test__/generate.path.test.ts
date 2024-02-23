@@ -167,7 +167,7 @@ describe('gsd', () => {
 });
 
 describe('category', async () => {
-  await it('Should return category', async () => {
+  it('Should return category', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -176,7 +176,7 @@ describe('category', async () => {
 });
 
 describe('geographicDescription', async () => {
-  await it('Should return geographic description', async () => {
+  it('Should return geographic description', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -192,7 +192,7 @@ describe('geographicDescription', async () => {
     };
     assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/');
   });
-  await it('Should return undefined - no geographic description metadata', async () => {
+  it('Should return undefined - no geographic description metadata', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -212,7 +212,7 @@ describe('geographicDescription', async () => {
 });
 
 describe('region', async () => {
-  await it('Should return region', async () => {
+  it('Should return region', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -221,20 +221,20 @@ describe('region', async () => {
 });
 
 describe('formatDate', async () => {
-  await it('Should return date as single year', async () => {
+  it('Should return date as single year', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
     assert.equal(formatDate(collection), '2022');
   });
-  await it('Should return date as two years', async () => {
+  it('Should return date as two years', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
     collection.extent.temporal.interval[0] = ['2022-12-31T11:00:00Z', '2023-12-31T11:00:00Z'];
     assert.equal(formatDate(collection), '2022-2023');
   });
-  await it('Should fail - unable to retrieve date', async () => {
+  it('Should fail - unable to retrieve date', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
