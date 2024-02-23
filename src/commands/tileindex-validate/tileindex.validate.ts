@@ -109,6 +109,33 @@ export const GridSizeFromString: Type<string, GridSize> = {
   },
 };
 
+/**
+ *
+ * --validate // Validates all inputs align to output grid
+ * --retile // Creates a list of files that need to be retiled
+ *
+ *
+ * input: 1:1000
+ * scale: 1:1000
+ * // --retile=false --validate=true
+ * // Validate the top left points of every input align to the 1:1000 grid and no duplicates
+ *
+ * input: 1:1000
+ * scale: 1:1000
+ * // --retile=true --validate=true
+ * // Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
+ *
+ * input: 1:1000
+ * scale: 1:5000, 1:10_000
+ * // --retile=true --validate=false
+ * // create a re-tiling output of {tileName, input: string[] }
+ *
+ * -- Not handled (yet!)
+ * input: 1:10_000
+ * scale: 1:1000
+ * // create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
+ *
+ */
 export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description: 'List input files and validate there are no duplicates.',
@@ -250,31 +277,12 @@ export interface TiffLocation {
 }
 
 /**
+ * Create a list of `TiffLocation` from a list of TIFFs (`CogTiff`) by extracting their bounding box and generated their tile name from their origin based on a provided `GridSize`.
  *
- * --validate // Validates all inputs align to output grid
- * --retile // Creates a list of files that need to be retiled
- *
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=false --validate=true
- * // Validate the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=true --validate=true
- * // Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:5000, 1:10_000
- * // --retile=true --validate=false
- * // create a re-tiling output of {tileName, input: string[] }
- *
- * -- Not handled (yet!)
- * input: 1:10_000
- * scale: 1:1000
- * // create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
- *
+ * @param tiffs
+ * @param gridSize
+ * @param forceSourceEpsg
+ * @returns {TiffLocation[]}
  */
 export async function extractTiffLocations(
   tiffs: CogTiff[],
@@ -326,7 +334,11 @@ export async function extractTiffLocations(
   );
 
   const output: TiffLocation[] = [];
-  for (const o of result) if (o) output.push(o);
+  for (const o of result) {
+    if (o === null) throw new Error('All TIFF locations have not been extracted.');
+    output.push(o);
+  }
+
   return output;
 }
 export function getSize(extent: [number, number, number, number]): Size {

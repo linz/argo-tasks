@@ -116,6 +116,17 @@ describe('tiffLocation', () => {
     const location = await extractTiffLocations([TiffAy29], 1000);
     assert.equal(location[0]?.tileName, 'AS21_1000_0101');
   });
+
+  it('should fail if one location is not extracted', async () => {
+    const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
+    TiffAy29.images[0].epsg = 0; // make the projection failing
+    await assert.rejects(extractTiffLocations([TiffAs21, TiffAy29], 1000));
+  });
 });
 
 describe('validate', () => {
