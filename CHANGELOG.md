@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/linz/argo-tasks/compare/v3.2.0...v3.2.1) (2024-02-25)
+
+
+### Bug Fixes
+
+* all tiff alignment should be validated TDE-1013 ([#882](https://github.com/linz/argo-tasks/issues/882)) ([3642257](https://github.com/linz/argo-tasks/commit/36422570e14f5de8dab7b840afabd727b31d8846))
+
 ## [3.2.0](https://github.com/linz/argo-tasks/compare/v3.1.1...v3.2.0) (2024-02-23)
 
 
