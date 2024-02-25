@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.2.0](https://github.com/linz/argo-tasks/compare/v3.1.1...v3.2.0) (2024-02-23)
+
+
+### Features
+
+* add isKnown function to validate mapsheet code is part of the known sheet ranges ([#864](https://github.com/linz/argo-tasks/issues/864)) ([bfffc35](https://github.com/linz/argo-tasks/commit/bfffc35e7197b9bb886caa4f0b71e43602ae87c4))
+
+
+### Bug Fixes
+
+* validate that all TIFF locations have been extracted TDE-1013 ([#879](https://github.com/linz/argo-tasks/issues/879)) ([c8a54e4](https://github.com/linz/argo-tasks/commit/c8a54e4a157c7e119513b25fdc05ffe65b2504eb))
+
 ## [3.1.1](https://github.com/linz/argo-tasks/compare/v3.1.0...v3.1.1) (2024-02-19)
 
 
