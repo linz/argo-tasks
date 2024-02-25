@@ -245,7 +245,8 @@ export const commandTileIndexValidate = command({
     if (args.validate) {
       let allValid = true;
       for (const tiff of locations) {
-        allValid = allValid && validateTiffAlignment(tiff);
+        const currentValid = validateTiffAlignment(tiff);
+        allValid = allValid && currentValid;
       }
       if (!allValid) throw new Error(`Tile alignment validation failed`);
     }
