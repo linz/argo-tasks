@@ -10,8 +10,10 @@ import { logger } from '../../log.js';
 import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
 
-const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
-const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+export const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
+export const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+
+export const linzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 
 async function parseTargetInfo(
   target: string,
@@ -35,10 +37,10 @@ async function parseTargetInfo(
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collection}`);
 
   //Validate the source location
-  const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
+  const source = collection.links.find((f) => f.rel === linzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
