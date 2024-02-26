@@ -1,6 +1,6 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { CogTiff, Size } from '@cogeotiff/core';
+import { Size, Tiff, TiffTag } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -25,7 +25,7 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: string[], args?: FileFilter): Promise<CogTiff[]> {
+  async load(locations: string[], args?: FileFilter): Promise<Tiff[]> {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
@@ -46,6 +46,8 @@ export const TiffLoader = {
     for (const prom of promises) {
       // All the errors are logged above so just throw the first error
       if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
+      // We are processing only 8 bits Tiff for now
+      if ((await is8BitsTiff(prom.value)) === false) throw new Error('Tiff is not a 8 bits TIFF.');
       output.push(prom.value);
     }
     return output;
@@ -286,7 +288,7 @@ export interface TiffLocation {
  * @returns {TiffLocation[]}
  */
 export async function extractTiffLocations(
-  tiffs: CogTiff[],
+  tiffs: Tiff[],
   gridSize: GridSize,
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {
@@ -415,4 +417,26 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const tileY = Math.round(Math.floor((maxY - y) / tileHeight + 1));
   const tileId = `${`${tileY}`.padStart(nbDigits, '0')}${`${tileX}`.padStart(nbDigits, '0')}`;
   return `${sheetCode}_${gridSize}_${tileId}`;
+}
+
+/**
+ * Verify if a TIFF contains only 8 bits bands.
+ *
+ * @param tiff
+ * @returns true if 8 bits TIFF
+ */
+export async function is8BitsTiff(tiff: Tiff): Promise<boolean> {
+  const baseImage = tiff.images[0];
+  if (baseImage === undefined) throw new Error("Can't get base image");
+
+  const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
+  if (bitsPerSample == null) {
+    throw new Error('Failed to extract band information from : ' + tiff.source.url);
+  }
+
+  for (let i = 0; i < bitsPerSample.length; i++) {
+    if (bitsPerSample[i] !== 8) return false;
+  }
+
+  return true;
 }
