@@ -3,9 +3,15 @@ import { describe, it } from 'node:test';
 
 import { slugify } from '../slugify.js';
 
+const slugChars = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
+
 describe('slugify', () => {
   it('should pass through output alphabet unchanged', () => {
-    assert.equal(slugify('abcdefghijklmnopqrstuvwxyz0123456789_.-'), 'abcdefghijklmnopqrstuvwxyz0123456789_.-');
+    assert.equal(slugify(slugChars), slugChars);
+  });
+  it('should pass through random slug unchanged', () => {
+    const input = anySlug();
+    assert.equal(slugify(slugify(input)), slugify(input));
   });
   it('should lowercase uppercase ASCII characters', () => {
     assert.equal(slugify('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'abcdefghijklmnopqrstuvwxyz');
@@ -66,3 +72,12 @@ describe('slugify', () => {
     );
   });
 });
+
+function anySlug(): string {
+  const length = 8;
+  let result = '';
+  for (let counter = 0; counter < length; counter++) {
+    result += slugChars.charAt(Math.floor(Math.random() * slugChars.length));
+  }
+  return result;
+}
