@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { slugify } from '../slugify.js';
+import { randomString } from './randomizers.js';
 
 const slugChars = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
 
@@ -73,11 +74,6 @@ describe('slugify', () => {
   });
 });
 
-function anySlug(): string {
-  const length = 8;
-  let result = '';
-  for (let counter = 0; counter < length; counter++) {
-    result += slugChars.charAt(Math.floor(Math.random() * slugChars.length));
-  }
-  return result;
+export function anySlug(): string {
+  return randomString(slugChars, 8);
 }
