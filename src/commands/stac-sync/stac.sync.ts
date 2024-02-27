@@ -65,10 +65,9 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
 /**
  * Upload a file to the destination if the same version (matched hash) does not exist.
  *
- * @param fileData source file data
- * @param bucket destination bucket
- * @param key destination key
- * @returns
+ * @param sourceFileInfo Source file metadata
+ * @param path Target URL
+ * @returns whether the file was uploaded
  */
 export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
   const destinationHead = await fsa.head(path.href);

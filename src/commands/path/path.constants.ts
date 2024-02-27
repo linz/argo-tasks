@@ -1,26 +1,3 @@
-export const regions = [
-  'antarctica',
-  'auckland',
-  'bay-of-plenty',
-  'canterbury',
-  'gisborne',
-  'global',
-  'hawkes-bay',
-  'manawatu-whanganui',
-  'marlborough',
-  'nelson',
-  'new-zealand',
-  'northland',
-  'otago',
-  'pacific-islands',
-  'southland',
-  'taranaki',
-  'tasman',
-  'waikato',
-  'wellington',
-  'west-coast',
-];
-
 export const dataCategories = {
   AERIAL_PHOTOS: 'aerial-photos',
   SCANNED_AERIAL_PHOTOS: 'scanned-aerial-photos',
