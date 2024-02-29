@@ -299,6 +299,14 @@ bm-create-pr --target
 Add --individual flag to import layer into standalone individual config file, otherwise import into aerial map.
 Add --vector flag to import new layer into vector map.
 
+## Development environment
+
+Prerequisite: [Nix](https://nixos.org/download/)
+
+When entering the project directory, run `nix-shell` to activate the development environment.
+
+On initial use, and when `package-lock.json` changes, run `npm i` to install Node.js packages. This will create a `node` executable in the root of the repo which you can use as the IDE interpreter.
+
 ## Versioning and Release
 
 To publish a release, the Pull Request opened by `release-please` bot needs to be merged:
