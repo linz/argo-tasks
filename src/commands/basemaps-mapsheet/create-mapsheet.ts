@@ -23,7 +23,7 @@ export function isGzip(b: Buffer): boolean {
  * If the file ends with .gz or is a GZIP like {@link isGzip} file it will automatically be decompressed.
  */
 async function readConfig(config: string): Promise<ConfigBundled> {
-  const obj = await fsa.read(config);
+  const obj = await fsa.read(fsa.toUrl(config));
   if (config.endsWith('.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
     return JSON.parse(data.toString());
@@ -80,13 +80,13 @@ export const basemapsCreateMapSheet = command({
     const exclude = args.exclude ? new RegExp(args.exclude.toLowerCase(), 'i') : undefined;
 
     logger.info({ path }, 'MapSheet:LoadFgb');
-    const buf = await fsa.read(path);
+    const buf = await fsa.read(fsa.toUrl(path));
     logger.info({ config }, 'MapSheet:LoadConfig');
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
     const rest = fgb.deserialize(buf) as FeatureCollection;
-    const featuresWritePromise = fsa.write('features.json', JSON.stringify(rest));
+    const featuresWritePromise = fsa.write(fsa.toUrl('features.json'), JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
@@ -95,7 +95,7 @@ export const basemapsCreateMapSheet = command({
     const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
 
     logger.info({ outputPath }, 'MapSheet:WriteOutput');
-    const outputWritePromise = fsa.write(outputPath, JSON.stringify(outputs, null, 2));
+    const outputWritePromise = fsa.write(fsa.toUrl(outputPath), JSON.stringify(outputs, null, 2));
 
     await Promise.all([featuresWritePromise, outputWritePromise]);
   },

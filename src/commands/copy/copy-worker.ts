@@ -1,8 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
 
-import { FileInfo } from '@chunkd/core';
-import { fsa } from '@chunkd/fs';
+import { FileInfo, fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 
 import { baseLogger } from '../../log.js';
@@ -48,7 +47,7 @@ export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
  */
 async function tryHead(filePath: string, retryCount = 3): Promise<number | null> {
   for (let i = 0; i < retryCount; i++) {
-    const ret = await fsa.head(filePath);
+    const ret = await fsa.head(fsa.toUrl(filePath));
     if (ret?.size) return ret.size;
     await new Promise((r) => setTimeout(r, 250));
   }
@@ -66,7 +65,10 @@ export const worker = new WorkerRpc<CopyContract>({
       if (todo == null) continue;
 
       Q.push(async () => {
-        const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
+        const [source, target] = await Promise.all([
+          fsa.head(fsa.toUrl(todo.source)),
+          fsa.head(fsa.toUrl(todo.target)),
+        ]);
         if (source == null) return;
         if (source.size == null) return;
         if (target != null) {
@@ -78,7 +80,7 @@ export const worker = new WorkerRpc<CopyContract>({
           }
 
           if (!args.force) {
-            log.error({ target: target.path, source: source.path }, 'File:Overwrite');
+            log.error({ target: target.url, source: source.url }, 'File:Overwrite');
             throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
           }
         }
@@ -86,8 +88,8 @@ export const worker = new WorkerRpc<CopyContract>({
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
         await fsa.write(
-          todo.target,
-          fsa.stream(todo.source),
+          fsa.toUrl(todo.target),
+          fsa.readStream(fsa.toUrl(todo.source)),
           args.fixContentType ? fixFileMetadata(todo.source, source) : source,
         );
 
@@ -96,7 +98,7 @@ export const worker = new WorkerRpc<CopyContract>({
         if (targetSize !== source.size) {
           log.fatal({ ...todo }, 'Copy:Failed');
           // Cleanup the failed copy so it can be retried
-          if (targetSize != null) await fsa.delete(todo.target);
+          if (targetSize != null) await fsa.delete(fsa.toUrl(todo.target));
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
         log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');

@@ -72,7 +72,7 @@ export const commandStacValidate = command({
       loadSchema: (uri: string): Promise<SchemaObject> => {
         let existing = Schemas.get(uri);
         if (existing == null) {
-          existing = fsa.readJson(uri);
+          existing = fsa.readJson(fsa.toUrl(uri));
           Schemas.set(uri, existing);
         }
         return existing;
@@ -92,7 +92,7 @@ export const commandStacValidate = command({
       if (schema != null) return schema;
       let existing = ajvSchema.get(uri);
       if (existing == null) {
-        existing = fsa.readJson<object>(uri).then((json) => ajv.compileAsync(json));
+        existing = fsa.readJson<object>(fsa.toUrl(uri)).then((json) => ajv.compileAsync(json));
         ajvSchema.set(uri, existing);
       }
       return existing;
@@ -109,7 +109,7 @@ export const commandStacValidate = command({
       const stacSchemas: string[] = [];
       let stacJson;
       try {
-        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(fsa.toUrl(path));
       } catch (err) {
         logger.error({ path, err }, 'readStacJsonFile:Error');
         failures.push(path);
@@ -162,12 +162,12 @@ export const commandStacValidate = command({
           if (!checksum.startsWith('1220')) continue;
 
           let source = asset.href;
-          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+          if (source.startsWith('./')) source = join(dirname(path), source.replace('./', ''));
 
           logger.debug({ source, checksum }, 'Validate:Asset');
           const startTime = performance.now();
 
-          const hash = await hashStream(fsa.stream(source));
+          const hash = await hashStream(fsa.readStream(source));
           const duration = performance.now() - startTime;
 
           if (hash === checksum) {

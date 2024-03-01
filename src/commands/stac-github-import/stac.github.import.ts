@@ -1,5 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, string, Type } from 'cmd-ts';
+import { join } from 'path';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -57,8 +58,8 @@ export const commandStacGithubImport = command({
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
 
     // Load information from the template inside the repo
-    logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
-    const catalogPath = fsa.joinAll('template', 'catalog.json');
+    logger.info({ template: join('template', 'catalog.json') }, 'Stac:ReadTemplate');
+    const catalogPath = join('template', 'catalog.json');
     const catalog = await gh.getContent(catalogPath);
     const catalogJson = JSON.parse(catalog) as st.StacCatalog;
 
@@ -70,9 +71,9 @@ export const commandStacGithubImport = command({
 
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
-    const targetCollectionPath = fsa.joinAll('stac', targetCollection.pathname);
+    const targetCollectionPath = join('stac', targetCollection.pathname);
 
-    const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
+    const collection = await fsa.readJson<st.StacCollection>(sourceCollection);
 
     const rootLink = collection.links.find((f) => f.rel === 'root');
     if (rootLink) {

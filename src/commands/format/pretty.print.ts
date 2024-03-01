@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, positional, string } from 'cmd-ts';
-import { basename } from 'path';
+import { basename, join } from 'path';
 import prettier from 'prettier';
 
 import { CliInfo } from '../../cli.info.js';
@@ -42,7 +42,7 @@ export const commandPrettyPrint = command({
     if (jsonFiles.length === 0) throw new Error('No Files found');
 
     // test if can access one of the file
-    if (jsonFiles[0]) await fsa.head(jsonFiles[0]);
+    if (jsonFiles[0]) await fsa.head(fsa.toUrl(jsonFiles[0]));
 
     // format files
     await Promise.all(jsonFiles.map((f: string) => formatFile(f, args.target)));
@@ -58,13 +58,13 @@ export const commandPrettyPrint = command({
  */
 export async function formatFile(path: string, target = ''): Promise<void> {
   logger.debug({ file: path }, 'PrettyPrint:RunPrettier');
-  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(path)), DEFAULT_PRETTIER_FORMAT);
+  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(fsa.toUrl(path))), DEFAULT_PRETTIER_FORMAT);
   if (target) {
     // FIXME: can be duplicate files
-    path = fsa.join(target, basename(path));
+    path = join(target, basename(path));
   }
 
-  await fsa.write(path, Buffer.from(prettyPrinted));
+  await fsa.write(fsa.toUrl(path), Buffer.from(prettyPrinted));
 }
 
 /**

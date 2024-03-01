@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 import { createHash } from 'crypto';
 
 import { HashKey, synchroniseFiles } from '../stac.sync.js';
@@ -16,11 +15,11 @@ describe('stacSync', () => {
 
   it('shouldUploadFile', async () => {
     await fs.write(
-      'm://source/stac/wellington/collection.json',
+      fsa.toUrl('m://source/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
     );
     await fs.write(
-      'm://destination/stac/wellington/collection.json',
+      fsa.toUrl('m://destination/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
     const destinationURL = new URL('m://destination/stac/');
@@ -29,11 +28,11 @@ describe('stacSync', () => {
 
   it('shouldUploadFileOnlyOnce', async () => {
     await fs.write(
-      'm://source/stac/wellington/collection.json',
+      fsa.toUrl('m://source/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
     );
     await fs.write(
-      'm://destination/stac/wellington/collection.json',
+      fsa.toUrl('m://destination/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
     const destinationURL = new URL('m://destination/stac/');
@@ -43,13 +42,13 @@ describe('stacSync', () => {
 
   it('shouldNotUploadFile', async () => {
     await fs.write(
-      'm://source/stac/wellington/collection.json',
+      fsa.toUrl('m://source/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
     );
-    const sourceData = await fsa.read('m://source/stac/wellington/collection.json');
+    const sourceData = await fsa.read(fsa.toUrl('m://source/stac/wellington/collection.json'));
     const sourceHash = '1220' + createHash('sha256').update(sourceData).digest('hex');
     await fs.write(
-      'm://destination/stac/wellington/collection.json',
+      fsa.toUrl('m://destination/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
       { metadata: { [HashKey]: sourceHash } },
     );

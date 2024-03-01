@@ -3,6 +3,7 @@ import { standardizeLayerName } from '@basemaps/config/build/json/name.convertor
 import { Epsg, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
+import { join } from 'path';
 import { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -31,8 +32,8 @@ async function parseTargetInfo(
   }
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
-  const collectionPath = fsa.join(target, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
+  const collectionPath = join(target, 'collection.json');
+  const collection = await fsa.readJson<StacCollection>(fsa.toUrl(collectionPath));
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const title = collection.title;
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);

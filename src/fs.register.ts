@@ -1,14 +1,17 @@
-import { FileSystem } from '@chunkd/core';
+import { S3Client } from '@aws-sdk/client-s3';
+import { FileSystem } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
-import { AwsCredentialConfig } from '@chunkd/source-aws';
-import { FsAwsS3 } from '@chunkd/source-aws';
-import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
+import { AwsCredentialConfig, AwsS3CredentialProvider, FsAwsS3 } from '@chunkd/fs-aws';
 
 import { logger } from './log.js';
 
-export const s3Fs = new FsAwsS3V3();
+export const s3Fs = new FsAwsS3(new S3Client());
+const credentials = new AwsS3CredentialProvider();
+
 FsAwsS3.MaxListCount = 1000;
-s3Fs.credentials.onFileSystemCreated = (acc: AwsCredentialConfig, fs: FileSystem): void => {
+
+s3Fs.credentials = credentials;
+credentials.onFileSystemCreated = (acc: AwsCredentialConfig, fs: FileSystem): void => {
   logger.debug({ prefix: acc.prefix, roleArn: acc.roleArn }, 'FileSystem:Register');
   fsa.register(acc.prefix, fs);
 };
@@ -26,5 +29,5 @@ export function registerFileSystem(opts: { config?: string }): void {
 
   const paths = splitConfig(configPath);
 
-  for (const path of paths) s3Fs.credentials.registerConfig(path, fsa);
+  for (const path of paths) credentials.registerConfig(fsa.toUrl(path), fsa);
 }

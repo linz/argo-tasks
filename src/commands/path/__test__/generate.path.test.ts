@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { StacCollection } from 'stac-ts';
 
-import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
+import { FakeTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
 import {
   extractEpsg,
   extractGsd,
@@ -129,19 +129,19 @@ describe('formatName', () => {
 });
 
 describe('epsg', () => {
-  const TiffEPSG = new FakeCogTiff('s3://path/fake.tiff', {
+  const TiffEPSG = new FakeTiff('s3://path/fake.tiff', {
     epsg: 2193,
   });
   it('Should return EPSG code', () => {
     assert.equal(extractEpsg(TiffEPSG), '2193');
   });
-  const TiffNoEPSG = new FakeCogTiff('s3://path/fake.tiff', { epsg: undefined });
+  const TiffNoEPSG = new FakeTiff('s3://path/fake.tiff', { epsg: undefined });
   it('Should fail - unable to find EPSG code', () => {
     assert.throws(() => {
       extractEpsg(TiffNoEPSG);
     }, Error);
   });
-  const TiffInvalidEPSG = new FakeCogTiff('s3://path/fake.tiff', { epsg: 2319 });
+  const TiffInvalidEPSG = new FakeTiff('s3://path/fake.tiff', { epsg: 2319 });
   it('Should fail - invalid EPSG code', () => {
     assert.throws(() => {
       extractEpsg(TiffInvalidEPSG);
@@ -150,13 +150,13 @@ describe('epsg', () => {
 });
 
 describe('gsd', () => {
-  const TiffGsd = new FakeCogTiff('s3://path/fake.tiff', {
+  const TiffGsd = new FakeTiff('s3://path/fake.tiff', {
     resolution: [0.3],
   });
   it('Should return resolution', () => {
     assert.equal(extractGsd(TiffGsd), 0.3);
   });
-  const TiffNoGsd = new FakeCogTiff('s3://path/fake.tiff', {
+  const TiffNoGsd = new FakeTiff('s3://path/fake.tiff', {
     resolution: [],
   });
   it('Should fail - unable to find resolution', () => {
@@ -169,7 +169,7 @@ describe('gsd', () => {
 describe('category', async () => {
   it('Should return category', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
+      fsa.toUrl('./src/commands/path/__test__/sample.json'),
     );
     assert.equal(collection['linz:geospatial_category'], 'urban-aerial-photos');
   });
@@ -178,7 +178,7 @@ describe('category', async () => {
 describe('geographicDescription', async () => {
   it('Should return geographic description', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
+      fsa.toUrl('./src/commands/path/__test__/sample.json'),
     );
     assert.equal(collection['linz:geographic_description'], 'Palmerston North');
     const metadata: PathMetadata = {
@@ -194,7 +194,7 @@ describe('geographicDescription', async () => {
   });
   it('Should return undefined - no geographic description metadata', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
+      fsa.toUrl('./src/commands/path/__test__/sample.json'),
     );
     delete collection['linz:geographic_description'];
     assert.equal(collection['linz:geographic_description'], undefined);
@@ -214,7 +214,7 @@ describe('geographicDescription', async () => {
 describe('region', async () => {
   it('Should return region', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
+      fsa.toUrl('./src/commands/path/__test__/sample.json'),
     );
     assert.equal(collection['linz:region'], 'manawatu-whanganui');
   });
@@ -223,20 +223,20 @@ describe('region', async () => {
 describe('formatDate', async () => {
   it('Should return date as single year', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
+      fsa.toUrl('./src/commands/path/__test__/sample.json'),
     );
     assert.equal(formatDate(collection), '2022');
   });
   it('Should return date as two years', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
+      fsa.toUrl('./src/commands/path/__test__/sample.json'),
     );
     collection.extent.temporal.interval[0] = ['2022-12-31T11:00:00Z', '2023-12-31T11:00:00Z'];
     assert.equal(formatDate(collection), '2022-2023');
   });
   it('Should fail - unable to retrieve date', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
+      fsa.toUrl('./src/commands/path/__test__/sample.json'),
     );
     collection.extent.temporal.interval[0] = [null, null];
     assert.throws(() => {

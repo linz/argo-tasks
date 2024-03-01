@@ -1,5 +1,4 @@
-import { FileInfo } from '@chunkd/core';
-import { fsa } from '@chunkd/fs';
+import { FileInfo, fsa } from '@chunkd/fs';
 import { command, positional, string, Type } from 'cmd-ts';
 import { createHash } from 'crypto';
 
@@ -48,13 +47,13 @@ export const HashKey = 'linz-hash';
  */
 export async function synchroniseFiles(sourcePath: string, destinationPath: URL): Promise<number> {
   let count = 0;
-  const sourceFilesInfo = await fsa.toArray(fsa.details(sourcePath));
+  const sourceFilesInfo = await fsa.toArray(fsa.details(fsa.toUrl(sourcePath)));
 
   await Promise.all(
     sourceFilesInfo.map(async (fileInfo) => {
-      if (!fileInfo.path.endsWith('.json')) return;
+      if (!fileInfo.url.href.endsWith('.json')) return;
 
-      const key = new URL(fileInfo.path.slice(sourcePath.length), destinationPath);
+      const key = new URL(fileInfo.url.href.slice(sourcePath.length), destinationPath);
       (await uploadFileToS3(fileInfo, key)) && count++;
     }),
   );
@@ -66,22 +65,22 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
  * Upload a file to the destination if the same version (matched hash) does not exist.
  *
  * @param sourceFileInfo Source file metadata
- * @param path Target URL
+ * @param url Target URL
  * @returns whether the file was uploaded
  */
-export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
-  const destinationHead = await fsa.head(path.href);
-  const sourceData = await fsa.read(sourceFileInfo.path);
+export async function uploadFileToS3(sourceFileInfo: FileInfo, url: URL): Promise<boolean> {
+  const destinationHead = await fsa.head(url);
+  const sourceData = await fsa.read(sourceFileInfo.url);
   const sourceHash = '1220' + createHash('sha256').update(sourceData).digest('hex');
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;
   }
 
-  await fsa.write(path.href, sourceData, {
+  await fsa.write(url, sourceData, {
     metadata: { [HashKey]: sourceHash },
-    contentType: guessStacContentType(path.href),
+    contentType: guessStacContentType(url.href),
   });
-  logger.debug({ path: path.href }, 'StacSync:FileUploaded');
+  logger.debug({ path: url.href }, 'StacSync:FileUploaded');
   return true;
 }
 

@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
-import path from 'path';
+import path, { join } from 'path';
 import { gzipSync } from 'zlib';
 
 import { CliInfo } from '../../cli.info.js';
@@ -56,16 +56,16 @@ export const commandCreateManifest = command({
 
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
-          const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
+          const targetLocation = fsa.toUrl(join(actionLocation, `actions/manifest-${targetHash}.json`));
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
-          outputCopy.push(targetLocation);
+          outputCopy.push(targetLocation.href);
         } else {
           outputCopy.push(gzipSync(outBuf).toString('base64url'));
         }
       }
     }
-    await fsa.write(args.output, JSON.stringify(outputCopy));
+    await fsa.write(fsa.toUrl(args.output), JSON.stringify(outputCopy));
   },
 });
 
@@ -94,7 +94,7 @@ export async function createManifest(
       const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
       let target = targetPath;
       if (baseFile) {
-        target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
+        target = join(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
       }
       validatePaths(filePath, target);
       current.push({ source: filePath, target });

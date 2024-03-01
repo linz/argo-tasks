@@ -1,6 +1,6 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { CogTiff, Size } from '@cogeotiff/core';
+import { Size, Tiff } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -25,12 +25,12 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: string[], args?: FileFilter): Promise<CogTiff[]> {
+  async load(locations: string[], args?: FileFilter): Promise<Tiff[]> {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
     // Ensure credentials are loaded before concurrently loading tiffs
-    if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
+    if (tiffLocations[0]) await fsa.head(fsa.toUrl(tiffLocations[0]));
 
     const promises = await Promise.allSettled(
       tiffLocations.map((loc: string) => {
@@ -194,39 +194,47 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await fsa.write('/tmp/tile-index-validate/input.geojson', {
-        type: 'FeatureCollection',
-        features: locations.map((loc) => {
-          const epsg = args.sourceEpsg ?? loc.epsg;
-          if (epsg == null) {
-            logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
-            return;
-          }
-          return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
-            source: loc.source,
-            tileName: loc.tileName,
-            isDuplicate: (outputs.get(loc.tileName)?.length ?? 1) > 1,
-          });
-        }),
-      });
-      await fsa.write('/tmp/tile-index-validate/output.geojson', {
-        type: 'FeatureCollection',
-        features: [...outputs.values()].map((locs) => {
-          const firstLoc = locs[0];
-          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
-          const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
-          if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
-          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
-            source: locs.map((l) => l.source),
-            tileName: firstLoc.tileName,
-          });
-        }),
-      });
       await fsa.write(
-        '/tmp/tile-index-validate/file-list.json',
-        [...outputs.values()].map((locs) => {
-          return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
+        fsa.toUrl('/tmp/tile-index-validate/input.geojson'),
+        JSON.stringify({
+          type: 'FeatureCollection',
+          features: locations.map((loc) => {
+            const epsg = args.sourceEpsg ?? loc.epsg;
+            if (epsg == null) {
+              logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
+              return;
+            }
+            return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
+              source: loc.source,
+              tileName: loc.tileName,
+              isDuplicate: (outputs.get(loc.tileName)?.length ?? 1) > 1,
+            });
+          }),
         }),
+      );
+      await fsa.write(
+        fsa.toUrl('/tmp/tile-index-validate/output.geojson'),
+        JSON.stringify({
+          type: 'FeatureCollection',
+          features: [...outputs.values()].map((locs) => {
+            const firstLoc = locs[0];
+            if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
+            const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
+            if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
+            return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
+              source: locs.map((l) => l.source),
+              tileName: firstLoc.tileName,
+            });
+          }),
+        }),
+      );
+      await fsa.write(
+        fsa.toUrl('/tmp/tile-index-validate/file-list.json'),
+        JSON.stringify(
+          [...outputs.values()].map((locs) => {
+            return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
+          }),
+        ),
       );
     }
 
@@ -278,7 +286,7 @@ export interface TiffLocation {
 }
 
 /**
- * Create a list of `TiffLocation` from a list of TIFFs (`CogTiff`) by extracting their bounding box and generated their tile name from their origin based on a provided `GridSize`.
+ * Create a list of `TiffLocation` from a list of TIFFs (`Tiff`) by extracting their bounding box and generated their tile name from their origin based on a provided `GridSize`.
  *
  * @param tiffs
  * @param gridSize
@@ -286,7 +294,7 @@ export interface TiffLocation {
  * @returns {TiffLocation[]}
  */
 export async function extractTiffLocations(
-  tiffs: CogTiff[],
+  tiffs: Tiff[],
   gridSize: GridSize,
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {

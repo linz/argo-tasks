@@ -1,9 +1,8 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
-import { CogTiff, CogTiffImage, Source } from '@cogeotiff/core';
+import { fsa, FsMemory } from '@chunkd/fs';
+import { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { createTiff } from '../../commands/common.js';
 import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';
@@ -37,7 +36,7 @@ describe('geotiff', () => {
     const source = new FsMemory();
     // Actual tiff file
     await source.write(
-      'memory://BX20_500_023098.tif',
+      fsa.toUrl('memory://BX20_500_023098.tif'),
       Buffer.from(
         '49492a00080000001100000103000100' +
           '0000800c00000101030001000000c012' +
@@ -77,19 +76,19 @@ describe('geotiff', () => {
   const fakeSource: Source = { url: url, fetch: async () => new ArrayBuffer(1) };
   it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
-    await assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as CogTiff));
+    await assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as Tiff));
   });
 
   it('should parse a tiff with TFW', async () => {
     // Write a sidecar tfw
-    await fsa.write('memory://BX20_500_023098.tfw', `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
+    await fsa.write(fsa.toUrl('memory://BX20_500_023098.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
     // tiff with no location information and no TFW
     const bbox = await findBoundingBox({
       source: fakeSource,
-      images: [{ size: { width: 3200, height: 4800 } }] as unknown as CogTiffImage,
-    } as unknown as CogTiff);
+      images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
+    } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
-    await fsa.delete('memory://BX20_500_023098.tfw');
+    await fsa.delete(fsa.toUrl('memory://BX20_500_023098.tfw'));
   });
 
   it('should parse standard tiff', async () => {
@@ -104,9 +103,9 @@ describe('geotiff', () => {
           valueGeo(): number {
             return 1; // PixelIsArea
           },
-        } as unknown as CogTiffImage,
+        } as unknown as TiffImage,
       ],
-    } as unknown as CogTiff);
+    } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
   it('should parse with pixel offset', async () => {
@@ -121,9 +120,9 @@ describe('geotiff', () => {
           valueGeo(): number {
             return PixelIsPoint;
           },
-        } as unknown as CogTiffImage,
+        } as unknown as TiffImage,
       ],
-    } as unknown as CogTiff);
+    } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 });

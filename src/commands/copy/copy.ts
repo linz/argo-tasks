@@ -22,7 +22,7 @@ const CopyManifest = z.array(CopyValidator);
  */
 async function tryParse(x: string): Promise<unknown> {
   if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) {
-    const json = await fsa.readJson<ActionCopy>(x);
+    const json = await fsa.readJson<ActionCopy>(fsa.toUrl(x));
     if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + x);
     return json.parameters.manifest;
   }
