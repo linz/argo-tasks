@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.2](https://github.com/linz/argo-tasks/compare/v3.2.1...v3.2.2) (2024-03-10)
+
+
+### Bug Fixes
+
+* Lints TDE-1030 ([#860](https://github.com/linz/argo-tasks/issues/860)) ([c898187](https://github.com/linz/argo-tasks/commit/c89818759756572e6aaf4ada65425139d2e4a4ff))
+* Run `throws` with the right arguments TDE-1030 ([#893](https://github.com/linz/argo-tasks/issues/893)) ([0c3e4a6](https://github.com/linz/argo-tasks/commit/0c3e4a60b7ec8044accda9050199363b876e9e0f))
+
 ## [3.2.1](https://github.com/linz/argo-tasks/compare/v3.2.0...v3.2.1) (2024-02-25)
 
 
