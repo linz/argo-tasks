@@ -37,7 +37,7 @@ async function parseTargetInfo(
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collection}`);
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionPath}`);
 
   //Validate the source location
   const source = collection.links.find((f) => f.rel === linzBasemapsSourceCollectionRel)?.href;
