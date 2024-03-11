@@ -38,7 +38,8 @@ export const commandStacGithubImport = command({
       type: string,
       long: 'repo-name',
       description: 'Repository name either linz/imagery or linz/elevation',
-      defaultValue: () => 'linz/imagery',
+      // defaultValue: () => 'linz/imagery',
+      defaultValue: () => 'amfage/imagery',
       defaultValueIsSerializable: true,
     }),
   },
@@ -89,9 +90,14 @@ export const commandStacGithubImport = command({
     const title = `feat: import ${collection.title}`;
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
+    const parametersFileContent = `"source": "${args.source}"\n"target": "${args.target}"`;
+    const parametersFile = {
+      path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
+      content: parametersFileContent,
+    };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await createPR(gh, branch, title, botEmail, [collectionFile]);
+    await createPR(gh, branch, title, botEmail, [collectionFile, parametersFile]);
   },
 });
 
