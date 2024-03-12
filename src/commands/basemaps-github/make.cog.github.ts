@@ -40,6 +40,8 @@ export function parseCategory(category: string): Category {
   if (c.includes('urban')) return Category.Urban;
   else if (c.includes('rural')) return Category.Rural;
   else if (c.includes('satellite')) return Category.Satellite;
+  else if (c.includes('event')) return Category.Event;
+  else if (c.includes('scanned')) return Category.Scanned;
   else return Category.Other;
 }
 
