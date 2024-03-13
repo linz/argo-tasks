@@ -5,7 +5,7 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { createPR, GithubApi } from '../../utils/github.js';
+import { GithubApi } from '../../utils/github.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
 
@@ -91,7 +91,7 @@ export const commandStacGithubImport = command({
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await createPR(gh, branch, title, botEmail, [collectionFile]);
+    await gh.createPullRequest(branch, title, botEmail, [collectionFile]);
   },
 });
 
