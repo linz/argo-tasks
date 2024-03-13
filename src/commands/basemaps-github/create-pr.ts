@@ -8,7 +8,7 @@ import { StacCollection } from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { registerCli, verbose } from '../common.js';
-import { Category, MakeCogGithub, parseCategory } from './make.cog.github.js';
+import { Category, MakeCogGithub } from './make.cog.github.js';
 
 const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
 const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
@@ -102,7 +102,7 @@ export const basemapsCreatePullRequest = command({
   async handler(args) {
     registerCli(this, args);
     const target = args.target;
-    const category = args.category ? parseCategory(args.category) : Category.Other;
+    const category = args.category ?? Category.Other;
     let targets: string[];
     try {
       targets = JSON.parse(target);
