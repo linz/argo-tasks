@@ -11,9 +11,9 @@ import { anySlug } from '../../../utils/__test__/slugify.test.js';
 import { GithubApi } from '../../../utils/github.js';
 import {
   basemapsCreatePullRequest,
-  linzBasemapsSourceCollectionRel,
-  validSourceBuckets,
-  validTargetBuckets,
+  LinzBasemapsSourceCollectionRel,
+  ValidSourceBuckets,
+  ValidTargetBuckets,
 } from '../create-pr.js';
 import { randomArrayEntry } from './utils.js';
 
@@ -61,7 +61,7 @@ function anyStacCollection(): StacCollection {
     links: [
       {
         href: `s3://${anyValidSourceBucket()}/${anyEpsgCode()}/${anySlug()}`,
-        rel: linzBasemapsSourceCollectionRel,
+        rel: LinzBasemapsSourceCollectionRel,
       },
     ],
   };
@@ -79,11 +79,11 @@ function anyConfigTileSetRaster(): ConfigTileSetRaster {
 }
 
 function anyValidSourceBucket(): string {
-  return randomSetEntry(validSourceBuckets);
+  return randomSetEntry(ValidSourceBuckets);
 }
 
 function anyValidTargetBucket(): string {
-  return randomSetEntry(validTargetBuckets);
+  return randomSetEntry(ValidTargetBuckets);
 }
 
 function anyEpsgCode(): number {
