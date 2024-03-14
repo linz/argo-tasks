@@ -5,7 +5,8 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { createPR, GithubApi } from '../../utils/github.js';
+//import { createPR, GithubApi } from '../../utils/github.js';
+import { GithubApi } from '../../utils/github.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
 
@@ -13,6 +14,12 @@ const Url: Type<string, URL> = {
   async from(str) {
     return new URL(str);
   },
+};
+
+export const BotEmails: Record<string, string> = {
+  'linz/elevation': 'elevation@linz.govt.nz',
+  'linz/imagery': 'imagery@linz.govt.nz',
+  'amfage/imagery': 'afage@linz.govt.nz',
 };
 
 export const commandStacGithubImport = command({
@@ -48,11 +55,6 @@ export const commandStacGithubImport = command({
     registerCli(this, args);
 
     const gh = new GithubApi(args.repoName);
-
-    const BotEmails: Record<string, string> = {
-      'linz/elevation': 'elevation@linz.govt.nz',
-      'linz/imagery': 'imagery@linz.govt.nz',
-    };
 
     const botEmail = BotEmails[args.repoName];
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
@@ -90,14 +92,15 @@ export const commandStacGithubImport = command({
     const title = `feat: import ${collection.title}`;
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
-    const parametersFileContent = `"source": "${args.source}"\n"target": "${args.target}"`;
+    const parametersFileContent = `"source": "${args.source}"\n"target": "${args.target}"\n"region": ${collection['linz:region']}`;
     const parametersFile = {
       path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
       content: parametersFileContent,
     };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await createPR(gh, branch, title, botEmail, [collectionFile, parametersFile]);
+    //await createPR(gh, branch, title, botEmail, [collectionFile, parametersFile]);
+    console.log(gh, branch, title, botEmail, [collectionFile, parametersFile]);
   },
 });
 
