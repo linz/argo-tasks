@@ -6,7 +6,7 @@ import { randomEnumValue } from './randomizers.js';
 describe('randomEnumValue', () => {
   it('should always return the value', () => {
     /**
-     * Enums are compiled into a two-way mapping key → value *and* value → key
+     * String enums are compiled into a two-way mapping key → value *and* value → key
      * <https://www.typescriptlang.org/docs/handbook/enums.html#reverse-mappings>, so we need to filter entries to get
      * the actual values.
      */
