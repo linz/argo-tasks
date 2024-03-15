@@ -15,6 +15,11 @@ const Url: Type<string, URL> = {
   },
 };
 
+export const BotEmails: Record<string, string> = {
+  'linz/elevation': 'elevation@linz.govt.nz',
+  'linz/imagery': 'imagery@linz.govt.nz',
+};
+
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
   description: 'Format and push a stac collection.json file to GitHub repository',
@@ -41,6 +46,20 @@ export const commandStacGithubImport = command({
       defaultValue: () => 'linz/imagery',
       defaultValueIsSerializable: true,
     }),
+    copyOption: option({
+      type: string,
+      long: 'copy-option',
+      description: 'Mode for copying the item files; --no-clobber, --force, or --force-no-clobber',
+      defaultValue: () => '--no-clobber',
+      defaultValueIsSerializable: true,
+    }),
+    ticket: option({
+      type: string,
+      long: 'ticket',
+      description: 'Associated JIRA ticket e.g. AIP-74',
+      defaultValue: () => '',
+      defaultValueIsSerializable: true,
+    }),
   },
 
   async handler(args) {
@@ -48,13 +67,12 @@ export const commandStacGithubImport = command({
 
     const gh = new GithubApi(args.repoName);
 
-    const BotEmails: Record<string, string> = {
-      'linz/elevation': 'elevation@linz.govt.nz',
-      'linz/imagery': 'imagery@linz.govt.nz',
-    };
-
     const botEmail = BotEmails[args.repoName];
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
+
+    const basemapsConfigLinkURL = new URL('config-url', args.source);
+    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
+    const prBody = `**Basemaps preview link for Visual QA:**\n${basemapsConfigLink}\n\n**ODR destination path:**\n${args.target}`;
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
@@ -89,9 +107,14 @@ export const commandStacGithubImport = command({
     const title = `feat: import ${collection.title}`;
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
+    const parametersFileContent = `"source": "${args.source}"\n"target": "${args.target}"\n"ticket": "${args.ticket}"\n"copy_option": "${args.copyOption}"\n"region": "${collection['linz:region']}"\n`;
+    const parametersFile = {
+      path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
+      content: parametersFileContent,
+    };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await gh.createPullRequest(branch, title, botEmail, [collectionFile]);
+    await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody);
   },
 });
 
