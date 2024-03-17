@@ -15,6 +15,9 @@ const Url: Type<string, URL> = {
   },
 };
 
+/**
+ * Valid repositories, mapped to the email address used for the PR author
+ */
 export const BotEmails: Record<string, string> = {
   'linz/elevation': 'elevation@linz.govt.nz',
   'linz/imagery': 'imagery@linz.govt.nz',
