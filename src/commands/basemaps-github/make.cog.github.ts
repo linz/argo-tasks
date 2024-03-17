@@ -9,7 +9,7 @@ import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { createPR, GithubApi } from '../../utils/github.js';
+import { GithubApi } from '../../utils/github.js';
 import { prettyPrint } from '../format/pretty.print.js';
 
 export enum Category {
@@ -78,7 +78,7 @@ export class MakeCogGithub {
       const tileSetPath = fsa.joinAll('config', 'tileset', region, `${layer.name}.json`);
       const file = { path: tileSetPath, content };
       // Github create pull request
-      await createPR(gh, branch, title, botEmail, [file]);
+      await gh.createPullRequest(branch, title, botEmail, [file]);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
@@ -91,7 +91,7 @@ export class MakeCogGithub {
       const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
       const file = { path: tileSetPath, content };
       // Github create pull request
-      await createPR(gh, branch, title, botEmail, [file]);
+      await gh.createPullRequest(branch, title, botEmail, [file]);
     }
   }
 
@@ -180,7 +180,7 @@ export class MakeCogGithub {
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await createPR(gh, branch, title, botEmail, [file]);
+    await gh.createPullRequest(branch, title, botEmail, [file]);
   }
 
   /**

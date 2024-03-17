@@ -155,7 +155,34 @@ export class GithubApi {
   /**
    * Create a new pull request from the given branch and return pull request number
    */
-  async createPullRequest(branch: string, title: string): Promise<number> {
+  async createPullRequest(branch: string, title: string, botEmail: string, files: GithubFiles[]): Promise<number> {
+    // git checkout -b
+    logger.info({ branch }, 'GitHub: Get branch');
+    let sha = await this.getBranch(branch);
+    if (sha == null) {
+      logger.info({ branch }, 'GitHub: branch Not Found, create new branch');
+      sha = await this.createBranch(branch);
+    }
+
+    // git add
+    const blobs: Blob[] = [];
+    for (const file of files) {
+      logger.info({ path: file.path }, 'GitHub: Add change');
+      const blob = await this.createBlob(file.content, file.path);
+      blobs.push(blob);
+    }
+
+    // git commit
+    logger.info({ branch }, 'GitHub: Commit to Branch');
+    const commitSha = await this.createCommit(blobs, title, botEmail, sha);
+
+    // git push
+    logger.info({ branch }, 'GitHub: Push commit to Branch');
+    await this.updateBranch(branch, commitSha);
+
+    // git pr create
+    logger.info({ branch: branch }, 'GitHub: Create Pull Request');
+
     // Create pull request from the give head
     const response = await this.octokit.rest.pulls.create({
       owner: this.owner,
@@ -173,45 +200,4 @@ export class GithubApi {
 export interface GithubFiles {
   path: string;
   content: string;
-}
-
-/**
- * Create github pull requests
- *
- * @returns pull request number
- */
-export async function createPR(
-  gh: GithubApi,
-  branch: string,
-  title: string,
-  botEmail: string,
-  files: GithubFiles[],
-): Promise<number> {
-  // git checkout -b
-  logger.info({ branch }, 'GitHub: Get branch');
-  let sha = await gh.getBranch(branch);
-  if (sha == null) {
-    logger.info({ branch }, 'GitHub: branch Not Found, create new branch');
-    sha = await gh.createBranch(branch);
-  }
-
-  // git add
-  const blobs: Blob[] = [];
-  for (const file of files) {
-    logger.info({ path: file.path }, 'GitHub: Add change');
-    const blob = await gh.createBlob(file.content, file.path);
-    blobs.push(blob);
-  }
-
-  // git commit
-  logger.info({ branch }, 'GitHub: Commit to Branch');
-  const commitSha = await gh.createCommit(blobs, title, botEmail, sha);
-
-  // git push
-  logger.info({ branch }, 'GitHub: Push commit to Branch');
-  await gh.updateBranch(branch, commitSha);
-
-  // git pr create
-  logger.info({ branch: branch }, 'GitHub: Create Pull Request');
-  return await gh.createPullRequest(branch, title);
 }

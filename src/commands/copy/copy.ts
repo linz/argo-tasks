@@ -2,7 +2,6 @@ import { fsa } from '@chunkd/fs';
 import { WorkerRpcPool } from '@wtrpc/core';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { performance } from 'perf_hooks';
-import { gunzipSync } from 'zlib';
 import * as z from 'zod';
 
 import { CliInfo } from '../../cli.info.js';
@@ -13,22 +12,6 @@ import { CopyContract } from './copy-rpc.js';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
 const CopyManifest = z.array(CopyValidator);
-
-/**
- * Attempt to figure out how the configuration is pass to us
- * - Could be a path to a S3 location s3://foo/bar.json
- * - Could be a JSON document "[{}]"
- * - Could be a Base64'd Gzipped document
- */
-async function tryParse(x: string): Promise<unknown> {
-  if (x.startsWith('s3://') || x.startsWith('./') || x.startsWith('/')) {
-    const json = await fsa.readJson<ActionCopy>(x);
-    if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + x);
-    return json.parameters.manifest;
-  }
-  if (x.startsWith('[') || x.startsWith('{')) return JSON.parse(x);
-  return JSON.parse(gunzipSync(Buffer.from(x, 'base64url')).toString());
-}
 
 export const commandCopy = command({
   name: 'copy',
@@ -87,7 +70,9 @@ export const commandCopy = command({
     const chunks = [];
     const startTime = performance.now();
     for (const m of args.manifest) {
-      const data = await tryParse(m);
+      const json = await fsa.readJson<ActionCopy>(m);
+      if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + m);
+      const data = json.parameters.manifest;
       const manifest = CopyManifest.parse(data);
 
       const chunkSize = Math.ceil(manifest.length / args.concurrency);
