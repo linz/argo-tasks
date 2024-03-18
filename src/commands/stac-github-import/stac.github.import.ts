@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, string, Type } from 'cmd-ts';
+import { command, oneOf, option, string, Type } from 'cmd-ts';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -43,16 +43,14 @@ export const commandStacGithubImport = command({
       description: 'Target location for the collection.json file',
     }),
     repoName: option({
-      type: string,
+      type: oneOf(Object.keys(BotEmails)),
       long: 'repo-name',
-      description: 'Repository name either linz/imagery or linz/elevation',
       defaultValue: () => 'linz/imagery',
       defaultValueIsSerializable: true,
     }),
     copyOption: option({
-      type: string,
+      type: oneOf(['--force', '--no-clobber', '--force-no-clobber']),
       long: 'copy-option',
-      description: 'Mode for copying the item files; --no-clobber, --force, or --force-no-clobber',
       defaultValue: () => '--no-clobber',
       defaultValueIsSerializable: true,
     }),
