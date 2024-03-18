@@ -194,12 +194,22 @@ Output will look like:
 
 ### `stac github-import`
 
-Format and push a STAC collection.json file to a GitHub repository. Used by the [publish-copy](https://github.com/linz/topo-workflows/blob/master/workflows/imagery/publish-copy.yaml) Argo Workflow.
+Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository. Used by the [publish-copy](https://github.com/linz/topo-workflows/blob/master/workflows/imagery/publish-copy.yaml) Argo Workflow.
+
+#### Synopsis
+
+```bash
+stac github-import --source=SOURCE_S3_URL --target=TARGET_S3_URL [--repo-name=OWNER/REPO] [--ticket=TICKET_REFERENCE] [--copy-option=COPY_OPTION]
+```
+
+- `OWNER/REPO` defaults to "linz/imagery".
+- `TICKET_REFERENCE` is a Jira ticket ID.
+- `COPY_OPTION` can contain a flag for the TIFF and STAC items copy job. Defaults to "--no-clobber".
 
 #### Example
 
 ```bash
-stac github-import --source s3://path/to/collection/ --target s3://linz-imagery/path/to/dataset/ --repo-name "linz/imagery-test)" (`--repo-name` is optional and defaults to linz/imagery).
+stac github-import --source=s3://linz-workflows-scratch/2024-03/13-is-niwe-hawkes-bay-all-blocks-xfcxl/flat/ --target=s3://nz-imagery/hawkes-bay/hawkes-bay_2023-2024_0.25m/rgb/2193/ --repo-name=linz/imagery-test --ticket=AIP-56 --copy-option=--force
 ```
 
 ### `stac sync`

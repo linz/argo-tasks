@@ -155,7 +155,13 @@ export class GithubApi {
   /**
    * Create a new pull request from the given branch and return pull request number
    */
-  async createPullRequest(branch: string, title: string, botEmail: string, files: GithubFiles[]): Promise<number> {
+  async createPullRequest(
+    branch: string,
+    title: string,
+    botEmail: string,
+    files: GithubFiles[],
+    body?: string,
+  ): Promise<number> {
     // git checkout -b
     logger.info({ branch }, 'GitHub: Get branch');
     let sha = await this.getBranch(branch);
@@ -183,11 +189,12 @@ export class GithubApi {
     // git pr create
     logger.info({ branch: branch }, 'GitHub: Create Pull Request');
 
-    // Create pull request from the give head
+    // Create pull request from the given head
     const response = await this.octokit.rest.pulls.create({
       owner: this.owner,
       repo: this.repo,
       title,
+      body,
       head: branch,
       base: 'master',
     });

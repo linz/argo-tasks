@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, string, Type } from 'cmd-ts';
+import { command, oneOf, option, string, Type } from 'cmd-ts';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -15,9 +15,17 @@ const Url: Type<string, URL> = {
   },
 };
 
+/**
+ * Valid repositories, mapped to the email address used for the PR author
+ */
+export const BotEmails: Record<string, string> = {
+  'linz/elevation': 'elevation@linz.govt.nz',
+  'linz/imagery': 'imagery@linz.govt.nz',
+};
+
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
-  description: 'Format and push a stac collection.json file to GitHub repository',
+  description: 'Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository',
   version: CliInfo.version,
   args: {
     config,
@@ -35,10 +43,22 @@ export const commandStacGithubImport = command({
       description: 'Target location for the collection.json file',
     }),
     repoName: option({
-      type: string,
+      type: oneOf(Object.keys(BotEmails)),
       long: 'repo-name',
-      description: 'Repository name either linz/imagery or linz/elevation',
       defaultValue: () => 'linz/imagery',
+      defaultValueIsSerializable: true,
+    }),
+    copyOption: option({
+      type: oneOf(['--force', '--no-clobber', '--force-no-clobber']),
+      long: 'copy-option',
+      defaultValue: () => '--no-clobber',
+      defaultValueIsSerializable: true,
+    }),
+    ticket: option({
+      type: string,
+      long: 'ticket',
+      description: 'Associated JIRA ticket e.g. AIP-74',
+      defaultValue: () => '',
       defaultValueIsSerializable: true,
     }),
   },
@@ -48,13 +68,12 @@ export const commandStacGithubImport = command({
 
     const gh = new GithubApi(args.repoName);
 
-    const BotEmails: Record<string, string> = {
-      'linz/elevation': 'elevation@linz.govt.nz',
-      'linz/imagery': 'imagery@linz.govt.nz',
-    };
-
     const botEmail = BotEmails[args.repoName];
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
+
+    const basemapsConfigLinkURL = new URL('config-url', args.source);
+    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
+    const prBody = `**Basemaps preview link for Visual QA:**\n${basemapsConfigLink}\n\n**ODR destination path:**\n${args.target}`;
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
@@ -89,9 +108,20 @@ export const commandStacGithubImport = command({
     const title = `feat: import ${collection.title}`;
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
+    const parametersFileContent = {
+      source: args.source,
+      target: args.target,
+      ticket: args.ticket,
+      copy_option: args.copyOption,
+      region: collection['linz:region'],
+    };
+    const parametersFile = {
+      path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
+      content: JSON.stringify(parametersFileContent, null, 2),
+    };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await gh.createPullRequest(branch, title, botEmail, [collectionFile]);
+    await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody);
   },
 });
 
