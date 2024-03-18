@@ -110,10 +110,16 @@ export const commandStacGithubImport = command({
     const title = `feat: import ${collection.title}`;
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
-    const parametersFileContent = `"source": "${args.source}"\n"target": "${args.target}"\n"ticket": "${args.ticket}"\n"copy_option": "${args.copyOption}"\n"region": "${collection['linz:region']}"\n`;
+    const parametersFileContent = {
+      source: args.source,
+      target: args.target,
+      ticket: args.ticket,
+      copy_option: args.copyOption,
+      region: collection['linz:region'],
+    };
     const parametersFile = {
       path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
-      content: parametersFileContent,
+      content: JSON.stringify(parametersFileContent, null, 2),
     };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
