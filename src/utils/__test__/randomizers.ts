@@ -33,6 +33,10 @@ export function anyAsciiPrintableString(): string {
   );
 }
 
+export function anyAsciiAlphanumeric(): string {
+  return randomString('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 10);
+}
+
 /**
  * Create a random string of a fixed length composed of characters from an alphabet
  *

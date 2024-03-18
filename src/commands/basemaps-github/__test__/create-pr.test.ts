@@ -6,7 +6,12 @@ import { EpsgCode, ImageFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { StacCollection, StacVersion } from 'stac-ts';
 
-import { anyAsciiPrintableString, randomEnumValue, randomSetEntry } from '../../../utils/__test__/randomizers.js';
+import {
+  anyAsciiAlphanumeric,
+  anyAsciiPrintableString,
+  randomEnumValue,
+  randomSetEntry,
+} from '../../../utils/__test__/randomizers.js';
 import { anySlug } from '../../../utils/__test__/slugify.test.js';
 import { GithubApi } from '../../../utils/github.js';
 import {
@@ -91,9 +96,9 @@ function anyEpsgCode(): number {
 }
 
 function anyGitHubOwner(): string {
-  return anyAsciiPrintableString();
+  return anyAsciiAlphanumeric();
 }
 
 function anyGitHubRepositoryName(): string {
-  return anyAsciiPrintableString();
+  return anyAsciiAlphanumeric();
 }
