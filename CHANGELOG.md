@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.3.0](https://github.com/linz/argo-tasks/compare/v3.2.1...v3.3.0) (2024-03-18)
+
+
+### Features
+
+* add new fields for GitHub PR TDE-1100 ([#923](https://github.com/linz/argo-tasks/issues/923)) ([3f53dc9](https://github.com/linz/argo-tasks/commit/3f53dc9188e37ab42c1adbaf260d19e5e30b8027))
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the event category is not parsed and populated in the pull request. BM-982 ([#915](https://github.com/linz/argo-tasks/issues/915)) ([125cfd5](https://github.com/linz/argo-tasks/commit/125cfd51f67045b92d6d361064634db5121cc3ca))
+* Lints TDE-1030 ([#860](https://github.com/linz/argo-tasks/issues/860)) ([c898187](https://github.com/linz/argo-tasks/commit/c89818759756572e6aaf4ada65425139d2e4a4ff))
+* Run `throws` with the right arguments TDE-1030 ([#893](https://github.com/linz/argo-tasks/issues/893)) ([0c3e4a6](https://github.com/linz/argo-tasks/commit/0c3e4a60b7ec8044accda9050199363b876e9e0f))
+
 ## [3.2.1](https://github.com/linz/argo-tasks/compare/v3.2.0...v3.2.1) (2024-02-25)
 
 
