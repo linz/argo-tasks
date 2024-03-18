@@ -1,3 +1,4 @@
+import { S3 } from '@aws-sdk/client-s3';
 import { ConfigLayer } from '@basemaps/config/build/config/tile.set.js';
 import { standardizeLayerName } from '@basemaps/config/build/json/name.convertor.js';
 import { Epsg, EpsgCode } from '@basemaps/geo';
@@ -7,6 +8,7 @@ import { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { getS3ObjectAsJson, s3Client } from '../../utils/s3.js';
 import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub } from './make.cog.github.js';
 
@@ -16,6 +18,7 @@ const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
 async function parseTargetInfo(
   target: string,
   individual: boolean,
+  s3: S3,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const url = new URL(target);
@@ -31,9 +34,9 @@ async function parseTargetInfo(
   }
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
-  const collectionPath = fsa.join(target, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const collectionKey = fsa.join(url.pathname, 'collection.json');
+  const collection = await getS3ObjectAsJson<StacCollection>(bucket, collectionKey, s3);
+  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionKey}.`);
   const title = collection.title;
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
 
@@ -118,7 +121,7 @@ export const basemapsCreatePullRequest = command({
       layer[3857] = targets[0];
     } else {
       for (const target of targets) {
-        const info = await parseTargetInfo(target, args.individual);
+        const info = await parseTargetInfo(target, args.individual, s3Client());
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;
