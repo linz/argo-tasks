@@ -25,7 +25,7 @@ export const BotEmails: Record<string, string> = {
 
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
-  description: 'Format and push a stac collection.json file to GitHub repository',
+  description: 'Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository',
   version: CliInfo.version,
   args: {
     config,
