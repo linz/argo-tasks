@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/linz/argo-tasks/compare/v3.3.0...v3.3.1) (2024-03-20)
+
+
+### Bug Fixes
+
+* handle missing elevation basemaps config-url TDE-1100 ([#931](https://github.com/linz/argo-tasks/issues/931)) ([b025faa](https://github.com/linz/argo-tasks/commit/b025faa3931070d58ce52a6c5fd7767c69b09187))
+
 ## [3.3.0](https://github.com/linz/argo-tasks/compare/v3.2.1...v3.3.0) (2024-03-18)
 
 
