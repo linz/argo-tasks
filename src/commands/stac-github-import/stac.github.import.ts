@@ -15,12 +15,14 @@ const Url: Type<string, URL> = {
   },
 };
 
+const imageryRepo = 'linz/imagery';
+
 /**
  * Valid repositories, mapped to the email address used for the PR author
  */
 export const BotEmails: Record<string, string> = {
   'linz/elevation': 'elevation@linz.govt.nz',
-  'linz/imagery': 'imagery@linz.govt.nz',
+  imageryRepo: 'imagery@linz.govt.nz',
 };
 
 export const commandStacGithubImport = command({
@@ -45,7 +47,7 @@ export const commandStacGithubImport = command({
     repoName: option({
       type: oneOf(Object.keys(BotEmails)),
       long: 'repo-name',
-      defaultValue: () => 'linz/imagery',
+      defaultValue: () => imageryRepo,
       defaultValueIsSerializable: true,
     }),
     copyOption: option({
@@ -72,8 +74,18 @@ export const commandStacGithubImport = command({
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
 
     const basemapsConfigLinkURL = new URL('config-url', args.source);
-    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
-    const prBody = `**Basemaps preview link for Visual QA:**\n${basemapsConfigLink}\n\n**ODR destination path:**\n${args.target}`;
+    // TODO When Basemaps supports Elevation config as part of the standardising workflow, remove this try catch block
+    // https://toitutewhenua.atlassian.net/browse/BM-985
+    let prBody;
+    try {
+      const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
+      prBody = `**Basemaps preview link for Visual QA:**\n${basemapsConfigLink}\n\n**ODR destination path:**\n${args.target}`;
+    } catch (e) {
+      if (args.repoName === imageryRepo) {
+        throw e;
+      }
+      prBody = `**ODR destination path:**\n${args.target}`;
+    }
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
