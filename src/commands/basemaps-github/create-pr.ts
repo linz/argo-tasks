@@ -74,7 +74,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   const epsg = Epsg.tryGet(Number(splits[2]));
   const name = splits[3];
 
-  //Validate the target information
+  // Validate the target information
   logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
   if (bucket == null || !validTargetBuckets.has(bucket)) {
     throw new Error(`Invalid s3 bucket ${bucket} from the target ${target}.`);
