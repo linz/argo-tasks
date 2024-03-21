@@ -61,7 +61,6 @@ async function parseRasterTargetInfo(
   return { name: standardizeLayerName(name), epsg: epsg.code, title, region };
 }
 
-
 /**
  * Pass vector target location with the following format
  * s3://linz-basemaps-staging/vector/3857/53382-nz-roads-addressing/01HSF04SG9M1P3V667A4NZ1MN8/53382-nz-roads-addressing.tar.co
