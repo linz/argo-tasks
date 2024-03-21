@@ -28,6 +28,7 @@ export class GithubApi {
   }
 
   isOk = (s: number): boolean => s >= 200 && s <= 299;
+  notFound = (s: number): boolean => s === 404;
   toRef = (branch: string): string => `heads/${branch}`;
 
   /**
@@ -97,13 +98,17 @@ export class GithubApi {
   async getContent(path: string): Promise<string | undefined> {
     logger.info({ path }, 'GitHub API: Get Content');
     const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
-    if (!this.isOk(response.status)) throw new Error('Failed to get aerial TileSet config.');
-    if ('content' in response.data) {
-      return Buffer.from(response.data.content, 'base64').toString();
-    } else {
-      logger.info({ path }, 'Unable to find the content from path');
+    if (this.isOk(response.status)) {
+      if ('content' in response.data) {
+        return Buffer.from(response.data.content, 'base64').toString();
+      } else {
+        throw new Error(`Unable to find the content from path ${path}.`);
+      }
+    } else if (this.notFound(response.status)) {
+      logger.info({ path }, 'GitHub API: Get Content Not Found');
       return;
     }
+    throw new Error('Failed to get aerial TileSet config.');
   }
 
   /**
