@@ -13,7 +13,7 @@ import { Category, MakeCogGithub } from './make.cog.github.js';
 const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
 const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
 
-async function validateBucket(bucket: string, validBuckets: Set<string>): Promise<void> {
+function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
   // Validate the target information
   logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
   if (bucket == null || !validBuckets.has(bucket)) {
@@ -32,7 +32,7 @@ async function parseRasterTargetInfo(
   const epsg = Epsg.tryGet(Number(splits[1]));
   const name = splits[2];
 
-  await validateBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, validTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   const collectionPath = fsa.join(target, 'collection.json');
@@ -46,7 +46,7 @@ async function parseRasterTargetInfo(
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
-  await validateBucket(sourceBucket, validSourceBuckets);
+  assertValidBucket(sourceBucket, validSourceBuckets);
 
   // Try to get the region for individual layers
   let region;
@@ -76,7 +76,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   const epsg = Epsg.tryGet(Number(splits[2]));
   const name = splits[3];
 
-  await validateBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, validTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
