@@ -5,6 +5,7 @@ import {
   TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
+import { VectorFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
@@ -171,22 +172,10 @@ export class MakeCogGithub {
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
     const tileSetContent = await gh.getContent(tileSetPath);
-    let newTileSet;
-    if (tileSetContent) {
-      // update the existing tileset
-      const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
-      newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
-    } else {
-      // Prepare new tileset
-      newTileSet = {
-        type: TileSetType.Vector,
-        id: `ts_${layer.name}`,
-        title: layer.title,
-        maxZoom: 15,
-        format: 'pbf',
-        layers: [layer],
-      };
-    }
+
+    // update the existing tileset
+    const tileSet = tileSetContent != null ? (JSON.parse(tileSetContent) as ConfigTileSetVector) : undefined;
+    const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
 
     // skip pull request tileset prepare failure.
     if (newTileSet == null) return;
@@ -201,7 +190,18 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+    if (tileSet == null)
+      return {
+        type: TileSetType.Vector,
+        id: `ts_${layer.name}`,
+        name: layer.name,
+        title: layer.title,
+        maxZoom: 15,
+        format: VectorFormat.MapboxVectorTiles,
+        layers: [layer],
+      };
+
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
       if (tileSet.layers[i]?.name === layer.name) {

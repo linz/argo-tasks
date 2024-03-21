@@ -13,6 +13,14 @@ import { Category, MakeCogGithub } from './make.cog.github.js';
 const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
 const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
 
+async function validateBucket(bucket: string, validBuckets: Set<string>): Promise<void> {
+  // Validate the target information
+  logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
+  if (bucket == null || !validBuckets.has(bucket)) {
+    throw new Error(`Invalid s3 bucket ${bucket} from the target.`);
+  }
+}
+
 async function parseRasterTargetInfo(
   target: string,
   individual: boolean,
@@ -24,11 +32,7 @@ async function parseRasterTargetInfo(
   const epsg = Epsg.tryGet(Number(splits[1]));
   const name = splits[2];
 
-  //Validate the target information
-  logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
-  if (bucket == null || !validTargetBuckets.has(bucket)) {
-    throw new Error(`Invalid s3 bucket ${bucket} from the target ${target}.`);
-  }
+  await validateBucket(bucket, validTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   const collectionPath = fsa.join(target, 'collection.json');
@@ -42,10 +46,8 @@ async function parseRasterTargetInfo(
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
-  logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
-  if (sourceBucket == null || !validSourceBuckets.has(sourceBucket)) {
-    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceUrl}.`);
-  }
+  await validateBucket(sourceBucket, validSourceBuckets);
+
   // Try to get the region for individual layers
   let region;
   if (individual) {
@@ -74,11 +76,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   const epsg = Epsg.tryGet(Number(splits[2]));
   const name = splits[3];
 
-  // Validate the target information
-  logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
-  if (bucket == null || !validTargetBuckets.has(bucket)) {
-    throw new Error(`Invalid s3 bucket ${bucket} from the target ${target}.`);
-  }
+  await validateBucket(bucket, validTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
