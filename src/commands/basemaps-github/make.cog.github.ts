@@ -83,6 +83,7 @@ export class MakeCogGithub {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
+      if (tileSetContent == null) throw new Error(`Unable get the ${filename}.json from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // skip pull request if not an urban or rural imagery
@@ -170,10 +171,24 @@ export class MakeCogGithub {
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
     const tileSetContent = await gh.getContent(tileSetPath);
-    const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
-    const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
+    let newTileSet;
+    if (tileSetContent) {
+      // update the existing tileset
+      const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
+      newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
+    } else {
+      // Prepare new tileset
+      newTileSet = {
+        type: TileSetType.Vector,
+        id: `ts_${layer.name}`,
+        title: layer.title,
+        maxZoom: 15,
+        format: 'pbf',
+        layers: [layer],
+      };
+    }
 
-    // skip pull request if not an urban or rural imagery
+    // skip pull request tileset prepare failure.
     if (newTileSet == null) return;
     // Github
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
