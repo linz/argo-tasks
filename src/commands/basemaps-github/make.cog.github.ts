@@ -7,6 +7,7 @@ import {
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
 import { VectorFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
+import { StacCollection } from 'stac-ts';
 
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
@@ -162,6 +163,83 @@ export class MakeCogGithub {
   }
 
   /**
+   * Get the collection.json url from vector target
+   *
+   * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
+   * ->
+   * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/collection.json
+   */
+  getCollectionUrl(target: string): string {
+    const path = target.substring(0, target.lastIndexOf('/'));
+    return fsa.join(path, 'collection.json');
+  }
+
+  /**
+   * Prepare and create pull request for the aerial tileset config
+   */
+  async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string> {
+    let md = '';
+    // Vector layer only support for 3857
+    if (layer[3857] == null) return md;
+    const newCollectionPath = this.getCollectionUrl(layer[3857]);
+    const newCollection = await fsa.readJson<StacCollection>(newCollectionPath);
+    if (newCollection == null) throw new Error(`Failed to get target collection json from ${newCollectionPath}.`);
+    const ldsLayers = newCollection.links.filter((f) => f.rel === 'lds:layer');
+
+    // Log all the new inserts for new tileset
+    if (existingTileSet == null) {
+      md += `New TileSet ts_${layer.name} with layer ${layer.name}.\n`;
+      for (const l of ldsLayers) {
+        md += `🟩 ${l['lds:name']} - version: ${l['lds:version']} features: ${l['lds:feature_count']}`;
+      }
+      return md;
+    }
+
+    // Compare the different of existing tileset
+    for (const l of existingTileSet.layers) {
+      if (l[3857] == null) continue;
+      if (l.name !== layer.name) continue;
+      md += `Update for TileSet ${existingTileSet.id} layer ${layer.name}.\n`;
+      const existingCollectionPath = this.getCollectionUrl(l[3857]);
+      const existingCollection = await fsa.readJson<StacCollection>(existingCollectionPath);
+      if (existingCollection == null) {
+        throw new Error(`Failed to get target collection json from ${existingCollectionPath}.`);
+      }
+      const existingLdsLayers = existingCollection.links.filter((f) => f.rel === 'lds:layer');
+      for (const l of ldsLayers) {
+        const existingLayer = existingLdsLayers.find((f) => f['lds:id'] === l['lds:id']);
+        if (existingLayer == null) {
+          // New Layer Added
+          md += `🟩 ${l['lds:name']} - version: ${l['lds:version']} features: ${l['lds:feature_count']}`;
+        } else {
+          if (existingLayer['lds:version'] !== l['lds:version']) {
+            // Layer Updated
+            const featureChange = Number(l['lds:feature_count']) - Number(l['lds:feature_count']);
+            if (featureChange >= 0) {
+              // Add Features
+              md += `🟦 ${l['lds:name']} - version: ${l['lds:version']} (from: ${existingLayer['lds:version']}) features: ${l['lds:feature_count']} (+${featureChange})`;
+            } else {
+              // Remove Features
+              md += `🟧 ${l['lds:name']} - version: ${l['lds:version']} (from: ${existingLayer['lds:version']}) features: ${l['lds:feature_count']} (-${featureChange})`;
+            }
+          }
+        }
+      }
+
+      // Find removed layers
+      const newIds = new Set(ldsLayers.map((l) => l['lds:id']));
+      for (const l of existingLdsLayers) {
+        if (newIds.has(l['lds:id'])) continue;
+        // Removed Layer
+        md += `🟥 ${l['lds:name']} features: -${l['lds:feature_count']}`;
+      }
+    }
+
+    console.log(md);
+    return md;
+  }
+
+  /**
    * Prepare and create pull request for the aerial tileset config
    */
   async updateVectorTileSet(filename: string, layer: ConfigLayer): Promise<void> {
@@ -174,8 +252,10 @@ export class MakeCogGithub {
     const tileSetContent = await gh.getContent(tileSetPath);
 
     // update the existing tileset
-    const tileSet = tileSetContent != null ? (JSON.parse(tileSetContent) as ConfigTileSetVector) : undefined;
-    const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
+    const existingTileSet = tileSetContent != null ? (JSON.parse(tileSetContent) as ConfigTileSetVector) : undefined;
+    const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
+
+    const diff = await this.diffVectorUpdate(layer, existingTileSet);
 
     // skip pull request tileset prepare failure.
     if (newTileSet == null) return;
@@ -184,14 +264,14 @@ export class MakeCogGithub {
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await gh.createPullRequest(branch, title, botEmail, [file]);
+    await gh.createPullRequest(branch, title, botEmail, [file], diff);
   }
 
   /**
    * Prepare raster tileSet config json
    */
   async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
-    if (tileSet == null)
+    if (tileSet == null) {
       return {
         type: TileSetType.Vector,
         id: `ts_${layer.name}`,
@@ -201,6 +281,7 @@ export class MakeCogGithub {
         format: VectorFormat.MapboxVectorTiles,
         layers: [layer],
       };
+    }
 
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
