@@ -7,7 +7,7 @@ import {
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
 import { VectorFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { StacCollection } from 'stac-ts';
+import { StacCollection, StacLink } from 'stac-ts';
 
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
@@ -162,45 +162,59 @@ export class MakeCogGithub {
     return tileSet;
   }
 
-  /**
-   * Get the collection.json url from vector target
-   *
-   * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
-   * ->
-   * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/collection.json
-   */
-  getCollectionUrl(target: string): string {
-    const path = target.substring(0, target.lastIndexOf('/'));
-    return fsa.join(path, 'collection.json');
+  getVectorChanges(newLayer: StacLink | undefined, existingLayer: StacLink | undefined): string {
+    // Add new Layer
+    if (newLayer != null && existingLayer == null) {
+      return `🟩 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} features: ${newLayer['lds:feature_count']}`;
+    }
+
+    // Remove Layer
+    if (newLayer == null && existingLayer != null) {
+      return `🟥 ${existingLayer['lds:name']} features: -${existingLayer['lds:feature_count']}`;
+    }
+
+    // Update Layer
+    if (newLayer != null && existingLayer != null) {
+      const featureChange = Number(newLayer['lds:feature_count']) - Number(existingLayer['lds:feature_count']);
+      if (featureChange >= 0) {
+        // Add Features
+        return `🟦 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} (from: ${existingLayer['lds:version']}) features: ${newLayer['lds:feature_count']} (+${featureChange})`;
+      } else {
+        // Remove Features
+        return `🟧 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} (from: ${existingLayer['lds:version']}) features: ${newLayer['lds:feature_count']} (-${featureChange})`;
+      }
+    }
+
+    throw new Error('Both newLayer and existingLayer are null for getVectorChanges');
   }
 
   /**
    * Prepare and create pull request for the aerial tileset config
    */
-  async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string> {
-    let md = '';
+  async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string | undefined> {
+    let changes: string[] = [];
     // Vector layer only support for 3857
-    if (layer[3857] == null) return md;
-    const newCollectionPath = this.getCollectionUrl(layer[3857]);
+    if (layer[3857] == null) return;
+    const newCollectionPath = new URL('collection.json', layer[3857]).href;
     const newCollection = await fsa.readJson<StacCollection>(newCollectionPath);
     if (newCollection == null) throw new Error(`Failed to get target collection json from ${newCollectionPath}.`);
     const ldsLayers = newCollection.links.filter((f) => f.rel === 'lds:layer');
 
     // Log all the new inserts for new tileset
     if (existingTileSet == null) {
-      md += `New TileSet ts_${layer.name} with layer ${layer.name}.\n`;
+      changes.push(`New TileSet ts_${layer.name} with layer ${layer.name}.\n`);
       for (const l of ldsLayers) {
-        md += `🟩 ${l['lds:name']} - version: ${l['lds:version']} features: ${l['lds:feature_count']}`;
+        changes.push(this.getVectorChanges(l, undefined));
       }
-      return md;
+      return changes.join('\n');
     }
 
-    // Compare the different of existing tileset
+    // Compare the different of existing tileset, we usually only have one layers in the vector tiles, so the loop won't fetch very much
     for (const l of existingTileSet.layers) {
       if (l[3857] == null) continue;
       if (l.name !== layer.name) continue;
-      md += `Update for TileSet ${existingTileSet.id} layer ${layer.name}.\n`;
-      const existingCollectionPath = this.getCollectionUrl(l[3857]);
+      changes.push(`Update for TileSet ${existingTileSet.id} layer ${layer.name}.`);
+      const existingCollectionPath = new URL('collection.json', l[3857]).href;
       const existingCollection = await fsa.readJson<StacCollection>(existingCollectionPath);
       if (existingCollection == null) {
         throw new Error(`Failed to get target collection json from ${existingCollectionPath}.`);
@@ -210,18 +224,11 @@ export class MakeCogGithub {
         const existingLayer = existingLdsLayers.find((f) => f['lds:id'] === l['lds:id']);
         if (existingLayer == null) {
           // New Layer Added
-          md += `🟩 ${l['lds:name']} - version: ${l['lds:version']} features: ${l['lds:feature_count']}`;
+          changes.push(this.getVectorChanges(l, undefined));
         } else {
           if (existingLayer['lds:version'] !== l['lds:version']) {
             // Layer Updated
-            const featureChange = Number(l['lds:feature_count']) - Number(l['lds:feature_count']);
-            if (featureChange >= 0) {
-              // Add Features
-              md += `🟦 ${l['lds:name']} - version: ${l['lds:version']} (from: ${existingLayer['lds:version']}) features: ${l['lds:feature_count']} (+${featureChange})`;
-            } else {
-              // Remove Features
-              md += `🟧 ${l['lds:name']} - version: ${l['lds:version']} (from: ${existingLayer['lds:version']}) features: ${l['lds:feature_count']} (-${featureChange})`;
-            }
+            changes.push(this.getVectorChanges(l, existingLayer));
           }
         }
       }
@@ -231,12 +238,11 @@ export class MakeCogGithub {
       for (const l of existingLdsLayers) {
         if (newIds.has(l['lds:id'])) continue;
         // Removed Layer
-        md += `🟥 ${l['lds:name']} features: -${l['lds:feature_count']}`;
+        changes.push(this.getVectorChanges(undefined, l));
       }
     }
 
-    console.log(md);
-    return md;
+    return changes.join('\n');
   }
 
   /**
