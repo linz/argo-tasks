@@ -192,7 +192,7 @@ export class MakeCogGithub {
    * Prepare and create pull request for the aerial tileset config
    */
   async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string | undefined> {
-    let changes: string[] = [];
+    const changes: string[] = [];
     // Vector layer only support for 3857
     if (layer[3857] == null) return;
     const newCollectionPath = new URL('collection.json', layer[3857]).href;
