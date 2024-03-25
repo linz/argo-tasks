@@ -47,7 +47,7 @@ export const TiffLoader = {
       // All the errors are logged above so just throw the first error
       if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
       // We are processing only 8 bits Tiff for now
-      if ((await is8BitsTiff(prom.value)) === false) throw new Error('Tiff is not a 8 bits TIFF.');
+      await validate8BitsTiff(prom.value);
       output.push(prom.value);
     }
     return output;
@@ -425,7 +425,7 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
  * @param tiff
  * @returns true if 8 bits TIFF
  */
-export async function is8BitsTiff(tiff: Tiff): Promise<boolean> {
+export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   const baseImage = tiff.images[0];
   if (baseImage === undefined) throw new Error(`Can't get base image for ${tiff.source.url}`);
 
@@ -435,8 +435,6 @@ export async function is8BitsTiff(tiff: Tiff): Promise<boolean> {
   }
 
   for (let i = 0; i < bitsPerSample.length; i++) {
-    if (bitsPerSample[i] !== 8) return false;
+    if (bitsPerSample[i] !== 8) throw new Error(`${tiff.source.url} is not a 8 bits TIFF`);
   }
-
-  return true;
 }

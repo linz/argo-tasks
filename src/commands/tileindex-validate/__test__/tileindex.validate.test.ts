@@ -14,8 +14,8 @@ import {
   getTileName,
   GridSizeFromString,
   groupByTileName,
-  is8BitsTiff,
   TiffLoader,
+  validate8BitsTiff,
 } from '../tileindex.validate.js';
 import { FakeCogTiff } from './tileindex.validate.data.js';
 
@@ -282,10 +282,13 @@ describe('GridSizeFromString', () => {
 describe('is8BitsTiff', () => {
   it('should be a 8 bits TIFF', async () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
-    assert.equal(await is8BitsTiff(testTiff), true);
+    await assert.doesNotReject(validate8BitsTiff(testTiff));
   });
   it('should not be a 8 bits TIFF', async () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
-    assert.equal(await is8BitsTiff(testTiff), false);
+    await assert.rejects(validate8BitsTiff(testTiff), {
+      name: 'Error',
+      message: `${testTiff.source.url} is not a 8 bits TIFF`,
+    });
   });
 });
