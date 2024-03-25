@@ -22,7 +22,7 @@ const imageryRepo = 'linz/imagery';
  */
 export const BotEmails: Record<string, string> = {
   'linz/elevation': 'elevation@linz.govt.nz',
-  imageryRepo: 'imagery@linz.govt.nz',
+  [imageryRepo]: 'imagery@linz.govt.nz',
 };
 
 export const commandStacGithubImport = command({
