@@ -427,11 +427,11 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
  */
 export async function is8BitsTiff(tiff: Tiff): Promise<boolean> {
   const baseImage = tiff.images[0];
-  if (baseImage === undefined) throw new Error("Can't get base image");
+  if (baseImage === undefined) throw new Error(`Can't get base image for ${tiff.source.url}`);
 
   const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
   if (bitsPerSample == null) {
-    throw new Error('Failed to extract band information from : ' + tiff.source.url);
+    throw new Error(`Failed to extract band information from ${tiff.source.url}`);
   }
 
   for (let i = 0; i < bitsPerSample.length; i++) {
