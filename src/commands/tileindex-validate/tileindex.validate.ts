@@ -420,10 +420,9 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
 }
 
 /**
- * Verify if a TIFF contains only 8 bits bands.
+ * Validate if a TIFF contains only 8 bits bands.
  *
  * @param tiff
- * @returns true if 8 bits TIFF
  */
 export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   const baseImage = tiff.images[0];
