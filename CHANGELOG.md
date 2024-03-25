@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.2](https://github.com/linz/argo-tasks/compare/v3.3.1...v3.3.2) (2024-03-25)
+
+
+### Bug Fixes
+
+* Change bareword key to variable reference TDE-1100 ([#935](https://github.com/linz/argo-tasks/issues/935)) ([b710d87](https://github.com/linz/argo-tasks/commit/b710d87084af6c1af9b11b089b865276660e1737))
+
 ## [3.3.1](https://github.com/linz/argo-tasks/compare/v3.3.0...v3.3.1) (2024-03-20)
 
 
