@@ -280,11 +280,11 @@ describe('GridSizeFromString', () => {
 });
 
 describe('is8BitsTiff', () => {
-  it('should be a 8bits Tiff', async () => {
+  it('should be a 8 bits TIFF', async () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
     assert.equal(await is8BitsTiff(testTiff), true);
   });
-  it('should not be a 8bits Tiff', async () => {
+  it('should not be a 8 bits TIFF', async () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
     assert.equal(await is8BitsTiff(testTiff), false);
   });
