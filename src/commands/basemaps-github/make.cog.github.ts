@@ -162,7 +162,28 @@ export class MakeCogGithub {
     return tileSet;
   }
 
-  getVectorChanges(newLayer: StacLink | undefined, existingLayer: StacLink | undefined): string {
+  /**
+   * Given a old and new lds layer stac item and log the changes for pull request body
+   */
+  getVectorChanges(newLayer: StacLink | undefined, existingLayer: StacLink | undefined): string | undefined {
+    // Update Layer
+    if (newLayer != null && existingLayer != null) {
+      const featureChange = Number(newLayer['lds:feature_count']) - Number(existingLayer['lds:feature_count']);
+
+      if (newLayer['lds:version'] === existingLayer['lds:version'] && featureChange !== 0) {
+        // Alert if feature changed with no version bump.
+        return `🟥🟥🟥🟥 Feature Change Detected ${newLayer['lds:name']} - version: ${newLayer['lds:version']} features: ${newLayer['lds:feature_count']} (+${featureChange}) 🟥🟥🟥🟥`;
+      }
+
+      if (featureChange >= 0) {
+        // Add Features
+        return `🟦 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} (from: ${existingLayer['lds:version']}) features: ${newLayer['lds:feature_count']} (+${featureChange})`;
+      } else {
+        // Remove Features
+        return `🟧 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} (from: ${existingLayer['lds:version']}) features: ${newLayer['lds:feature_count']} (-${featureChange})`;
+      }
+    }
+
     // Add new Layer
     if (newLayer != null && existingLayer == null) {
       return `🟩 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} features: ${newLayer['lds:feature_count']}`;
@@ -173,26 +194,14 @@ export class MakeCogGithub {
       return `🟥 ${existingLayer['lds:name']} features: -${existingLayer['lds:feature_count']}`;
     }
 
-    // Update Layer
-    if (newLayer != null && existingLayer != null) {
-      const featureChange = Number(newLayer['lds:feature_count']) - Number(existingLayer['lds:feature_count']);
-      if (featureChange >= 0) {
-        // Add Features
-        return `🟦 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} (from: ${existingLayer['lds:version']}) features: ${newLayer['lds:feature_count']} (+${featureChange})`;
-      } else {
-        // Remove Features
-        return `🟧 ${newLayer['lds:name']} - version: ${newLayer['lds:version']} (from: ${existingLayer['lds:version']}) features: ${newLayer['lds:feature_count']} (-${featureChange})`;
-      }
-    }
-
-    throw new Error('Both newLayer and existingLayer are null for getVectorChanges');
+    return;
   }
 
   /**
    * Prepare and create pull request for the aerial tileset config
    */
   async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string | undefined> {
-    const changes: string[] = [];
+    const changes: (string | undefined)[] = [];
     // Vector layer only support for 3857
     if (layer[3857] == null) return;
     const newCollectionPath = new URL('collection.json', layer[3857]).href;
@@ -206,7 +215,7 @@ export class MakeCogGithub {
       for (const l of ldsLayers) {
         changes.push(this.getVectorChanges(l, undefined));
       }
-      return changes.join('\n');
+      return changes.filter((f) => f != null).join('\n');
     }
 
     // Compare the different of existing tileset, we usually only have one layers in the vector tiles, so the loop won't fetch very much
@@ -219,30 +228,29 @@ export class MakeCogGithub {
       if (existingCollection == null) {
         throw new Error(`Failed to get target collection json from ${existingCollectionPath}.`);
       }
-      const existingLdsLayers = existingCollection.links.filter((f) => f.rel === 'lds:layer');
+
+      // Prepare existing lds layers as map
+      const existingLdsLayers = new Map<unknown, StacLink>();
+      for (const item of existingCollection.links) {
+        if (item.rel === 'lds:layer') existingLdsLayers.set(item['lds:id'], item);
+      }
+
+      // Find layer updates
       for (const l of ldsLayers) {
-        const existingLayer = existingLdsLayers.find((f) => f['lds:id'] === l['lds:id']);
-        if (existingLayer == null) {
-          // New Layer Added
-          changes.push(this.getVectorChanges(l, undefined));
-        } else {
-          if (existingLayer['lds:version'] !== l['lds:version']) {
-            // Layer Updated
-            changes.push(this.getVectorChanges(l, existingLayer));
-          }
-        }
+        const existingLayer = existingLdsLayers.get(l['lds:id']);
+        changes.push(this.getVectorChanges(l, existingLayer));
       }
 
       // Find removed layers
       const newIds = new Set(ldsLayers.map((l) => l['lds:id']));
-      for (const l of existingLdsLayers) {
-        if (newIds.has(l['lds:id'])) continue;
+      for (const id of existingLdsLayers.keys()) {
+        if (newIds.has(id)) continue;
         // Removed Layer
-        changes.push(this.getVectorChanges(undefined, l));
+        changes.push(this.getVectorChanges(undefined, existingLdsLayers.get(id)));
       }
     }
 
-    return changes.join('\n');
+    return changes.filter((f) => f != null).join('\n');
   }
 
   /**
