@@ -37,6 +37,13 @@ export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   [Category.Event]: {},
 };
 
+interface StacLinkLds extends StacLink {
+  'lds:id': string;
+  'lds:name': string;
+  'lds:feature_count': number;
+  'lds:version': string;
+}
+
 const botEmail = 'basemaps@linz.govt.nz';
 const ConfigPrettierFormat = Object.assign({}, DEFAULT_PRETTIER_FORMAT, { printWidth: 200 });
 
@@ -207,7 +214,7 @@ export class MakeCogGithub {
     const newCollectionPath = new URL('collection.json', layer[3857]).href;
     const newCollection = await fsa.readJson<StacCollection>(newCollectionPath);
     if (newCollection == null) throw new Error(`Failed to get target collection json from ${newCollectionPath}.`);
-    const ldsLayers = newCollection.links.filter((f) => f.rel === 'lds:layer');
+    const ldsLayers = newCollection.links.filter((f) => f.rel === 'lds:layer') as StacLinkLds[];
 
     // Log all the new inserts for new tileset
     if (existingTileSet == null) {
@@ -230,22 +237,20 @@ export class MakeCogGithub {
       }
 
       // Prepare existing lds layers as map
-      const existingLdsLayers = new Map<unknown, StacLink>();
+      const existingLdsLayers = new Map<string, StacLinkLds>();
       for (const item of existingCollection.links) {
-        if (item.rel === 'lds:layer') existingLdsLayers.set(item['lds:id'], item);
+        if (item.rel === 'lds:layer') existingLdsLayers.set((item as StacLinkLds)['lds:id'], item as StacLinkLds);
       }
 
       // Find layer updates
       for (const l of ldsLayers) {
         const existingLayer = existingLdsLayers.get(l['lds:id']);
         changes.push(this.getVectorChanges(l, existingLayer));
+        if(existingLayer != null) existingLdsLayers.delete(l['lds:id']);
       }
 
-      // Find removed layers
-      const newIds = new Set(ldsLayers.map((l) => l['lds:id']));
+      // Remove the layers that not deleted from existingLdsLayers
       for (const id of existingLdsLayers.keys()) {
-        if (newIds.has(id)) continue;
-        // Removed Layer
         changes.push(this.getVectorChanges(undefined, existingLdsLayers.get(id)));
       }
     }
