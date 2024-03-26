@@ -250,8 +250,8 @@ export class MakeCogGithub {
       }
 
       // Remove the layers that not deleted from existingLdsLayers
-      for (const id of existingLdsLayers.keys()) {
-        changes.push(this.getVectorChanges(undefined, existingLdsLayers.get(id)));
+      for (const layer of existingLdsLayers.values()) {
+        changes.push(this.getVectorChanges(undefined, layer));
       }
     }
 
