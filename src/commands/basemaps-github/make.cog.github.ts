@@ -172,7 +172,7 @@ export class MakeCogGithub {
   /**
    * Given a old and new lds layer stac item and log the changes for pull request body
    */
-  getVectorChanges(newLayer: StacLink | undefined, existingLayer: StacLink | undefined): string | undefined {
+  getVectorChanges(newLayer: StacLink | undefined, existingLayer: StacLink | undefined): string | null {
     // Update Layer
     if (newLayer != null && existingLayer != null) {
       const featureChange = Number(newLayer['lds:feature_count']) - Number(existingLayer['lds:feature_count']);
@@ -201,14 +201,15 @@ export class MakeCogGithub {
       return `🟥 ${existingLayer['lds:name']} features: -${existingLayer['lds:feature_count']}`;
     }
 
-    return;
+    // No changes detected return null
+    return null;
   }
 
   /**
    * Prepare and create pull request for the aerial tileset config
    */
   async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string | undefined> {
-    const changes: (string | undefined)[] = [];
+    const changes: (string | null)[] = [];
     // Vector layer only support for 3857
     if (layer[3857] == null) return;
     const newCollectionPath = new URL('collection.json', layer[3857]).href;
