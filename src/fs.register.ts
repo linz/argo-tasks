@@ -24,7 +24,7 @@ function hasHostName(x: unknown): x is { hostname: string } {
  */
 export const fqdn: FinalizeRequestMiddleware<object, MetadataBearer> = (next) => {
   return (args) => {
-    if (hasHostName(args.request) && args.request.hostname.endsWith('ap-southeast-2.amazonaws.com')) {
+    if (hasHostName(args.request) && args.request.hostname.endsWith('.s3.ap-southeast-2.amazonaws.com')) {
       args.request.hostname += '.';
     }
     return next(args);
