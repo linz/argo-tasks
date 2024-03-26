@@ -246,7 +246,7 @@ export class MakeCogGithub {
       for (const l of ldsLayers) {
         const existingLayer = existingLdsLayers.get(l['lds:id']);
         changes.push(this.getVectorChanges(l, existingLayer));
-        if(existingLayer != null) existingLdsLayers.delete(l['lds:id']);
+        if (existingLayer != null) existingLdsLayers.delete(l['lds:id']);
       }
 
       // Remove the layers that not deleted from existingLdsLayers
