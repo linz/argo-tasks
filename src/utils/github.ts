@@ -94,7 +94,7 @@ export class GithubApi {
   /**
    * Get content from the github repository
    */
-  async getContent(path: string): Promise<string | undefined> {
+  async getContent(path: string): Promise<string | null> {
     logger.info({ path }, 'GitHub API: Get Content');
     try {
       const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
@@ -108,7 +108,7 @@ export class GithubApi {
     } catch {
       logger.debug({ path }, 'GitHub: Content not found');
     }
-    return;
+    return null;
   }
 
   /**
