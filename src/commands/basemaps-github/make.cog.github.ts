@@ -209,7 +209,7 @@ export class MakeCogGithub {
    * Prepare and create pull request for the aerial tileset config
    */
   async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string | undefined> {
-    const changes: (string | null)[] = [];
+    const changes: string[] = [];
     // Vector layer only support for 3857
     if (layer[Epsg.Google.code] == null) return;
     const newCollectionPath = new URL('collection.json', layer[Epsg.Google.code]).href;
@@ -220,8 +220,11 @@ export class MakeCogGithub {
     // Log all the new inserts for new tileset
     if (existingTileSet == null) {
       changes.push(`New TileSet ts_${layer.name} with layer ${layer.name}.\n`);
-      for (const l of ldsLayers) changes.push(this.getVectorChanges(l, undefined));
-      return changes.filter((f) => f != null).join('\n');
+      for (const l of ldsLayers) {
+        const change = this.getVectorChanges(l, undefined);
+        if (change != null) changes.push(change);
+      }
+      return changes.join('\n');
     }
 
     // Compare the different of existing tileset, we usually only have one layers in the vector tiles, so the loop won't fetch very much
@@ -244,17 +247,19 @@ export class MakeCogGithub {
       // Find layer updates
       for (const l of ldsLayers) {
         const existingLayer = existingLdsLayers.get(l['lds:id']);
-        changes.push(this.getVectorChanges(l, existingLayer));
+        const change = this.getVectorChanges(l, undefined);
+        if (change != null) changes.push(change);
         if (existingLayer != null) existingLdsLayers.delete(l['lds:id']);
       }
 
       // Remove the layers that not deleted from existingLdsLayers
-      for (const layer of existingLdsLayers.values()) {
-        changes.push(this.getVectorChanges(undefined, layer));
+      for (const l of existingLdsLayers.values()) {
+        const change = this.getVectorChanges(l, undefined);
+        if (change != null) changes.push(change);
       }
     }
 
-    return changes.filter((f) => f != null).join('\n');
+    return changes.join('\n');
   }
 
   /**

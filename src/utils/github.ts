@@ -99,12 +99,10 @@ export class GithubApi {
     logger.info({ path }, 'GitHub API: Get Content');
     try {
       const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
-      if (this.isOk(response.status)) {
-        if ('content' in response.data) {
-          return Buffer.from(response.data.content, 'base64').toString();
-        } else {
-          throw new Error('GitHub: getContent return no content in response data.');
-        }
+      if (this.isOk(response.status) && 'content' in response.data) {
+        return Buffer.from(response.data.content, 'base64').toString();
+      } else {
+        throw new Error('GitHub: getContent return no content in response data.');
       }
     } catch (error) {
       // Trying to catch the non found response and return null
