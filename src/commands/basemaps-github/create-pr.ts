@@ -16,7 +16,7 @@ const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
 function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
   // Validate the target information
   logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
-  if (bucket == null || !validBuckets.has(bucket)) {
+  if (!validBuckets.has(bucket)) {
     throw new Error(`Invalid s3 bucket ${bucket} from the target.`);
   }
 }
