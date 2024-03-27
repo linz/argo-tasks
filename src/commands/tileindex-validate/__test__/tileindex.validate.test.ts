@@ -7,6 +7,7 @@ import { FeatureCollection } from 'geojson';
 
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
 import { GridSize, MapSheet } from '../../../utils/mapsheet.js';
+import { createTiff } from '../../common.js';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
@@ -14,6 +15,7 @@ import {
   GridSizeFromString,
   groupByTileName,
   TiffLoader,
+  validate8BitsTiff,
 } from '../tileindex.validate.js';
 import { FakeCogTiff } from './tileindex.validate.data.js';
 
@@ -274,5 +276,19 @@ describe('GridSizeFromString', () => {
       GridSizeFromString.from('-1'),
       new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500"'),
     );
+  });
+});
+
+describe('is8BitsTiff', () => {
+  it('should be a 8 bits TIFF', async () => {
+    const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
+    await assert.doesNotReject(validate8BitsTiff(testTiff));
+  });
+  it('should not be a 8 bits TIFF', async () => {
+    const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
+    await assert.rejects(validate8BitsTiff(testTiff), {
+      name: 'Error',
+      message: `${testTiff.source.url} is not a 8 bits TIFF`,
+    });
   });
 });

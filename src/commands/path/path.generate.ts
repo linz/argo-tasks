@@ -1,6 +1,6 @@
 import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { CogTiff } from '@cogeotiff/core';
+import { Tiff } from '@cogeotiff/core';
 import { command, option, positional, string } from 'cmd-ts';
 import { StacCollection, StacItem } from 'stac-ts';
 
@@ -154,9 +154,9 @@ export function formatDate(collection: StacCollection): string {
  * @async
  * @param {string} source
  * @param {StacCollection} collection
- * @returns {Promise<CogTiff>}
+ * @returns {Promise<Tiff>}
  */
-export async function loadFirstTiff(source: string, collection: StacCollection): Promise<CogTiff> {
+export async function loadFirstTiff(source: string, collection: StacCollection): Promise<Tiff> {
   const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
   if (itemLink == null) throw new Error(`No items in collection from ${source}.`);
   const itemPath = new URL(itemLink, source).href;
@@ -170,7 +170,7 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
   return tiff;
 }
 
-export function extractGsd(tiff: CogTiff): number {
+export function extractGsd(tiff: Tiff): number {
   const gsd = tiff.images[0]?.resolution[0];
   if (gsd == null) {
     throw new Error(`Missing resolution tiff tag: ${tiff.source.url}`);
@@ -178,7 +178,7 @@ export function extractGsd(tiff: CogTiff): number {
   return gsd;
 }
 
-export function extractEpsg(tiff: CogTiff): number {
+export function extractEpsg(tiff: Tiff): number {
   const epsg = tiff.images[0]?.epsg;
   if (epsg == null) {
     throw new Error(`Missing epsg tiff tag: ${tiff.source.url}`);
