@@ -10,8 +10,10 @@ import { logger } from '../../log.js';
 import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub } from './make.cog.github.js';
 
-const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
-const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
+export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+
+export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 
 async function parseTargetInfo(
   target: string,
@@ -26,7 +28,7 @@ async function parseTargetInfo(
 
   //Validate the target information
   logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
-  if (bucket == null || !validTargetBuckets.has(bucket)) {
+  if (bucket == null || !ValidTargetBuckets.has(bucket)) {
     throw new Error(`Invalid s3 bucket ${bucket} from the target ${target}.`);
   }
 
@@ -35,15 +37,15 @@ async function parseTargetInfo(
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionPath}`);
 
   //Validate the source location
-  const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
+  const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
   logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
-  if (sourceBucket == null || !validSourceBuckets.has(sourceBucket)) {
+  if (sourceBucket == null || !ValidSourceBuckets.has(sourceBucket)) {
     throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceUrl}.`);
   }
   // Try to get the region for individual layers
