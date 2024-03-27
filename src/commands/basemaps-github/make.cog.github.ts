@@ -5,7 +5,7 @@ import {
   TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
-import { VectorFormat } from '@basemaps/geo';
+import { Epsg, VectorFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { StacCollection, StacLink } from 'stac-ts';
 
@@ -211,8 +211,8 @@ export class MakeCogGithub {
   async diffVectorUpdate(layer: ConfigLayer, existingTileSet?: ConfigTileSetVector): Promise<string | undefined> {
     const changes: (string | null)[] = [];
     // Vector layer only support for 3857
-    if (layer[3857] == null) return;
-    const newCollectionPath = new URL('collection.json', layer[3857]).href;
+    if (layer[Epsg.Google.code] == null) return;
+    const newCollectionPath = new URL('collection.json', layer[Epsg.Google.code]).href;
     const newCollection = await fsa.readJson<StacCollection>(newCollectionPath);
     if (newCollection == null) throw new Error(`Failed to get target collection json from ${newCollectionPath}.`);
     const ldsLayers = newCollection.links.filter((f) => f.rel === 'lds:layer') as StacLinkLds[];
@@ -220,18 +220,16 @@ export class MakeCogGithub {
     // Log all the new inserts for new tileset
     if (existingTileSet == null) {
       changes.push(`New TileSet ts_${layer.name} with layer ${layer.name}.\n`);
-      for (const l of ldsLayers) {
-        changes.push(this.getVectorChanges(l, undefined));
-      }
+      for (const l of ldsLayers) changes.push(this.getVectorChanges(l, undefined));
       return changes.filter((f) => f != null).join('\n');
     }
 
     // Compare the different of existing tileset, we usually only have one layers in the vector tiles, so the loop won't fetch very much
     for (const l of existingTileSet.layers) {
-      if (l[3857] == null) continue;
+      if (l[Epsg.Google.code] == null) continue;
       if (l.name !== layer.name) continue;
       changes.push(`Update for TileSet ${existingTileSet.id} layer ${layer.name}.`);
-      const existingCollectionPath = new URL('collection.json', l[3857]).href;
+      const existingCollectionPath = new URL('collection.json', l[Epsg.Google.code]).href;
       const existingCollection = await fsa.readJson<StacCollection>(existingCollectionPath);
       if (existingCollection == null) {
         throw new Error(`Failed to get target collection json from ${existingCollectionPath}.`);
