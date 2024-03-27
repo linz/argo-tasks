@@ -433,6 +433,7 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
     throw new Error(`Failed to extract band information from ${tiff.source.url}`);
   }
 
-  if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8))
+  if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8)) {
     throw new Error(`${tiff.source.url} is not a 8 bits TIFF`);
+  }
 }
