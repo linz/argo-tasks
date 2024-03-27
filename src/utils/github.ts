@@ -97,14 +97,13 @@ export class GithubApi {
    */
   async getContent(path: string): Promise<string | null> {
     logger.info({ path }, 'GitHub API: Get Content');
-    const e = new Error('GitHub: Get content Failure');
     try {
       const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
       if (this.isOk(response.status)) {
         if ('content' in response.data) {
           return Buffer.from(response.data.content, 'base64').toString();
         } else {
-          throw e;
+          throw new Error('GitHub: getContent return no content in response data.');
         }
       }
     } catch (error) {
@@ -112,10 +111,12 @@ export class GithubApi {
       if (error instanceof RequestError && error.status === 404) {
         logger.info({ path }, 'GitHub API: Content Not Found');
         return null;
+      } else {
+        throw error;
       }
     }
 
-    throw e;
+    throw new Error('GitHub: Get content Failure');
   }
 
   /**
