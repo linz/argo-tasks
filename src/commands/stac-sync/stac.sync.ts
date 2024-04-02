@@ -2,6 +2,7 @@ import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { command, positional, string, Type } from 'cmd-ts';
 import { createHash } from 'crypto';
+import path from 'path';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
@@ -24,7 +25,7 @@ export const commandStacSync = command({
     sourcePath: positional({ type: string, description: 'Location of the source STAC to synchronise from' }),
     destinationPath: positional({
       type: S3Path,
-      description: 'Location of the destination STAC in S3 to synchronise to',
+      description: 'S3 path of the bucket where to synchronize STAC files',
     }),
   },
 
@@ -40,14 +41,16 @@ export const commandStacSync = command({
 export const HashKey = 'linz-hash';
 
 /**
- * Synchronise STAC (JSON) files from a path to another.
+ * Synchronise STAC (JSON) files from a path to a S3 bucket.
  *
  * @param sourcePath where the source files are
- * @param destinationPath S3 path where the files need to be synchronized
+ * @param destinationPath S3 path of the bucket where the files need to be synchronized
  * @returns the number of files copied over
  */
 export async function synchroniseFiles(sourcePath: string, destinationPath: URL): Promise<number> {
   let count = 0;
+  // get absolute path if path is local (we're using S3 or local only)
+  if (!sourcePath.startsWith('s3://')) sourcePath = path.resolve(sourcePath);
   const sourceFilesInfo = await fsa.toArray(fsa.details(sourcePath));
 
   await Promise.all(
