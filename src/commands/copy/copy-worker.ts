@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
 
+import { LogType } from '@basemaps/config/build/json/log.js';
 import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
@@ -55,6 +56,65 @@ async function tryHead(filePath: string, retryCount = 3): Promise<number | null>
   return null;
 }
 
+/**
+ * Should a file be copied
+ *
+ * if the file exists the out come can be configured with
+ * - `--no-clobber` - Do not overwrite files if their eTags match, this only works on locations with eTag (eg S3)
+ * - `--force` - Force overwrite files if they exist in the target
+ *
+ * @returns
+ *  - `"skip"` if the file should be skipped
+ *  - `false` if the file should not be copied and a error thrown
+ *  - `true` if the file should be copied
+ */
+export function shouldCopyFile(
+  source: FileInfo,
+  target: FileInfo | null,
+  options?: { noClobber?: boolean; force?: boolean },
+  log?: LogType,
+): 'skip' | boolean {
+  // Target file doesn't exist so copy it
+  if (target == null) return true;
+
+  const isForce = options?.force === true;
+  const isNoClobber = options?.noClobber === true;
+
+  // Force overwrite even if the file is the same
+  if (isForce && !isNoClobber) return true;
+
+  if (target.eTag != null) {
+    // eTag are the same and file size are the same so no need to overwrite
+    if (source.eTag === target.eTag && source.size === target.size) {
+      if (isNoClobber) return 'skip';
+    }
+
+    if (source.eTag == null) {
+      // Force overwrite even if the source etag is missing
+      if (isForce) return true;
+
+      // Writing a unknown source file into target file without --force
+      // TODO should this be disallowed
+      log?.warn(
+        {
+          source: source.path,
+          sourceInfo: { ...source, path: undefined },
+          target: target.path,
+          targetInfo: { ...target, path: undefined }, // path is logged as source or target
+        },
+        'File:Copy:Etag:SourceEtagMissing',
+      );
+
+      return false;
+    }
+  }
+
+  if (isForce) return true;
+
+  // Target has no Etag, source has no Etag, --force=false, --no-clobber=true no way to determine if the files are the same
+  return false;
+}
+
 export const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
@@ -67,29 +127,21 @@ export const worker = new WorkerRpc<CopyContract>({
 
       Q.push(async () => {
         const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
-        if (source == null) return;
-        if (source.size == null) return;
-        if (target != null) {
-          const isEtagDifferent = source.eTag && target.eTag && source.eTag !== target.eTag;
-          if (source.size === target.size && args.noClobber) {
-            if (isEtagDifferent) {
-              log.error(
-                { target: target.path, source: source.path, sourceEtag: source.eTag, targetEtag: target.eTag },
-                'File:eTag:Overwrite',
-              );
-              throw new Error(`Cannot overwrite file: ${todo.target} source: ${todo.source} etag mismatch`);
-            }
+        if (source == null) throw new Error(`Cannot copy source: ${todo.source} file missing`);
 
-            log.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
-            stats.skipped++;
-            stats.skippedBytes += source.size;
-            return;
-          }
+        const copyType = shouldCopyFile(source, target, args, log);
 
-          if (!args.force) {
-            log.error({ target: target.path, source: source.path }, 'File:Overwrite');
-            throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
-          }
+        if (copyType === 'skip') {
+          log.info({ path: todo.target, size: target?.size, eTag: source.eTag }, 'File:Copy:Skipped');
+          stats.skipped++;
+          stats.skippedBytes += source.size ?? 0;
+          return;
+        }
+
+        if (copyType === false) {
+          throw new Error(
+            `Cannot overwrite file: "${todo.target}" ${target?.eTag} source: "${todo.source}" ${source.eTag}`,
+          );
         }
 
         log.trace(todo, 'File:Copy:start');
@@ -108,7 +160,10 @@ export const worker = new WorkerRpc<CopyContract>({
           if (targetSize != null) await fsa.delete(todo.target);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
-        log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
+        log.debug(
+          { ...todo, isOverwrite: target != null, size: targetSize, duration: performance.now() - startTime },
+          'File:Copy',
+        );
 
         stats.copied++;
         stats.copiedBytes += source.size;

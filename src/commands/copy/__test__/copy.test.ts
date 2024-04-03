@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { worker } from '../copy-worker.js';
+import { shouldCopyFile, worker } from '../copy-worker.js';
 
 describe('copyFiles', () => {
   const memory = new FsMemory();
@@ -150,5 +150,66 @@ describe('copyFiles', () => {
 
     assert.equal(tiffSource?.contentType, 'binary/octet-stream');
     assert.equal(tiffTarget?.contentType, 'binary/octet-stream');
+  });
+});
+
+describe('copyFileCheck', () => {
+  const source = { path: 's3://source/bar.json', size: 1, eTag: 'abc123' };
+  const target = { path: 's3://target/bar.json', size: 1, eTag: 'abc123' };
+
+  it('should copy to new location', () => {
+    assert.equal(shouldCopyFile({ path: 's3://foo/bar.json' }, null), true);
+  });
+
+  it('should not overwrite existing location', () => {
+    assert.equal(shouldCopyFile({ path: 's3://foo/bar.json', size: 1 }, { path: 's3://foo/baz.json', size: 1 }), false);
+  });
+
+  describe('--force', () => {
+    it('should overwrite existing location', () => {
+      assert.equal(shouldCopyFile(source, target, { force: true }), true);
+      assert.equal(shouldCopyFile(source, { ...target, size: 2 }, { force: true }), true);
+      assert.equal(shouldCopyFile(source, { ...target, eTag: 'abc' }, { force: true }), true);
+      assert.equal(shouldCopyFile(source, { ...target, eTag: undefined }, { force: true }), true);
+    });
+  });
+
+  describe('--no-clobber', () => {
+    it('should skip existing files', () => {
+      assert.equal(shouldCopyFile(source, target, { noClobber: true }), 'skip');
+    });
+
+    it('should not copy if etag mismatch', () => {
+      assert.equal(shouldCopyFile(source, { ...target, eTag: '321cba' }, { noClobber: true }), false);
+    });
+
+    it('should not copy if size mismatch', () => {
+      assert.equal(shouldCopyFile(source, { ...target, size: 2 }, { noClobber: true }), false);
+    });
+
+    it('should not overwrite if source is missing eTag', () => {
+      assert.equal(shouldCopyFile({ ...source, eTag: undefined }, { ...target }, { noClobber: true }), false);
+    });
+  });
+
+  describe('--force, --no-clobber', () => {
+    it('should skip existing files', () => {
+      assert.equal(shouldCopyFile(source, target, { noClobber: true, force: true }), 'skip');
+    });
+
+    it('should overwrite if etag mismatch', () => {
+      assert.equal(shouldCopyFile(source, { ...target, eTag: '321cba' }, { noClobber: true, force: true }), true);
+    });
+
+    it('should overwrite if size mismatch', () => {
+      assert.equal(shouldCopyFile(source, { ...target, size: 2 }, { noClobber: true, force: true }), true);
+    });
+
+    it('should overwrite if source is missing eTag', () => {
+      assert.equal(
+        shouldCopyFile({ ...source, eTag: undefined }, { ...target }, { noClobber: true, force: true }),
+        true,
+      );
+    });
   });
 });
