@@ -1,4 +1,4 @@
-import { scheduler } from 'node:timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { FileSystem } from '@chunkd/core';
@@ -46,7 +46,7 @@ export const eai: BuildMiddleware<object, MetadataBearer> = (next) => {
           throw error;
         }
         logger.error('eai_again:retry:' + i);
-        await scheduler.wait(1000);
+        await setTimeout(1000);
       }
     }
     throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
