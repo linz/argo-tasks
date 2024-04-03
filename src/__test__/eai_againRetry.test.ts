@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { BuildHandler, MetadataBearer } from '@smithy/types';
 
-import { eai } from '../fs.register.js';
+import { eaiAgain } from '../fs.register.js';
 
 let callCount = 0;
 
@@ -26,18 +26,20 @@ describe('eai_againRetryMiddleware', () => {
   });
   it('should run next once if it succeeds', () => {
     const fakeNext = buildFakeNext(0);
-    eai(fakeNext, {})({ input: {}, request: {} });
+    eaiAgain(fakeNext, {})({ input: {}, request: {} });
     assert.equal(callCount, 1);
   });
 
   it('should try three times when getting EAI_AGAIN errors', async () => {
     const fakeNext = buildFakeNext(2);
-    await eai(fakeNext, {})({ input: {}, request: {} });
+    await eaiAgain(fakeNext, {})({ input: {}, request: {} });
     assert.equal(callCount, 3);
   });
 
   it('should throw error if next fails three times', () => {
     const fakeNext = buildFakeNext(3);
-    assert.rejects(eai(fakeNext, {})({ input: {}, request: {} }), { message: 'EAI_AGAIN maximum tries (3) exceeded' });
+    assert.rejects(eaiAgain(fakeNext, {})({ input: {}, request: {} }), {
+      message: 'EAI_AGAIN maximum tries (3) exceeded',
+    });
   });
 });
