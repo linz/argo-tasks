@@ -99,7 +99,7 @@ export class GithubApi {
     const response = await this.octokit.rest.repos
       .getContent({ owner: this.owner, repo: this.repo, path })
       .catch((e) => {
-        if (e.status === 404) return null;
+        if (e?.status === 404) return null;
         throw e;
       });
 
