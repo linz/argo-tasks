@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.4.0](https://github.com/linz/argo-tasks/compare/v3.3.2...v3.4.0) (2024-04-03)
+
+
+### Features
+
+* **basemaps:** Update the create-pr cli to add new individual vector tileset. BM-992 ([#933](https://github.com/linz/argo-tasks/issues/933)) ([9234ffb](https://github.com/linz/argo-tasks/commit/9234ffb45d55918c0b7bd38b209ce91cb21bd185))
+* detects and error if the tiff is not 8 bits TDE-895 ([#890](https://github.com/linz/argo-tasks/issues/890)) ([9e639b7](https://github.com/linz/argo-tasks/commit/9e639b7fae9bd63c9a938a3f1f2139dab4c6a921))
+* force fully qualified domains for s3 requests TDE-1084 ([#940](https://github.com/linz/argo-tasks/issues/940)) ([3fdbf98](https://github.com/linz/argo-tasks/commit/3fdbf98b600ca27d67bbc807dedad2f1bf16029b))
+
 ## [3.3.2](https://github.com/linz/argo-tasks/compare/v3.3.1...v3.3.2) (2024-03-25)
 
 
