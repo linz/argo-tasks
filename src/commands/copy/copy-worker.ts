@@ -70,7 +70,16 @@ export const worker = new WorkerRpc<CopyContract>({
         if (source == null) return;
         if (source.size == null) return;
         if (target != null) {
-          if (source?.size === target.size && args.noClobber) {
+          const isEtagDifferent = source.eTag && target.eTag && source.eTag !== target.eTag;
+          if (source.size === target.size && args.noClobber) {
+            if (isEtagDifferent) {
+              log.error(
+                { target: target.path, source: source.path, sourceEtag: source.eTag, targetEtag: target.eTag },
+                'File:eTag:Overwrite',
+              );
+              throw new Error(`Cannot overwrite file: ${todo.target} source: ${todo.source} etag mismatch`);
+            }
+
             log.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
             stats.skipped++;
             stats.skippedBytes += source.size;
