@@ -35,28 +35,31 @@ export const fqdn: FinalizeRequestMiddleware<object, MetadataBearer> = (next) =>
 /**
  * AWS SDK middleware logic to retry after receiving an EAI_AGAIN error
  */
-export const eaiAgain: BuildMiddleware<object, MetadataBearer> = (next) => {
-  const maxTries = 3;
-  return async (args) => {
-    for (let i = 0; i < maxTries; i++) {
-      try {
-        return await next(args);
-      } catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code !== 'EAI_AGAIN') {
-          throw error;
+export function eaiAgainBuilder(timeout: number): BuildMiddleware<object, MetadataBearer> {
+  const eaiAgain: BuildMiddleware<object, MetadataBearer> = (next) => {
+    const maxTries = 3;
+    return async (args) => {
+      for (let i = 0; i < maxTries; i++) {
+        try {
+          return await next(args);
+        } catch (error) {
+          if (error && typeof error === 'object' && 'code' in error && error.code !== 'EAI_AGAIN') {
+            throw error;
+          }
+          logger.error('eai_again:retry:' + i);
+          await setTimeout(timeout);
         }
-        logger.error('eai_again:retry:' + i);
-        await setTimeout(1000);
       }
-    }
-    throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
+      throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
+    };
   };
-};
+  return eaiAgain;
+}
 
 const client = new S3Client();
 export const s3Fs = new FsAwsS3V3(client);
 client.middlewareStack.add(fqdn, { name: 'FQDN', step: 'finalizeRequest' });
-client.middlewareStack.add(eaiAgain, { name: 'EAI_AGAIN', step: 'build' });
+client.middlewareStack.add(eaiAgainBuilder(1000), { name: 'EAI_AGAIN', step: 'build' });
 
 FsAwsS3.MaxListCount = 1000;
 s3Fs.credentials.onFileSystemCreated = (acc: AwsCredentialConfig, fs: FileSystem): void => {
