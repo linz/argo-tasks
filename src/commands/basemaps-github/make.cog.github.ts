@@ -5,6 +5,7 @@ import {
   TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
+import { VectorFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
@@ -83,6 +84,7 @@ export class MakeCogGithub {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
+      if (tileSetContent == null) throw new Error(`Unable get the ${filename}.json from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // skip pull request if not an urban or rural imagery
@@ -170,11 +172,14 @@ export class MakeCogGithub {
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
     const tileSetContent = await gh.getContent(tileSetPath);
-    const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
-    const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
 
-    // skip pull request if not an urban or rural imagery
-    if (newTileSet == null) return;
+    // update the existing tileset
+    const existingTileSet = tileSetContent != null ? (JSON.parse(tileSetContent) as ConfigTileSetVector) : undefined;
+    const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
+
+    // skip pull request tileset prepare failure.
+    if (newTileSet == null) throw new Error('Failed to prepare new Vector tileSet.');
+
     // Github
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
@@ -186,7 +191,19 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+    if (tileSet == null) {
+      return {
+        type: TileSetType.Vector,
+        id: `ts_${layer.name}`,
+        name: layer.name,
+        title: layer.title,
+        maxZoom: 15,
+        format: VectorFormat.MapboxVectorTiles,
+        layers: [layer],
+      };
+    }
+
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
       if (tileSet.layers[i]?.name === layer.name) {

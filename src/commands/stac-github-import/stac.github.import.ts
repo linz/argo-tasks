@@ -91,6 +91,7 @@ export const commandStacGithubImport = command({
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
     const catalogPath = fsa.joinAll('template', 'catalog.json');
     const catalog = await gh.getContent(catalogPath);
+    if (catalog == null) throw new Error(`Failed to get catalog.json from ${args.repoName} repo.`);
     const catalogJson = JSON.parse(catalog) as st.StacCatalog;
 
     // Catalog template should have a absolute link to itself
