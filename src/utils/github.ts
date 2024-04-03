@@ -1,7 +1,6 @@
 import { Octokit } from '@octokit/core';
 import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
 import { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
-import { RequestError } from '@octokit/request-error';
 
 import { logger } from '../log.js';
 
@@ -97,24 +96,15 @@ export class GithubApi {
    */
   async getContent(path: string): Promise<string | null> {
     logger.info({ path }, 'GitHub API: Get Content');
-    try {
-      const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
-      if (this.isOk(response.status) && 'content' in response.data) {
-        return Buffer.from(response.data.content, 'base64').toString();
-      } else {
-        throw new Error('GitHub: getContent return no content in response data.');
-      }
-    } catch (error) {
-      // Trying to catch the non found response and return null
-      if (error instanceof RequestError && error.status === 404) {
-        logger.info({ path }, 'GitHub API: Content Not Found');
-        return null;
-      } else {
-        throw error;
-      }
-    }
+    const response = await this.octokit.rest.repos
+      .getContent({ owner: this.owner, repo: this.repo, path })
+      .catch((e) => {
+        if (e.status === 404) return null;
+        throw e;
+      });
 
-    throw new Error('GitHub: Get content Failure');
+    if (response != null && 'content' in response.data) return Buffer.from(response.data.content, 'base64').toString();
+    return null;
   }
 
   /**
