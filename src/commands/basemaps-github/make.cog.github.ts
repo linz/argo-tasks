@@ -5,9 +5,8 @@ import {
   TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
-import { Epsg, VectorFormat } from '@basemaps/geo';
+import { VectorFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { StacCollection, StacLink } from 'stac-ts';
 
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
