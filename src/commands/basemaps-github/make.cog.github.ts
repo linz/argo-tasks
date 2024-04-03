@@ -178,7 +178,8 @@ export class MakeCogGithub {
     const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
 
     // skip pull request tileset prepare failure.
-    if (newTileSet == null) return;
+    if (newTileSet == null) throw new Error('Failed to prepare new Vector tileSet.');
+
     // Github
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
