@@ -58,8 +58,8 @@ export function eaiAgainBuilder(timeout: number): BuildMiddleware<object, Metada
 
 const client = new S3Client();
 export const s3Fs = new FsAwsS3V3(client);
-client.middlewareStack.add(fqdn, { name: 'FQDN', step: 'finalizeRequest' });
 client.middlewareStack.add(eaiAgainBuilder(1000), { name: 'EAI_AGAIN', step: 'build' });
+client.middlewareStack.add(fqdn, { name: 'FQDN', step: 'finalizeRequest' });
 
 FsAwsS3.MaxListCount = 1000;
 s3Fs.credentials.onFileSystemCreated = (acc: AwsCredentialConfig, fs: FileSystem): void => {
