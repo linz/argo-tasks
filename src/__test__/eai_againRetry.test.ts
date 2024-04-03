@@ -9,7 +9,7 @@ let callCount = 0;
 
 function fakeNextBuilder(failCount: number): BuildHandler<object, MetadataBearer> {
   const fakeNext: BuildHandler<object, MetadataBearer> = () => {
-    // fail twice and then succeed
+    // fail a specified number of times and then succeed
     callCount += 1;
     if (callCount < 1 + failCount) {
       return Promise.reject({ code: 'EAI_AGAIN' });

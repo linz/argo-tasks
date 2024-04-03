@@ -33,7 +33,7 @@ export const fqdn: FinalizeRequestMiddleware<object, MetadataBearer> = (next) =>
 };
 
 /**
- * AWS SDK middleware logic to retry after receiving an EAI_AGAIN error
+ * AWS SDK middleware logic to try 3 times if receiving an EAI_AGAIN error
  */
 export function eaiAgainBuilder(timeout: number): BuildMiddleware<object, MetadataBearer> {
   const eaiAgain: BuildMiddleware<object, MetadataBearer> = (next) => {
