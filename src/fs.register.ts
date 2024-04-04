@@ -35,11 +35,11 @@ export const fqdn: FinalizeRequestMiddleware<object, MetadataBearer> = (next) =>
 /**
  * AWS SDK middleware logic to try 3 times if receiving an EAI_AGAIN error
  */
-export function eaiAgainBuilder(timeout: Function): BuildMiddleware<object, MetadataBearer> {
+export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMiddleware<object, MetadataBearer> {
   const eaiAgain: BuildMiddleware<object, MetadataBearer> = (next) => {
     const maxTries = 3;
     return async (args) => {
-      for (let attempt = 0; attempt < maxTries; attempt++) {
+      for (let attempt = 1; attempt <= maxTries; attempt++) {
         try {
           return await next(args);
         } catch (error) {
