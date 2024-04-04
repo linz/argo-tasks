@@ -43,11 +43,15 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
         try {
           return await next(args);
         } catch (error) {
-          if (error && typeof error === 'object' && 'code' in error && error.code !== 'EAI_AGAIN') {
+          if (error && typeof error === 'object' && 'code' in error && 'hostname' in error) {
+            if (error.code !== 'EAI_AGAIN') {
+              throw error;
+            }
+            logger.warn({ host: error.hostname }, `eai_again retry #${attempt}`);
+            await setTimeout(timeout(attempt));
+          } else {
             throw error;
           }
-          logger.error('eai_again:retry:' + attempt);
-          await setTimeout(timeout(attempt));
         }
       }
       throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);

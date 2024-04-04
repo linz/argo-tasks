@@ -12,7 +12,7 @@ function fakeNextBuilder(failCount: number): BuildHandler<object, MetadataBearer
     // fail a specified number of times and then succeed
     callCount += 1;
     if (callCount < 1 + failCount) {
-      return Promise.reject({ code: 'EAI_AGAIN' });
+      return Promise.reject({ code: 'EAI_AGAIN', hostname: 'nz-imagery.s3.ap-southeast-2.amazonaws.com' });
     } else {
       return Promise.resolve({ output: { $metadata: {} }, response: {} });
     }
@@ -36,7 +36,16 @@ describe('eai_againRetryMiddleware', () => {
     assert.equal(callCount, 3);
   });
 
-  it('should throw error if next fails three times', () => {
+  it('should throw error if fails with unknown error type', () => {
+    const fakeNext: BuildHandler<object, MetadataBearer> = () => {
+      return Promise.reject({ message: 'ERROR MESSAGE' });
+    };
+    assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
+      message: 'ERROR MESSAGE',
+    });
+  });
+
+  it('should throw error if next fails with EAI_AGAIN three times', () => {
     const fakeNext = fakeNextBuilder(3);
     assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
       message: 'EAI_AGAIN maximum tries (3) exceeded',
