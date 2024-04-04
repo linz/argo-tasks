@@ -26,19 +26,19 @@ describe('eai_againRetryMiddleware', () => {
   });
   it('should run next once if it succeeds', () => {
     const fakeNext = fakeNextBuilder(0);
-    eaiAgainBuilder(0)(fakeNext, {})({ input: {}, request: {} });
+    eaiAgainBuilder((attempt: number) => attempt * 0)(fakeNext, {})({ input: {}, request: {} });
     assert.equal(callCount, 1);
   });
 
   it('should try three times when getting EAI_AGAIN errors', async () => {
     const fakeNext = fakeNextBuilder(2);
-    await eaiAgainBuilder(0)(fakeNext, {})({ input: {}, request: {} });
+    await eaiAgainBuilder((attempt: number) => attempt * 0)(fakeNext, {})({ input: {}, request: {} });
     assert.equal(callCount, 3);
   });
 
   it('should throw error if next fails three times', () => {
     const fakeNext = fakeNextBuilder(3);
-    assert.rejects(eaiAgainBuilder(0)(fakeNext, {})({ input: {}, request: {} }), {
+    assert.rejects(eaiAgainBuilder((attempt: number) => attempt * 0)(fakeNext, {})({ input: {}, request: {} }), {
       message: 'EAI_AGAIN maximum tries (3) exceeded',
     });
   });
