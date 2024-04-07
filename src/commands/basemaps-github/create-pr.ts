@@ -124,7 +124,7 @@ export const CommandCreatePRArgs = {
   configType: option({
     type: optional(oneOf(Object.values(ConfigType))),
     long: 'config-type',
-    description: [...Object.values(Category)].join(', '),
+    description: `Basemaps config file type, includes ${[...Object.values(Category)].join(', ')}`,
     defaultValue: () => ConfigType.Raster,
   }),
   individual: flag({
@@ -132,6 +132,11 @@ export const CommandCreatePRArgs = {
     defaultValue: () => false,
     long: 'individual',
     description: 'Import imagery as individual layer in basemaps.',
+  }),
+  ticket: option({
+    type: optional(string),
+    long: 'ticket',
+    description: 'Associated JIRA ticket e.g. AIP-74',
   }),
 };
 
@@ -173,7 +178,7 @@ export const basemapsCreatePullRequest = command({
 
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
-    const git = new MakeCogGithub(layer.name, args.repository);
+    const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
     if (args.configType === ConfigType.Vector) {
       await git.updateVectorTileSet(layer.name, layer, args.individual);
     } else if (args.configType === ConfigType.Raster) {

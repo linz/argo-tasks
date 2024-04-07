@@ -138,7 +138,7 @@ export class MakeCogGithub {
     region: string | undefined,
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
-    const branch = `feat/bot-config-elevation-${this.imagery}`;
+    const branch = `feat/bot-config-elevation-${this.imagery}${this.ticketBranchSuffix}`;
     const title = `config(elevation): Add elevation ${this.imagery} to ${filename} config file.`;
 
     // Clone the basemaps-config repo and checkout branch
