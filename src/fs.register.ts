@@ -38,6 +38,7 @@ export const fqdn: FinalizeRequestMiddleware<object, MetadataBearer> = (next) =>
 export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMiddleware<object, MetadataBearer> {
   const eaiAgain: BuildMiddleware<object, MetadataBearer> = (next) => {
     const maxTries = 3;
+    let totalDelay = 0;
     return async (args) => {
       for (let attempt = 1; attempt <= maxTries; attempt++) {
         try {
@@ -48,8 +49,8 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
               throw error;
             }
             const delay = timeout(attempt);
-            logger.warn({ host: error.hostname, attempt, delay, totalDelay }, `eai_again:retry`);
             totalDelay += delay;
+            logger.warn({ host: error.hostname, attempt, delay, totalDelay }, `eai_again:retry`);
             await setTimeout(timeout(attempt));
           } else {
             throw error;
