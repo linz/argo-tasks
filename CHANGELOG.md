@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/linz/argo-tasks/compare/v3.4.0...v3.5.0) (2024-04-09)
+
+
+### Features
+
+* EAI_AGAIN middleware TDE-1114 ([#949](https://github.com/linz/argo-tasks/issues/949)) ([d09c718](https://github.com/linz/argo-tasks/commit/d09c7187e9a2f592b75f048bb3cadfc824da5e4f))
+
 ## [3.4.0](https://github.com/linz/argo-tasks/compare/v3.3.2...v3.4.0) (2024-04-03)
 
 
