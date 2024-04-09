@@ -124,7 +124,7 @@ export const CommandCreatePRArgs = {
   configType: option({
     type: optional(oneOf(Object.values(ConfigType))),
     long: 'config-type',
-    description: `Basemaps config file type, includes ${[...Object.values(Category)].join(', ')}`,
+    description: `Basemaps config file type, includes ${[...Object.values(ConfigType)].join(', ')}`,
     defaultValue: () => ConfigType.Raster,
   }),
   individual: flag({
