@@ -47,7 +47,9 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
             if (error.code !== 'EAI_AGAIN') {
               throw error;
             }
-            logger.warn({ host: error.hostname }, `eai_again retry #${attempt}`);
+            const delay = timeout(attempt);
+            logger.warn({ host: error.hostname, attempt, delay, totalDelay }, `eai_again:retry`);
+            totalDelay += delay;
             await setTimeout(timeout(attempt));
           } else {
             throw error;
