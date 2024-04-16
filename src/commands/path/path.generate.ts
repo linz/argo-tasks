@@ -131,8 +131,8 @@ export function formatName(region: string, geographicDescription?: string): stri
 
 export function formatDate(collection: StacCollection): string {
   const interval = collection.extent?.temporal?.interval?.[0];
-  const startYear = interval[0]?.slice(0, 4);
-  const endYear = interval[1]?.slice(0, 4);
+  const startYear = getPacificAucklandYear(interval[0]);
+  const endYear = getPacificAucklandYear(interval[1]);
 
   if (startYear == null || endYear == null) {
     throw new Error(`Missing datetime in interval: ${interval}`);
@@ -141,6 +141,29 @@ export function formatDate(collection: StacCollection): string {
     return startYear;
   }
   return `${startYear}-${endYear}`;
+}
+
+/**
+ * Convert time zone-aware date/time string to Pacific/Auckland time zone string
+ *
+ * We can't convert the time zone of a `Date` directly, but instead have to produce a localised
+ * date/time string. We arbitrarily convert to the New Zealand English format (For example,
+ * '2/04/2024, 11:27:30 am'), since it doesn't seem to be possible to convert directly to a more
+ * easily parsed format like ISO 8601 or RFC 3339.
+ *
+ * @param {string | null} dateTimeString Optional date/time string which can be parsed by the `Date` constructor
+ * @returns {string | undefined} Localised date/time string
+ *
+ */
+function getPacificAucklandYear(dateTimeString: string | null): string | undefined {
+  if (dateTimeString == null) {
+    return undefined;
+  }
+
+  const pacificAucklandDateTimeString = new Date(dateTimeString).toLocaleString('en-NZ', {
+    timeZone: 'Pacific/Auckland',
+  });
+  return pacificAucklandDateTimeString.split(/[,/]/, 4)[2];
 }
 
 /*
