@@ -163,7 +163,7 @@ export class GithubApi {
     botEmail: string,
     files: GithubFiles[],
     body?: string,
-  ): Promise<number> {
+  ): Promise<number | null> {
     // git checkout -b
     logger.info({ branch }, 'GitHub: Get branch');
     let sha = await this.getBranch(branch);
@@ -192,17 +192,28 @@ export class GithubApi {
     logger.info({ branch: branch }, 'GitHub: Create Pull Request');
 
     // Create pull request from the given head
-    const response = await this.octokit.rest.pulls.create({
-      owner: this.owner,
-      repo: this.repo,
-      title,
-      body,
-      head: branch,
-      base: 'master',
-    });
-    if (!this.isOk(response.status)) throw new Error('Failed to create pull request.');
-    logger.info({ branch, url: response.data.html_url }, 'GitHub: Create Pull Request');
-    return response.data.number;
+    const response = await this.octokit.rest.pulls
+      .create({
+        owner: this.owner,
+        repo: this.repo,
+        title,
+        body,
+        head: branch,
+        base: 'master',
+      })
+      .catch((e) => {
+        if (e?.status === 422 && e.message.toString().includes('A pull request already exists')) {
+          logger.info({ branch }, 'A pull request already exists for branch');
+          return null;
+        }
+        throw e;
+      });
+
+    if (response != null && this.isOk(response.status)) {
+      logger.info({ branch, url: response.data.html_url }, 'GitHub: Create Pull Request');
+      return response.data.number;
+    }
+    return null;
   }
 }
 
