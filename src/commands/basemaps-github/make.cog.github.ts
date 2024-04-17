@@ -42,9 +42,35 @@ const ConfigPrettierFormat = Object.assign({}, DEFAULT_PRETTIER_FORMAT, { printW
 export class MakeCogGithub {
   imagery: string;
   repository: string;
-  constructor(imagery: string, repository: string) {
+  /**
+   * Reference Jira ticket
+   *
+   * @example "AIP-66"
+   */
+  ticket?: string;
+
+  constructor(imagery: string, repository: string, ticket?: string) {
     this.imagery = imagery;
     this.repository = repository;
+    this.ticket = ticket;
+  }
+
+  /**
+   * Create a branch suffix in the format `-AIP-66`
+   * if a reference ticket is supplied
+   */
+  get ticketBranchSuffix(): string {
+    if (this.ticket) return `-${this.ticket}`;
+    return '';
+  }
+
+  /**
+   * Create a branch suffix in the format ` AIP-66`
+   * if a reference ticket is supplied
+   */
+  get ticketCommitSuffix(): string {
+    if (this.ticket) return ` ${this.ticket}`;
+    return '';
   }
 
   /**
@@ -57,8 +83,8 @@ export class MakeCogGithub {
     region: string | undefined,
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
-    const branch = `feat/bot-config-raster-${this.imagery}`;
-    const title = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
+    const branch = `feat/bot-config-raster-${this.imagery}${this.ticketBranchSuffix}`;
+    const title = `config(raster): Add imagery ${this.imagery} to ${filename}${this.ticketCommitSuffix}`;
 
     // Clone the basemaps-config repo and checkout branch
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
@@ -166,7 +192,7 @@ export class MakeCogGithub {
    */
   async updateVectorTileSet(filename: string, layer: ConfigLayer): Promise<void> {
     const gh = new GithubApi(this.repository);
-    const branch = `feat/bot-config-vector-${this.imagery}`;
+    const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
 
     // Prepare new aerial tileset config
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
@@ -181,7 +207,7 @@ export class MakeCogGithub {
     if (newTileSet == null) throw new Error('Failed to prepare new Vector tileSet.');
 
     // Github
-    const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
+    const title = `config(vector): Update the ${this.imagery} to ${filename} config${this.ticketCommitSuffix}`;
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request

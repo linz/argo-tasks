@@ -76,16 +76,14 @@ export const commandStacGithubImport = command({
     const basemapsConfigLinkURL = new URL('config-url', args.source);
     // TODO When Basemaps supports Elevation config as part of the standardising workflow, remove this try catch block
     // https://toitutewhenua.atlassian.net/browse/BM-985
-    let prBody;
+    const prBody: string[] = [];
     try {
       const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
-      prBody = `**Basemaps preview link for Visual QA:**\n${basemapsConfigLink}\n\n**ODR destination path:**\n${args.target}`;
+      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${basemapsConfigLink})`);
     } catch (e) {
-      if (args.repoName === imageryRepo) {
-        throw e;
-      }
-      prBody = `**ODR destination path:**\n${args.target}`;
+      if (args.repoName === imageryRepo) throw e;
     }
+    prBody.push(`**ODR destination path:** \`${args.target}\``);
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
@@ -115,10 +113,14 @@ export const commandStacGithubImport = command({
     }
     sortLinks(collection.links);
 
-    // branch: "feat/bot-01GYXCC7823GVKF6BJA6K354TR"
-    const branch = `feat/bot-${collection.id}`;
-    // commit and pull request title: "feat: import Manawatū-Whanganui 0.4m Rural Aerial Photos (2010-2011)"
-    const title = `feat: import ${collection.title}`;
+    // branch: "feat/bot-01GYXCC7823GVKF6BJA6K354TR-AIP-36"
+    const ticketBranchSuffix = args.ticket ? `-${args.ticket}` : '';
+    const branch = `feat/bot-${collection.id}${ticketBranchSuffix}`;
+
+    // commit and pull request title: "feat: import Manawatū-Whanganui 0.4m Rural Aerial Photos (2010-2011) AIP-66"
+    const titleTicketSuffix = args.ticket ? ` ${args.ticket}` : '';
+    const title = `feat: import ${collection.title}${titleTicketSuffix}`;
+
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     const parametersFileContent = {
@@ -134,7 +136,7 @@ export const commandStacGithubImport = command({
     };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody);
+    await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
   },
 });
 

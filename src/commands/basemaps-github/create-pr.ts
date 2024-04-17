@@ -116,6 +116,11 @@ export const CommandCreatePRArgs = {
     long: 'vector',
     description: 'Import layer into vector config in basemaps.',
   }),
+  ticket: option({
+    type: optional(string),
+    long: 'ticket',
+    description: 'Associated JIRA ticket e.g. AIP-74',
+  }),
 };
 
 export const basemapsCreatePullRequest = command({
@@ -156,7 +161,7 @@ export const basemapsCreatePullRequest = command({
 
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
-    const git = new MakeCogGithub(layer.name, args.repository);
+    const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
     if (args.vector) await git.updateVectorTileSet(layer.name, layer);
     else await git.updateRasterTileSet('aerial', layer, category, region);
   },
