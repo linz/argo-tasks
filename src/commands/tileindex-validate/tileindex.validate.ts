@@ -9,7 +9,7 @@ import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
-import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
+import { config, createTiff, forceOutput, registerCli, TiffQueue, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
 export function isTiff(x: string): boolean {
@@ -47,7 +47,6 @@ export const TiffLoader = {
       // All the errors are logged above so just throw the first error
       if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
       // We are processing only 8 bits Tiff for now
-      await validate8BitsTiff(prom.value);
       output.push(prom.value);
     }
     return output;
@@ -112,6 +111,28 @@ export const GridSizeFromString: Type<string, GridSize> = {
 };
 
 /**
+ * Validate the tiffs against a validation preset
+ *
+ * @param preset preset to validate against
+ * @param tiffs tiffs to validate.
+ */
+async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
+  let rejected: boolean = false;
+
+  if (preset === 'webp') {
+    const results = await Promise.allSettled(tiffs.map((f) => TiffQueue(() => validate8BitsTiff(f))));
+    for (const r of results) {
+      if (r.status === 'rejected') {
+        rejected = true;
+        logger.fatal({ reason: r.reason }, 'Tiff:ValidatePreset:failed');
+      }
+    }
+  }
+
+  if (rejected) throw new Error('Tiff preset validation failed');
+}
+
+/**
  *
  * --validate // Validates all inputs align to output grid
  * --retile // Creates a list of files that need to be retiled
@@ -163,6 +184,13 @@ export const commandTileIndexValidate = command({
       defaultValueIsSerializable: true,
     }),
     forceOutput,
+    preset: option({
+      type: string,
+      long: 'preset',
+      description: 'Validate the input tiffs with a configuration preset',
+      defaultValueIsSerializable: true,
+      defaultValue: () => 'none',
+    }),
     location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
   async handler(args) {
@@ -171,6 +199,7 @@ export const commandTileIndexValidate = command({
 
     const readTiffStartTime = performance.now();
     const tiffs = await TiffLoader.load(args.location, args);
+    await validatePreset(args.preset, tiffs);
 
     const projections = new Set(tiffs.map((t) => t.images[0]?.epsg));
     logger.info(
@@ -188,6 +217,7 @@ export const commandTileIndexValidate = command({
 
     const groupByTileNameStartTime = performance.now();
     const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
+
     const outputs = groupByTileName(locations);
 
     logger.info(
