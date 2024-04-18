@@ -209,7 +209,7 @@ export class GithubApi {
         throw e;
       });
 
-    if (this.isOk(response?.status)) {
+    if (response != null && this.isOk(response.status)) {
       logger.info({ branch, url: response.data.html_url }, 'GitHub: Create Pull Request');
       return response.data.number;
     }
