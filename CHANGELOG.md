@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.6.0](https://github.com/linz/argo-tasks/compare/v3.5.0...v3.6.0) (2024-04-18)
+
+
+### Features
+
+* add ticket numbers to the suffixes of commits and branches TDE-1146 ([#962](https://github.com/linz/argo-tasks/issues/962)) ([b99db86](https://github.com/linz/argo-tasks/commit/b99db861a16977fad81f7dde66d72d6a4f985a96))
+* **basemaps:** Should skip creating pull request when exist instead of throwing errors. BM-1018 ([#965](https://github.com/linz/argo-tasks/issues/965)) ([b2b026e](https://github.com/linz/argo-tasks/commit/b2b026e95ce9f3a6394d21d3332342485a0c08a5))
+
+
+### Bug Fixes
+
+* Use Pacific/Auckland time zone for collection years TDE-1066 ([#946](https://github.com/linz/argo-tasks/issues/946)) ([cd63f09](https://github.com/linz/argo-tasks/commit/cd63f0937676825a7ce2a1595d66f86ff8230716))
+
 ## [3.5.0](https://github.com/linz/argo-tasks/compare/v3.4.0...v3.5.0) (2024-04-09)
 
 
