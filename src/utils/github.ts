@@ -202,7 +202,7 @@ export class GithubApi {
         base: 'master',
       })
       .catch((e) => {
-        if (e?.status === 422 && e.message.toString().includes('A pull request already exists')) {
+        if (e?.status === 422 && String(e.message).includes('A pull request already exists')) {
           logger.info({ branch }, 'A pull request already exists for branch');
           return null;
         }
