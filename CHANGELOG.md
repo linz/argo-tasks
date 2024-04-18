@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/linz/argo-tasks/compare/v3.6.0...v3.6.1) (2024-04-18)
+
+
+### Bug Fixes
+
+* only validate the tiffs are 8 bit if the preset is webp TDE-1151 TDE-895 ([#966](https://github.com/linz/argo-tasks/issues/966)) ([bf1cc94](https://github.com/linz/argo-tasks/commit/bf1cc946cc4d195f11ee658ce56e4d370918d455))
+
 ## [3.6.0](https://github.com/linz/argo-tasks/compare/v3.5.0...v3.6.0) (2024-04-18)
 
 
