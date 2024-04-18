@@ -80,7 +80,7 @@ export function parseSize(size: string): number {
 }
 
 /** Limit fetches to 25 concurrently **/
-const TiffQueue = pLimit(25);
+export const TiffQueue = pLimit(25);
 
 /**
  * There is a minor difference between @chunkd/core and @cogeotiff/core
