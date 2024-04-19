@@ -7,6 +7,7 @@ import { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { titleizeVectorName } from '../../utils/bmc.utils.js';
 import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub } from './make.cog.github.js';
 
@@ -145,7 +146,7 @@ export const basemapsCreatePullRequest = command({
       for (const target of targets) {
         const info = await parseVectorTargetInfo(target);
         layer.name = info.name;
-        layer.title = info.title;
+        layer.title = titleizeVectorName(info.name);
         layer[info.epsg] = target;
       }
     } else {
