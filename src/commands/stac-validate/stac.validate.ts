@@ -31,6 +31,12 @@ export const commandStacValidate = command({
       long: 'checksum',
       description: 'Validate the file:checksum if it exists',
     }),
+    checksumLinks: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'checksum-links',
+      description: 'Validate the file:checksum of the links (STAC) if it exists',
+    }),
     recursive: flag({
       type: boolean,
       defaultValue: () => true,
@@ -175,6 +181,33 @@ export const commandStacValidate = command({
           } else {
             isOk = false;
             logger.error({ assetType: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
+            failures.push(path);
+          }
+        }
+      }
+
+      // TODO refactor as is duplicated from above
+      if (args.checksumLinks && stacJson.links) {
+        for (const link of stacJson.links) {
+          const checksum: string = link['file:checksum'] as string;
+          if (checksum == null) continue;
+          if (link.rel === 'self') continue;
+          // 12-20 is the starting prefix for all sha256 multihashes
+          if (!checksum.startsWith('1220')) continue;
+          let source = link.href;
+          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+
+          logger.debug({ source, checksum }, 'Validate:Asset');
+          const startTime = performance.now();
+
+          const hash = await hashStream(fsa.stream(source));
+          const duration = performance.now() - startTime;
+
+          if (hash === checksum) {
+            logger.debug({ linkType: link.type, source, checksum, duration }, 'Asset:Validation:Ok');
+          } else {
+            isOk = false;
+            logger.error({ linkType: link.type, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
             failures.push(path);
           }
         }
