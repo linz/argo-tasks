@@ -1,6 +1,6 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { CogTiff, Size } from '@cogeotiff/core';
+import { Size, Tiff, TiffTag } from '@cogeotiff/core';
 import { boolean, command, flag, number, option, optional, restPositionals, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -9,7 +9,7 @@ import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
-import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
+import { config, createTiff, forceOutput, registerCli, TiffQueue, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
 export function isTiff(x: string): boolean {
@@ -25,7 +25,7 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: string[], args?: FileFilter): Promise<CogTiff[]> {
+  async load(locations: string[], args?: FileFilter): Promise<Tiff[]> {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
     if (tiffLocations.length === 0) throw new Error('No Files found');
@@ -46,6 +46,7 @@ export const TiffLoader = {
     for (const prom of promises) {
       // All the errors are logged above so just throw the first error
       if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
+      // We are processing only 8 bits Tiff for now
       output.push(prom.value);
     }
     return output;
@@ -110,6 +111,28 @@ export const GridSizeFromString: Type<string, GridSize> = {
 };
 
 /**
+ * Validate the tiffs against a validation preset
+ *
+ * @param preset preset to validate against
+ * @param tiffs tiffs to validate.
+ */
+async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
+  let rejected: boolean = false;
+
+  if (preset === 'webp') {
+    const results = await Promise.allSettled(tiffs.map((f) => TiffQueue(() => validate8BitsTiff(f))));
+    for (const r of results) {
+      if (r.status === 'rejected') {
+        rejected = true;
+        logger.fatal({ reason: r.reason }, 'Tiff:ValidatePreset:failed');
+      }
+    }
+  }
+
+  if (rejected) throw new Error('Tiff preset validation failed');
+}
+
+/**
  *
  * --validate // Validates all inputs align to output grid
  * --retile // Creates a list of files that need to be retiled
@@ -161,6 +184,13 @@ export const commandTileIndexValidate = command({
       defaultValueIsSerializable: true,
     }),
     forceOutput,
+    preset: option({
+      type: string,
+      long: 'preset',
+      description: 'Validate the input tiffs with a configuration preset',
+      defaultValueIsSerializable: true,
+      defaultValue: () => 'none',
+    }),
     location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
   async handler(args) {
@@ -169,6 +199,7 @@ export const commandTileIndexValidate = command({
 
     const readTiffStartTime = performance.now();
     const tiffs = await TiffLoader.load(args.location, args);
+    await validatePreset(args.preset, tiffs);
 
     const projections = new Set(tiffs.map((t) => t.images[0]?.epsg));
     logger.info(
@@ -186,6 +217,7 @@ export const commandTileIndexValidate = command({
 
     const groupByTileNameStartTime = performance.now();
     const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
+
     const outputs = groupByTileName(locations);
 
     logger.info(
@@ -286,7 +318,7 @@ export interface TiffLocation {
  * @returns {TiffLocation[]}
  */
 export async function extractTiffLocations(
-  tiffs: CogTiff[],
+  tiffs: Tiff[],
   gridSize: GridSize,
   forceSourceEpsg?: number,
 ): Promise<TiffLocation[]> {
@@ -415,4 +447,23 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const tileY = Math.round(Math.floor((maxY - y) / tileHeight + 1));
   const tileId = `${`${tileY}`.padStart(nbDigits, '0')}${`${tileX}`.padStart(nbDigits, '0')}`;
   return `${sheetCode}_${gridSize}_${tileId}`;
+}
+
+/**
+ * Validate if a TIFF contains only 8 bits bands.
+ *
+ * @param tiff
+ */
+export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
+  const baseImage = tiff.images[0];
+  if (baseImage === undefined) throw new Error(`Can't get base image for ${tiff.source.url}`);
+
+  const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
+  if (bitsPerSample == null) {
+    throw new Error(`Failed to extract band information from ${tiff.source.url}`);
+  }
+
+  if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8)) {
+    throw new Error(`${tiff.source.url} is not a 8 bits TIFF`);
+  }
 }

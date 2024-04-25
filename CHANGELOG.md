@@ -1,5 +1,69 @@
 # Changelog
 
+## [3.6.1](https://github.com/linz/argo-tasks/compare/v3.6.0...v3.6.1) (2024-04-18)
+
+
+### Bug Fixes
+
+* only validate the tiffs are 8 bit if the preset is webp TDE-1151 TDE-895 ([#966](https://github.com/linz/argo-tasks/issues/966)) ([bf1cc94](https://github.com/linz/argo-tasks/commit/bf1cc946cc4d195f11ee658ce56e4d370918d455))
+
+## [3.6.0](https://github.com/linz/argo-tasks/compare/v3.5.0...v3.6.0) (2024-04-18)
+
+
+### Features
+
+* add ticket numbers to the suffixes of commits and branches TDE-1146 ([#962](https://github.com/linz/argo-tasks/issues/962)) ([b99db86](https://github.com/linz/argo-tasks/commit/b99db861a16977fad81f7dde66d72d6a4f985a96))
+* **basemaps:** Should skip creating pull request when exist instead of throwing errors. BM-1018 ([#965](https://github.com/linz/argo-tasks/issues/965)) ([b2b026e](https://github.com/linz/argo-tasks/commit/b2b026e95ce9f3a6394d21d3332342485a0c08a5))
+
+
+### Bug Fixes
+
+* Use Pacific/Auckland time zone for collection years TDE-1066 ([#946](https://github.com/linz/argo-tasks/issues/946)) ([cd63f09](https://github.com/linz/argo-tasks/commit/cd63f0937676825a7ce2a1595d66f86ff8230716))
+
+## [3.5.0](https://github.com/linz/argo-tasks/compare/v3.4.0...v3.5.0) (2024-04-09)
+
+
+### Features
+
+* EAI_AGAIN middleware TDE-1114 ([#949](https://github.com/linz/argo-tasks/issues/949)) ([d09c718](https://github.com/linz/argo-tasks/commit/d09c7187e9a2f592b75f048bb3cadfc824da5e4f))
+
+## [3.4.0](https://github.com/linz/argo-tasks/compare/v3.3.2...v3.4.0) (2024-04-03)
+
+
+### Features
+
+* **basemaps:** Update the create-pr cli to add new individual vector tileset. BM-992 ([#933](https://github.com/linz/argo-tasks/issues/933)) ([9234ffb](https://github.com/linz/argo-tasks/commit/9234ffb45d55918c0b7bd38b209ce91cb21bd185))
+* detects and error if the tiff is not 8 bits TDE-895 ([#890](https://github.com/linz/argo-tasks/issues/890)) ([9e639b7](https://github.com/linz/argo-tasks/commit/9e639b7fae9bd63c9a938a3f1f2139dab4c6a921))
+* force fully qualified domains for s3 requests TDE-1084 ([#940](https://github.com/linz/argo-tasks/issues/940)) ([3fdbf98](https://github.com/linz/argo-tasks/commit/3fdbf98b600ca27d67bbc807dedad2f1bf16029b))
+
+## [3.3.2](https://github.com/linz/argo-tasks/compare/v3.3.1...v3.3.2) (2024-03-25)
+
+
+### Bug Fixes
+
+* Change bareword key to variable reference TDE-1100 ([#935](https://github.com/linz/argo-tasks/issues/935)) ([b710d87](https://github.com/linz/argo-tasks/commit/b710d87084af6c1af9b11b089b865276660e1737))
+
+## [3.3.1](https://github.com/linz/argo-tasks/compare/v3.3.0...v3.3.1) (2024-03-20)
+
+
+### Bug Fixes
+
+* handle missing elevation basemaps config-url TDE-1100 ([#931](https://github.com/linz/argo-tasks/issues/931)) ([b025faa](https://github.com/linz/argo-tasks/commit/b025faa3931070d58ce52a6c5fd7767c69b09187))
+
+## [3.3.0](https://github.com/linz/argo-tasks/compare/v3.2.1...v3.3.0) (2024-03-18)
+
+
+### Features
+
+* add new fields for GitHub PR TDE-1100 ([#923](https://github.com/linz/argo-tasks/issues/923)) ([3f53dc9](https://github.com/linz/argo-tasks/commit/3f53dc9188e37ab42c1adbaf260d19e5e30b8027))
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the event category is not parsed and populated in the pull request. BM-982 ([#915](https://github.com/linz/argo-tasks/issues/915)) ([125cfd5](https://github.com/linz/argo-tasks/commit/125cfd51f67045b92d6d361064634db5121cc3ca))
+* Lints TDE-1030 ([#860](https://github.com/linz/argo-tasks/issues/860)) ([c898187](https://github.com/linz/argo-tasks/commit/c89818759756572e6aaf4ada65425139d2e4a4ff))
+* Run `throws` with the right arguments TDE-1030 ([#893](https://github.com/linz/argo-tasks/issues/893)) ([0c3e4a6](https://github.com/linz/argo-tasks/commit/0c3e4a60b7ec8044accda9050199363b876e9e0f))
+
 ## [3.2.1](https://github.com/linz/argo-tasks/compare/v3.2.0...v3.2.1) (2024-02-25)
 
 

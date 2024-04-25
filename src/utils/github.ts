@@ -94,15 +94,17 @@ export class GithubApi {
   /**
    * Get content from the github repository
    */
-  async getContent(path: string): Promise<string> {
+  async getContent(path: string): Promise<string | null> {
     logger.info({ path }, 'GitHub API: Get Content');
-    const response = await this.octokit.rest.repos.getContent({ owner: this.owner, repo: this.repo, path });
-    if (!this.isOk(response.status)) throw new Error('Failed to get aerial TileSet config.');
-    if ('content' in response.data) {
-      return Buffer.from(response.data.content, 'base64').toString();
-    } else {
-      throw new Error(`Unable to find the content from path ${path}.`);
-    }
+    const response = await this.octokit.rest.repos
+      .getContent({ owner: this.owner, repo: this.repo, path })
+      .catch((e) => {
+        if (e?.status === 404) return null;
+        throw e;
+      });
+
+    if (response != null && 'content' in response.data) return Buffer.from(response.data.content, 'base64').toString();
+    return null;
   }
 
   /**
@@ -155,7 +157,13 @@ export class GithubApi {
   /**
    * Create a new pull request from the given branch and return pull request number
    */
-  async createPullRequest(branch: string, title: string, botEmail: string, files: GithubFiles[]): Promise<number> {
+  async createPullRequest(
+    branch: string,
+    title: string,
+    botEmail: string,
+    files: GithubFiles[],
+    body?: string,
+  ): Promise<number | null> {
     // git checkout -b
     logger.info({ branch }, 'GitHub: Get branch');
     let sha = await this.getBranch(branch);
@@ -183,17 +191,29 @@ export class GithubApi {
     // git pr create
     logger.info({ branch: branch }, 'GitHub: Create Pull Request');
 
-    // Create pull request from the give head
-    const response = await this.octokit.rest.pulls.create({
-      owner: this.owner,
-      repo: this.repo,
-      title,
-      head: branch,
-      base: 'master',
-    });
-    if (!this.isOk(response.status)) throw new Error('Failed to create pull request.');
-    logger.info({ branch, url: response.data.html_url }, 'GitHub: Create Pull Request');
-    return response.data.number;
+    // Create pull request from the given head
+    const response = await this.octokit.rest.pulls
+      .create({
+        owner: this.owner,
+        repo: this.repo,
+        title,
+        body,
+        head: branch,
+        base: 'master',
+      })
+      .catch((e) => {
+        if (e?.status === 422 && String(e.message).includes('A pull request already exists')) {
+          logger.info({ branch }, 'A pull request already exists for branch');
+          return null;
+        }
+        throw e;
+      });
+
+    if (response != null && this.isOk(response.status)) {
+      logger.info({ branch, url: response.data.html_url }, 'GitHub: Create Pull Request');
+      return response.data.number;
+    }
+    return null;
   }
 }
 

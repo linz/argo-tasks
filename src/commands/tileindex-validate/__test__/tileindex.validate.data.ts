@@ -1,4 +1,4 @@
-import { CogTiff, CogTiffImage, Size } from '@cogeotiff/core';
+import { Size, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { MapSheet } from '../../../utils/mapsheet.js';
 
@@ -16,12 +16,12 @@ const DefaultTiffImage = {
   isGeoLocated: true,
 };
 
-export interface FakeCogTiffImage extends CogTiffImage {
+export interface FakeCogTiffImage extends TiffImage {
   epsg: number;
   origin: [number, number, number];
 }
 
-export class FakeCogTiff extends CogTiff {
+export class FakeCogTiff extends Tiff {
   override images: [FakeCogTiffImage, ...FakeCogTiffImage[]];
 
   constructor(

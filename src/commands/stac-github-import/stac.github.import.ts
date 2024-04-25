@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, string, Type } from 'cmd-ts';
+import { command, oneOf, option, string, Type } from 'cmd-ts';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -15,9 +15,19 @@ const Url: Type<string, URL> = {
   },
 };
 
+const imageryRepo = 'linz/imagery';
+
+/**
+ * Valid repositories, mapped to the email address used for the PR author
+ */
+export const BotEmails: Record<string, string> = {
+  'linz/elevation': 'elevation@linz.govt.nz',
+  [imageryRepo]: 'imagery@linz.govt.nz',
+};
+
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
-  description: 'Format and push a stac collection.json file to GitHub repository',
+  description: 'Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository',
   version: CliInfo.version,
   args: {
     config,
@@ -35,10 +45,22 @@ export const commandStacGithubImport = command({
       description: 'Target location for the collection.json file',
     }),
     repoName: option({
-      type: string,
+      type: oneOf(Object.keys(BotEmails)),
       long: 'repo-name',
-      description: 'Repository name either linz/imagery or linz/elevation',
-      defaultValue: () => 'linz/imagery',
+      defaultValue: () => imageryRepo,
+      defaultValueIsSerializable: true,
+    }),
+    copyOption: option({
+      type: oneOf(['--force', '--no-clobber', '--force-no-clobber']),
+      long: 'copy-option',
+      defaultValue: () => '--no-clobber',
+      defaultValueIsSerializable: true,
+    }),
+    ticket: option({
+      type: string,
+      long: 'ticket',
+      description: 'Associated JIRA ticket e.g. AIP-74',
+      defaultValue: () => '',
       defaultValueIsSerializable: true,
     }),
   },
@@ -48,18 +70,26 @@ export const commandStacGithubImport = command({
 
     const gh = new GithubApi(args.repoName);
 
-    const BotEmails: Record<string, string> = {
-      'linz/elevation': 'elevation@linz.govt.nz',
-      'linz/imagery': 'imagery@linz.govt.nz',
-    };
-
     const botEmail = BotEmails[args.repoName];
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
+
+    const basemapsConfigLinkURL = new URL('config-url', args.source);
+    // TODO When Basemaps supports Elevation config as part of the standardising workflow, remove this try catch block
+    // https://toitutewhenua.atlassian.net/browse/BM-985
+    const prBody: string[] = [];
+    try {
+      const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
+      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${basemapsConfigLink})`);
+    } catch (e) {
+      if (args.repoName === imageryRepo) throw e;
+    }
+    prBody.push(`**ODR destination path:** \`${args.target}\``);
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
     const catalogPath = fsa.joinAll('template', 'catalog.json');
     const catalog = await gh.getContent(catalogPath);
+    if (catalog == null) throw new Error(`Failed to get catalog.json from ${args.repoName} repo.`);
     const catalogJson = JSON.parse(catalog) as st.StacCatalog;
 
     // Catalog template should have a absolute link to itself
@@ -83,15 +113,30 @@ export const commandStacGithubImport = command({
     }
     sortLinks(collection.links);
 
-    // branch: "feat/bot-01GYXCC7823GVKF6BJA6K354TR"
-    const branch = `feat/bot-${collection.id}`;
-    // commit and pull request title: "feat: import Manawatū-Whanganui 0.4m Rural Aerial Photos (2010-2011)"
-    const title = `feat: import ${collection.title}`;
+    // branch: "feat/bot-01GYXCC7823GVKF6BJA6K354TR-AIP-36"
+    const ticketBranchSuffix = args.ticket ? `-${args.ticket}` : '';
+    const branch = `feat/bot-${collection.id}${ticketBranchSuffix}`;
+
+    // commit and pull request title: "feat: import Manawatū-Whanganui 0.4m Rural Aerial Photos (2010-2011) AIP-66"
+    const titleTicketSuffix = args.ticket ? ` ${args.ticket}` : '';
+    const title = `feat: import ${collection.title}${titleTicketSuffix}`;
+
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
+    const parametersFileContent = {
+      source: args.source,
+      target: args.target,
+      ticket: args.ticket,
+      copy_option: args.copyOption,
+      region: collection['linz:region'],
+    };
+    const parametersFile = {
+      path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
+      content: JSON.stringify(parametersFileContent, null, 2),
+    };
     logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
     // create pull request
-    await gh.createPullRequest(branch, title, botEmail, [collectionFile]);
+    await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
   },
 });
 

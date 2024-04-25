@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import { CogTiff, CogTiffImage, Source } from '@cogeotiff/core';
+import { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { createTiff } from '../../commands/common.js';
 import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';
@@ -77,7 +77,7 @@ describe('geotiff', () => {
   const fakeSource: Source = { url: url, fetch: async () => new ArrayBuffer(1) };
   it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
-    await assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as CogTiff));
+    await assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as Tiff));
   });
 
   it('should parse a tiff with TFW', async () => {
@@ -86,8 +86,8 @@ describe('geotiff', () => {
     // tiff with no location information and no TFW
     const bbox = await findBoundingBox({
       source: fakeSource,
-      images: [{ size: { width: 3200, height: 4800 } }] as unknown as CogTiffImage,
-    } as unknown as CogTiff);
+      images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
+    } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
     await fsa.delete('memory://BX20_500_023098.tfw');
   });
@@ -104,9 +104,9 @@ describe('geotiff', () => {
           valueGeo(): number {
             return 1; // PixelIsArea
           },
-        } as unknown as CogTiffImage,
+        } as unknown as TiffImage,
       ],
-    } as unknown as CogTiff);
+    } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
   it('should parse with pixel offset', async () => {
@@ -121,9 +121,9 @@ describe('geotiff', () => {
           valueGeo(): number {
             return PixelIsPoint;
           },
-        } as unknown as CogTiffImage,
+        } as unknown as TiffImage,
       ],
-    } as unknown as CogTiff);
+    } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 });

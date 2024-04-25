@@ -5,6 +5,7 @@ import {
   TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetConfigSchema } from '@basemaps/config/build/json/parse.tile.set.js';
+import { VectorFormat } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
@@ -41,9 +42,35 @@ const ConfigPrettierFormat = Object.assign({}, DEFAULT_PRETTIER_FORMAT, { printW
 export class MakeCogGithub {
   imagery: string;
   repository: string;
-  constructor(imagery: string, repository: string) {
+  /**
+   * Reference Jira ticket
+   *
+   * @example "AIP-66"
+   */
+  ticket?: string;
+
+  constructor(imagery: string, repository: string, ticket?: string) {
     this.imagery = imagery;
     this.repository = repository;
+    this.ticket = ticket;
+  }
+
+  /**
+   * Create a branch suffix in the format `-AIP-66`
+   * if a reference ticket is supplied
+   */
+  get ticketBranchSuffix(): string {
+    if (this.ticket) return `-${this.ticket}`;
+    return '';
+  }
+
+  /**
+   * Create a branch suffix in the format ` AIP-66`
+   * if a reference ticket is supplied
+   */
+  get ticketCommitSuffix(): string {
+    if (this.ticket) return ` ${this.ticket}`;
+    return '';
   }
 
   /**
@@ -56,8 +83,8 @@ export class MakeCogGithub {
     region: string | undefined,
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
-    const branch = `feat/bot-config-raster-${this.imagery}`;
-    const title = `config(raster): Add imagery ${this.imagery} to ${filename} config file.`;
+    const branch = `feat/bot-config-raster-${this.imagery}${this.ticketBranchSuffix}`;
+    const title = `config(raster): Add imagery ${this.imagery} to ${filename}${this.ticketCommitSuffix}`;
 
     // Clone the basemaps-config repo and checkout branch
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
@@ -83,6 +110,7 @@ export class MakeCogGithub {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
+      if (tileSetContent == null) throw new Error(`Unable get the ${filename}.json from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // skip pull request if not an urban or rural imagery
@@ -164,19 +192,22 @@ export class MakeCogGithub {
    */
   async updateVectorTileSet(filename: string, layer: ConfigLayer): Promise<void> {
     const gh = new GithubApi(this.repository);
-    const branch = `feat/bot-config-vector-${this.imagery}`;
+    const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
 
     // Prepare new aerial tileset config
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
     const tileSetContent = await gh.getContent(tileSetPath);
-    const tileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
-    const newTileSet = await this.prepareVectorTileSetConfig(layer, tileSet);
 
-    // skip pull request if not an urban or rural imagery
-    if (newTileSet == null) return;
+    // update the existing tileset
+    const existingTileSet = tileSetContent != null ? (JSON.parse(tileSetContent) as ConfigTileSetVector) : undefined;
+    const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
+
+    // skip pull request tileset prepare failure.
+    if (newTileSet == null) throw new Error('Failed to prepare new Vector tileSet.');
+
     // Github
-    const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
+    const title = `config(vector): Update the ${this.imagery} to ${filename} config${this.ticketCommitSuffix}`;
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
@@ -186,7 +217,19 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+    if (tileSet == null) {
+      return {
+        type: TileSetType.Vector,
+        id: `ts_${layer.name}`,
+        name: layer.name,
+        title: layer.title,
+        maxZoom: 15,
+        format: VectorFormat.MapboxVectorTiles,
+        layers: [layer],
+      };
+    }
+
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
       if (tileSet.layers[i]?.name === layer.name) {

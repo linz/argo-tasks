@@ -225,14 +225,21 @@ describe('formatDate', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
-    assert.equal(formatDate(collection), '2022');
+    assert.equal(formatDate(collection), '2023');
   });
   it('Should return date as two years', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
-    collection.extent.temporal.interval[0] = ['2022-12-31T11:00:00Z', '2023-12-31T11:00:00Z'];
+    collection.extent.temporal.interval[0] = ['2022-06-01T11:00:00Z', '2023-06-01T11:00:00Z'];
     assert.equal(formatDate(collection), '2022-2023');
+  });
+  it('Should use Pacific/Auckland time zone', async () => {
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
+      './src/commands/path/__test__/sample.json',
+    );
+    collection.extent.temporal.interval[0] = ['2012-12-31T11:00:00Z', '2014-12-30T11:00:00Z'];
+    assert.equal(formatDate(collection), '2013-2014');
   });
   it('Should fail - unable to retrieve date', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(

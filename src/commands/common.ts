@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { CogTiff } from '@cogeotiff/core';
+import { Tiff } from '@cogeotiff/core';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -80,7 +80,7 @@ export function parseSize(size: string): number {
 }
 
 /** Limit fetches to 25 concurrently **/
-const TiffQueue = pLimit(25);
+export const TiffQueue = pLimit(25);
 
 /**
  * There is a minor difference between @chunkd/core and @cogeotiff/core
@@ -91,10 +91,10 @@ const TiffQueue = pLimit(25);
  * @param loc location to load the tiff from
  * @returns Initialized tiff
  */
-export function createTiff(loc: string): Promise<CogTiff> {
+export function createTiff(loc: string): Promise<Tiff> {
   const source = fsa.source(loc);
 
-  const tiff = new CogTiff({
+  const tiff = new Tiff({
     url: tryParseUrl(loc),
     fetch: (offset, length): Promise<ArrayBuffer> => {
       /** Limit fetches concurrency see {@link TiffQueue} **/
