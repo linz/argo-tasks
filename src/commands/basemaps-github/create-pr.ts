@@ -80,9 +80,20 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
-  // Try to get the region for individual layers
+  // Try to get the title
+  const collectionPath = fsa.join(target, 'collection.json');
+  const collection = await fsa.readJson<StacCollection>(collectionPath);
+  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');
+  let title = collection.title;
+  // Get title from lds:title for individual vector layer
+  if (ldsLayers.length === 1) {
+    const ldsTitle = ldsLayers[0]?.['lds:title'];
+    if (ldsTitle != null) title = String(ldsTitle);
+  }
+  if (title == null) throw new Error(`Failed to get title from collection.json.`);
 
-  return { name: name, epsg: epsg.code, title: name };
+  return { name: name, epsg: epsg.code, title };
 }
 
 export const CommandCreatePRArgs = {
