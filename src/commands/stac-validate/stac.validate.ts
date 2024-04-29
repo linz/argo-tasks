@@ -162,25 +162,9 @@ export const commandStacValidate = command({
       if (args.checksum && stacJson.assets) {
         const assets = Object.entries(stacJson.assets ?? {});
         for (const [assetName, asset] of assets) {
-          const checksum = asset['file:checksum'];
-          if (checksum == null) continue;
-          // 12-20 is the starting prefix for all sha256 multihashes
-          if (!checksum.startsWith('1220')) continue;
-
-          let source = asset.href;
-          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
-
-          logger.debug({ source, checksum }, 'Validate:Asset');
-          const startTime = performance.now();
-
-          const hash = await hashStream(fsa.stream(source));
-          const duration = performance.now() - startTime;
-
-          if (hash === checksum) {
-            logger.debug({ assetType: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
-          } else {
+          const isChecksumValid = await validateChecksum(asset, path);
+          if (!isChecksumValid) {
             isOk = false;
-            logger.error({ assetType: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
             failures.push(path);
           }
         }
@@ -189,25 +173,10 @@ export const commandStacValidate = command({
       // TODO refactor as is duplicated from above
       if (args.checksumLinks && stacJson.links) {
         for (const link of stacJson.links) {
-          const checksum: string = link['file:checksum'] as string;
-          if (checksum == null) continue;
           if (link.rel === 'self') continue;
-          // 12-20 is the starting prefix for all sha256 multihashes
-          if (!checksum.startsWith('1220')) continue;
-          let source = link.href;
-          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
-
-          logger.debug({ source, checksum }, 'Validate:Asset');
-          const startTime = performance.now();
-
-          const hash = await hashStream(fsa.stream(source));
-          const duration = performance.now() - startTime;
-
-          if (hash === checksum) {
-            logger.debug({ linkType: link.type, source, checksum, duration }, 'Asset:Validation:Ok');
-          } else {
+          const isChecksumValid = await validateChecksum(link, path);
+          if (!isChecksumValid) {
             isOk = false;
-            logger.error({ linkType: link.type, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
             failures.push(path);
           }
         }
@@ -245,6 +214,28 @@ export const commandStacValidate = command({
     }
   },
 });
+
+export async function validateChecksum(stacObject: st.StacLink | st.StacAsset, path: string): Promise<boolean> {
+  const checksum: string = stacObject['file:checksum'] as string;
+  if (checksum == null) return true;
+  // 12-20 is the starting prefix for all sha256 multihashes
+  if (!checksum.startsWith('1220')) return true;
+  let source = stacObject.href;
+  if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+
+  logger.debug({ source, checksum }, 'Validate:Checksum');
+  const startTime = performance.now();
+
+  const hash = await hashStream(fsa.stream(source));
+  const duration = performance.now() - startTime;
+
+  if (hash !== checksum) {
+    logger.error({ linkType: stacObject.type, source, checksum, found: hash, duration }, 'Checksum:Validation:Failed');
+    return false;
+  }
+  logger.debug({ linkType: stacObject.type, source, checksum, duration }, 'Checksum:Validation:Ok');
+  return true;
+}
 
 function getSchemaType(schemaType: string): string | null {
   switch (schemaType) {
