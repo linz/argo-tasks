@@ -1,6 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
+import { fail } from 'assert';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
@@ -103,7 +104,7 @@ export const commandStacValidate = command({
       }
       return existing;
     }
-    const failures = [];
+    const failures: string[] = [];
     const queue = new ConcurrentQueue(args.concurrency);
 
     async function validateStac(path: string): Promise<void> {
@@ -159,26 +160,18 @@ export const commandStacValidate = command({
         }
       }
 
-      if (args.checksum && stacJson.assets) {
-        const assets = Object.entries(stacJson.assets ?? {});
-        for (const [assetName, asset] of assets) {
-          const isChecksumValid = await validateChecksum(asset, path);
-          if (!isChecksumValid) {
-            isOk = false;
-            failures.push(path);
-          }
+      if (args.checksum) {
+        const assetFailures = await validateAssets(stacJson, path);
+        if (assetFailures.length > 0) {
+          isOk = false;
+          failures.push(...assetFailures);
         }
       }
-
-      // TODO refactor as is duplicated from above
-      if (args.checksumLinks && stacJson.links) {
-        for (const link of stacJson.links) {
-          if (link.rel === 'self') continue;
-          const isChecksumValid = await validateChecksum(link, path);
-          if (!isChecksumValid) {
-            isOk = false;
-            failures.push(path);
-          }
+      if (args.checksum || args.checksumLinks) {
+        const linksFailures = await validateLinks(stacJson, path);
+        if (linksFailures.length > 0) {
+          isOk = false;
+          failures.push(...linksFailures);
         }
       }
 
@@ -215,25 +208,87 @@ export const commandStacValidate = command({
   },
 });
 
-export async function validateChecksum(stacObject: st.StacLink | st.StacAsset, path: string): Promise<boolean> {
-  const checksum: string = stacObject['file:checksum'] as string;
-  if (checksum == null) return true;
-  // 12-20 is the starting prefix for all sha256 multihashes
-  if (!checksum.startsWith('1220')) return true;
+async function validateAssets(
+  stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
+  path: string,
+): Promise<string[]> {
+  const assetsFailures: string[] = [];
+  const assets = Object.values(stacJson.assets ?? {}) as st.StacAsset[];
+  for (const asset of assets) {
+    const isChecksumValid = await validateChecksum(asset, path, { allowMissing: false, allowUnknown: false });
+    if (!isChecksumValid) {
+      assetsFailures.push(path);
+    }
+  }
+  return assetsFailures;
+}
+
+async function validateLinks(
+  stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
+  path: string,
+): Promise<string[]> {
+  const linksFailures: string[] = [];
+  for (const link of stacJson.links) {
+    if (link.rel === 'self') continue;
+    const isChecksumValid = await validateChecksum(link, path, { allowMissing: true, allowUnknown: false });
+    if (!isChecksumValid) {
+      linksFailures.push(path);
+    }
+  }
+  return linksFailures;
+}
+
+/**
+ * Configuration to validate checksums
+ */
+interface ValidateChecksumContext {
+  /**
+   * Not valid if checksum is missing
+   */
+  allowMissing: boolean;
+  /**
+   * Not valid if checksum type (different than SHA256) is unknown
+   */
+  allowUnknown: boolean;
+}
+
+/**
+ * Validate if the checksum found in the stacObject corresponds to its actual file checksum.
+ * @param stacObject
+ * @param path
+ * @param ctx
+ * @returns
+ */
+export async function validateChecksum(
+  stacObject: st.StacLink | st.StacAsset,
+  path: string,
+  ctx: ValidateChecksumContext,
+): Promise<boolean> {
   let source = stacObject.href;
   if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
-
+  const checksum: string = stacObject['file:checksum'] as string;
+  // TODO: in that case we can't say it's valid
+  if (checksum == null) {
+    if (ctx.allowMissing) return true;
+    logger.error({ source, checksum }, 'Validate:Checksum:Missing');
+    return false;
+  }
+  // 12-20 is the starting prefix for all sha256 multihashes
+  if (!checksum.startsWith('1220')) {
+    if (ctx.allowUnknown) return true;
+    logger.error({ source, checksum }, 'Validate:Checksum:Unknown');
+    return false;
+  }
   logger.debug({ source, checksum }, 'Validate:Checksum');
   const startTime = performance.now();
-
   const hash = await hashStream(fsa.stream(source));
   const duration = performance.now() - startTime;
 
   if (hash !== checksum) {
-    logger.error({ linkType: stacObject.type, source, checksum, found: hash, duration }, 'Checksum:Validation:Failed');
+    logger.error({ source, checksum, found: hash, duration }, 'Checksum:Validation:Failed');
     return false;
   }
-  logger.debug({ linkType: stacObject.type, source, checksum, duration }, 'Checksum:Validation:Ok');
+  logger.debug({ source, checksum, duration }, 'Checksum:Validation:Ok');
   return true;
 }
 

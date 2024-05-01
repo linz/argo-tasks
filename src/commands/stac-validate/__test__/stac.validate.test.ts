@@ -1,7 +1,11 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { getStacSchemaUrl, isURL, listLocation, normaliseHref } from '../stac.validate.js';
+import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+import * as st from 'stac-ts';
+
+import { getStacSchemaUrl, isURL, listLocation, normaliseHref, validateChecksum } from '../stac.validate.js';
 
 describe('stacValidate', function () {
   it('listLocation', async function () {
@@ -59,5 +63,18 @@ describe('stacValidate', function () {
       'data/test-survey/sub-folder/item.json',
     );
     assert.equal(normaliseHref('./item.json', 'collection.json'), 'item.json');
+  });
+  it('validateChecksum', async () => {
+    const memory = new FsMemory();
+    fsa.register('memory://', memory);
+    const path = 'memory://stac/';
+    await fsa.write(`${path}item.json`, Buffer.from(JSON.stringify({ test: true })), {
+      contentType: 'application/json',
+    });
+    const link: st.StacLink = { href: './item.json', rel: 'item' };
+    link['file:checksum'] = '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e';
+    const isValid = await validateChecksum(link, `${path}collection.json`, { allowMissing: true, allowUnknown: false });
+    assert.equal(isValid, true);
+    memory.files.clear();
   });
 });
