@@ -1,7 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
-import { fail } from 'assert';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
@@ -208,14 +207,21 @@ export const commandStacValidate = command({
   },
 });
 
-async function validateAssets(
+/**
+ * Validate STAC Assets
+ *
+ * @param stacJson
+ * @param path absolute path of the STAC location
+ * @returns the list of link paths that failed the validation
+ */
+export async function validateAssets(
   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
   path: string,
 ): Promise<string[]> {
   const assetsFailures: string[] = [];
   const assets = Object.values(stacJson.assets ?? {}) as st.StacAsset[];
   for (const asset of assets) {
-    const isChecksumValid = await validateChecksum(asset, path, { allowMissing: false, allowUnknown: false });
+    const isChecksumValid = await validateStacChecksum(asset, path, { allowMissing: false, allowUnknown: false });
     if (!isChecksumValid) {
       assetsFailures.push(path);
     }
@@ -223,14 +229,21 @@ async function validateAssets(
   return assetsFailures;
 }
 
-async function validateLinks(
+/**
+ * Validate STAC Links
+ *
+ * @param stacJson
+ * @param path absolute path to the STAC location
+ * @returns the list of link paths that failed the validation
+ */
+export async function validateLinks(
   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
   path: string,
 ): Promise<string[]> {
   const linksFailures: string[] = [];
   for (const link of stacJson.links) {
     if (link.rel === 'self') continue;
-    const isChecksumValid = await validateChecksum(link, path, { allowMissing: true, allowUnknown: false });
+    const isChecksumValid = await validateStacChecksum(link, path, { allowMissing: true, allowUnknown: false });
     if (!isChecksumValid) {
       linksFailures.push(path);
     }
@@ -239,9 +252,9 @@ async function validateLinks(
 }
 
 /**
- * Configuration to validate checksums
+ * Configuration to validate checksums within a STAC object
  */
-interface ValidateChecksumContext {
+interface ValidateStacChecksumContext {
   /**
    * Not valid if checksum is missing
    */
@@ -253,21 +266,21 @@ interface ValidateChecksumContext {
 }
 
 /**
- * Validate if the checksum found in the stacObject corresponds to its actual file checksum.
+ * Validate if the checksum found in the stacObject (`file:checksum`) corresponds to its actual file checksum.
  * @param stacObject
  * @param path
  * @param ctx
  * @returns
  */
-export async function validateChecksum(
+export async function validateStacChecksum(
   stacObject: st.StacLink | st.StacAsset,
   path: string,
-  ctx: ValidateChecksumContext,
+  ctx: ValidateStacChecksumContext,
 ): Promise<boolean> {
   let source = stacObject.href;
   if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
   const checksum: string = stacObject['file:checksum'] as string;
-  // TODO: in that case we can't say it's valid
+
   if (checksum == null) {
     if (ctx.allowMissing) return true;
     logger.error({ source, checksum }, 'Validate:Checksum:Missing');

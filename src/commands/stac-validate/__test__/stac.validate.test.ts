@@ -5,7 +5,15 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import * as st from 'stac-ts';
 
-import { getStacSchemaUrl, isURL, listLocation, normaliseHref, validateChecksum } from '../stac.validate.js';
+import {
+  getStacSchemaUrl,
+  isURL,
+  listLocation,
+  normaliseHref,
+  validateAssets,
+  validateLinks,
+  validateStacChecksum,
+} from '../stac.validate.js';
 
 describe('stacValidate', function () {
   it('listLocation', async function () {
@@ -64,17 +72,80 @@ describe('stacValidate', function () {
     );
     assert.equal(normaliseHref('./item.json', 'collection.json'), 'item.json');
   });
-  it('validateChecksum', async () => {
+
+  it('validateStacChecksum', async () => {
     const memory = new FsMemory();
     fsa.register('memory://', memory);
     const path = 'memory://stac/';
-    await fsa.write(`${path}item.json`, Buffer.from(JSON.stringify({ test: true })), {
-      contentType: 'application/json',
+    await fsa.write(`${path}item.json`, Buffer.from(JSON.stringify({ test: true })));
+    const link: st.StacLink = {
+      href: './item.json',
+      rel: 'item',
+      'file:checksum': '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+    };
+
+    const isValid = await validateStacChecksum(link, `${path}collection.json`, {
+      allowMissing: false,
+      allowUnknown: false,
     });
-    const link: st.StacLink = { href: './item.json', rel: 'item' };
-    link['file:checksum'] = '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e';
-    const isValid = await validateChecksum(link, `${path}collection.json`, { allowMissing: true, allowUnknown: false });
     assert.equal(isValid, true);
+    memory.files.clear();
+  });
+  it('validateAssetWrongChecksum', async () => {
+    const memory = new FsMemory();
+    fsa.register('memory://', memory);
+    const path = 'memory://stac/';
+    await fsa.write(`${path}image.tiff`, Buffer.from('test'));
+    const stacItem: st.StacItem = {
+      type: 'Feature',
+      stac_version: '1.0.0',
+      id: 'item',
+      links: [],
+      assets: {
+        visual: {
+          href: './image.tiff',
+          'file:checksum': '12206fabcd',
+        },
+      },
+      properties: {},
+      geometry: {
+        type: 'Polygon',
+        coordinates: [],
+      },
+    };
+
+    const errors = await validateAssets(stacItem, `${path}item.json`);
+    assert.equal(errors.length, 1);
+    memory.files.clear();
+  });
+
+  it('validateLinksChecksum', async () => {
+    const memory = new FsMemory();
+    fsa.register('memory://', memory);
+    const path = 'memory://stac/';
+    await fsa.write(`${path}item.json`, Buffer.from(JSON.stringify({ test: true })));
+    const stacCollection: st.StacCollection = {
+      type: 'Collection',
+      stac_version: '1.0.0',
+      id: 'collection',
+      description: 'desc',
+      license: 'lic',
+      links: [
+        {
+          rel: 'item',
+          href: './item.json',
+          type: 'application/json',
+          'file:checksum': '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+        },
+      ],
+      extent: {
+        spatial: { bbox: [[]] },
+        temporal: { interval: [['2023-10-10T11:00:00Z', '2023-10-27T11:00:00Z']] },
+      },
+    };
+
+    const errors = await validateLinks(stacCollection, `${path}item.json`);
+    assert.equal(errors.length, 0);
     memory.files.clear();
   });
 });
