@@ -78,7 +78,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   const epsg = Epsg.tryGet(Number(splits[2]));
   const name = splits[3];
 
-  assertValidBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, ValidTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
