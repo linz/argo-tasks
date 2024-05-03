@@ -5,7 +5,7 @@ import { createHash } from 'crypto';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { config, registerCli, verbose } from '../common.js';
+import { config, registerCli, Sha256Prefix, verbose } from '../common.js';
 
 const S3Path: Type<string, URL> = {
   async from(str) {
@@ -72,7 +72,7 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
 export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
   const destinationHead = await fsa.head(path.href);
   const sourceData = await fsa.read(sourceFileInfo.path);
-  const sourceHash = '1220' + createHash('sha256').update(sourceData).digest('hex');
+  const sourceHash = Sha256Prefix + createHash('sha256').update(sourceData).digest('hex');
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;
   }

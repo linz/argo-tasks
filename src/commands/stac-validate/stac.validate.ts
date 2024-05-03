@@ -9,7 +9,7 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { config, registerCli, verbose } from '../common.js';
+import { config, registerCli, Sha256Prefix, verbose } from '../common.js';
 import { hashStream } from './hash.worker.js';
 
 export const commandStacValidate = command({
@@ -243,7 +243,7 @@ export async function validateLinks(
   const linksFailures: string[] = [];
   for (const link of stacJson.links) {
     if (link.rel === 'self') continue;
-    // we `allowMissing` because some STAC links might not have a checksum yet (feature added later)
+    // Allowing missing checksums as some STAC links might not have checksum
     const isChecksumValid = await validateStacChecksum(link, path, true);
     if (!isChecksumValid) {
       linksFailures.push(path);
@@ -273,8 +273,8 @@ export async function validateStacChecksum(
     logger.error({ source, checksum }, 'Validate:Checksum:Missing');
     return false;
   }
-  // 12-20 is the starting prefix for all sha256 multihashes
-  if (!checksum.startsWith('1220')) {
+
+  if (!checksum.startsWith(Sha256Prefix)) {
     logger.error({ source, checksum }, 'Validate:Checksum:Unknown');
     return false;
   }
