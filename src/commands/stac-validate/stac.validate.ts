@@ -243,6 +243,7 @@ export async function validateLinks(
   const linksFailures: string[] = [];
   for (const link of stacJson.links) {
     if (link.rel === 'self') continue;
+    // we `allowMissing` because some STAC links might not have a checksum yet (feature added later)
     const isChecksumValid = await validateStacChecksum(link, path, { allowMissing: true, allowUnknown: false });
     if (!isChecksumValid) {
       linksFailures.push(path);
