@@ -90,10 +90,7 @@ describe('stacValidate', function () {
         'file:checksum': '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
       };
 
-      const isValid = await validateStacChecksum(link, `${path}collection.json`, {
-        allowMissing: false,
-        allowUnknown: false,
-      });
+      const isValid = await validateStacChecksum(link, `${path}collection.json`, false);
       assert.equal(isValid, true);
     });
     it('should return the path of an asset with invalid checksum', async () => {
@@ -119,7 +116,6 @@ describe('stacValidate', function () {
       const errors = await validateAssets(stacItem, `${path}item.json`);
       assert.equal(errors.length, 1);
     });
-
     it('should validate a valid link checksum', async () => {
       await fsa.write(`${path}item.json`, Buffer.from(JSON.stringify({ test: true })));
       const stacCollection: st.StacCollection = {

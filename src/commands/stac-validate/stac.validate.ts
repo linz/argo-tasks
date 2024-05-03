@@ -221,7 +221,7 @@ export async function validateAssets(
   const assetsFailures: string[] = [];
   const assets = Object.values(stacJson.assets ?? {}) as st.StacAsset[];
   for (const asset of assets) {
-    const isChecksumValid = await validateStacChecksum(asset, path, { allowMissing: false, allowUnknown: false });
+    const isChecksumValid = await validateStacChecksum(asset, path, false);
     if (!isChecksumValid) {
       assetsFailures.push(path);
     }
@@ -244,7 +244,7 @@ export async function validateLinks(
   for (const link of stacJson.links) {
     if (link.rel === 'self') continue;
     // we `allowMissing` because some STAC links might not have a checksum yet (feature added later)
-    const isChecksumValid = await validateStacChecksum(link, path, { allowMissing: true, allowUnknown: false });
+    const isChecksumValid = await validateStacChecksum(link, path, true);
     if (!isChecksumValid) {
       linksFailures.push(path);
     }
@@ -253,43 +253,28 @@ export async function validateLinks(
 }
 
 /**
- * Configuration to validate checksums within a STAC object
- */
-interface ValidateStacChecksumContext {
-  /**
-   * Not valid if checksum is missing
-   */
-  allowMissing: boolean;
-  /**
-   * Not valid if checksum type (different than SHA256) is unknown
-   */
-  allowUnknown: boolean;
-}
-
-/**
  * Validate if the checksum found in the stacObject (`file:checksum`) corresponds to its actual file checksum.
- * @param stacObject
- * @param path
- * @param ctx
+ * @param stacObject a STAC Link or Asset
+ * @param path path to the STAC location
+ * @param allowMissing allow missing checksum to be valid
  * @returns
  */
 export async function validateStacChecksum(
   stacObject: st.StacLink | st.StacAsset,
   path: string,
-  ctx: ValidateStacChecksumContext,
+  allowMissing: boolean,
 ): Promise<boolean> {
   let source = stacObject.href;
   if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
   const checksum: string = stacObject['file:checksum'] as string;
 
   if (checksum == null) {
-    if (ctx.allowMissing) return true;
+    if (allowMissing) return true;
     logger.error({ source, checksum }, 'Validate:Checksum:Missing');
     return false;
   }
   // 12-20 is the starting prefix for all sha256 multihashes
   if (!checksum.startsWith('1220')) {
-    if (ctx.allowUnknown) return true;
     logger.error({ source, checksum }, 'Validate:Checksum:Unknown');
     return false;
   }
