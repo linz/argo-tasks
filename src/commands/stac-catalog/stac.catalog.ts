@@ -1,12 +1,12 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional, string } from 'cmd-ts';
-import { createHash } from 'crypto';
 import { isAbsolute } from 'path';
 import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { config, registerCli, Sha256Prefix, verbose } from '../common.js';
+import { hashString } from '../../utils/hash.js';
+import { config, registerCli, verbose } from '../common.js';
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {
@@ -87,8 +87,7 @@ export async function createLinks(basePath: string, templateLinks: st.StacLink[]
       const relPath = makeRelative(basePath, coll);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
-      // Multihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
-      const checksum = Sha256Prefix + createHash('sha256').update(buf).digest('hex');
+      const checksum = hashString(buf);
       const collLink: st.StacLink = {
         rel: 'child',
         href: fsa.join('./', relPath),

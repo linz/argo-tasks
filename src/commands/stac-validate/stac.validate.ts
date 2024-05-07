@@ -9,8 +9,9 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { config, registerCli, Sha256Prefix, verbose } from '../common.js';
-import { hashStream } from './hash.worker.js';
+import { hashStream } from '../../utils/hash.js';
+import { Sha256Prefix } from '../../utils/hash.js';
+import { config, registerCli, verbose } from '../common.js';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
