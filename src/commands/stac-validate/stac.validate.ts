@@ -258,7 +258,7 @@ export async function validateLinks(
  * @param stacObject a STAC Link or Asset
  * @param path path to the STAC location
  * @param allowMissing allow missing checksum to be valid
- * @returns
+ * @returns weither the checksum is valid or not
  */
 export async function validateStacChecksum(
   stacObject: st.StacLink | st.StacAsset,
