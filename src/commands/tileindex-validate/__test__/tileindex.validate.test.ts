@@ -288,7 +288,7 @@ describe('is8BitsTiff', () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
     await assert.rejects(validate8BitsTiff(testTiff), {
       name: 'Error',
-      message: `${testTiff.source.url} is not a 8 bits TIFF`,
+      message: `${testTiff.source.url.href} is not a 8 bits TIFF`,
     });
   });
 });

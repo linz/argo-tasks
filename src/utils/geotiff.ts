@@ -54,7 +54,8 @@ export const PixelIsPoint = 2;
  */
 export async function findBoundingBox(tiff: Tiff): Promise<[number, number, number, number]> {
   const img = tiff.images[0];
-  if (img == null) throw new Error(`Failed to find bounding box/origin - no images found in file: ${tiff.source.url}`);
+  if (img == null)
+    throw new Error(`Failed to find bounding box/origin - no images found in file: ${tiff.source.url.href}`);
   const size = img.size;
 
   // If the tiff has geo location information just read it from the tiff
