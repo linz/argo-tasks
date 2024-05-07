@@ -245,7 +245,7 @@ export const commandTileIndexValidate = command({
         type: 'FeatureCollection',
         features: [...outputs.values()].map((locs) => {
           const firstLoc = locs[0];
-          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
+          if (firstLoc == null) throw new Error(`Unable to extract tiff locations from: ${args.location.join('; ')}`);
           const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
           if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
           return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
