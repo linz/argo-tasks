@@ -28,7 +28,10 @@ export const forceOutput = flag({
   defaultValueIsSerializable: true,
 });
 
-/** 1220 is the starting prefix for all sha256 multihashes */
+/** 1220 is the starting prefix for all sha256 multihashes
+ *  0x12 - ID of sha256 multi hash
+ *  0x20 - 32 bytes (256 bits) of data
+ */
 export const Sha256Prefix = '1220';
 
 export function registerCli(cli: { name: string }, args: { verbose?: boolean; config?: string }): void {

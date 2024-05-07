@@ -13,8 +13,6 @@ export async function hashStream(stream: Readable): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash('sha256');
     stream.on('data', (chunk) => hash.update(chunk));
-    // 0x12 - ID of sha256 multi hash
-    // 0x20 - 32 bytes (256 bits) of data
     stream.on('end', () => resolve(Sha256Prefix + hash.digest('hex')));
     stream.on('error', reject);
   });
