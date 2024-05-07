@@ -7,14 +7,14 @@ import { createHash } from 'crypto';
 
 import { HashKey, synchroniseFiles } from '../stac.sync.js';
 
-describe('stacSync', () => {
+void describe('stacSync', () => {
   const fs = new FsMemory();
   beforeEach(() => {
     fs.files.clear();
     fsa.register('m://', fs);
   });
 
-  it('shouldUploadFile', async () => {
+  void it('shouldUploadFile', async () => {
     await fs.write(
       'm://source/stac/wellington/collection.json',
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
@@ -27,7 +27,7 @@ describe('stacSync', () => {
     assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 1);
   });
 
-  it('shouldUploadFileOnlyOnce', async () => {
+  void it('shouldUploadFileOnlyOnce', async () => {
     await fs.write(
       'm://source/stac/wellington/collection.json',
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
@@ -41,7 +41,7 @@ describe('stacSync', () => {
     assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 0);
   });
 
-  it('shouldNotUploadFile', async () => {
+  void it('shouldNotUploadFile', async () => {
     await fs.write(
       'm://source/stac/wellington/collection.json',
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),

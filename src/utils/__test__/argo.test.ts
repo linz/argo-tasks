@@ -3,17 +3,17 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { getActionLocation } from '../action.storage.js';
 
-describe('argoLocation', () => {
+void describe('argoLocation', () => {
   beforeEach(() => {
     delete process.env['ARGO_TEMPLATE'];
     delete process.env['ARGO_NODE_ID'];
   });
-  it("should not die if ARGO_TEMPLATE doesn't exist", () => {
+  void it("should not die if ARGO_TEMPLATE doesn't exist", () => {
     delete process.env['ARGO_TEMPLATE'];
     assert.equal(getActionLocation(), null);
   });
 
-  it('should not die if ARGO_TEMPLATE in missing keys', () => {
+  void it('should not die if ARGO_TEMPLATE in missing keys', () => {
     process.env['ARGO_TEMPLATE'] = '{}';
     assert.equal(getActionLocation(), null);
 
@@ -24,7 +24,7 @@ describe('argoLocation', () => {
     assert.equal(getActionLocation(), null);
   });
 
-  it('should actually parse the ARGO_TEMPLATE', () => {
+  void it('should actually parse the ARGO_TEMPLATE', () => {
     process.env['ARGO_NODE_ID'] = 'test-env-n9d2x';
     process.env['ARGO_TEMPLATE'] = JSON.stringify({
       name: 'env',

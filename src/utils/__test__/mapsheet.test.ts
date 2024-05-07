@@ -4,8 +4,8 @@ import { describe, it } from 'node:test';
 import { MapSheet, MapTileIndex, SheetRanges } from '../mapsheet.js';
 import { MapSheetData } from './mapsheet.data.js';
 
-describe('MapSheets', () => {
-  it('should extract MapTileIndex from 1:500 tile filename', () => {
+void describe('MapSheets', () => {
+  void it('should extract MapTileIndex from 1:500 tile filename', () => {
     assert.deepEqual(MapSheet.getMapTileIndex('2022_CG10_500_080037.tiff'), {
       mapSheet: 'CG10',
       gridSize: 500,
@@ -18,7 +18,7 @@ describe('MapSheets', () => {
       bbox: [1236640, 4837200, 1236880, 4837560],
     });
   });
-  it('should extract MapTileIndex from 1:50k tile filename', () => {
+  void it('should extract MapTileIndex from 1:50k tile filename', () => {
     assert.deepEqual(MapSheet.getMapTileIndex('AS21.tiff'), {
       mapSheet: 'AS21',
       gridSize: 50_000,
@@ -37,7 +37,7 @@ describe('MapSheets', () => {
     });
   });
 
-  it('should calculate offsets', () => {
+  void it('should calculate offsets', () => {
     assert.deepEqual(MapSheet.offset('AS00'), { x: 988000, y: 6234000 });
     assert.deepEqual(MapSheet.offset('AS21'), { x: 1492000, y: 6234000 });
     assert.deepEqual(MapSheet.offset('BG33'), { x: 1780000, y: 5730000 });
@@ -45,13 +45,13 @@ describe('MapSheets', () => {
   });
 
   for (const ms of MapSheetData) {
-    it('should calculate for ' + ms.code, () => {
+    void it('should calculate for ' + ms.code, () => {
       assert.deepEqual(MapSheet.offset(ms.code), ms.origin);
       assert.equal(MapSheet.isKnown(ms.code), true);
     });
   }
 
-  it('should not know invalid mapsheets', () => {
+  void it('should not know invalid mapsheets', () => {
     assert.equal(MapSheet.isKnown('BC39'), false);
     assert.equal(MapSheet.isKnown('AAAA'), false);
     assert.equal(MapSheet.isKnown('A'), false);
@@ -60,7 +60,7 @@ describe('MapSheets', () => {
     assert.equal(MapSheet.isKnown('AA14'), false);
   });
 
-  it('should validate map sheet range', () => {
+  void it('should validate map sheet range', () => {
     const validSheet = new Set();
     for (const [key, ranges] of Object.entries(SheetRanges)) {
       for (const [low, high] of ranges) {
@@ -84,7 +84,7 @@ describe('MapSheets', () => {
   ] as const;
 
   for (const test of TestBounds) {
-    it('should get expected size with file ' + test.name, () => {
+    void it('should get expected size with file ' + test.name, () => {
       const mapTileIndex = MapSheet.getMapTileIndex(test.name) as MapTileIndex;
       assert.equal(mapTileIndex.origin.x, test.bbox[0]);
       assert.equal(mapTileIndex.origin.y, test.bbox[3]);
@@ -92,7 +92,7 @@ describe('MapSheets', () => {
       assert.equal(mapTileIndex.height, test.bbox[3] - test.bbox[1]);
     });
 
-    it('should get expected bounds with file ' + test.name, () => {
+    void it('should get expected bounds with file ' + test.name, () => {
       const mapTileIndex = MapSheet.getMapTileIndex(test.name) as MapTileIndex;
       assert.equal(String(mapTileIndex.bbox), String(test.bbox));
     });

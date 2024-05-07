@@ -8,14 +8,14 @@ import { Source, Tiff, TiffImage } from '@cogeotiff/core';
 import { createTiff } from '../../commands/common.js';
 import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';
 
-describe('geotiff', () => {
+void describe('geotiff', () => {
   describe('parseTfw', () => {
-    it('should parse tfw', () => {
+    void it('should parse tfw', () => {
       const output = parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
       assert.deepEqual(output, { scale: { x: 0.075, y: -0.075 }, origin: { x: 1460800, y: 5079480 } });
     });
 
-    it('should fail on invalid numbers', () => {
+    void it('should fail on invalid numbers', () => {
       assert.throws(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375`)); // Too Short
       assert.throws(() => parseTfw(`0.075a\n0\n0\n-0.075\n1460800.0375\n5079479.9625`)); // scaleX number is NaN
       assert.throws(() => parseTfw(`0.075\n0\n0\n-0.075a\n1460800.0375\n5079479.9625`)); // scaleY number is NaN
@@ -23,17 +23,17 @@ describe('geotiff', () => {
       assert.throws(() => parseTfw(`0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625a`)); // originY number is NaN
     });
 
-    it('should fail on invalid input', () => {
+    void it('should fail on invalid input', () => {
       assert.throws(() => parseTfw(null as unknown as string));
     });
 
-    it('should not allow rotations or skews', () => {
+    void it('should not allow rotations or skews', () => {
       assert.throws(() => parseTfw(`0.075\n1\n0\n-0.075\n1460800.0375\n5079479.9625`)); // Y Rotation
       assert.throws(() => parseTfw(`0.075\n0\n1\n-0.075\n1460800.0375\n5079479.9625`)); // X Rotation
     });
   });
 
-  it('should parse tiff location', async () => {
+  void it('should parse tiff location', async () => {
     const source = new FsMemory();
     // Actual tiff file
     await source.write(
@@ -75,12 +75,12 @@ describe('geotiff', () => {
 
   const url = new URL('memory://BX20_500_023098.tif');
   const fakeSource: Source = { url: url, fetch: async () => new ArrayBuffer(1) };
-  it('should not parse a tiff with no information ', async () => {
+  void it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
     await assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as Tiff));
   });
 
-  it('should parse a tiff with TFW', async () => {
+  void it('should parse a tiff with TFW', async () => {
     // Write a sidecar tfw
     await fsa.write('memory://BX20_500_023098.tfw', `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
     // tiff with no location information and no TFW
@@ -92,7 +92,7 @@ describe('geotiff', () => {
     await fsa.delete('memory://BX20_500_023098.tfw');
   });
 
-  it('should parse standard tiff', async () => {
+  void it('should parse standard tiff', async () => {
     const bbox = await findBoundingBox({
       source: fakeSource,
       images: [
@@ -109,7 +109,7 @@ describe('geotiff', () => {
     } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
-  it('should parse with pixel offset', async () => {
+  void it('should parse with pixel offset', async () => {
     const bbox = await findBoundingBox({
       source: fakeSource,
       images: [

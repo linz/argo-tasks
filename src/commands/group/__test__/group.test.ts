@@ -6,8 +6,8 @@ import { FsMemory } from '@chunkd/source-memory';
 
 import { commandGroup, groupItems } from '../group.js';
 
-describe('groupItems', () => {
-  it('should group items', () => {
+void describe('groupItems', () => {
+  void it('should group items', () => {
     assert.deepEqual(groupItems([1, 2, 3, 4], 2), [
       [1, 2],
       [3, 4],
@@ -16,23 +16,23 @@ describe('groupItems', () => {
     assert.deepEqual(groupItems([1, 2, 3, 4], 3), [[1, 2, 3], [4]]);
   });
 
-  it('should group max', () => {
+  void it('should group max', () => {
     assert.deepEqual(groupItems([1, 2, 3, 4], 100), [[1, 2, 3, 4]]);
   });
 
-  it('should group min', () => {
+  void it('should group min', () => {
     assert.deepEqual(groupItems([1, 2, 3, 4], 1), [[1], [2], [3], [4]]);
   });
 });
 
-describe('group', () => {
+void describe('group', () => {
   const memoryFs = new FsMemory();
 
   before(() => {
     fsa.register('/tmp/group', memoryFs);
   });
 
-  it('should load from a JSON array', async () => {
+  void it('should load from a JSON array', async () => {
     await commandGroup.handler({ inputs: [JSON.stringify([1, 2, 3, 4])], forceOutput: true, size: 50, ...values });
     assert.deepEqual(await fsa.readJson('/tmp/group/output.json'), ['000']);
     assert.deepEqual(await fsa.readJson('/tmp/group/output/000.json'), [1, 2, 3, 4]);
@@ -44,7 +44,7 @@ describe('group', () => {
     fromFile: undefined,
   };
 
-  it('should load from multiple JSON arrays', async () => {
+  void it('should load from multiple JSON arrays', async () => {
     await commandGroup.handler({
       inputs: [JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
@@ -57,7 +57,7 @@ describe('group', () => {
     assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [4, 'alpha']);
   });
 
-  it('should load from strings', async () => {
+  void it('should load from strings', async () => {
     await commandGroup.handler({
       inputs: ['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
@@ -69,7 +69,7 @@ describe('group', () => {
     assert.deepEqual(await fsa.readJson('/tmp/group/output/001.json'), [3, 4, 'alpha']);
   });
 
-  it('should load from a file', async () => {
+  void it('should load from a file', async () => {
     await fsa.write('/tmp/group/input.json', Buffer.from(JSON.stringify([1, 2, 3, 4, 5])));
     await commandGroup.handler({
       inputs: [],

@@ -23,8 +23,8 @@ function shuffle<T>(array: T[]): T[] {
   return array;
 }
 
-describe('sortLinks', () => {
-  it('should make root first', () => {
+void describe('sortLinks', () => {
+  void it('should make root first', () => {
     const links = [
       { rel: 'self', href: './collection.json', type: 'application/json' },
       { rel: 'item', href: './AY30_1000_4643.json', type: 'application/json' },
@@ -46,7 +46,7 @@ describe('sortLinks', () => {
     assert.equal(links[0]?.rel, 'root');
   });
 
-  it('should sort alphabetically the items', () => {
+  void it('should sort alphabetically the items', () => {
     const links = [
       { rel: 'self', href: './collection.json', type: 'application/json' },
       { rel: 'item', href: './AY30_1000_4643.json', type: 'application/json' },
@@ -79,7 +79,7 @@ describe('sortLinks', () => {
     ]);
   });
 
-  it('should be stable', () => {
+  void it('should be stable', () => {
     const links = [
       { rel: 'self', href: './collection.json', type: 'application/json' },
       { rel: 'test', href: './AY30_1000_4643.json', type: 'application/json' },

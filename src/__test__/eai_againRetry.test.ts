@@ -20,23 +20,23 @@ function fakeNextBuilder(failCount: number): BuildHandler<object, MetadataBearer
   return fakeNext;
 }
 
-describe('eai_againRetryMiddleware', () => {
+void describe('eai_againRetryMiddleware', () => {
   beforeEach(() => {
     callCount = 0;
   });
-  it('should run next once if it succeeds', () => {
+  void it('should run next once if it succeeds', () => {
     const fakeNext = fakeNextBuilder(0);
     eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} });
     assert.equal(callCount, 1);
   });
 
-  it('should try three times when getting EAI_AGAIN errors', async () => {
+  void it('should try three times when getting EAI_AGAIN errors', async () => {
     const fakeNext = fakeNextBuilder(2);
     await eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} });
     assert.equal(callCount, 3);
   });
 
-  it('should throw error if fails with unknown error type', () => {
+  void it('should throw error if fails with unknown error type', () => {
     const fakeNext: BuildHandler<object, MetadataBearer> = () => {
       return Promise.reject({ message: 'ERROR MESSAGE' });
     };
@@ -45,7 +45,7 @@ describe('eai_againRetryMiddleware', () => {
     });
   });
 
-  it('should throw error if next fails with EAI_AGAIN three times', () => {
+  void it('should throw error if next fails with EAI_AGAIN three times', () => {
     const fakeNext = fakeNextBuilder(3);
     assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
       message: 'EAI_AGAIN maximum tries (3) exceeded',

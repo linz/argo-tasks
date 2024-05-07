@@ -27,34 +27,34 @@ function convertTileName(fileName: string, gridSize: GridSize): string | null {
   return getTileName(mapTileIndex.bbox[0], mapTileIndex.bbox[3], gridSize);
 }
 
-describe('getTileName', () => {
-  it('should get correct parent tile 1:1k', () => {
+void describe('getTileName', () => {
+  void it('should get correct parent tile 1:1k', () => {
     assert.equal(convertTileName('CH11_1000_0101', 1000), 'CH11_1000_0101');
     assert.equal(convertTileName('CH11_1000_0105', 1000), 'CH11_1000_0105');
     assert.equal(convertTileName('CH11_1000_0501', 1000), 'CH11_1000_0501');
     assert.equal(convertTileName('CH11_1000_0505', 1000), 'CH11_1000_0505');
   });
-  it('should get correct parent tile 1:5k', () => {
+  void it('should get correct parent tile 1:5k', () => {
     assert.equal(convertTileName('CH11_1000_0101', 5000), 'CH11_5000_0101');
     assert.equal(convertTileName('CH11_1000_0105', 5000), 'CH11_5000_0101');
     assert.equal(convertTileName('CH11_1000_0501', 5000), 'CH11_5000_0101');
     assert.equal(convertTileName('CH11_1000_0505', 5000), 'CH11_5000_0101');
   });
 
-  it('should get correct parent tile 1:10k', () => {
+  void it('should get correct parent tile 1:10k', () => {
     assert.equal(convertTileName('CH11_1000_0101', 10000), 'CH11_10000_0101');
     assert.equal(convertTileName('CH11_1000_0110', 10000), 'CH11_10000_0101');
     assert.equal(convertTileName('CH11_1000_1010', 10000), 'CH11_10000_0101');
     assert.equal(convertTileName('CH11_1000_1001', 10000), 'CH11_10000_0101');
   });
-  it('should get correct parent tile 1:50k', () => {
+  void it('should get correct parent tile 1:50k', () => {
     assert.equal(convertTileName('AT24_50000_0101', 50000), 'AT24');
     assert.equal(convertTileName('AT25_50000_0101', 50000), 'AT25');
     assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08');
   });
 
   for (const sheet of MapSheetData) {
-    it('should get the top left 1:50k, 1:10k, 1:5k, 1:1k, and 1:500 for ' + sheet.code, () => {
+    void it('should get the top left 1:50k, 1:10k, 1:5k, 1:1k, and 1:500 for ' + sheet.code, () => {
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 50000), sheet.code);
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 10000), sheet.code + '_10000_0101');
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 5000), sheet.code + '_5000_0101');
@@ -62,7 +62,7 @@ describe('getTileName', () => {
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 500), sheet.code + '_500_001001');
     });
 
-    it('should get the bottom right 1:50k, 1:10k, 1:5k, 1:1k for ' + sheet.code, () => {
+    void it('should get the bottom right 1:50k, 1:10k, 1:5k, 1:1k for ' + sheet.code, () => {
       // for each scale calculate the bottom right tile then find the mid point of it
       // then look up the tile name from the midpoint and ensure it is the same
       for (const scale of [10_000, 5_000, 1_000, 500] as const) {
@@ -78,8 +78,8 @@ describe('getTileName', () => {
   }
 });
 
-describe('tiffLocation', () => {
-  it('get location from tiff', async () => {
+void describe('tiffLocation', () => {
+  void it('get location from tiff', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
     TiffAs21.images[0].origin[0] = 1492000;
     TiffAs21.images[0].origin[1] = 6234000;
@@ -91,7 +91,7 @@ describe('tiffLocation', () => {
     assert.equal(location[1]?.tileName, 'AY29_1000_0101');
   });
 
-  it('should find duplicates', async () => {
+  void it('should find duplicates', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
     TiffAs21.images[0].origin[0] = 1492000;
     TiffAs21.images[0].origin[1] = 6234000;
@@ -110,7 +110,7 @@ describe('tiffLocation', () => {
     );
   });
 
-  it('should find tiles from 3857', async () => {
+  void it('should find tiles from 3857', async () => {
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
     TiffAy29.images[0].epsg = 3857;
     TiffAy29.images[0].origin[0] = 19128043.69337794;
@@ -119,7 +119,7 @@ describe('tiffLocation', () => {
     assert.equal(location[0]?.tileName, 'AS21_1000_0101');
   });
 
-  it('should fail if one location is not extracted', async () => {
+  void it('should fail if one location is not extracted', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
     TiffAs21.images[0].origin[0] = 1492000;
     TiffAs21.images[0].origin[1] = 6234000;
@@ -131,7 +131,7 @@ describe('tiffLocation', () => {
   });
 });
 
-describe('validate', () => {
+void describe('validate', () => {
   const memory = new FsMemory();
 
   before(() => {
@@ -139,7 +139,7 @@ describe('validate', () => {
   });
   beforeEach(() => memory.files.clear());
 
-  it('should fail if duplicate tiles are detected', async (t) => {
+  void it('should fail if duplicate tiles are detected', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     const stub = t.mock.method(TiffLoader, 'load', () =>
       Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
@@ -171,7 +171,7 @@ describe('validate', () => {
     ]);
   });
 
-  it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
+  void it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     t.mock.method(TiffLoader, 'load', () =>
       Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
@@ -190,7 +190,7 @@ describe('validate', () => {
   });
 
   for (const offset of [0.05, -0.05]) {
-    it(`should fail if input tiff origin X is offset by ${offset}m`, async (t) => {
+    void it(`should fail if input tiff origin X is offset by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].origin[0] = fakeTiff.images[0].origin[0] + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
@@ -207,7 +207,7 @@ describe('validate', () => {
         assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
-    it(`should fail if input tiff origin Y is offset by ${offset}m`, async (t) => {
+    void it(`should fail if input tiff origin Y is offset by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].origin[1] = fakeTiff.images[0].origin[1] + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
@@ -230,7 +230,7 @@ describe('validate', () => {
     // 720x480 => 721x480
     // 720x481 => 720x481
     // 721x481 => 721x481
-    it(`should fail if input tiff width is off by ${offset}m`, async (t) => {
+    void it(`should fail if input tiff width is off by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].size.width = fakeTiff.images[0].size.width + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
@@ -247,7 +247,7 @@ describe('validate', () => {
         assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
-    it(`should fail if input tiff height is off by ${offset}m`, async (t) => {
+    void it(`should fail if input tiff height is off by ${offset}m`, async (t) => {
       const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].size.height = fakeTiff.images[0].size.height + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
@@ -267,11 +267,11 @@ describe('validate', () => {
   }
 });
 
-describe('GridSizeFromString', () => {
-  it('should return grid size number', async () => {
+void describe('GridSizeFromString', () => {
+  void it('should return grid size number', async () => {
     assert.equal(await GridSizeFromString.from('500'), 500);
   });
-  it('should throw error when converting invalid grid size', async () => {
+  void it('should throw error when converting invalid grid size', async () => {
     await assert.rejects(
       GridSizeFromString.from('-1'),
       new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500"'),
@@ -279,12 +279,12 @@ describe('GridSizeFromString', () => {
   });
 });
 
-describe('is8BitsTiff', () => {
-  it('should be a 8 bits TIFF', async () => {
+void describe('is8BitsTiff', () => {
+  void it('should be a 8 bits TIFF', async () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
     await assert.doesNotReject(validate8BitsTiff(testTiff));
   });
-  it('should not be a 8 bits TIFF', async () => {
+  void it('should not be a 8 bits TIFF', async () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
     await assert.rejects(validate8BitsTiff(testTiff), {
       name: 'Error',
