@@ -100,14 +100,14 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
     const duplicates = groupByTileName(location);
-    assert.deepEqual(duplicates.get('AS21_1000_0101')?.map((c) => c.source), [
-      's3://path/AS21_1000_0101.tiff',
-      's3://path/AS21_1000_0101.tiff',
-    ]);
-    assert.deepEqual(duplicates.get('AY29_1000_0101')?.map((c) => c.source), [
-      's3://path/AY29_1000_0101.tiff',
-      's3://path/AY29_1000_0101.tiff',
-    ]);
+    assert.deepEqual(
+      duplicates.get('AS21_1000_0101')?.map((c) => c.source),
+      ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
+    );
+    assert.deepEqual(
+      duplicates.get('AY29_1000_0101')?.map((c) => c.source),
+      ['s3://path/AY29_1000_0101.tiff', 's3://path/AY29_1000_0101.tiff'],
+    );
   });
 
   it('should find tiles from 3857', async () => {
