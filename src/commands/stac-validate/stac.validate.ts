@@ -26,17 +26,17 @@ export const commandStacValidate = command({
       long: 'concurrency',
       description: 'Number of requests to run concurrently',
     }),
-    checksum: flag({
+    checksumAssets: flag({
       type: boolean,
       defaultValue: () => false,
-      long: 'checksum',
-      description: 'Validate the file:checksum if it exists',
+      long: 'checksum-assets',
+      description: 'Validate the file:checksum of each asset if it exists',
     }),
     checksumLinks: flag({
       type: boolean,
       defaultValue: () => false,
       long: 'checksum-links',
-      description: 'Validate the file:checksum of the links (STAC) if it exists',
+      description: 'Validate the file:checksum of each STAC link if it exists',
     }),
     recursive: flag({
       type: boolean,
@@ -160,14 +160,14 @@ export const commandStacValidate = command({
         }
       }
 
-      if (args.checksum) {
+      if (args.checksumAssets) {
         const assetFailures = await validateAssets(stacJson, path);
         if (assetFailures.length > 0) {
           isOk = false;
           failures.push(...assetFailures);
         }
       }
-      if (args.checksum || args.checksumLinks) {
+      if (args.checksumLinks) {
         const linksFailures = await validateLinks(stacJson, path);
         if (linksFailures.length > 0) {
           isOk = false;
