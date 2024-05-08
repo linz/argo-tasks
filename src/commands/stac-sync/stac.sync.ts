@@ -4,7 +4,7 @@ import { command, positional, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { hashString } from '../../utils/hash.js';
+import { hashBuffer } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
 
 const S3Path: Type<string, URL> = {
@@ -72,7 +72,7 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
 export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
   const destinationHead = await fsa.head(path.href);
   const sourceData = await fsa.read(sourceFileInfo.path);
-  const sourceHash = hashString(sourceData);
+  const sourceHash = hashBuffer(sourceData);
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;
   }

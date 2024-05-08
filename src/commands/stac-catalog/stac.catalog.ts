@@ -5,7 +5,7 @@ import * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { hashString } from '../../utils/hash.js';
+import { hashBuffer } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
 
 /** is a path a URL */
@@ -87,7 +87,7 @@ export async function createLinks(basePath: string, templateLinks: st.StacLink[]
       const relPath = makeRelative(basePath, coll);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
-      const checksum = hashString(buf);
+      const checksum = hashBuffer(buf);
       const collLink: st.StacLink = {
         rel: 'child',
         href: fsa.join('./', relPath),

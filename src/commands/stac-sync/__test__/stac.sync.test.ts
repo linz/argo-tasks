@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { hashString } from '../../../utils/hash.js';
+import { hashBuffer } from '../../../utils/hash.js';
 import { HashKey, synchroniseFiles } from '../stac.sync.js';
 
 describe('stacSync', () => {
@@ -47,7 +47,7 @@ describe('stacSync', () => {
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
     );
     const sourceData = await fsa.read('m://source/stac/wellington/collection.json');
-    const sourceHash = hashString(sourceData);
+    const sourceHash = hashBuffer(sourceData);
     await fs.write(
       'm://destination/stac/wellington/collection.json',
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),

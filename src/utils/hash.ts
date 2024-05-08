@@ -25,11 +25,11 @@ export async function hashStream(stream: Readable): Promise<string> {
 }
 
 /**
- * Create a multihash from a string or Buffer
+ * Create a multihash from a `Buffer`
  *
- * @param x a string or `Buffer`
- * @returns sha256 multihash string of the string or `Buffer`
+ * @param data a `Buffer`
+ * @returns sha256 multihash string of a `Buffer`
  */
-export function hashString(x: Buffer | string): string {
-  return Sha256Prefix + createHash('sha256').update(x).digest('hex');
+export function hashBuffer(data: Buffer): string {
+  return Sha256Prefix + createHash('sha256').update(data).digest('hex');
 }
