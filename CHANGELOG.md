@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/linz/argo-tasks/compare/v3.7.0...v4.0.0) (2024-05-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* allow to validate asset checksums only TDE-1134 ([#982](https://github.com/linz/argo-tasks/issues/982))
+
+### Features
+
+* allow to validate asset checksums only TDE-1134 ([#982](https://github.com/linz/argo-tasks/issues/982)) ([aca5939](https://github.com/linz/argo-tasks/commit/aca59393016ae92a9a36bec0e0fb62e63cf98e5f))
+
 ## [3.7.0](https://github.com/linz/argo-tasks/compare/v3.6.1...v3.7.0) (2024-05-08)
 
 
