@@ -4,8 +4,8 @@ import { Readable } from 'stream';
 /** 1220 is the starting prefix for all sha256 multihashes
  *  - 0x12 - ID of sha256 multi hash
  *  - 0x20 - 32 bytes (256 bits) of data
- *  
- * https://multiformats.io/multihash/
+ *
+ *  https://multiformats.io/multihash/
  */
 export const Sha256Prefix = '1220';
 
