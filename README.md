@@ -258,6 +258,12 @@ stac validate s3://linz-imagery-staging/test/stac-validate/collection.json
 stac validate --checksum --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
 
+- Validate the `file:checksum` of all links (only links, not assets) inside of a collection:
+
+```bash
+stac validate --checksum-links --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+```
+
 ### `tileindex-validate`
 
 Validate or create retiling information for a list of tiffs.

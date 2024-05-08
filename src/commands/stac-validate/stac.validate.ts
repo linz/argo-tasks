@@ -9,8 +9,9 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+import { hashStream } from '../../utils/hash.js';
+import { Sha256Prefix } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
-import { hashStream } from './hash.worker.js';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -30,6 +31,12 @@ export const commandStacValidate = command({
       defaultValue: () => false,
       long: 'checksum',
       description: 'Validate the file:checksum if it exists',
+    }),
+    checksumLinks: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'checksum-links',
+      description: 'Validate the file:checksum of the links (STAC) if it exists',
     }),
     recursive: flag({
       type: boolean,
@@ -97,7 +104,7 @@ export const commandStacValidate = command({
       }
       return existing;
     }
-    const failures = [];
+    const failures: string[] = [];
     const queue = new ConcurrentQueue(args.concurrency);
 
     async function validateStac(path: string): Promise<void> {
@@ -153,30 +160,18 @@ export const commandStacValidate = command({
         }
       }
 
-      if (args.checksum && stacJson.assets) {
-        const assets = Object.entries(stacJson.assets ?? {});
-        for (const [assetName, asset] of assets) {
-          const checksum = asset['file:checksum'];
-          if (checksum == null) continue;
-          // 12-20 is the starting prefix for all sha256 multihashes
-          if (!checksum.startsWith('1220')) continue;
-
-          let source = asset.href;
-          if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
-
-          logger.debug({ source, checksum }, 'Validate:Asset');
-          const startTime = performance.now();
-
-          const hash = await hashStream(fsa.stream(source));
-          const duration = performance.now() - startTime;
-
-          if (hash === checksum) {
-            logger.debug({ assetType: assetName, source, checksum, duration }, 'Asset:Validation:Ok');
-          } else {
-            isOk = false;
-            logger.error({ assetType: assetName, source, checksum, found: hash, duration }, 'Asset:Validation:Failed');
-            failures.push(path);
-          }
+      if (args.checksum) {
+        const assetFailures = await validateAssets(stacJson, path);
+        if (assetFailures.length > 0) {
+          isOk = false;
+          failures.push(...assetFailures);
+        }
+      }
+      if (args.checksum || args.checksumLinks) {
+        const linksFailures = await validateLinks(stacJson, path);
+        if (linksFailures.length > 0) {
+          isOk = false;
+          failures.push(...linksFailures);
         }
       }
 
@@ -212,6 +207,90 @@ export const commandStacValidate = command({
     }
   },
 });
+
+/**
+ * Validate STAC Assets
+ *
+ * @param stacJson
+ * @param path absolute path of the STAC location
+ * @returns the list of link paths that failed the validation
+ */
+export async function validateAssets(
+  stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
+  path: string,
+): Promise<string[]> {
+  const assetsFailures: string[] = [];
+  const assets = Object.values(stacJson.assets ?? {}) as st.StacAsset[];
+  for (const asset of assets) {
+    const isChecksumValid = await validateStacChecksum(asset, path, false);
+    if (!isChecksumValid) {
+      assetsFailures.push(path);
+    }
+  }
+  return assetsFailures;
+}
+
+/**
+ * Validate STAC Links
+ *
+ * @param stacJson
+ * @param path absolute path to the STAC location
+ * @returns the list of link paths that failed the validation
+ */
+export async function validateLinks(
+  stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
+  path: string,
+): Promise<string[]> {
+  const linksFailures: string[] = [];
+  for (const link of stacJson.links) {
+    if (link.rel === 'self') continue;
+    // Allowing missing checksums as some STAC links might not have checksum
+    const isChecksumValid = await validateStacChecksum(link, path, true);
+    if (!isChecksumValid) {
+      linksFailures.push(path);
+    }
+  }
+  return linksFailures;
+}
+
+/**
+ * Validate if the checksum found in the stacObject (`file:checksum`) corresponds to its actual file checksum.
+ * @param stacObject a STAC Link or Asset
+ * @param path path to the STAC location
+ * @param allowMissing allow missing checksum to be valid
+ * @returns weither the checksum is valid or not
+ */
+export async function validateStacChecksum(
+  stacObject: st.StacLink | st.StacAsset,
+  path: string,
+  allowMissing: boolean,
+): Promise<boolean> {
+  let source = stacObject.href;
+  if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+  const checksum: string = stacObject['file:checksum'] as string;
+
+  if (checksum == null) {
+    if (allowMissing) return true;
+    logger.error({ source, checksum }, 'Validate:Checksum:Missing');
+    return false;
+  }
+
+  if (!checksum.startsWith(Sha256Prefix)) {
+    logger.error({ source, checksum }, 'Validate:Checksum:Unknown');
+    return false;
+  }
+  logger.debug({ source, checksum }, 'Validate:Checksum');
+  const startTime = performance.now();
+  const hash = await hashStream(fsa.stream(source));
+  const duration = performance.now() - startTime;
+
+  if (hash !== checksum) {
+    logger.error({ source, checksum, found: hash, duration }, 'Checksum:Validation:Failed');
+    return false;
+  }
+  logger.debug({ source, checksum, duration }, 'Checksum:Validation:Ok');
+  return true;
+}
 
 function getSchemaType(schemaType: string): string | null {
   switch (schemaType) {
