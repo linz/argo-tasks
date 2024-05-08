@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.0](https://github.com/linz/argo-tasks/compare/v3.6.1...v3.7.0) (2024-05-08)
+
+
+### Features
+
+* **basemaps:** Get vector title from the collection.json file. BM-1017 ([#970](https://github.com/linz/argo-tasks/issues/970)) ([73f912f](https://github.com/linz/argo-tasks/commit/73f912f2ecd62c98a070944d5ef8b2749fafa145))
+* stac validate links checksum TDE-1134 ([#972](https://github.com/linz/argo-tasks/issues/972)) ([3bd091c](https://github.com/linz/argo-tasks/commit/3bd091cf9bc20bb190025610cbe859be1329b067))
+
 ## [3.6.1](https://github.com/linz/argo-tasks/compare/v3.6.0...v3.6.1) (2024-04-18)
 
 
