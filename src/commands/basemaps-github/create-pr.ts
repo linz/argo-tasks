@@ -133,6 +133,12 @@ export const CommandCreatePRArgs = {
     long: 'individual',
     description: 'Import imagery as individual layer in basemaps.',
   }),
+  vector: flag({
+    type: boolean,
+    defaultValue: () => false,
+    long: 'vector',
+    description: 'To Deprecate replaced by config-type=vector',
+  }),
   ticket: option({
     type: optional(string),
     long: 'ticket',
@@ -158,7 +164,8 @@ export const basemapsCreatePullRequest = command({
 
     const layer: ConfigLayer = { name: '', title: '' };
     let region;
-    if (args.configType === ConfigType.Vector) {
+    const configType = args.vector ? ConfigType.Vector : args.configType;
+    if (configType === ConfigType.Vector) {
       for (const target of targets) {
         const info = await parseVectorTargetInfo(target);
         layer.name = info.name;
@@ -179,12 +186,12 @@ export const basemapsCreatePullRequest = command({
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
-    if (args.configType === ConfigType.Vector) {
+    if (configType === ConfigType.Vector) {
       await git.updateVectorTileSet(layer.name, layer, args.individual);
-    } else if (args.configType === ConfigType.Raster) {
+    } else if (configType === ConfigType.Raster) {
       await git.updateRasterTileSet(layer.name, layer, category, args.individual, region);
-    } else if (args.configType === ConfigType.Elevation) {
+    } else if (configType === ConfigType.Elevation) {
       await git.updateElevationTileSet(layer.name, layer, category, args.individual, region);
-    } else throw new Error(`Invalid Config File target: ${args.configType}`);
+    } else throw new Error(`Invalid Config File target: ${configType}`);
   },
 });
