@@ -80,7 +80,9 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   assertValidBucket(bucket, validTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
-  if (filename == null || !filename.endsWith('.tar.co')) throw new Error(`Invalid cotar filename for vector map ${filename}.`);
+  if (filename == null || !filename.endsWith('.tar.co')) {
+    throw new Error(`Invalid cotar filename for vector map ${filename}.`);
+  }
   if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
   // Try to get the title
   const collectionPath = target.replace(filename, 'collection.json');
