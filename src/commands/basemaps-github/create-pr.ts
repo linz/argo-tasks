@@ -75,13 +75,17 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   const splits = url.pathname.split('/');
   const epsg = Epsg.tryGet(Number(splits[2]));
   const name = splits[3];
+  const filename = splits.at(-1);
 
   assertValidBucket(bucket, validTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
+  if (filename == null || !filename.endsWith('.tar.co')) {
+    throw new Error(`Invalid cotar filename for vector map ${filename}.`);
+  }
   if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
   // Try to get the title
-  const collectionPath = fsa.join(target, 'collection.json');
+  const collectionPath = target.replace(filename, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');
