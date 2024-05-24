@@ -94,9 +94,7 @@ export class MakeCogGithub {
     if (individual) {
       if (region == null) region = 'individual';
       // Prepare new standalone tileset config
-      layer.category = category;
-      layer.minZoom = 0;
-      layer.maxZoom = 32;
+      const targetLayer = { ...layer, category, minZoom: 0, maxZoom: 32 };
       const tileSet: ConfigTileSetRaster = {
         type: TileSetType.Raster,
         id: `ts_${layer.name}`,
@@ -104,7 +102,7 @@ export class MakeCogGithub {
         title: layer.title,
         background: { r: 0, g: 0, b: 0, alpha: 0 },
         category,
-        layers: [layer],
+        layers: [targetLayer],
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
       // Github create pull request
@@ -140,16 +138,14 @@ export class MakeCogGithub {
     if (individual) {
       if (region == null) region = 'individual';
       // Prepare new standalone tileset config
-      layer.category = category;
-      layer.minZoom = 0;
-      layer.maxZoom = 32;
+      const targetLayer = { ...layer, category, minZoom: 0, maxZoom: 32 };
       const tileSet: ConfigTileSetRaster = {
         type: TileSetType.Raster,
         id: `ts_${layer.name}`,
         name: layer.name,
         title: layer.title,
         category,
-        layers: [layer],
+        layers: [targetLayer],
         outputs: [DefaultTerrainRgbOutput, DefaultColorRampOutput],
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', `${layer.name}.json`);
