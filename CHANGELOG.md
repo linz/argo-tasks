@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.1.0](https://github.com/linz/argo-tasks/compare/v4.0.0...v4.1.0) (2024-05-23)
+
+
+### Features
+
+* allow paths to be split on ";" or "\n" ([#992](https://github.com/linz/argo-tasks/issues/992)) ([7284b23](https://github.com/linz/argo-tasks/commit/7284b23bdf0224cce2075246106b930fafd29208))
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the collection.json path for the vector data. ([#987](https://github.com/linz/argo-tasks/issues/987)) ([17c8d89](https://github.com/linz/argo-tasks/commit/17c8d89a75bcd1b9325db9a69ca111b374c46c6b))
+
 ## [4.0.0](https://github.com/linz/argo-tasks/compare/v3.7.0...v4.0.0) (2024-05-08)
 
 
