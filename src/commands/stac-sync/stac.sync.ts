@@ -37,7 +37,7 @@ export const commandStacSync = command({
 });
 
 /** Key concatenated to 'x-amz-meta-' */
-export const HashKey = 'linz-hash';
+export const HashKey = 'multihash';
 
 /**
  * Synchronise STAC (JSON) files from a path to another.
