@@ -1,6 +1,10 @@
 import { createHash } from 'crypto';
 import { Readable } from 'stream';
 
+/** Key concatenated to 'x-amz-meta-' */
+export const HashKey = 'multihash';
+
+
 /** 1220 is the starting prefix for all sha256 multihashes
  *  - 0x12 - ID of sha256 multi hash
  *  - 0x20 - 32 bytes (256 bits) of data

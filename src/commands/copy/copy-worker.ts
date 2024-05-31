@@ -4,12 +4,15 @@ import { parentPort, threadId } from 'node:worker_threads';
 import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
+import { createHash } from 'crypto';
 
 import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+import { HashKey } from '../../utils/hash.js';
 import { registerCli } from '../common.js';
 import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
+import { HashTransform } from './hash.stream.js';
 
 const Q = new ConcurrentQueue(10);
 
@@ -44,12 +47,12 @@ export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
  *
  * @param filePath File to head
  * @param retryCount number of times to retry
- * @returns file size if it exists or null
+ * @returns FileInfo if it exists or null
  */
-async function tryHead(filePath: string, retryCount = 3): Promise<number | null> {
+async function tryHead(filePath: string, retryCount = 3): Promise<FileInfo | null> {
   for (let i = 0; i < retryCount; i++) {
     const ret = await fsa.head(filePath);
-    if (ret?.size) return ret.size;
+    if (ret) return ret;
     await new Promise((r) => setTimeout(r, 250));
   }
   return null;
@@ -69,8 +72,8 @@ export const worker = new WorkerRpc<CopyContract>({
         const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
         if (source == null) return;
         if (source.size == null) return;
-        if (target != null) {
-          if (source?.size === target.size && args.noClobber) {
+        if (target != null && source.metadata && target.metadata) {
+          if (source?.size === target.size && source.metadata[HashKey] === target.metadata[HashKey] && args.noClobber) {
             log.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
             stats.skipped++;
             stats.skippedBytes += source.size;
@@ -83,23 +86,31 @@ export const worker = new WorkerRpc<CopyContract>({
           }
         }
 
+        const sourceStream = fsa.stream(todo.source).pipe(new HashTransform('sha256'));
+
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
-        await fsa.write(
-          todo.target,
-          fsa.stream(todo.source),
-          args.fixContentType ? fixFileMetadata(todo.source, source) : source,
-        );
+
+        await fsa.write(todo.target, sourceStream, args.fixContentType ? fixFileMetadata(todo.source, source) : source);
 
         // Validate the file moved successfully
-        const targetSize = await tryHead(todo.target);
-        if (targetSize !== source.size) {
+        const targetInfo = await tryHead(todo.target);
+        let targetHash;
+        if (targetInfo?.metadata) {
+          targetHash = targetInfo.metadata[HashKey];
+        } else if (!todo.target.startsWith('s3://')) {
+          const buf = await fsa.read(todo.target);
+          // Multihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
+          targetHash = '1220' + createHash('sha256').update(buf).digest('hex');
+        }
+
+        if (targetInfo?.size !== source.size || targetHash !== sourceStream.multihash) {
           log.fatal({ ...todo }, 'Copy:Failed');
           // Cleanup the failed copy so it can be retried
-          if (targetSize != null) await fsa.delete(todo.target);
+          if (targetInfo?.size != null) await fsa.delete(todo.target);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
-        log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
+        log.debug({ ...todo, size: targetInfo.size, duration: performance.now() - startTime }, 'File:Copy');
 
         stats.copied++;
         stats.copiedBytes += source.size;

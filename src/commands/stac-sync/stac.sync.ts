@@ -1,10 +1,11 @@
 import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { command, positional, string, Type } from 'cmd-ts';
+import { createHash } from 'crypto';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { hashBuffer } from '../../utils/hash.js';
+import { HashKey } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
 
 const S3Path: Type<string, URL> = {
@@ -36,9 +37,6 @@ export const commandStacSync = command({
   },
 });
 
-/** Key concatenated to 'x-amz-meta-' */
-export const HashKey = 'linz-hash';
-
 /**
  * Synchronise STAC (JSON) files from a path to another.
  *
@@ -61,7 +59,6 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
 
   return count;
 }
-
 /**
  * Upload a file to the destination if the same version (matched hash) does not exist.
  *
@@ -72,7 +69,7 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
 export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
   const destinationHead = await fsa.head(path.href);
   const sourceData = await fsa.read(sourceFileInfo.path);
-  const sourceHash = hashBuffer(sourceData);
+  const sourceHash = '1220' + createHash('sha256').update(sourceData).digest('hex');
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;
   }
