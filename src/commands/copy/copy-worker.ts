@@ -46,7 +46,7 @@ export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
  *
  * @param filePath File to head
  * @param retryCount number of times to retry
- * @returns FileInfo if it exists or null
+ * @returns file size if it exists or null
  */
 async function tryHead(filePath: string, retryCount = 3): Promise<number | null> {
   for (let i = 0; i < retryCount; i++) {
