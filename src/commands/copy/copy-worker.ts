@@ -8,10 +8,10 @@ import { WorkerRpc } from '@wtrpc/core';
 import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { HashKey, hashStream } from '../../utils/hash.js';
+import { HashTransform } from '../../utils/hash.stream.js';
 import { registerCli } from '../common.js';
 import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
-import { HashTransform } from './hash.stream.js';
 
 const Q = new ConcurrentQueue(10);
 
