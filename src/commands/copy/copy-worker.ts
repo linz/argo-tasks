@@ -48,10 +48,10 @@ export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
  * @param retryCount number of times to retry
  * @returns FileInfo if it exists or null
  */
-async function tryHead(filePath: string, retryCount = 3): Promise<FileInfo | null> {
+async function tryHead(filePath: string, retryCount = 3): Promise<number | null> {
   for (let i = 0; i < retryCount; i++) {
     const ret = await fsa.head(filePath);
-    if (ret) return ret;
+    if (ret?.size) return ret.size;
     await new Promise((r) => setTimeout(r, 250));
   }
   return null;
@@ -116,15 +116,15 @@ export const worker = new WorkerRpc<CopyContract>({
         await fsa.write(todo.target, sourceStream, args.fixContentType ? fixFileMetadata(todo.source, source) : source);
         const targetHash = hTransform.multihash;
         // Validate the file moved successfully
-        const targetInfo = await tryHead(todo.target);
+        const targetSize = await tryHead(todo.target);
 
-        if (targetInfo?.size !== source.size || targetHash !== source.metadata[HashKey]) {
+        if (targetSize !== source.size || targetHash !== source.metadata[HashKey]) {
           log.fatal({ ...todo, sourceHash: source.metadata[HashKey], targetHash: targetHash }, 'Copy:Failed');
           // Cleanup the failed copy so it can be retried
-          if (targetInfo?.size != null) await fsa.delete(todo.target);
+          if (targetSize != null) await fsa.delete(todo.target);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
-        log.debug({ ...todo, size: targetInfo.size, duration: performance.now() - startTime }, 'File:Copy');
+        log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
 
         stats.copied++;
         stats.copiedBytes += source.size;
