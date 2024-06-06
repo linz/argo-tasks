@@ -151,4 +151,140 @@ describe('copyFiles', () => {
     assert.equal(tiffSource?.contentType, 'binary/octet-stream');
     assert.equal(tiffTarget?.contentType, 'binary/octet-stream');
   });
+
+  it('should not copy files when different size or multihash but no force', async () => {
+    await Promise.all([
+      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          multihash: '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+          unique: 'fileA',
+        },
+      }),
+      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: { multihash: 'different', unique: 'fileB' },
+      }),
+    ]);
+    assert.rejects(
+      worker.routes.copy({
+        id: '1',
+        manifest: [
+          {
+            source: 'memory://source/topographic.json',
+            target: 'memory://target/topographic.json',
+          },
+        ],
+        start: 0,
+        size: 1,
+        force: false,
+        noClobber: true,
+        fixContentType: false,
+      }),
+    );
+  });
+
+  it('should not not copy files when same size and multihash', async () => {
+    await Promise.all([
+      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          multihash: '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+          unique: 'fileA',
+        },
+      }),
+      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          multihash: '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+          unique: 'fileB',
+        },
+      }),
+    ]);
+    await worker.routes.copy({
+      id: '1',
+      manifest: [
+        {
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
+        },
+      ],
+      start: 0,
+      size: 1,
+      force: true,
+      noClobber: true,
+      fixContentType: false,
+    });
+    const jsonTarget = await fsa.head('memory://target/topographic.json');
+
+    assert.equal(jsonTarget?.metadata?.['unique'], 'fileB');
+  });
+
+  it('should copy files when same size but different multihashes', async () => {
+    await Promise.all([
+      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          multihash: '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+          unique: 'fileA',
+        },
+      }),
+      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: { multihash: 'different', unique: 'fileB' },
+      }),
+    ]);
+    await worker.routes.copy({
+      id: '1',
+      manifest: [
+        {
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
+        },
+      ],
+      start: 0,
+      size: 1,
+      force: true,
+      noClobber: true,
+      fixContentType: false,
+    });
+    const jsonTarget = await fsa.head('memory://target/topographic.json');
+    assert.equal(jsonTarget?.metadata?.['unique'], 'fileA');
+  });
+
+  it('should copy files when same size but no multihash', async () => {
+    await Promise.all([
+      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          unique: 'fileA',
+        },
+      }),
+      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+        contentType: 'application/octet-stream',
+        metadata: { unique: 'fileB' },
+      }),
+    ]);
+    await worker.routes.copy({
+      id: '1',
+      manifest: [
+        {
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
+        },
+      ],
+      start: 0,
+      size: 1,
+      force: true,
+      noClobber: true,
+      fixContentType: false,
+    });
+    const jsonTarget = await fsa.head('memory://target/topographic.json');
+
+    assert.equal(jsonTarget?.metadata?.['unique'], 'fileA');
+    assert.equal(
+      jsonTarget?.metadata?.['multihash'],
+      '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+    );
+  });
 });

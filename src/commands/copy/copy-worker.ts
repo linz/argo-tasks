@@ -4,11 +4,10 @@ import { parentPort, threadId } from 'node:worker_threads';
 import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
-import { createHash } from 'crypto';
 
 import { baseLogger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { HashKey } from '../../utils/hash.js';
+import { HashKey, hashStream } from '../../utils/hash.js';
 import { registerCli } from '../common.js';
 import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 import { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.js';
@@ -72,8 +71,31 @@ export const worker = new WorkerRpc<CopyContract>({
         const [source, target] = await Promise.all([fsa.head(todo.source), fsa.head(todo.target)]);
         if (source == null) return;
         if (source.size == null) return;
-        if (target != null && source.metadata && target.metadata) {
-          if (source?.size === target.size && source.metadata[HashKey] === target.metadata[HashKey] && args.noClobber) {
+        if (source.metadata == null) {
+          source.metadata = {};
+        }
+
+        if (source.metadata[HashKey] == null) {
+          log.trace({ path: todo.source, size: source.size }, 'File:Copy:HashingSource');
+          const startTime = performance.now();
+          source.metadata[HashKey] = await hashStream(fsa.stream(todo.source));
+          log.info(
+            {
+              path: todo.source,
+              size: source.size,
+              multihash: source.metadata[HashKey],
+              duration: performance.now() - startTime,
+            },
+            'File:Copy:HashingSource',
+          );
+        }
+        if (target != null) {
+          // if the target file does not have a `multihash` stored as metadata, the system won't hash the file (as it's done for the source) to verify it against the source `multihash` to make sure the copy is not skipped. This is intentional in order to actually copy the file to be able to store the `multihash` in the AWS s3 metadata.
+          if (
+            source?.size === target.size &&
+            source.metadata[HashKey] === target.metadata?.[HashKey] &&
+            args.noClobber
+          ) {
             log.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
             stats.skipped++;
             stats.skippedBytes += source.size;
@@ -85,27 +107,19 @@ export const worker = new WorkerRpc<CopyContract>({
             throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
           }
         }
-
-        const sourceStream = fsa.stream(todo.source).pipe(new HashTransform('sha256'));
+        const hTransform = new HashTransform('sha256');
+        const sourceStream = fsa.stream(todo.source).pipe(hTransform);
 
         log.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
 
         await fsa.write(todo.target, sourceStream, args.fixContentType ? fixFileMetadata(todo.source, source) : source);
-
+        const targetHash = hTransform.multihash;
         // Validate the file moved successfully
         const targetInfo = await tryHead(todo.target);
-        let targetHash;
-        if (targetInfo?.metadata) {
-          targetHash = targetInfo.metadata[HashKey];
-        } else if (!todo.target.startsWith('s3://')) {
-          const buf = await fsa.read(todo.target);
-          // Multihash header 0x12 - Sha256 0x20 - 32 bits of hex digest
-          targetHash = '1220' + createHash('sha256').update(buf).digest('hex');
-        }
 
-        if (targetInfo?.size !== source.size || targetHash !== sourceStream.multihash) {
-          log.fatal({ ...todo }, 'Copy:Failed');
+        if (targetInfo?.size !== source.size || targetHash !== source.metadata[HashKey]) {
+          log.fatal({ ...todo, sourceHash: source.metadata[HashKey], targetHash: targetHash }, 'Copy:Failed');
           // Cleanup the failed copy so it can be retried
           if (targetInfo?.size != null) await fsa.delete(todo.target);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
