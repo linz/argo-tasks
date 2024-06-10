@@ -9,6 +9,7 @@ import { worker } from '../copy-worker.js';
 describe('copyFiles', () => {
   const memory = new FsMemory();
   fsa.register('memory://', memory);
+  const fakeMultihash = '1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
   beforeEach(() => {
     memory.files.clear();
@@ -163,7 +164,7 @@ describe('copyFiles', () => {
       }),
       fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/octet-stream',
-        metadata: { multihash: 'different', unique: 'fileB' },
+        metadata: { multihash: fakeMultihash, unique: 'fileB' },
       }),
     ]);
     assert.rejects(
@@ -232,7 +233,10 @@ describe('copyFiles', () => {
       }),
       fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/octet-stream',
-        metadata: { multihash: 'different', unique: 'fileB' },
+        metadata: {
+          multihash: fakeMultihash,
+          unique: 'fileB',
+        },
       }),
     ]);
     await worker.routes.copy({
