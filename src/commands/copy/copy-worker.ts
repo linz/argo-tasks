@@ -104,7 +104,7 @@ export const worker = new WorkerRpc<CopyContract>({
 
           if (!args.force) {
             log.error({ target: target.path, source: source.path }, 'File:Overwrite');
-            throw new Error('Cannot overwrite file: ' + todo.target + ' source:' + todo.source);
+            throw new Error('Cannot overwrite file: ' + todo.target + ' source: ' + todo.source);
           }
         }
         const hTransform = new HashTransform('sha256');

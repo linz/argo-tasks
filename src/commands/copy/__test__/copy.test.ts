@@ -181,6 +181,7 @@ describe('copyFiles', () => {
         noClobber: true,
         fixContentType: false,
       }),
+      new Error('Cannot overwrite file: memory://target/topographic.json source: memory://source/topographic.json'),
     );
   });
 
