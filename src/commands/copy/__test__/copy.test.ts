@@ -155,14 +155,14 @@ describe('copyFiles', () => {
 
   it('should not copy files when different size or multihash but no force', async () => {
     await Promise.all([
-      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: 'abc' })), {
         contentType: 'application/octet-stream',
         metadata: {
           multihash: '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
           unique: 'fileA',
         },
       }),
-      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: 'abcd' })), {
         contentType: 'application/octet-stream',
         metadata: { multihash: fakeMultihash, unique: 'fileB' },
       }),
@@ -224,14 +224,14 @@ describe('copyFiles', () => {
 
   it('should copy files when same size but different multihashes', async () => {
     await Promise.all([
-      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+      fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: 'a' })), {
         contentType: 'application/octet-stream',
         metadata: {
-          multihash: '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
+          multihash: '12201c7836b489f13dc3f29a2222fb3dc4079085fe07ef51a3e0f7a215fadf364031',
           unique: 'fileA',
         },
       }),
-      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
+      fsa.write('memory://target/topographic.json', Buffer.from(JSON.stringify({ test: 'b' })), {
         contentType: 'application/octet-stream',
         metadata: {
           multihash: fakeMultihash,
