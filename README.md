@@ -10,6 +10,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 - [lds-fetch-layer](#lds-fetch-layer)
 - [create-manifest](#create-manifest)
+- [copy](#copy)
 - [group](#group)
 - [generate-path](#generate-path)
 - [list](#list)
@@ -113,7 +114,11 @@ create-manifest s3://link-workflow-artifacts/sample/flat --include ".*.tiff$"  -
 
 ### `copy`
 
-Copy a manifest of files between two locations, for manifest creation see [create-manifest](#create-manifest).
+Copy the files in the manifest between two locations. For manifest creation see [create-manifest](#create-manifest).
+
+Only copy files which have changed when using the `--no-clobber` (or `--force-no-clobber`) option.
+
+Always copy files even if they have changed when using the `--force` option.
 
 #### Example
 

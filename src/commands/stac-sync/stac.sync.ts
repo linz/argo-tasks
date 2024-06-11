@@ -4,7 +4,7 @@ import { command, positional, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { hashBuffer } from '../../utils/hash.js';
+import { hashBuffer, HashKey } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
 
 const S3Path: Type<string, URL> = {
@@ -36,9 +36,6 @@ export const commandStacSync = command({
   },
 });
 
-/** Key concatenated to 'x-amz-meta-' */
-export const HashKey = 'multihash';
-
 /**
  * Synchronise STAC (JSON) files from a path to another.
  *
@@ -61,7 +58,6 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
 
   return count;
 }
-
 /**
  * Upload a file to the destination if the same version (matched hash) does not exist.
  *
