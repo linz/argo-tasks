@@ -6,6 +6,7 @@ import {
   ConfigTileSetVector,
   TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
+import { TileSetConfigSchema } from '@basemaps/config-loader/build/json/parse.tile.set.js';
 import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.js';
@@ -95,18 +96,17 @@ export class MakeCogGithub {
       if (region == null) region = 'individual';
       // Prepare new standalone tileset config
       const targetLayer = { ...layer, category, minZoom: 0, maxZoom: 32 };
-      const tileSet: ConfigTileSetRaster = {
+      const tileSet: TileSetConfigSchema = {
         type: TileSetType.Raster,
         id: `ts_${layer.name}`,
-        name: layer.name,
         title: layer.title,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
+        background: '#00000000',
         category,
         layers: [targetLayer],
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet as ConfigTileSetRaster);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
@@ -139,10 +139,9 @@ export class MakeCogGithub {
       if (region == null) region = 'individual';
       // Prepare new standalone tileset config
       const targetLayer = { ...layer, category, minZoom: 0, maxZoom: 32 };
-      const tileSet: ConfigTileSetRaster = {
+      const tileSet: TileSetConfigSchema = {
         type: TileSetType.Raster,
         id: `ts_${layer.name}`,
-        name: layer.name,
         title: layer.title,
         category,
         layers: [targetLayer],
@@ -150,7 +149,7 @@ export class MakeCogGithub {
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', `${layer.name}.json`);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet as ConfigTileSetRaster);
     } else {
       // Prepare new elevation tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `elevation.json`);
