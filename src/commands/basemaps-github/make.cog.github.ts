@@ -106,7 +106,7 @@ export class MakeCogGithub {
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet as ConfigTileSetRaster);
+      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
@@ -149,7 +149,7 @@ export class MakeCogGithub {
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', `${layer.name}.json`);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet as ConfigTileSetRaster);
+      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
     } else {
       // Prepare new elevation tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `elevation.json`);
@@ -263,7 +263,7 @@ export class MakeCogGithub {
     branch: string,
     title: string,
     tileSetPath: string,
-    newTileSet: ConfigTileSet | undefined,
+    newTileSet: ConfigTileSet | TileSetConfigSchema | undefined,
   ): Promise<void> {
     // skip pull request tileset prepare failure.
     if (newTileSet == null) throw new Error(`Failed to prepare new tileSet for ${tileSetPath}.`);
