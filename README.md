@@ -10,6 +10,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 - [lds-fetch-layer](#lds-fetch-layer)
 - [create-manifest](#create-manifest)
+- [copy](#copy)
 - [group](#group)
 - [generate-path](#generate-path)
 - [list](#list)
@@ -113,7 +114,11 @@ create-manifest s3://link-workflow-artifacts/sample/flat --include ".*.tiff$"  -
 
 ### `copy`
 
-Copy a manifest of files between two locations, for manifest creation see [create-manifest](#create-manifest).
+Copy the files in the manifest between two locations. For manifest creation see [create-manifest](#create-manifest).
+
+Only copy files which have changed when using the `--no-clobber` (or `--force-no-clobber`) option.
+
+Always copy files even if they have changed when using the `--force` option.
 
 #### Example
 
@@ -255,7 +260,19 @@ stac validate s3://linz-imagery-staging/test/stac-validate/collection.json
 - Validate a the `file:checksum` of all assets inside of a collection:
 
 ```bash
-stac validate --checksum --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+stac validate --checksum-assets --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+```
+
+- Validate the `file:checksum` of all STAC links inside of a collection:
+
+```bash
+stac validate --checksum-links --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+```
+
+- Validate the `file:checksum` of all assets and STAC links inside of a collection:
+
+```bash
+stac validate --checksum-assets --checksum-links --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
 
 ### `tileindex-validate`

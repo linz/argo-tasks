@@ -1,5 +1,50 @@
 # Changelog
 
+## [4.2.0](https://github.com/linz/argo-tasks/compare/v4.1.0...v4.2.0) (2024-06-11)
+
+
+### Features
+
+* **basemaps:** Update the create-pr cli to support elevation config. BM-936 ([#953](https://github.com/linz/argo-tasks/issues/953)) ([1ddd8fb](https://github.com/linz/argo-tasks/commit/1ddd8fbfec78c4283541de66f76b1d27512944d8))
+* verify multihash when copy TDE-1181 TDE-1172 ([#1001](https://github.com/linz/argo-tasks/issues/1001)) ([84e261b](https://github.com/linz/argo-tasks/commit/84e261b99829a136eadd90ba1c1d39c4d5da58be))
+
+
+### Bug Fixes
+
+* prevent deadlock when validating bits per sample TDE-1201 ([#1007](https://github.com/linz/argo-tasks/issues/1007)) ([5d44748](https://github.com/linz/argo-tasks/commit/5d44748aace4d7c837e1afb4ebcbd7fd02ad30c7))
+* uniform checksum s3 metadata key TDE-1181 ([#999](https://github.com/linz/argo-tasks/issues/999)) ([c177234](https://github.com/linz/argo-tasks/commit/c17723499e7c55cad5559fd9eeb81376061f4aa2))
+
+## [4.1.0](https://github.com/linz/argo-tasks/compare/v4.0.0...v4.1.0) (2024-05-23)
+
+
+### Features
+
+* allow paths to be split on ";" or "\n" ([#992](https://github.com/linz/argo-tasks/issues/992)) ([7284b23](https://github.com/linz/argo-tasks/commit/7284b23bdf0224cce2075246106b930fafd29208))
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the collection.json path for the vector data. ([#987](https://github.com/linz/argo-tasks/issues/987)) ([17c8d89](https://github.com/linz/argo-tasks/commit/17c8d89a75bcd1b9325db9a69ca111b374c46c6b))
+
+## [4.0.0](https://github.com/linz/argo-tasks/compare/v3.7.0...v4.0.0) (2024-05-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* allow to validate asset checksums only TDE-1134 ([#982](https://github.com/linz/argo-tasks/issues/982))
+
+### Features
+
+* allow to validate asset checksums only TDE-1134 ([#982](https://github.com/linz/argo-tasks/issues/982)) ([aca5939](https://github.com/linz/argo-tasks/commit/aca59393016ae92a9a36bec0e0fb62e63cf98e5f))
+
+## [3.7.0](https://github.com/linz/argo-tasks/compare/v3.6.1...v3.7.0) (2024-05-08)
+
+
+### Features
+
+* **basemaps:** Get vector title from the collection.json file. BM-1017 ([#970](https://github.com/linz/argo-tasks/issues/970)) ([73f912f](https://github.com/linz/argo-tasks/commit/73f912f2ecd62c98a070944d5ef8b2749fafa145))
+* stac validate links checksum TDE-1134 ([#972](https://github.com/linz/argo-tasks/issues/972)) ([3bd091c](https://github.com/linz/argo-tasks/commit/3bd091cf9bc20bb190025610cbe859be1329b067))
+
 ## [3.6.1](https://github.com/linz/argo-tasks/compare/v3.6.0...v3.6.1) (2024-04-18)
 
 

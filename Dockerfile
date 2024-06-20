@@ -1,4 +1,4 @@
-FROM node:18-slim@sha256:caea82ddba051b3f8157bf6d12c732d6f232b56af0dcefd4b51d8d9f5196e9dd
+FROM node:20-slim@sha256:cffed8cd39d6a380434e6d08116d188c53e70611175cd5ec7700f93f32a935a6
 
 RUN apt-get update && apt-get install openssh-client git -y
 

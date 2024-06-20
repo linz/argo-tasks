@@ -1,5 +1,5 @@
+import { standardizeLayerName } from '@basemaps/config';
 import { ConfigLayer } from '@basemaps/config/build/config/tile.set.js';
-import { standardizeLayerName } from '@basemaps/config/build/json/name.convertor.js';
 import { Epsg, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
@@ -14,6 +14,12 @@ export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-b
 export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
 
 export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
+
+export enum ConfigType {
+  Raster = 'raster',
+  Vector = 'vector',
+  Elevation = 'elevation',
+}
 
 function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
   // Validate the target information
@@ -43,7 +49,7 @@ async function parseRasterTargetInfo(
   const title = collection.title;
   if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionPath}`);
 
-  //Validate the source location
+  // Validate the source location
   const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
@@ -77,14 +83,29 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   const splits = url.pathname.split('/');
   const epsg = Epsg.tryGet(Number(splits[2]));
   const name = splits[3];
+  const filename = splits.at(-1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
+  if (filename == null || !filename.endsWith('.tar.co')) {
+    throw new Error(`Invalid cotar filename for vector map ${filename}.`);
+  }
   if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
-  // Try to get the region for individual layers
+  // Try to get the title
+  const collectionPath = target.replace(filename, 'collection.json');
+  const collection = await fsa.readJson<StacCollection>(collectionPath);
+  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');
+  let title = collection.title;
+  // Get title from lds:title for individual vector layer
+  if (ldsLayers.length === 1) {
+    const ldsTitle = ldsLayers[0]?.['lds:title'];
+    if (ldsTitle != null) title = String(ldsTitle);
+  }
+  if (title == null) throw new Error(`Failed to get title from collection.json.`);
 
-  return { name: name, epsg: epsg.code, title: name };
+  return { name: name, epsg: epsg.code, title };
 }
 
 export const CommandCreatePRArgs = {
@@ -106,6 +127,12 @@ export const CommandCreatePRArgs = {
     defaultValue: () => 'linz/basemaps-config',
     defaultValueIsSerializable: true,
   }),
+  configType: option({
+    type: optional(oneOf(Object.values(ConfigType))),
+    long: 'config-type',
+    description: `Basemaps config file type, includes ${[...Object.values(ConfigType)].join(', ')}`,
+    defaultValue: () => ConfigType.Raster,
+  }),
   individual: flag({
     type: boolean,
     defaultValue: () => false,
@@ -116,7 +143,7 @@ export const CommandCreatePRArgs = {
     type: boolean,
     defaultValue: () => false,
     long: 'vector',
-    description: 'Import layer into vector config in basemaps.',
+    description: 'To Deprecate replaced by config-type=vector',
   }),
   ticket: option({
     type: optional(string),
@@ -143,7 +170,8 @@ export const basemapsCreatePullRequest = command({
 
     const layer: ConfigLayer = { name: '', title: '' };
     let region;
-    if (args.vector) {
+    const configType = args.vector ? ConfigType.Vector : args.configType;
+    if (configType === ConfigType.Vector) {
       for (const target of targets) {
         const info = await parseVectorTargetInfo(target);
         layer.name = info.name;
@@ -164,7 +192,12 @@ export const basemapsCreatePullRequest = command({
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
-    if (args.vector) await git.updateVectorTileSet(layer.name, layer);
-    else await git.updateRasterTileSet('aerial', layer, category, region);
+    if (configType === ConfigType.Vector) {
+      await git.updateVectorTileSet(layer.name, layer, args.individual);
+    } else if (configType === ConfigType.Raster) {
+      await git.updateRasterTileSet(layer.name, layer, category, args.individual, region);
+    } else if (configType === ConfigType.Elevation) {
+      await git.updateElevationTileSet(layer.name, layer, category, args.individual, region);
+    } else throw new Error(`Invalid Config File target: ${configType}`);
   },
 });

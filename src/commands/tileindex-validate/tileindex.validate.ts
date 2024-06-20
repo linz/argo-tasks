@@ -9,7 +9,7 @@ import { isArgo } from '../../utils/argo.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
-import { config, createTiff, forceOutput, registerCli, TiffQueue, verbose } from '../common.js';
+import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
 export function isTiff(x: string): boolean {
@@ -28,6 +28,8 @@ export const TiffLoader = {
   async load(locations: string[], args?: FileFilter): Promise<Tiff[]> {
     const files = await getFiles(locations, args);
     const tiffLocations = files.flat().filter(isTiff);
+    const startTime = performance.now();
+    logger.info({ count: tiffLocations.length }, 'Tiff:Load:Start');
     if (tiffLocations.length === 0) throw new Error('No Files found');
     // Ensure credentials are loaded before concurrently loading tiffs
     if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
@@ -49,6 +51,7 @@ export const TiffLoader = {
       // We are processing only 8 bits Tiff for now
       output.push(prom.value);
     }
+    logger.info({ count: output.length, duration: performance.now() - startTime }, 'Tiffs:Loaded');
     return output;
   },
 };
@@ -120,7 +123,8 @@ async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
   let rejected: boolean = false;
 
   if (preset === 'webp') {
-    const results = await Promise.allSettled(tiffs.map((f) => TiffQueue(() => validate8BitsTiff(f))));
+    const promises = tiffs.map((f) => validate8BitsTiff(f));
+    const results = await Promise.allSettled(promises);
     for (const r of results) {
       if (r.status === 'rejected') {
         rejected = true;
@@ -194,6 +198,7 @@ export const commandTileIndexValidate = command({
     location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
   async handler(args) {
+    const startTime = performance.now();
     registerCli(this, args);
     logger.info('TileIndex:Start');
 
@@ -241,6 +246,8 @@ export const commandTileIndexValidate = command({
           });
         }),
       });
+      logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:InputGeoJson');
+
       await fsa.write('/tmp/tile-index-validate/output.geojson', {
         type: 'FeatureCollection',
         features: [...outputs.values()].map((locs) => {
@@ -254,12 +261,15 @@ export const commandTileIndexValidate = command({
           });
         }),
       });
+      logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:OutputGeojson');
+
       await fsa.write(
         '/tmp/tile-index-validate/file-list.json',
         [...outputs.values()].map((locs) => {
           return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
         }),
       );
+      logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputs.size }, 'Write:FileList');
     }
 
     let retileNeeded = false;
@@ -285,6 +295,8 @@ export const commandTileIndexValidate = command({
 
     if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
     // TODO do we care if no files are left?
+
+    logger.info({ duration: performance.now() - startTime }, 'TileIndex:Done');
   },
 });
 
