@@ -20,7 +20,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "npx eslint . --ignore-path .gitignore",
-    "test": "node --test"
+    "test": "node --test 'build/**/*.test.js'"
   },
   "publishConfig": {
     "access": "restricted"
