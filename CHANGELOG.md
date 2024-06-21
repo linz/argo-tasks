@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.1](https://github.com/linz/argo-tasks/compare/v4.2.0...v4.2.1) (2024-06-21)
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the aerial config path for create pr cli. ([#1013](https://github.com/linz/argo-tasks/issues/1013)) ([eed59e9](https://github.com/linz/argo-tasks/commit/eed59e9833176be7480134430b1d25ef12623d99))
+
 ## [4.2.0](https://github.com/linz/argo-tasks/compare/v4.1.0...v4.2.0) (2024-06-11)
 
 
