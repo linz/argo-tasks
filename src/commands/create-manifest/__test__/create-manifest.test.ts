@@ -6,13 +6,13 @@ import { FsMemory } from '@chunkd/source-memory';
 
 import { createManifest, validatePaths } from '../create-manifest.js';
 
-describe('createManifest', () => {
+void describe('createManifest', () => {
   beforeEach(() => {
     memory.files.clear();
   });
   const memory = new FsMemory();
   fsa.register('memory://', memory);
-  it('should copy to the target location', async () => {
+  void it('should copy to the target location', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
@@ -31,7 +31,7 @@ describe('createManifest', () => {
     ]);
   });
 
-  it('should transform files', async () => {
+  void it('should transform files', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
@@ -52,7 +52,7 @@ describe('createManifest', () => {
     ]);
   });
 
-  it('should copy to the target location without flattening', async () => {
+  void it('should copy to the target location without flattening', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true }))),
       fsa.write('memory://source/foo/bar/topographic.png', Buffer.from('test')),
@@ -71,7 +71,7 @@ describe('createManifest', () => {
     ]);
   });
 
-  it('should copy single file to the target location without a trailing /', async () => {
+  void it('should copy single file to the target location without a trailing /', async () => {
     await Promise.all([fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })))]);
 
     const outputFiles = await createManifest(
@@ -87,12 +87,12 @@ describe('createManifest', () => {
     ]);
   });
   describe('validatePaths', () => {
-    it('Should throw error for mismatched paths', () => {
+    void it('Should throw error for mismatched paths', () => {
       assert.throws(() => {
         validatePaths('memory://source/', 'memory://target/sub/test.tiff');
       }, Error);
     });
-    it('Should also throw error for mismatched paths', () => {
+    void it('Should also throw error for mismatched paths', () => {
       assert.throws(() => {
         validatePaths('memory://source/test.tiff', 'memory://target/sub/');
       }, Error);

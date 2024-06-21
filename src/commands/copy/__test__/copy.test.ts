@@ -6,7 +6,7 @@ import { FsMemory } from '@chunkd/source-memory';
 
 import { worker } from '../copy-worker.js';
 
-describe('copyFiles', () => {
+void describe('copyFiles', () => {
   const memory = new FsMemory();
   fsa.register('memory://', memory);
   const fakeMultihash = '1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -15,7 +15,7 @@ describe('copyFiles', () => {
     memory.files.clear();
   });
 
-  it('should copy to the target location', async () => {
+  void it('should copy to the target location', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/json',
@@ -65,7 +65,7 @@ describe('copyFiles', () => {
     assert.equal(String(memory.files.get('memory://target/topographic.png')?.buffer), 'test');
   });
 
-  it('should default to COG/json', async () => {
+  void it('should default to COG/json', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/octet-stream',
@@ -109,7 +109,7 @@ describe('copyFiles', () => {
     assert.equal(tiffTarget?.contentType, 'image/tiff; application=geotiff; profile=cloud-optimized');
   });
 
-  it('should not default COG/json when fixContentType=false', async () => {
+  void it('should not default COG/json when fixContentType=false', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/octet-stream',

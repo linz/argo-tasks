@@ -83,7 +83,7 @@ export const commandStacGithubImport = command({
     } catch (e) {
       if (args.repoName === imageryRepo) throw e;
     }
-    prBody.push(`**ODR destination path:** \`${args.target}\``);
+    prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');

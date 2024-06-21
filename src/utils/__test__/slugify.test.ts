@@ -5,36 +5,36 @@ import { slugify } from '../slugify.js';
 
 const slugChars = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
 
-describe('slugify', () => {
-  it('should pass through output alphabet unchanged', () => {
+void describe('slugify', () => {
+  void it('should pass through output alphabet unchanged', () => {
     assert.equal(slugify(slugChars), slugChars);
   });
-  it('should pass through random slug unchanged', () => {
+  void it('should pass through random slug unchanged', () => {
     const input = anySlug();
     assert.equal(slugify(slugify(input)), slugify(input));
   });
-  it('should lowercase uppercase ASCII characters', () => {
+  void it('should lowercase uppercase ASCII characters', () => {
     assert.equal(slugify('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'abcdefghijklmnopqrstuvwxyz');
   });
-  it('should replace spaces with hyphens', () => {
+  void it('should replace spaces with hyphens', () => {
     assert.equal(slugify('Upper North Island'), 'upper-north-island');
   });
-  it('should remove apostrophes', () => {
+  void it('should remove apostrophes', () => {
     assert.equal(slugify("Hawke's Bay"), 'hawkes-bay');
   });
-  it('should replace slashes with hyphens', () => {
+  void it('should replace slashes with hyphens', () => {
     assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
   });
-  it('should replace commas with hyphens', () => {
+  void it('should replace commas with hyphens', () => {
     assert.equal(slugify('Omere, Janus or Toby Rock'), 'omere-janus-or-toby-rock');
   });
-  it('should replace ampersands with "and"', () => {
+  void it('should replace ampersands with "and"', () => {
     assert.equal(slugify('Gore A&P Showgrounds'), 'gore-a-and-p-showgrounds');
   });
-  it('should collapse multiple hyphens', () => {
+  void it('should collapse multiple hyphens', () => {
     assert.equal(slugify("Butlers 'V' Hut"), 'butlers-v-hut');
   });
-  it('should remove diacritics', () => {
+  void it('should remove diacritics', () => {
     ['á', 'Á', 'ä', 'Ä', 'ā', 'Ā'].forEach((value) => {
       assert.equal(slugify(value), 'a');
     });
@@ -51,15 +51,15 @@ describe('slugify', () => {
       assert.equal(slugify(value), 'u');
     });
   });
-  it('should convert "ø" (U+00F8) and "Ø" (U+00D8) to "o"', () => {
+  void it('should convert "ø" (U+00F8) and "Ø" (U+00D8) to "o"', () => {
     ['ø', 'Ø'].forEach((value) => {
       assert.equal(slugify(value), 'o');
     });
   });
-  it('should handle decomposed characters', () => {
+  void it('should handle decomposed characters', () => {
     assert.equal(slugify('\u0041\u0304'), 'a');
   });
-  it('should treat any unhandled characters as an error', () => {
+  void it('should treat any unhandled characters as an error', () => {
     assert.throws(
       () => {
         slugify('“a\\b//c—;\n”');

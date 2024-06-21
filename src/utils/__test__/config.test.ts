@@ -5,8 +5,8 @@ import prettier from 'prettier';
 
 import { DEFAULT_PRETTIER_FORMAT } from '../config.js';
 
-describe('DefaultPrettierFormat', () => {
-  it('should be the same prettier format with @linzjs/style', async () => {
+void describe('DefaultPrettierFormat', () => {
+  void it('should be the same prettier format with @linzjs/style', async () => {
     const cfg = await prettier.resolveConfigFile('@linzjs/style/.prettierrc.cjs');
     assert.ok(cfg, 'Failed to read @linzjs/style/.prettierrc.cjs');
     const options = await prettier.resolveConfig(cfg);

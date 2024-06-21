@@ -6,7 +6,7 @@ import { FeatureCollection } from 'geojson';
 
 import { createMapSheet } from '../create-mapsheet.js';
 
-describe('copyFiles', () => {
+void describe('copyFiles', () => {
   const rest: FeatureCollection = {
     type: 'FeatureCollection',
     features: [
@@ -123,7 +123,7 @@ describe('copyFiles', () => {
   mem.put(satellite);
   mem.put(southland);
 
-  it('Should create the correct map sheets', async () => {
+  void it('Should create the correct map sheets', async () => {
     const outputs = await createMapSheet(aerial, mem, rest, undefined, undefined);
 
     assert.deepEqual(outputs, [
@@ -137,7 +137,7 @@ describe('copyFiles', () => {
     ]);
   });
 
-  it('Should exclude the satellite', async () => {
+  void it('Should exclude the satellite', async () => {
     const outputs = await createMapSheet(aerial, mem, rest, undefined, new RegExp('satellite', 'i'));
 
     assert.deepEqual(outputs, [

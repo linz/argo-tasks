@@ -6,14 +6,14 @@ import { FsMemory } from '@chunkd/source-memory';
 
 import { createLinks, makeRelative } from '../stac.catalog.js';
 
-describe('stacCatalog', () => {
+void describe('stacCatalog', () => {
   const fs = new FsMemory();
   beforeEach(() => {
     fs.files.clear();
     fsa.register('m://', fs);
   });
 
-  it('listLocation', async () => {
+  void it('listLocation', async () => {
     await fs.write('m://base/directory1/collection.json', JSON.stringify({ title: 'CollectionA' }));
     await fs.write('m://base/directory2/collection.json', JSON.stringify({ title: 'CollectionB' }));
 
@@ -42,20 +42,20 @@ describe('stacCatalog', () => {
   });
 });
 
-describe('makeRelative', () => {
-  it('should make relative urls', () => {
+void describe('makeRelative', () => {
+  void it('should make relative urls', () => {
     assert.equal(makeRelative('s3://linz-imagery/', 's3://linz-imagery/catalog.json'), 'catalog.json');
   });
 
-  it('should make relative from absolute paths', () => {
+  void it('should make relative from absolute paths', () => {
     assert.equal(makeRelative('/home/blacha/', '/home/blacha/catalog.json'), 'catalog.json');
   });
 
-  it('should make relative relative paths', () => {
+  void it('should make relative relative paths', () => {
     assert.equal(makeRelative('/home/blacha/', './catalog.json'), './catalog.json');
   });
 
-  it('should not make relative on different paths', () => {
+  void it('should not make relative on different paths', () => {
     assert.throws(() => makeRelative('/home/blacha/', '/home/test/catalog.json'), Error);
   });
 });

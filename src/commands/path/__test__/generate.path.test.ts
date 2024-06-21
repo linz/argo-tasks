@@ -15,8 +15,8 @@ import {
   StacCollectionLinz,
 } from '../path.generate.js';
 
-describe('GeneratePathImagery', () => {
-  it('Should match - geographic description', () => {
+void describe('GeneratePathImagery', () => {
+  void it('Should match - geographic description', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'urban-aerial-photos',
@@ -28,7 +28,7 @@ describe('GeneratePathImagery', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-imagery/hawkes-bay/napier_2017-2018_0.05m/rgb/2193/');
   });
-  it('Should match - event', () => {
+  void it('Should match - event', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'rural-aerial-photos',
@@ -40,7 +40,7 @@ describe('GeneratePathImagery', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-imagery/hawkes-bay/north-island-weather-event_2023_0.25m/rgb/2193/');
   });
-  it('Should match - no optional metadata', () => {
+  void it('Should match - no optional metadata', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'urban-aerial-photos',
@@ -54,8 +54,8 @@ describe('GeneratePathImagery', () => {
   });
 });
 
-describe('GeneratePathElevation', () => {
-  it('Should match - dem (no optional metadata)', () => {
+void describe('GeneratePathElevation', () => {
+  void it('Should match - dem (no optional metadata)', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       category: 'dem',
@@ -67,7 +67,7 @@ describe('GeneratePathElevation', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/auckland/auckland_2023/dem_1m/2193/');
   });
-  it('Should match - dsm (no optional metadata)', () => {
+  void it('Should match - dsm (no optional metadata)', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       category: 'dsm',
@@ -81,8 +81,8 @@ describe('GeneratePathElevation', () => {
   });
 });
 
-describe('GeneratePathSatelliteImagery', () => {
-  it('Should match - geographic description & event', () => {
+void describe('GeneratePathSatelliteImagery', () => {
+  void it('Should match - geographic description & event', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'satellite-imagery',
@@ -99,8 +99,8 @@ describe('GeneratePathSatelliteImagery', () => {
   });
 });
 
-describe('GeneratePathHistoricImagery', () => {
-  it('Should error', () => {
+void describe('GeneratePathHistoricImagery', () => {
+  void it('Should error', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       category: 'scanned-aerial-imagery',
@@ -116,58 +116,58 @@ describe('GeneratePathHistoricImagery', () => {
   });
 });
 
-describe('formatName', () => {
-  it('Should match - region', () => {
+void describe('formatName', () => {
+  void it('Should match - region', () => {
     assert.equal(formatName('hawkes-bay', undefined), 'hawkes-bay');
   });
-  it('Should match - region & geographic description', () => {
+  void it('Should match - region & geographic description', () => {
     assert.equal(formatName('hawkes-bay', 'Napier'), 'napier');
   });
-  it('Should match - region & event', () => {
+  void it('Should match - region & event', () => {
     assert.equal(formatName('canterbury', 'Christchurch Earthquake'), 'christchurch-earthquake');
   });
 });
 
-describe('epsg', () => {
+void describe('epsg', () => {
   const TiffEPSG = new FakeCogTiff('s3://path/fake.tiff', {
     epsg: 2193,
   });
-  it('Should return EPSG code', () => {
+  void it('Should return EPSG code', () => {
     assert.equal(extractEpsg(TiffEPSG), '2193');
   });
   const TiffNoEPSG = new FakeCogTiff('s3://path/fake.tiff', { epsg: undefined });
-  it('Should fail - unable to find EPSG code', () => {
+  void it('Should fail - unable to find EPSG code', () => {
     assert.throws(() => {
       extractEpsg(TiffNoEPSG);
     }, Error);
   });
   const TiffInvalidEPSG = new FakeCogTiff('s3://path/fake.tiff', { epsg: 2319 });
-  it('Should fail - invalid EPSG code', () => {
+  void it('Should fail - invalid EPSG code', () => {
     assert.throws(() => {
       extractEpsg(TiffInvalidEPSG);
     }, Error);
   });
 });
 
-describe('gsd', () => {
+void describe('gsd', () => {
   const TiffGsd = new FakeCogTiff('s3://path/fake.tiff', {
     resolution: [0.3],
   });
-  it('Should return resolution', () => {
+  void it('Should return resolution', () => {
     assert.equal(extractGsd(TiffGsd), 0.3);
   });
   const TiffNoGsd = new FakeCogTiff('s3://path/fake.tiff', {
     resolution: [],
   });
-  it('Should fail - unable to find resolution', () => {
+  void it('Should fail - unable to find resolution', () => {
     assert.throws(() => {
       extractGsd(TiffNoGsd);
     }, Error);
   });
 });
 
-describe('category', async () => {
-  it('Should return category', async () => {
+void describe('category', () => {
+  void it('Should return category', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -175,8 +175,8 @@ describe('category', async () => {
   });
 });
 
-describe('geographicDescription', async () => {
-  it('Should return geographic description', async () => {
+void describe('geographicDescription', () => {
+  void it('Should return geographic description', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -192,7 +192,7 @@ describe('geographicDescription', async () => {
     };
     assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/');
   });
-  it('Should return undefined - no geographic description metadata', async () => {
+  void it('Should return undefined - no geographic description metadata', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -211,8 +211,8 @@ describe('geographicDescription', async () => {
   });
 });
 
-describe('region', async () => {
-  it('Should return region', async () => {
+void describe('region', () => {
+  void it('Should return region', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
@@ -220,28 +220,28 @@ describe('region', async () => {
   });
 });
 
-describe('formatDate', async () => {
-  it('Should return date as single year', async () => {
+void describe('formatDate', () => {
+  void it('Should return date as single year', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
     assert.equal(formatDate(collection), '2023');
   });
-  it('Should return date as two years', async () => {
+  void it('Should return date as two years', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
     collection.extent.temporal.interval[0] = ['2022-06-01T11:00:00Z', '2023-06-01T11:00:00Z'];
     assert.equal(formatDate(collection), '2022-2023');
   });
-  it('Should use Pacific/Auckland time zone', async () => {
+  void it('Should use Pacific/Auckland time zone', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
     collection.extent.temporal.interval[0] = ['2012-12-31T11:00:00Z', '2014-12-30T11:00:00Z'];
     assert.equal(formatDate(collection), '2013-2014');
   });
-  it('Should fail - unable to retrieve date', async () => {
+  void it('Should fail - unable to retrieve date', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
     );
