@@ -109,9 +109,9 @@ export class MakeCogGithub {
       this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
     } else {
       // Prepare new aerial tileset config
-      const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
+      const tileSetPath = fsa.joinAll('config', 'tileset', `aerial.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
-      if (tileSetContent == null) throw new Error(`Unable get the ${filename}.json from config repo.`);
+      if (tileSetContent == null) throw new Error(`Unable get the aerial.json from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // Github create pull request
