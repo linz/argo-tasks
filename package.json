@@ -15,20 +15,19 @@
     "@chunkd/source-memory": "^10.1.0",
     "@linzjs/style": "^5.1.0",
     "@types/node": "^20.12.10",
-    "@types/prettier": "^3.0.0",
     "stac-ts": "^1.0.0"
   },
   "scripts": {
     "build": "tsc",
     "lint": "npx eslint . --ignore-path .gitignore",
-    "test": "node --test build/"
+    "test": "node --test 'build/**/*.test.js'"
   },
   "publishConfig": {
     "access": "restricted"
   },
   "type": "module",
   "engines": {
-    "node": "^20.13.1"
+    "node": "^22.2.0"
   },
   "files": [
     "build/src/**"

@@ -1,4 +1,5 @@
-FROM node:20-slim@sha256:cffed8cd39d6a380434e6d08116d188c53e70611175cd5ec7700f93f32a935a6
+# Use manifest digest for multi-platform support
+FROM node:22-slim@sha256:54284c1aa369d17342e9b029339992695df9597829cc8313bd11008ec091699a
 
 RUN apt-get update && apt-get install openssh-client git -y
 
