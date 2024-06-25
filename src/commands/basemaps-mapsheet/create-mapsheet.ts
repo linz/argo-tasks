@@ -101,7 +101,7 @@ export const basemapsCreateMapSheet = command({
   },
 });
 
-export function createMapSheet(
+export async function createMapSheet(
   aerial: ConfigTileSet,
   mem: ConfigProviderMemory,
   rest: FeatureCollection,
@@ -145,5 +145,5 @@ export function createMapSheet(
     }
   }
 
-  return Promise.resolve(outputs);
+  return outputs;
 }

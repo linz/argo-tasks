@@ -193,7 +193,7 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  prepareRasterTileSetConfig(
+  async prepareRasterTileSetConfig(
     layer: ConfigLayer,
     tileSet: ConfigTileSetRaster,
     category: Category,
@@ -202,7 +202,7 @@ export class MakeCogGithub {
     for (let i = 0; i < tileSet.layers.length; i++) {
       if (tileSet.layers[i]?.name === layer.name) {
         tileSet.layers[i] = layer;
-        return Promise.resolve(tileSet);
+        return tileSet;
       }
     }
 
@@ -226,7 +226,7 @@ export class MakeCogGithub {
       this.addLayer(layer, tileSet, category);
     }
 
-    return Promise.resolve(tileSet);
+    return tileSet;
   }
 
   /**
@@ -279,9 +279,9 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
     if (tileSet == null) {
-      return Promise.resolve({
+      return {
         type: TileSetType.Vector,
         id: `ts_${layer.name}`,
         name: layer.name,
@@ -289,16 +289,16 @@ export class MakeCogGithub {
         maxZoom: 15,
         format: 'pbf',
         layers: [layer],
-      });
+      };
     }
 
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
       if (tileSet.layers[i]?.name === layer.name) {
         tileSet.layers[i] = layer;
-        return Promise.resolve(tileSet);
+        return tileSet;
       }
     }
-    return Promise.resolve(tileSet);
+    return tileSet;
   }
 }

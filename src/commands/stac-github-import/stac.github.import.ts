@@ -10,7 +10,7 @@ import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
 
 const Url: Type<string, URL> = {
-  from(str) {
+  async from(str) {
     return Promise.resolve(new URL(str));
   },
 };
