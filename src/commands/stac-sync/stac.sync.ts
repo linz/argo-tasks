@@ -8,7 +8,6 @@ import { hashBuffer, HashKey } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
 
 const S3Path: Type<string, URL> = {
-  // eslint-disable-next-line @typescript-eslint/require-await
   async from(str) {
     if (!str.startsWith('s3://')) throw new Error('Path is not S3');
     return new URL(str);
