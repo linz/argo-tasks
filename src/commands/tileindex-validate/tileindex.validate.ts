@@ -36,7 +36,7 @@ export const TiffLoader = {
 
     const promises = await Promise.allSettled(
       tiffLocations.map((loc: string) => {
-        return createTiff(loc).catch((e) => {
+        return createTiff(loc).catch((e: unknown) => {
           // Ensure tiff loading errors include the location of the tiff
           logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
           throw e;
@@ -104,12 +104,12 @@ export const TiffLoader = {
  */
 
 export const GridSizeFromString: Type<string, GridSize> = {
-  async from(value) {
+  from(value) {
     const gridSize = Number(value) as GridSize;
     if (!GridSizes.includes(gridSize)) {
       throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}"`);
     }
-    return gridSize;
+    return Promise.resolve(gridSize);
   },
 };
 
@@ -128,7 +128,7 @@ async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
     for (const r of results) {
       if (r.status === 'rejected') {
         rejected = true;
-        logger.fatal({ reason: r.reason }, 'Tiff:ValidatePreset:failed');
+        logger.fatal({ reason: r.reason as string }, 'Tiff:ValidatePreset:failed');
       }
     }
   }
@@ -252,7 +252,7 @@ export const commandTileIndexValidate = command({
         type: 'FeatureCollection',
         features: [...outputs.values()].map((locs) => {
           const firstLoc = locs[0];
-          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location);
+          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location.join(', '));
           const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
           if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
           return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
@@ -468,14 +468,14 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
  */
 export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   const baseImage = tiff.images[0];
-  if (baseImage === undefined) throw new Error(`Can't get base image for ${tiff.source.url}`);
+  if (baseImage === undefined) throw new Error(`Can't get base image for ${tiff.source.url.href}`);
 
   const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
   if (bitsPerSample == null) {
-    throw new Error(`Failed to extract band information from ${tiff.source.url}`);
+    throw new Error(`Failed to extract band information from ${tiff.source.url.href}`);
   }
 
   if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8)) {
-    throw new Error(`${tiff.source.url} is not a 8 bits TIFF`);
+    throw new Error(`${tiff.source.url.href} is not a 8 bits TIFF`);
   }
 }

@@ -11,7 +11,7 @@ run(cmd, process.argv.slice(2))
   .then(() => {
     logger.debug({ duration: performance.now() - startTime }, 'Command:Done');
   })
-  .catch((err) => {
+  .catch((err: unknown) => {
     logger.fatal({ err }, 'Command:Failed');
     logger.flush();
     // Give the logger some time to flush before exiting

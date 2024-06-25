@@ -7,6 +7,7 @@ import { asyncFilter } from '../chunk.js';
 
 describe('AsyncFilter', () => {
   function makeGenerator(list: string[]): () => AsyncGenerator<{ path: string }> {
+    // eslint-disable-next-line @typescript-eslint/require-await
     return async function* gen(): AsyncGenerator<{ path: string }> {
       for (const path of list) yield { path };
     };

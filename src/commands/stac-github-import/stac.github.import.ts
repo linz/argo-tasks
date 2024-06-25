@@ -10,8 +10,8 @@ import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../format/pretty.print.js';
 
 const Url: Type<string, URL> = {
-  async from(str) {
-    return new URL(str);
+  from(str) {
+    return Promise.resolve(new URL(str));
   },
 };
 
@@ -79,11 +79,11 @@ export const commandStacGithubImport = command({
     const prBody: string[] = [];
     try {
       const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
-      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${basemapsConfigLink})`);
+      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
     } catch (e) {
       if (args.repoName === imageryRepo) throw e;
     }
-    prBody.push(`**ODR destination path:** \`${args.target}\``);
+    prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');

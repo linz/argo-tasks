@@ -100,14 +100,14 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
     const duplicates = groupByTileName(location);
-    assert.deepEqual(duplicates.get('AS21_1000_0101')?.map((c) => c.source), [
-      's3://path/AS21_1000_0101.tiff',
-      's3://path/AS21_1000_0101.tiff',
-    ]);
-    assert.deepEqual(duplicates.get('AY29_1000_0101')?.map((c) => c.source), [
-      's3://path/AY29_1000_0101.tiff',
-      's3://path/AY29_1000_0101.tiff',
-    ]);
+    assert.deepEqual(
+      duplicates.get('AS21_1000_0101')?.map((c) => c.source),
+      ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
+    );
+    assert.deepEqual(
+      duplicates.get('AY29_1000_0101')?.map((c) => c.source),
+      ['s3://path/AY29_1000_0101.tiff', 's3://path/AY29_1000_0101.tiff'],
+    );
   });
 
   it('should find tiles from 3857', async () => {
@@ -139,6 +139,15 @@ describe('validate', () => {
   });
   beforeEach(() => memory.files.clear());
 
+  const baseArguments = {
+    config: undefined,
+    verbose: false,
+    include: undefined,
+    validate: true,
+    preset: 'none',
+    sourceEpsg: undefined,
+  };
+
   it('should fail if duplicate tiles are detected', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     const stub = t.mock.method(TiffLoader, 'load', () =>
@@ -147,12 +156,13 @@ describe('validate', () => {
 
     try {
       await commandTileIndexValidate.handler({
+        ...baseArguments,
         location: ['s3://test'],
         retile: false,
         validate: true,
         scale: 1000,
         forceOutput: true,
-      } as any);
+      });
       assert.fail('Should throw exception');
     } catch (e) {
       assert.equal(String(e), 'Error: Duplicate files found, see output.geojson');
@@ -178,11 +188,12 @@ describe('validate', () => {
     );
 
     await commandTileIndexValidate.handler({
+      ...baseArguments,
       location: ['s3://test'],
       retile: true,
       scale: 1000,
       forceOutput: true,
-    } as any);
+    });
     const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
     assert.deepEqual(outputFileList, [
       { output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] },
@@ -196,12 +207,13 @@ describe('validate', () => {
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
+          ...baseArguments,
           location: ['s3://test'],
           retile: true,
           validate: true,
           scale: 1000,
           forceOutput: true,
-        } as any);
+        });
         assert.fail('Should throw exception');
       } catch (e) {
         assert.equal(String(e), 'Error: Tile alignment validation failed');
@@ -213,12 +225,13 @@ describe('validate', () => {
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
+          ...baseArguments,
           location: ['s3://test'],
           retile: true,
           validate: true,
           scale: 1000,
           forceOutput: true,
-        } as any);
+        });
         assert.fail('Should throw exception');
       } catch (e) {
         assert.equal(String(e), 'Error: Tile alignment validation failed');
@@ -236,12 +249,13 @@ describe('validate', () => {
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
+          ...baseArguments,
           location: ['s3://test'],
           retile: true,
           validate: true,
           scale: 1000,
           forceOutput: true,
-        } as any);
+        });
         assert.fail('Should throw exception');
       } catch (e) {
         assert.equal(String(e), 'Error: Tile alignment validation failed');
@@ -253,12 +267,13 @@ describe('validate', () => {
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
         await commandTileIndexValidate.handler({
+          ...baseArguments,
           location: ['s3://test'],
           retile: true,
           validate: true,
           scale: 1000,
           forceOutput: true,
-        } as any);
+        });
         assert.fail('Should throw exception');
       } catch (e) {
         assert.equal(String(e), 'Error: Tile alignment validation failed');
@@ -288,7 +303,7 @@ describe('is8BitsTiff', () => {
     const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
     await assert.rejects(validate8BitsTiff(testTiff), {
       name: 'Error',
-      message: `${testTiff.source.url} is not a 8 bits TIFF`,
+      message: `${testTiff.source.url.href} is not a 8 bits TIFF`,
     });
   });
 });

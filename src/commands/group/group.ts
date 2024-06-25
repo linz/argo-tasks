@@ -24,7 +24,7 @@ export function groupItems<T>(items: T[], groupSize: number): T[][] {
 
 /** Normalize an input as either a JSON array or just an array  */
 function loadInput(x: string): string[] {
-  if (x.startsWith('[')) return JSON.parse(x);
+  if (x.startsWith('[')) return JSON.parse(x) as string[];
   return [x];
 }
 
@@ -62,7 +62,7 @@ export const commandGroup = command({
     const inputs: unknown[] = [];
     for (const input of args.inputs) inputs.push(...loadInput(input));
     if (args.fromFile && (await fsa.exists(args.fromFile))) {
-      const input = await fsa.readJson(args.fromFile);
+      const input = await fsa.readJson<string[]>(args.fromFile);
       if (Array.isArray(input)) inputs.push(...input);
     }
 

@@ -166,7 +166,7 @@ describe('gsd', () => {
   });
 });
 
-describe('category', async () => {
+describe('category', () => {
   it('Should return category', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
@@ -175,7 +175,7 @@ describe('category', async () => {
   });
 });
 
-describe('geographicDescription', async () => {
+describe('geographicDescription', () => {
   it('Should return geographic description', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
@@ -211,7 +211,7 @@ describe('geographicDescription', async () => {
   });
 });
 
-describe('region', async () => {
+describe('region', () => {
   it('Should return region', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',
@@ -220,7 +220,7 @@ describe('region', async () => {
   });
 });
 
-describe('formatDate', async () => {
+describe('formatDate', () => {
   it('Should return date as single year', async () => {
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
       './src/commands/path/__test__/sample.json',

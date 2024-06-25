@@ -106,7 +106,7 @@ export class MakeCogGithub {
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `aerial.json`);
@@ -115,7 +115,7 @@ export class MakeCogGithub {
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
     }
   }
 
@@ -150,7 +150,7 @@ export class MakeCogGithub {
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', `${layer.name}.json`);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
     } else {
       // Prepare new elevation tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `elevation.json`);
@@ -161,7 +161,7 @@ export class MakeCogGithub {
       // Just insert the new elevation at the bottom of config
       tileSet.layers.push(layer);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
     }
   }
 
@@ -193,16 +193,16 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareRasterTileSetConfig(
+  prepareRasterTileSetConfig(
     layer: ConfigLayer,
     tileSet: ConfigTileSetRaster,
     category: Category,
-  ): Promise<ConfigTileSetRaster | undefined> {
+  ): Promise<ConfigTileSetRaster> {
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
       if (tileSet.layers[i]?.name === layer.name) {
         tileSet.layers[i] = layer;
-        return tileSet;
+        return Promise.resolve(tileSet);
       }
     }
 
@@ -226,7 +226,7 @@ export class MakeCogGithub {
       this.addLayer(layer, tileSet, category);
     }
 
-    return tileSet;
+    return Promise.resolve(tileSet);
   }
 
   /**
@@ -243,7 +243,7 @@ export class MakeCogGithub {
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
       const newTileSet = await this.prepareVectorTileSetConfig(layer, undefined);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
     } else {
       const tileSetPath = fsa.joinAll('config', 'tileset', `topographic.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
@@ -252,7 +252,7 @@ export class MakeCogGithub {
       const existingTileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
       const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
       // Github create pull request
-      this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
     }
   }
 
@@ -279,9 +279,9 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+  prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
     if (tileSet == null) {
-      return {
+      return Promise.resolve({
         type: TileSetType.Vector,
         id: `ts_${layer.name}`,
         name: layer.name,
@@ -289,16 +289,16 @@ export class MakeCogGithub {
         maxZoom: 15,
         format: 'pbf',
         layers: [layer],
-      };
+      });
     }
 
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
       if (tileSet.layers[i]?.name === layer.name) {
         tileSet.layers[i] = layer;
-        return tileSet;
+        return Promise.resolve(tileSet);
       }
     }
-    return tileSet;
+    return Promise.resolve(tileSet);
   }
 }

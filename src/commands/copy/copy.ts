@@ -71,7 +71,7 @@ export const commandCopy = command({
     const startTime = performance.now();
     for (const m of args.manifest) {
       const json = await fsa.readJson<ActionCopy>(m);
-      if (json.action !== 'copy') throw new Error('Invalid action: ' + json.action + ' from:' + m);
+      if (json.action !== 'copy') throw new Error('Invalid action: ' + String(json.action) + ' from:' + m);
       const data = json.parameters.manifest;
       const manifest = CopyManifest.parse(data);
 
