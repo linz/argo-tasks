@@ -141,6 +141,7 @@ export const worker = new WorkerRpc<CopyContract>({
 
 worker.onStart = (): Promise<void> => {
   registerCli({ name: 'copy:worker' }, {});
+  return Promise.resolve();
 };
 
 if (parentPort) worker.bind(parentPort);
