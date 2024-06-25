@@ -227,6 +227,9 @@ interface GithubError {
   message?: string;
 }
 
+/**
+ * This a typechecker work around to allow `.catch(e)` to cast `e` easily as a `GithubError`
+ */
 function isGithubError(e: unknown): e is GithubError {
   return e != null;
 }
