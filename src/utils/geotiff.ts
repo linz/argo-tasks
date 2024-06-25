@@ -66,7 +66,7 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
     let y1 = origin[1];
 
     // Tiff value is a point so everything is offset by 1/2 a pixel
-    if (img.valueGeo(TiffTagGeo.GTRasterTypeGeoKey) === RasterTypeKey.PixelIsArea) {
+    if (img.valueGeo(TiffTagGeo.GTRasterTypeGeoKey) === RasterTypeKey.PixelIsPoint) {
       x1 = x1 - resolution[0] / 2;
       y1 = y1 - resolution[1] / 2;
     }

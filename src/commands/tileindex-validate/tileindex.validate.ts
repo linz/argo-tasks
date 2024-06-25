@@ -104,12 +104,13 @@ export const TiffLoader = {
  */
 
 export const GridSizeFromString: Type<string, GridSize> = {
-  from(value) {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async from(value) {
     const gridSize = Number(value) as GridSize;
     if (!GridSizes.includes(gridSize)) {
       throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}"`);
     }
-    return Promise.resolve(gridSize);
+    return gridSize;
   },
 };
 
