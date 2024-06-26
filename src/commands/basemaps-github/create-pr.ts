@@ -10,8 +10,10 @@ import { logger } from '../../log.js';
 import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub } from './make.cog.github.js';
 
-const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
-const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
+export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+
+export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 
 export enum ConfigType {
   Raster = 'raster',
@@ -38,21 +40,21 @@ async function parseRasterTargetInfo(
   const epsg = Epsg.tryGet(Number(splits[1]));
   const name = splits[2];
 
-  assertValidBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, ValidTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   const collectionPath = fsa.join(target, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionPath}`);
 
   // Validate the source location
-  const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
+  const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
-  assertValidBucket(sourceBucket, validSourceBuckets);
+  assertValidBucket(sourceBucket, ValidSourceBuckets);
 
   // Try to get the region for individual layers
   let region;
@@ -83,7 +85,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   const name = splits[3];
   const filename = splits.at(-1);
 
-  assertValidBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, ValidTargetBuckets);
 
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   if (filename == null || !filename.endsWith('.tar.co')) {
