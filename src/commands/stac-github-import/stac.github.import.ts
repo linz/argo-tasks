@@ -11,7 +11,7 @@ import { prettyPrint } from '../format/pretty.print.js';
 
 const Url: Type<string, URL> = {
   async from(str) {
-    return Promise.resolve(new URL(str));
+    return new URL(str);
   },
 };
 
