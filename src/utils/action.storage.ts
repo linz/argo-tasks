@@ -6,10 +6,15 @@
  */
 export function getActionLocation(): string | null {
   if (process.env['ACTION_PATH']) return process.env['ACTION_PATH'];
-  const loc = JSON.parse(process.env['ARGO_TEMPLATE'] ?? '{}')?.archiveLocation?.s3;
+  const argoTemplate = JSON.parse(process.env['ARGO_TEMPLATE'] ?? '{}') as ArgoTemplate;
+  const loc = argoTemplate.archiveLocation?.s3;
   if (loc == null) return null;
   if (typeof loc.key !== 'string') return null;
 
   const key = loc.key.replace(`/${process.env['ARGO_NODE_ID']}`, '');
   return `s3://${loc.bucket}/${key}`;
+}
+
+export interface ArgoTemplate {
+  archiveLocation?: { s3?: { key: string; bucket: string } };
 }

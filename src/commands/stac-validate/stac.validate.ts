@@ -179,7 +179,7 @@ export const commandStacValidate = command({
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
-            validateStac(child).catch((err) => {
+            validateStac(child).catch((err: unknown) => {
               logger.error({ err }, 'Failed');
               failures.push(child);
             }),
@@ -190,7 +190,7 @@ export const commandStacValidate = command({
 
     for (const path of paths) {
       queue.push(() =>
-        validateStac(path).catch((err) => {
+        validateStac(path).catch((err: unknown) => {
           logger.error({ err }, 'Failed');
           failures.push(path);
         }),

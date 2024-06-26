@@ -1,4 +1,4 @@
-import { Size, Tiff, TiffImage } from '@cogeotiff/core';
+import { Size, Source, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { MapSheet } from '../../../utils/mapsheet.js';
 
@@ -28,7 +28,7 @@ export class FakeCogTiff extends Tiff {
     uri: string,
     image: Partial<{ origin: number[]; epsg: number; resolution: number[]; size: Size; isGeoLocated: boolean }>,
   ) {
-    super({ url: new URL(uri) } as any);
+    super({ url: new URL(uri) } as Source);
     this.images = [{ ...structuredClone(DefaultTiffImage), valueGeo, ...image } as any];
   }
 

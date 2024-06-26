@@ -130,7 +130,7 @@ export const worker = new WorkerRpc<CopyContract>({
         stats.copiedBytes += source.size;
       });
     }
-    await Q.join().catch((err) => {
+    await Q.join().catch((err: unknown) => {
       // Composite errors get swallowed when rethrown through worker threads
       log.fatal({ err }, 'File:Copy:Failed');
       throw err;
@@ -139,8 +139,9 @@ export const worker = new WorkerRpc<CopyContract>({
   },
 });
 
-worker.onStart = async (): Promise<void> => {
+worker.onStart = (): Promise<void> => {
   registerCli({ name: 'copy:worker' }, {});
+  return Promise.resolve();
 };
 
 if (parentPort) worker.bind(parentPort);

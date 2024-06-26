@@ -161,7 +161,7 @@ export const basemapsCreatePullRequest = command({
     const category = args.category ?? Category.Other;
     let targets: string[];
     try {
-      targets = JSON.parse(target);
+      targets = JSON.parse(target) as string[];
     } catch {
       throw new Error('Please provide a valid input target');
     }

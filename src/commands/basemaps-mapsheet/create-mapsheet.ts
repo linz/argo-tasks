@@ -26,9 +26,9 @@ async function readConfig(config: string): Promise<ConfigBundled> {
   const obj = await fsa.read(config);
   if (config.endsWith('.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
-    return JSON.parse(data.toString());
+    return JSON.parse(data.toString()) as ConfigBundled;
   }
-  return JSON.parse(obj.toString());
+  return JSON.parse(obj.toString()) as ConfigBundled;
 }
 
 interface Output {
@@ -129,7 +129,7 @@ export async function createMapSheet(
   const outputs: Output[] = [];
   for (const feature of rest.features) {
     if (feature.properties == null) continue;
-    const sheetCode = feature.properties['sheet_code_id'];
+    const sheetCode = feature.properties['sheet_code_id'] as string;
     const current: Output = { sheetCode, files: [] };
     outputs.push(current);
     const bounds = Bounds.fromMultiPolygon((feature.geometry as MultiPolygon).coordinates);

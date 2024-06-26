@@ -73,7 +73,9 @@ export type SourceTarget = { source: string; target: string };
 export type ManifestFilter = FileFilter & { flatten: boolean; transform?: string };
 
 function createTransformFunc(transform: string): (f: string) => string {
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   if (transform.startsWith('return')) return new Function('f', transform) as (f: string) => string;
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   return new Function('f', 'return ' + transform) as (f: string) => string;
 }
 

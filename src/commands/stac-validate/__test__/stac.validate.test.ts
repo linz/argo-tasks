@@ -16,13 +16,13 @@ import {
 } from '../stac.validate.js';
 
 describe('stacValidate', function () {
-  it('listLocation', async function () {
+  it('listLocation', () => {
     assert.deepEqual(listLocation(['s3://example-bucket/test/collection.json', 's3://example-bucket/test/item.json']), [
       's3://example-bucket/test/collection.json',
       's3://example-bucket/test/item.json',
     ]);
   });
-  it('listLocationAwsList', async function () {
+  it('listLocationAwsList', () => {
     assert.deepEqual(
       listLocation(['["s3://example-bucket/test/collection.json","s3://example-bucket/test/item.json"]']),
       ['s3://example-bucket/test/collection.json', 's3://example-bucket/test/item.json'],

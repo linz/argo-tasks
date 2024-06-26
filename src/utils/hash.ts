@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { BinaryLike, createHash } from 'crypto';
 import { Readable } from 'stream';
 
 /** Key concatenated to 'x-amz-meta-' */
@@ -21,7 +21,7 @@ export const Sha256Prefix = '1220';
 export async function hashStream(stream: Readable): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash('sha256');
-    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('data', (chunk: BinaryLike) => hash.update(chunk));
     stream.on('end', () => resolve(Sha256Prefix + hash.digest('hex')));
     stream.on('error', reject);
   });

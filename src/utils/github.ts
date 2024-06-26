@@ -99,7 +99,7 @@ export class GithubApi {
     const response = await this.octokit.rest.repos
       .getContent({ owner: this.owner, repo: this.repo, path })
       .catch((e) => {
-        if (e?.status === 404) return null;
+        if (isGithubError(e) && e?.status === 404) return null;
         throw e;
       });
 
@@ -202,7 +202,7 @@ export class GithubApi {
         base: 'master',
       })
       .catch((e) => {
-        if (e?.status === 422 && String(e.message).includes('A pull request already exists')) {
+        if (isGithubError(e) && e?.status === 422 && String(e.message).includes('A pull request already exists')) {
           logger.info({ branch }, 'A pull request already exists for branch');
           return null;
         }
@@ -220,4 +220,16 @@ export class GithubApi {
 export interface GithubFiles {
   path: string;
   content: string;
+}
+
+interface GithubError {
+  status?: number;
+  message?: string;
+}
+
+/**
+ * This a typechecker work around to allow `.catch(e)` to cast `e` easily as a `GithubError`
+ */
+function isGithubError(e: unknown): e is GithubError {
+  return e != null;
 }

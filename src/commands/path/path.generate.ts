@@ -135,7 +135,7 @@ export function formatDate(collection: StacCollection): string {
   const endYear = getPacificAucklandYear(interval[1]);
 
   if (startYear == null || endYear == null) {
-    throw new Error(`Missing datetime in interval: ${interval}`);
+    throw new Error(`Missing datetime in interval: ${interval.join(', ')}`);
   }
   if (startYear === endYear) {
     return startYear;
@@ -196,7 +196,7 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
 export function extractGsd(tiff: Tiff): number {
   const gsd = tiff.images[0]?.resolution[0];
   if (gsd == null) {
-    throw new Error(`Missing resolution tiff tag: ${tiff.source.url}`);
+    throw new Error(`Missing resolution tiff tag: ${tiff.source.url.href}`);
   }
   return gsd;
 }
@@ -204,9 +204,9 @@ export function extractGsd(tiff: Tiff): number {
 export function extractEpsg(tiff: Tiff): number {
   const epsg = tiff.images[0]?.epsg;
   if (epsg == null) {
-    throw new Error(`Missing epsg tiff tag: ${tiff.source.url}`);
+    throw new Error(`Missing epsg tiff tag: ${tiff.source.url.href}`);
   } else if (!Epsg.Codes.has(epsg)) {
-    throw new Error(`Invalid EPSG code: ${epsg} on tiff: ${tiff.source.url}`);
+    throw new Error(`Invalid EPSG code: ${epsg} on tiff: ${tiff.source.url.href}`);
   }
   return epsg;
 }

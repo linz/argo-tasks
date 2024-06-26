@@ -44,7 +44,7 @@ function cleanArgs(args: Record<string, unknown>): void {
     } else if (Array.isArray(value)) {
       args[key] = value.map((c) => {
         if (typeof c === 'string') return c.trim();
-        return c;
+        return c as unknown;
       });
     }
   }
