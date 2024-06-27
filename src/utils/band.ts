@@ -21,8 +21,10 @@ function getDataType(i: SampleFormat): string {
 /**
  * Load the band information from a tiff and return it as a array of human friendly names
  *
- * eg `[uint16, uint16, uint16]` 3 band uint16
- * @param tiff
+ * @example
+ * `[uint16, uint16, uint16]` 3 band uint16
+ *
+ * @param tiff Tiff to extract band information from
  * @returns list of band information
  * @throws {Error} if cannot extract band information
  */
@@ -45,7 +47,7 @@ export async function extractBandInformation(tiff: Tiff): Promise<string[]> {
 
   const imageBands: string[] = [];
   for (let i = 0; i < bitsPerSample.length; i++) {
-    const type = getDataType(dataType ? dataType[i] : SampleFormat.Uint);
+    const type = getDataType(dataType ? (dataType[i] as SampleFormat) : SampleFormat.Uint);
     const bits = bitsPerSample[i];
     imageBands.push(`${type}${bits}`);
   }
