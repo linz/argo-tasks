@@ -6,6 +6,7 @@ import { boolean, command, flag, number, option, optional, restPositionals, stri
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
+import { extractBandInformation } from '../../utils/band.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
@@ -276,7 +277,11 @@ export const commandTileIndexValidate = command({
     for (const val of outputs.values()) {
       if (val.length < 2) continue;
       if (args.retile) {
-        logger.info({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Retile');
+        const bandType = validateConsistentBands(val);
+        logger.info(
+          { tileName: val[0]?.tileName, uris: val.map((v) => v.source), bands: bandType },
+          'TileIndex:Retile',
+        );
       } else {
         retileNeeded = true;
         logger.error({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
@@ -300,6 +305,31 @@ export const commandTileIndexValidate = command({
   },
 });
 
+/**
+ * Validate all tiffs have consistent band information
+ * @returns list of bands in the first image if consistent with the other images
+ * @throws if one image does not have consistent band information
+ */
+function validateConsistentBands(locs: TiffLocation[]): string[] {
+  const firstBands = locs[0]?.bands ?? [];
+  const firstBand = firstBands.join(',');
+
+  for (let i = 1; i < locs.length; i++) {
+    const currentBands = locs[i]?.bands.join(',');
+
+    // If the current image doesn't have the same band information gdalbuildvrt will fail
+    if (currentBands !== firstBand) {
+      // Dump all the imagery and their band types into logs so it can be debugged later
+      for (const v of locs) {
+        logger.error({ path: v.source, bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
+      }
+
+      throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source}`);
+    }
+  }
+  return firstBands;
+}
+
 export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
   const duplicates: Map<string, TiffLocation[]> = new Map();
   for (const loc of tiffs) {
@@ -319,6 +349,12 @@ export interface TiffLocation {
   epsg?: number | null;
   /** Output tile name */
   tileName: string;
+  /**
+   * List of bands inside the tiff in the format `uint8` `uint16`
+   *
+   * @see {@link extractBandInformation} for more information on bad types
+   */
+  bands: string[];
 }
 
 /**
@@ -368,7 +404,13 @@ export async function extractTiffLocations(
         //   // Also need to allow for ~1.5cm of error between bounding boxes.
         //   // assert bbox == MapSheet.getMapTileIndex(tileName).bbox
         // }
-        return { bbox, source: tiff.source.url.href, tileName, epsg: tiff.images[0]?.epsg };
+        return {
+          bbox,
+          source: tiff.source.url.href,
+          tileName,
+          epsg: tiff.images[0]?.epsg,
+          bands: await extractBandInformation(tiff),
+        };
       } catch (e) {
         logger.error({ reason: e, source: tiff.source }, 'ExtractTiffLocation:Failed');
         return null;
@@ -386,6 +428,7 @@ export async function extractTiffLocations(
 
   return output;
 }
+
 export function getSize(extent: [number, number, number, number]): Size {
   return { width: extent[2] - extent[0], height: extent[3] - extent[1] };
 }

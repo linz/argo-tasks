@@ -1,4 +1,4 @@
-import { Size, Source, Tiff, TiffImage } from '@cogeotiff/core';
+import { SampleFormat, Size, Source, Tiff, TiffImage, TiffTag } from '@cogeotiff/core';
 
 import { MapSheet } from '../../../utils/mapsheet.js';
 
@@ -29,7 +29,18 @@ export class FakeCogTiff extends Tiff {
     image: Partial<{ origin: number[]; epsg: number; resolution: number[]; size: Size; isGeoLocated: boolean }>,
   ) {
     super({ url: new URL(uri) } as Source);
-    this.images = [{ ...structuredClone(DefaultTiffImage), valueGeo, ...image } as any];
+    this.images = [
+      {
+        ...structuredClone(DefaultTiffImage),
+        valueGeo,
+        ...image,
+        fetch(tag: TiffTag) {
+          if (tag === TiffTag.BitsPerSample) return [8, 8, 8];
+          if (tag === TiffTag.SampleFormat) return [SampleFormat.Uint, SampleFormat.Uint, SampleFormat.Uint];
+          return null;
+        },
+      } as any,
+    ];
   }
 
   static fromTileName(tileName: string): FakeCogTiff {
