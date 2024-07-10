@@ -200,8 +200,9 @@ export class MakeCogGithub {
   ): Promise<ConfigTileSetRaster> {
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
-      if (tileSet.layers[i]?.name === layer.name) {
-        tileSet.layers[i] = layer;
+      const existing = tileSet.layers[i];
+      if (existing?.name === layer.name) {
+        tileSet.layers[i] = { ...existing, ...layer };
         return tileSet;
       }
     }
