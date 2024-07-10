@@ -73,7 +73,7 @@ describe('copyFiles', () => {
         y: 4646097.909862504,
         width: 156543.03392804044,
         height: 156543.03392804044,
-        name: '6-28-36.tiff',
+        name: '6-28-36.tiff', // New config with .tiff
       },
       // No Intersection
       {
@@ -106,7 +106,7 @@ describe('copyFiles', () => {
         y: 4724369.426826525,
         width: 39135.75848201011,
         height: 39135.75848201011,
-        name: '8-113-145.tiff',
+        name: '8-113-145', // Old config without .tiff
       },
       // No Intersection
       {
@@ -114,7 +114,7 @@ describe('copyFiles', () => {
         y: 4841776.702272555,
         width: 39135.75848201011,
         height: 39135.75848201011,
-        name: '8-113-142.tiff',
+        name: '8-113-142',
       },
     ],
   };
