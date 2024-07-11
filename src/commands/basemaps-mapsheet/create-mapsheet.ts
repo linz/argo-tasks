@@ -138,7 +138,7 @@ export async function createMapSheet(
       if (img.bounds == null || Bounds.fromJson(img.bounds).intersects(bounds)) {
         for (const file of img.files) {
           if (bounds.intersects(Bounds.fromJson(file))) {
-            current.files.push(`${img.uri}/${file.name}.tiff`);
+            current.files.push(fsa.join(img.uri, getTiffName(file.name)));
           }
         }
       }
@@ -146,4 +146,10 @@ export async function createMapSheet(
   }
 
   return outputs;
+}
+
+export function getTiffName(name: string): string {
+  const lowerName = name.toLowerCase();
+  if (lowerName.endsWith('.tif') || lowerName.endsWith('.tiff')) return name;
+  return `${name}.tiff`;
 }
