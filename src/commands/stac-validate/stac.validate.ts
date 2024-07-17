@@ -2,6 +2,7 @@ import { fsa } from '@chunkd/fs';
 import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
+import { createHash } from 'crypto';
 import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
 import * as st from 'stac-ts';
@@ -12,26 +13,25 @@ import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { hashStream } from '../../utils/hash.js';
 import { Sha256Prefix } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
-import { createHash } from 'crypto';
 
 /**
  * Store a local copy of JSON schemas into a cache directory
- * 
+ *
  * This is to prevent overloading the remote hosts as stac validation can trigger lots of schema requests
- * 
+ *
  * @param url JSON schema to load
  * @returns object from the cache if it exists or directly from the uri
  */
-async function readSchema(url:string): Promise<object> {
+async function readSchema(url: string): Promise<object> {
   const cacheId = createHash('sha256').update(url).digest('hex');
   const cachePath = `./json-schema-cache/${cacheId}.json`;
   try {
     return await fsa.readJson<object>(cachePath);
-  } catch(e) {
-    return fsa.readJson<object>(url).then(async obj => {
+  } catch (e) {
+    return fsa.readJson<object>(url).then(async (obj) => {
       await fsa.write(cachePath, JSON.stringify(obj));
-      return obj
-    })
+      return obj;
+    });
   }
 }
 
