@@ -12,6 +12,28 @@ import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { hashStream } from '../../utils/hash.js';
 import { Sha256Prefix } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
+import { createHash } from 'crypto';
+
+/**
+ * Store a local copy of JSON schemas into a cache directory
+ * 
+ * This is to prevent overloading the remote hosts as stac validation can trigger lots of schema requests
+ * 
+ * @param url JSON schema to load
+ * @returns object from the cache if it exists or directly from the uri
+ */
+async function readSchema(url:string): Promise<object> {
+  const cacheId = createHash('sha256').update(url).digest('hex');
+  const cachePath = `./json-schema-cache/${cacheId}.json`;
+  try {
+    return await fsa.readJson<object>(cachePath);
+  } catch(e) {
+    return fsa.readJson<object>(url).then(async obj => {
+      await fsa.write(cachePath, JSON.stringify(obj));
+      return obj
+    })
+  }
+}
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -78,8 +100,9 @@ export const commandStacValidate = command({
       strict: args.strict,
       loadSchema: (uri: string): Promise<SchemaObject> => {
         let existing = Schemas.get(uri);
+
         if (existing == null) {
-          existing = fsa.readJson(uri);
+          existing = readSchema(uri);
           Schemas.set(uri, existing);
         }
         return existing;
@@ -99,7 +122,7 @@ export const commandStacValidate = command({
       if (schema != null) return schema;
       let existing = ajvSchema.get(uri);
       if (existing == null) {
-        existing = fsa.readJson<object>(uri).then((json) => ajv.compileAsync(json));
+        existing = readSchema(uri).then((json) => ajv.compileAsync(json));
         ajvSchema.set(uri, existing);
       }
       return existing;
