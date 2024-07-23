@@ -53,16 +53,18 @@ describe('getTileName', () => {
     assert.equal(convertTileName('CK08_50000_0101', 50000), 'CK08');
   });
 
-  for (const sheet of MapSheetData) {
-    it('should get the top left 1:50k, 1:10k, 1:5k, 1:1k, and 1:500 for ' + sheet.code, () => {
+  it('should get the top left 1:50k, 1:10k, 1:5k, 1:1k, and 1:500 for all sheets', () => {
+    for (const sheet of MapSheetData) {
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 50000), sheet.code);
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 10000), sheet.code + '_10000_0101');
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 5000), sheet.code + '_5000_0101');
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 1000), sheet.code + '_1000_0101');
       assert.equal(getTileName(sheet.origin.x, sheet.origin.y, 500), sheet.code + '_500_001001');
-    });
+    }
+  });
 
-    it('should get the bottom right 1:50k, 1:10k, 1:5k, 1:1k for ' + sheet.code, () => {
+  it('should get the bottom right 1:50k, 1:10k, 1:5k, 1:1k for all sheets', () => {
+    for (const sheet of MapSheetData) {
       // for each scale calculate the bottom right tile then find the mid point of it
       // then look up the tile name from the midpoint and ensure it is the same
       for (const scale of [10_000, 5_000, 1_000, 500] as const) {
@@ -74,8 +76,8 @@ describe('getTileName', () => {
         const midPointY = ret.origin.y - ret.height / 2;
         assert.equal(getTileName(midPointX, midPointY, scale), sheetName);
       }
-    });
-  }
+    }
+  });
 });
 
 describe('tiffLocation', () => {
