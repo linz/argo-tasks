@@ -16,7 +16,7 @@
     "@linzjs/style": "^5.4.0",
     "@types/node": "^20.12.10",
     "@types/prettier": "^3.0.0",
-    "stac-ts": "^1.0.0"
+    "stac-ts": "^1.0.3"
   },
   "scripts": {
     "build": "tsc",
