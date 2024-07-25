@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.2.2](https://github.com/linz/argo-tasks/compare/v4.2.1...v4.2.2) (2024-07-23)
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the output url path which got additional slash. ([#1023](https://github.com/linz/argo-tasks/issues/1023)) ([2cca93e](https://github.com/linz/argo-tasks/commit/2cca93e6854228bbef167de27e110a90db58024a))
+* **basemaps:** Keep the existing settings when replacing existing layer. ([#1024](https://github.com/linz/argo-tasks/issues/1024)) ([fc736f5](https://github.com/linz/argo-tasks/commit/fc736f5bc9bd23a66939ea8ab15e3493e110ec84))
+* **stac-validate:** cache json schema objects to reduce network failures TDE-1212 ([#1029](https://github.com/linz/argo-tasks/issues/1029)) ([0338068](https://github.com/linz/argo-tasks/commit/0338068cf5cf31129ff8de0b8617b55cb0f4925a))
+* validate band information is consistent ([#1017](https://github.com/linz/argo-tasks/issues/1017)) ([ec64f65](https://github.com/linz/argo-tasks/commit/ec64f6588de7133f186a0f66cb027c3bf52f7959))
+
 ## [4.2.1](https://github.com/linz/argo-tasks/compare/v4.2.0...v4.2.1) (2024-06-21)
 
 
