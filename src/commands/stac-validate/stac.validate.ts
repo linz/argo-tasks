@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import Ajv, { DefinedError, SchemaObject, ValidateFunction } from 'ajv';
+import Ajv, { DefinedError, ValidateFunction } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
@@ -10,30 +10,8 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { hashStream } from '../../utils/hash.js';
-import { Sha256Prefix } from '../../utils/hash.js';
+import { hashStream, Sha256Prefix } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
-
-/**
- * Store a local copy of JSON schemas into a cache directory
- *
- * This is to prevent overloading the remote hosts as stac validation can trigger lots of schema requests
- *
- * @param url JSON schema to load
- * @returns object from the cache if it exists or directly from the uri
- */
-async function readSchema(url: string): Promise<object> {
-  const cacheId = createHash('sha256').update(url).digest('hex');
-  const cachePath = `./json-schema-cache/${cacheId}.json`;
-  try {
-    return await fsa.readJson<object>(cachePath);
-  } catch (e) {
-    return fsa.readJson<object>(url).then(async (obj) => {
-      await fsa.write(cachePath, JSON.stringify(obj));
-      return obj;
-    });
-  }
-}
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -83,7 +61,6 @@ export const commandStacValidate = command({
     registerCli(this, args);
 
     logger.info('StacValidation:Start');
-    const Schemas = new Map<string, Promise<SchemaObject>>();
     const validated = new Set<string>();
 
     const recursive = args.recursive;
@@ -98,15 +75,7 @@ export const commandStacValidate = command({
     const ajv = new Ajv.default({
       allErrors: true,
       strict: args.strict,
-      loadSchema: (uri: string): Promise<SchemaObject> => {
-        let existing = Schemas.get(uri);
-
-        if (existing == null) {
-          existing = readSchema(uri);
-          Schemas.set(uri, existing);
-        }
-        return existing;
-      },
+      loadSchema: loadSchema,
       formats: {
         ...fastFormats,
         // iri is a more relaxed format than URI but for our purposes a URI should be close enough
@@ -115,20 +84,37 @@ export const commandStacValidate = command({
       },
     });
 
+    // To prevent concurrency issues compile schemas one at a time
+    let schemaQueue: Promise<unknown> = Promise.resolve();
     const ajvSchema = new Map<string, Promise<ValidateFunction>>();
+    const queue = new ConcurrentQueue(args.concurrency);
 
-    function loadSchema(uri: string): Promise<ValidateFunction> | ValidateFunction {
-      const schema = ajv.getSchema(uri);
+    /**
+     * Lookup or load and compile a AJV validator from a JSONSChema URL
+     * @param url JSONSchema URL
+     * @returns
+     */
+    async function getValidator(url: string): Promise<ValidateFunction> {
+      /**
+       * Calling `getSchema(url)` while the schema at `url` is still loading can cause the schema to fail to load correctly
+       * To work around this problem ensure only one schema is compiling at a time.
+       */
+      await schemaQueue;
+
+      const schema = ajv.getSchema(url);
       if (schema != null) return schema;
-      let existing = ajvSchema.get(uri);
+      let existing = ajvSchema.get(url);
+
       if (existing == null) {
-        existing = readSchema(uri).then((json) => ajv.compileAsync(json));
-        ajvSchema.set(uri, existing);
+        existing = schemaQueue.then(() => loadSchema(url).then((f) => ajv.compileAsync(f)));
+        ajvSchema.set(url, existing);
+        // Queue should ignore errors so if something in the queue fails it can continue to run
+        schemaQueue = existing.catch(() => null);
       }
       return existing;
     }
+
     const failures: string[] = [];
-    const queue = new ConcurrentQueue(args.concurrency);
 
     async function validateStac(path: string): Promise<void> {
       if (validated.has(path)) {
@@ -136,6 +122,7 @@ export const commandStacValidate = command({
         return;
       }
       validated.add(path);
+
       const stacSchemas: string[] = [];
       let stacJson;
       try {
@@ -148,9 +135,11 @@ export const commandStacValidate = command({
 
       const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, path);
       if (schema === null) {
+        logger.error({ path, stacType: stacJson.type, stacVersion: stacJson.stac_version }, 'getStacSchemaUrl:Error');
         failures.push(path);
         return;
       }
+
       stacSchemas.push(schema);
       if (stacJson.stac_extensions) {
         for (const se of stacJson.stac_extensions) stacSchemas.push(se);
@@ -158,29 +147,31 @@ export const commandStacValidate = command({
 
       let isOk = true;
       for (const sch of stacSchemas) {
-        const validate = await loadSchema(sch);
+        const validate = await getValidator(sch);
+
         logger.trace({ title: stacJson.title, type: stacJson.type, path, schema: sch }, 'Validation:Start');
         const valid = validate(stacJson);
         if (valid === true) {
           logger.trace({ title: stacJson.title, type: stacJson.type, path, valid, schema: sch }, 'Validation:Done:Ok');
-        } else {
-          isOk = false;
-          for (const err of validate.errors as DefinedError[]) {
-            logger.error(
-              {
-                path: path,
-                instancePath: err.instancePath,
-                schemaPath: err.schemaPath,
-                keyword: err.keyword,
-                params: err.params,
-                message: err.message,
-              },
-              'Validation:Failed',
-            );
-          }
-          failures.push(path);
-          logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Failed');
+          continue;
         }
+
+        isOk = false;
+        for (const err of validate.errors as DefinedError[]) {
+          logger.error(
+            {
+              path: path,
+              instancePath: err.instancePath,
+              schemaPath: err.schemaPath,
+              keyword: err.keyword,
+              params: err.params,
+              message: err.message,
+            },
+            'Validation:Failed',
+          );
+        }
+        failures.push(path);
+        logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Failed');
       }
 
       if (args.checksumAssets) {
@@ -190,6 +181,7 @@ export const commandStacValidate = command({
           failures.push(...assetFailures);
         }
       }
+
       if (args.checksumLinks) {
         const linksFailures = await validateLinks(stacJson, path);
         if (linksFailures.length > 0) {
@@ -199,11 +191,12 @@ export const commandStacValidate = command({
       }
 
       if (isOk) logger.info({ title: stacJson.title, type: stacJson.type, path }, 'Validation:Done:Ok');
+
       if (recursive) {
         for (const child of getStacChildren(stacJson, path)) {
           queue.push(() =>
             validateStac(child).catch((err: unknown) => {
-              logger.error({ err }, 'Failed');
+              logger.error({ err, path: child }, 'Failed');
               failures.push(child);
             }),
           );
@@ -214,8 +207,9 @@ export const commandStacValidate = command({
     for (const path of paths) {
       queue.push(() =>
         validateStac(path).catch((err: unknown) => {
-          logger.error({ err }, 'Failed');
+          logger.error({ err, path }, 'Failed');
           failures.push(path);
+          process.exit();
         }),
       );
     }
@@ -223,7 +217,7 @@ export const commandStacValidate = command({
     await queue.join();
 
     if (failures.length > 0) {
-      logger.error({ failures: failures.length }, 'StacValidation:Done:Failed');
+      logger.error({ count: failures.length }, 'StacValidation:Done:Failed');
       process.exit(1);
     } else {
       logger.info('StacValidation:Done:Ok');
@@ -246,9 +240,7 @@ export async function validateAssets(
   const assets = Object.values(stacJson.assets ?? {}) as st.StacAsset[];
   for (const asset of assets) {
     const isChecksumValid = await validateStacChecksum(asset, path, false);
-    if (!isChecksumValid) {
-      assetsFailures.push(path);
-    }
+    if (!isChecksumValid) assetsFailures.push(path);
   }
   return assetsFailures;
 }
@@ -267,13 +259,35 @@ export async function validateLinks(
   const linksFailures: string[] = [];
   for (const link of stacJson.links) {
     if (link.rel === 'self') continue;
+
     // Allowing missing checksums as some STAC links might not have checksum
     const isChecksumValid = await validateStacChecksum(link, path, true);
-    if (!isChecksumValid) {
-      linksFailures.push(path);
-    }
+    if (!isChecksumValid) linksFailures.push(path);
   }
   return linksFailures;
+}
+
+/**
+ * Store a local copy of JSON schemas into a cache directory
+ *
+ * This is to prevent overloading the remote hosts as stac validation can trigger lots of schema requests
+ *
+ * @param url JSON schema to load
+ * @returns object from the cache if it exists or directly from the uri
+ */
+async function loadSchema(url: string): Promise<object> {
+  const cacheId = createHash('sha256').update(url).digest('hex');
+  const cachePath = `./json-schema-cache/${cacheId}.json`;
+
+  try {
+    return await fsa.readJson<object>(cachePath);
+  } catch (e) {
+    return fsa.read(url).then(async (obj) => {
+      logger.info({ url, cachePath }, 'Fetch:CacheMiss');
+      await fsa.write(cachePath, obj);
+      return JSON.parse(String(obj)) as object;
+    });
+  }
 }
 
 /**
@@ -315,51 +329,66 @@ export async function validateStacChecksum(
   return true;
 }
 
-function getSchemaType(schemaType: string): string | null {
+export type StacSchemaType = 'item' | 'catalog' | 'collection';
+
+/**
+ * Convert a GeoJSON type into a STAC schema type
+ * @param schemaType GeoJSON schema type eg "Feature"
+ * @returns STAC schema type eg "item"
+ */
+function getSchemaType(schemaType: string): StacSchemaType | null {
   switch (schemaType) {
     case 'Feature':
       return 'item';
     case 'Catalog':
+      return 'catalog';
     case 'Collection':
-      return schemaType.toLowerCase();
+      return 'collection';
     default:
       return null;
   }
 }
 
+/**
+ * Determine the STAC JSON Schema URL for a stac "type" field and version
+ * @param schemaType Type of GeoJSON eg "Feature"
+ * @param stacVersion version of STAC to use
+ * @param path base location
+ * @returns
+ */
 export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
   logger.trace({ path, schemaType: schemaType }, 'getStacSchema:Start');
-  if (stacVersion !== '1.0.0') {
-    logger.error({ stacVersion, schemaType, path }, 'getStacSchema:StacVersionError');
-    return null;
-  }
+  // Only 1.0.0 is supported
+  if (stacVersion !== '1.0.0') return null;
 
   const type = getSchemaType(schemaType);
-  if (type == null) {
-    logger.error({ path, schemaType }, 'getStacSchema:ErrorInvalidSchemaType');
-    return null;
-  }
+  if (type == null) return null;
 
   const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
   logger.trace({ path, schemaType, schemaId }, 'getStacSchema:Done');
   return schemaId;
 }
-const validRels = new Set(['child', 'item']);
 
+/** STAC link "rel" types that are considered children */
+const childrenRel = new Set(['child', 'item']);
+
+/**
+ * find all the children items in a STAC document
+ *
+ * @param stacJson STAC Document
+ * @param path source location of the STAC document to determine relative paths
+ * @returns list of locations of child item
+ */
 export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
-    return stacJson.links.filter((f) => validRels.has(f.rel)).map((f) => normaliseHref(f.href, path));
+    return stacJson.links.filter((f) => childrenRel.has(f.rel)).map((f) => normaliseHref(f.href, path));
   }
-  if (stacJson.type === 'Feature') {
-    return [];
-  }
+  if (stacJson.type === 'Feature') return [];
   throw new Error(`Unknown Stac Type: ${path}`);
 }
 
 export function normaliseHref(href: string, path: string): string {
-  if (isURL(path)) {
-    return new URL(href, path).href;
-  }
+  if (isURL(path)) return new URL(href, path).href;
   return join(dirname(path), href);
 }
 
