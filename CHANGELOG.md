@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.3](https://github.com/linz/argo-tasks/compare/v4.2.2...v4.2.3) (2024-08-01)
+
+
+### Bug Fixes
+
+* **stac-validate:** work around race condition  when validating 100s of documents TDE-1212 ([#1040](https://github.com/linz/argo-tasks/issues/1040)) ([1d7f5d2](https://github.com/linz/argo-tasks/commit/1d7f5d2ea1191769c5b788eeb6a46d495fc1d6ff))
+
 ## [4.2.2](https://github.com/linz/argo-tasks/compare/v4.2.1...v4.2.2) (2024-07-23)
 
 
