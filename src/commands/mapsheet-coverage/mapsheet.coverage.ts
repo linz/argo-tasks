@@ -18,7 +18,8 @@ const Skip = new Set([
   'new-zealand_2012_dem_8m',
 ]);
 
-const outputPath = '/tmp/national-tile-create/';
+/** Location for the output files to be stored */
+const OutputPath = '/tmp/mapsheet-coverage/';
 
 /**
  * Number of decimal places to restrict capture areas too
@@ -84,7 +85,8 @@ export const commandMapSheetCoverage = command({
     const geojson = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All previous capture area features restricted to the area needed for the basemap
-    const previous: GeoJSON.Feature[] = [];
+    const previous = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
+
     // All the coordinates currently used
     let total: pc.MultiPolygon[] = [];
 
@@ -114,7 +116,7 @@ export const commandMapSheetCoverage = command({
       for (const [key, value] of Object.entries(collection)) {
         if (key.startsWith('linz:')) captureArea.properties[key] = value;
       }
-      logger.info(
+      logger.debug(
         {
           layer: layer.name,
           title: collection.title,
@@ -126,13 +128,13 @@ export const commandMapSheetCoverage = command({
       // GeoJSON over about 8 decimal places starts running into floating point math errors
       truncateGeoJson(captureArea);
 
-      // // Determine if this layer has any additional information to the existing layers
+      // Determine if this layer has any additional information to the existing layers
       const diff = pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, total);
 
       if (diff.length === 0) {
         // Layer has no information included in the output
         logger.warn({ layer: layer.name, location: targetCaptureAreaUrl.href }, 'FullyCovered');
-        await fsa.write(fsa.join(outputPath, `remove-${layer.name}.geojson`), JSON.stringify(captureArea));
+        await fsa.write(fsa.join(OutputPath, `remove-${layer.name}.geojson`), JSON.stringify(captureArea));
         // break;
         continue;
       }
@@ -152,7 +154,7 @@ export const commandMapSheetCoverage = command({
       }
 
       total = pc.union(total, captureArea.geometry.coordinates as pc.MultiPolygon);
-      previous.push({
+      previous.features.push({
         type: 'Feature',
         geometry: { type: 'MultiPolygon', coordinates: diff },
         properties: captureArea.properties,
@@ -168,23 +170,28 @@ export const commandMapSheetCoverage = command({
     // A single output feature for total capture area
     logger.info('Write:CombinedUnion');
     await fsa.write(
-      './output/combined.geojson',
+      './output/layers-combined.geojson',
       JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: total } }),
     );
 
     // Which areas of each layers are needed for the output
     logger.info('Write:RequiredLayers');
-    geojson.features = previous;
-    await fsa.write('./output/layers-required.geojson', JSON.stringify(geojson));
+    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson'), JSON.stringify(previous));
 
-    const output = createWriteStream('./output/mapsheets.ndjson');
-    let count = 0;
+    // List of files to be created
+    const output = createWriteStream(fsa.join(OutputPath, 'mapsheets.ndjson'));
     for (const [mapsheet, files] of mapSheets) {
       output.write(JSON.stringify({ mapsheet, files }) + '\n');
-      count += files.length;
     }
-    console.log({ count });
 
     output.close();
+    logger.info(
+      {
+        duration: performance.now() - startTime,
+        layersFound: geojson.features.length,
+        layersNeeded: previous.features.length,
+      },
+      'MapSheetCoverage:Done',
+    );
   },
 });
