@@ -1,8 +1,9 @@
 import { createWriteStream } from 'node:fs';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
+import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { command, option, string } from 'cmd-ts';
+import { command, number, option, string } from 'cmd-ts';
 import { basename } from 'path/posix';
 import pc from 'polygon-clipping';
 import { StacCollection } from 'stac-ts';
@@ -60,6 +61,9 @@ function truncateGeoJson(feature: GeoJSON.Feature): asserts feature is GeoJSON.F
   }
 }
 
+/** allow the configuration layer choice between 2193 and 3857 */
+const ValidCodes = new Set([EpsgCode.Google, EpsgCode.Nztm2000]);
+
 export const commandMapSheetCoverage = command({
   name: 'mapsheet-coverage',
   description: 'Create a list of mapsheets needing to be created from a basemaps configuration',
@@ -67,6 +71,13 @@ export const commandMapSheetCoverage = command({
   args: {
     config,
     verbose,
+    epsgCode: option({
+      type: number,
+      long: 'epsg-code',
+      description: 'Basemaps configuration layer ESPG code to use',
+      defaultValueIsSerializable: true,
+      defaultValue: () => EpsgCode.Nztm2000,
+    }),
     location: option({
       type: string,
       long: 'location',
@@ -79,6 +90,11 @@ export const commandMapSheetCoverage = command({
     const startTime = performance.now();
     registerCli(this, args);
     logger.info('MapSheet:Start');
+
+    if (!ValidCodes.has(args.epsgCode)) {
+      logger.error({ epsgCode: args.epsgCode }, 'Invalid:EpsgCode');
+      return;
+    }
 
     const config = await fsa.readJson<ConfigTileSetRaster>(args.location);
 
@@ -95,12 +111,14 @@ export const commandMapSheetCoverage = command({
 
     for (const layer of config.layers.reverse()) {
       if (Skip.has(layer.name)) continue;
-      if (layer['2193'] == null) {
-        logger.warn({ layer: layer.name }, 'NZTM2000Missing');
+
+      const layerSource = layer[args.epsgCode as 2193];
+      if (layerSource == null) {
+        logger.warn({ layer: layer.name, layerSource: args.epsgCode }, 'Layer:Missing');
         continue;
       }
 
-      const targetCollection = new URL('collection.json', layer['2193']);
+      const targetCollection = new URL('collection.json', layerSource);
       const collection = await fsa.readJson<StacCollection>(targetCollection.href);
 
       // Capture area is the area where this layer has data for
