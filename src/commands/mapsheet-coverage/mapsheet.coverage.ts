@@ -1,4 +1,4 @@
-import { createWriteStream } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
 import { EpsgCode } from '@basemaps/geo';
@@ -178,31 +178,28 @@ export const commandMapSheetCoverage = command({
         properties: captureArea.properties,
       });
       geojson.features.push(captureArea);
-
-      logger.info({ duration: performance.now() - startTime }, 'TileIndex:Done');
     }
+
     // All the source layers as a single file
     logger.info('Write:SourceFeatures');
-    await fsa.write('./output/layers-source.geojson', JSON.stringify(geojson));
+    await fsa.write(fsa.join(OutputPath, 'layers-source.geojson.gz'), gzipSync(JSON.stringify(geojson)));
 
     // A single output feature for total capture area
     logger.info('Write:CombinedUnion');
     await fsa.write(
-      './output/layers-combined.geojson',
-      JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: total } }),
+      fsa.join(OutputPath, 'layers-combined.geojson.gz'),
+      gzipSync(JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: total } })),
     );
 
     // Which areas of each layers are needed for the output
     logger.info('Write:RequiredLayers');
-    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson'), JSON.stringify(previous));
+    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson.gz'), JSON.stringify(previous));
 
     // List of files to be created
-    const output = createWriteStream(fsa.join(OutputPath, 'mapsheets.ndjson'));
-    for (const [mapsheet, files] of mapSheets) {
-      output.write(JSON.stringify({ mapsheet, files }) + '\n');
-    }
-
-    output.close();
+    const todo = [...mapSheets].map((m) => {
+      return { mapsheet: m[0], files: m[1] };
+    });
+    await fsa.write(fsa.join(OutputPath, 'mapsheets.json'), JSON.stringify(todo));
     logger.info(
       {
         duration: performance.now() - startTime,
