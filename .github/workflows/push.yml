@@ -30,7 +30,7 @@ jobs:
     needs: ['build']
 
     # On push to master when it is not a release!
-    if: ${{ github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'chore(master): release') }}
+    if: ${{ github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'release:') }}
 
     permissions:
       id-token: write
