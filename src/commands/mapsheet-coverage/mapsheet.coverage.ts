@@ -193,7 +193,7 @@ export const commandMapSheetCoverage = command({
 
     // Which areas of each layers are needed for the output
     logger.info('Write:RequiredLayers');
-    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson.gz'), JSON.stringify(previous));
+    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson.gz'), gzipSync(JSON.stringify(previous)));
 
     // List of files to be created
     const todo = [...mapSheets].map((m) => {
