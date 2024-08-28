@@ -3,7 +3,7 @@ import { gzipSync } from 'node:zlib';
 import { ConfigTileSetRaster } from '@basemaps/config';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { command, number, option, string } from 'cmd-ts';
+import { command, number, option, optional, string } from 'cmd-ts';
 import { basename } from 'path/posix';
 import pc from 'polygon-clipping';
 import { StacCollection } from 'stac-ts';
@@ -85,6 +85,11 @@ export const commandMapSheetCoverage = command({
       defaultValueIsSerializable: true,
       defaultValue: () => 'https://raw.githubusercontent.com/linz/basemaps-config/master/config/tileset/elevation.json',
     }),
+    mapSheet: option({
+      type: optional(string),
+      long: 'mapsheet',
+      description: 'Limit the output to a specific mapsheet eg "BX01"',
+    }),
   },
   async handler(args) {
     const startTime = performance.now();
@@ -98,21 +103,23 @@ export const commandMapSheetCoverage = command({
 
     const config = await fsa.readJson<ConfigTileSetRaster>(args.location);
 
-    const geojson = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
+    /** All the layer's capture areas areas with some additonal metadata */
+    const allLayers = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
-    // All previous capture area features restricted to the area needed for the basemap
-    const previous = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
+    // All previous capture area features restricted to the area needed for the output
+    const layersRequired = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All the coordinates currently used
-    let total: pc.MultiPolygon[] = [];
+    let layersCombined: pc.MultiPolygon[] = [];
 
-    // MapSheetName to List of source files requred
+    // MapSheetName to List of source files required
     const mapSheets = new Map<string, string[]>();
 
+    // Reverse the configuration so the highest priority datasets come first
     for (const layer of config.layers.reverse()) {
       if (Skip.has(layer.name)) continue;
 
-      const layerSource = layer[args.epsgCode as 2193];
+      const layerSource = layer[args.epsgCode as 2193 | 3857];
       if (layerSource == null) {
         logger.warn({ layer: layer.name, layerSource: args.epsgCode }, 'Layer:Missing');
         continue;
@@ -147,13 +154,12 @@ export const commandMapSheetCoverage = command({
       truncateGeoJson(captureArea);
 
       // Determine if this layer has any additional information to the existing layers
-      const diff = pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, total);
+      const diff = pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, layersCombined);
 
+      // Layer has no information included in the output
       if (diff.length === 0) {
-        // Layer has no information included in the output
         logger.warn({ layer: layer.name, location: targetCaptureAreaUrl.href }, 'FullyCovered');
         await fsa.write(fsa.join(OutputPath, `remove-${layer.name}.geojson`), JSON.stringify(captureArea));
-        // break;
         continue;
       }
 
@@ -166,45 +172,51 @@ export const commandMapSheetCoverage = command({
 
         const ms = MapSheet.getMapTileIndex(fileName);
         if (ms == null) throw new Error('Unable to extract mapsheet from ' + url.href);
+
+        // Limit the output to only the requested mapsheet
+        if (args.mapSheet && args.mapSheet !== ms.mapSheet) continue;
+
         const existing = mapSheets.get(ms.mapSheet) ?? [];
-        existing.push(url.href);
+        // TODO this is not the safest way of getting access to the tiff, it would be best to load
+        existing.push(url.href.replace('.json', '.tiff'));
         mapSheets.set(ms.mapSheet, existing);
       }
 
-      total = pc.union(total, captureArea.geometry.coordinates as pc.MultiPolygon);
-      previous.features.push({
+      layersCombined = pc.union(layersCombined, captureArea.geometry.coordinates as pc.MultiPolygon);
+      layersRequired.features.push({
         type: 'Feature',
         geometry: { type: 'MultiPolygon', coordinates: diff },
         properties: captureArea.properties,
       });
-      geojson.features.push(captureArea);
+      allLayers.features.push(captureArea);
     }
 
     // All the source layers as a single file
     logger.info('Write:SourceFeatures');
-    await fsa.write(fsa.join(OutputPath, 'layers-source.geojson.gz'), gzipSync(JSON.stringify(geojson)));
+    await fsa.write(fsa.join(OutputPath, 'layers-source.geojson.gz'), gzipSync(JSON.stringify(allLayers)));
 
     // A single output feature for total capture area
     logger.info('Write:CombinedUnion');
     await fsa.write(
       fsa.join(OutputPath, 'layers-combined.geojson.gz'),
-      gzipSync(JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: total } })),
+      gzipSync(JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: layersCombined } })),
     );
 
     // Which areas of each layers are needed for the output
     logger.info('Write:RequiredLayers');
-    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson.gz'), gzipSync(JSON.stringify(previous)));
+    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson.gz'), gzipSync(JSON.stringify(layersRequired)));
 
     // List of files to be created
     const todo = [...mapSheets].map((m) => {
-      return { mapsheet: m[0], files: m[1] };
+      return { output: `${m[0]}.tiff`, input: m[1].reverse() };
     });
-    await fsa.write(fsa.join(OutputPath, 'mapsheets.json'), JSON.stringify(todo));
+
+    await fsa.write(fsa.join(OutputPath, 'file-list.json'), JSON.stringify(todo));
     logger.info(
       {
         duration: performance.now() - startTime,
-        layersFound: geojson.features.length,
-        layersNeeded: previous.features.length,
+        layersFound: allLayers.features.length,
+        layersNeeded: layersRequired.features.length,
       },
       'MapSheetCoverage:Done',
     );
