@@ -208,7 +208,7 @@ export const commandMapSheetCoverage = command({
 
     // List of files to be created
     const todo = [...mapSheets].map((m) => {
-      return { output: `${m[0]}.tiff`, input: m[1].reverse() };
+      return { output: `${m[0]}.tiff`, input: m[1].reverse(), includeDerived: true };
     });
 
     await fsa.write(fsa.join(OutputPath, 'file-list.json'), JSON.stringify(todo));
