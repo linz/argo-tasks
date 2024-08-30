@@ -129,6 +129,7 @@ export const commandStacGithubImport = command({
       ticket: args.ticket,
       copy_option: args.copyOption,
       region: collection['linz:region'],
+      flatten: 'false',
     };
     const parametersFile = {
       path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
