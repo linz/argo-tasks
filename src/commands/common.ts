@@ -109,7 +109,7 @@ export function createTiff(loc: string): Promise<Tiff> {
  *
  * Relative paths will be converted into file urls.
  */
-function tryParseUrl(loc: string): URL {
+export function tryParseUrl(loc: string): URL {
   try {
     return new URL(loc);
   } catch (e) {

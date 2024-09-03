@@ -1,17 +1,21 @@
+import { writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { command, number, option, optional, string } from 'cmd-ts';
+import pLimit from 'p-limit';
 import { basename } from 'path/posix';
 import pc from 'polygon-clipping';
-import { StacCollection } from 'stac-ts';
+import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
+import { hashBuffer, hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
-import { config, registerCli, verbose } from '../common.js';
+import { config, registerCli, tryParseUrl, urlToString, verbose } from '../common.js';
 
 /** Datasets to skip */
 const Skip = new Set([
@@ -90,6 +94,11 @@ export const commandMapSheetCoverage = command({
       long: 'mapsheet',
       description: 'Limit the output to a specific mapsheet eg "BX01"',
     }),
+    compare: option({
+      type: optional(string),
+      long: 'compare',
+      description: 'Compare the output with an existing combined collection.json',
+    }),
   },
   async handler(args) {
     const startTime = performance.now();
@@ -98,6 +107,11 @@ export const commandMapSheetCoverage = command({
 
     if (!ValidCodes.has(args.epsgCode)) {
       logger.error({ epsgCode: args.epsgCode }, 'Invalid:EpsgCode');
+      return;
+    }
+
+    if (args.compare && !args.compare.endsWith('collection.json')) {
+      logger.error('--compare must compare with an existing STAC collection.json');
       return;
     }
 
@@ -178,7 +192,7 @@ export const commandMapSheetCoverage = command({
 
         const existing = mapSheets.get(ms.mapSheet) ?? [];
         // TODO this is not the safest way of getting access to the tiff, it would be best to load
-        existing.push(url.href.replace('.json', '.tiff'));
+        existing.unshift(url.href.replace('.json', '.tiff'));
         mapSheets.set(ms.mapSheet, existing);
       }
 
@@ -206,9 +220,17 @@ export const commandMapSheetCoverage = command({
     logger.info('Write:RequiredLayers');
     await fsa.write(fsa.join(OutputPath, 'layers-required.geojson.gz'), gzipSync(JSON.stringify(layersRequired)));
 
+    if (args.compare) {
+      const sheetsToSkip = await compareCreation(args.compare, mapSheets);
+      if (sheetsToSkip.length > 0) {
+        logger.info({ sheetsToSkip }, 'MapSheet:Skip');
+        for (const sheet of sheetsToSkip) mapSheets.delete(sheet);
+      }
+    }
+
     // List of files to be created
     const todo = [...mapSheets].map((m) => {
-      return { output: `${m[0]}`, input: m[1].reverse(), includeDerived: true };
+      return { output: `${m[0]}`, input: m[1], includeDerived: true };
     });
 
     await fsa.write(fsa.join(OutputPath, 'file-list.json'), JSON.stringify(todo));
@@ -217,8 +239,89 @@ export const commandMapSheetCoverage = command({
         duration: performance.now() - startTime,
         layersFound: allLayers.features.length,
         layersNeeded: layersRequired.features.length,
+        itemsToCreate: todo.length,
       },
       'MapSheetCoverage:Done',
     );
   },
 });
+
+async function compareCreation(
+  compareLocation: string,
+  mapSheets: Map<string, string[]>,
+  hashQueueLength = 25,
+): Promise<string[]> {
+  logger.info({ compareTo: compareLocation, mapSheetCount: mapSheets.size }, 'MapSheet:Compare');
+
+  // Limit the number of files hashing concurrently
+  const hashQueue = pLimit(hashQueueLength);
+
+  // Joining STAC document locations as file paths can be tricky, use the built in URL lib to handle the joins
+  const compareUrl = tryParseUrl(compareLocation);
+
+  const collectionJson = await fsa.readJson<StacCollection>(compareLocation);
+
+  // List of mapsheets that are the same as the compare location
+  const sheetsToSkip: string[] = [];
+
+  for (const [sheetCode, sourceFiles] of mapSheets) {
+    const itemLink = collectionJson.links.find((f) => f.href.endsWith(sheetCode + '.json'));
+
+    // Mapsheet does not exist in current collection json, it is new file to be created
+    if (itemLink == null) {
+      logger.info({ sheetCode: sheetCode, sourceFiles: sourceFiles.length }, 'MapSheet:Compare:New');
+      continue;
+    }
+    const itemJson = await fsa.readJson<StacItem>(urlToString(new URL(itemLink.href, compareUrl)));
+
+    const derivedFrom = itemJson.links.filter((f) => f.rel === 'derived_from');
+    // Difference in the number of files needed to create this mapsheet, so it needs to be recreated
+    if (derivedFrom.length !== sourceFiles.length) {
+      logger.debug(
+        { sheetCode: sheetCode, sourceLocations: sourceFiles, oldLocations: derivedFrom.map((m) => m.href) },
+        'mapsheet:difference',
+      );
+      continue;
+    }
+
+    let needsToBeCreated = false;
+    await Promise.all(
+      derivedFrom.map(async (item, index) => {
+        // A difference has already been found skip checking the rest of the checksums
+        if (needsToBeCreated) return;
+
+        const sourceFile = sourceFiles[index];
+        if (sourceFile == null || item.href !== sourceFile.replace('.tiff', '.json')) {
+          logger.debug({ sheetCode, source: item.href }, 'MapSheet:Compare:source-difference');
+          needsToBeCreated = true;
+          return;
+        }
+
+        // No checksum found in source collection link, force re-create the file
+        if (item['file:checksum'] == null) {
+          logger.warn({ sheetCode, source: item.href }, 'MapSheet:Compare:source-checksum-missing');
+          needsToBeCreated = true;
+          return;
+        }
+
+        // TODO: to improve performance further we could use the source collection.json as it contains all the item checksums
+        const sourceItemHash = await hashQueue(() => hashStream(fsa.stream(item.href)));
+        logger.trace(
+          { source: item.href, hash: sourceItemHash, isOk: sourceItemHash === item['file:checksum'] },
+          'MapSheet:Compare:checksum',
+        );
+
+        if (sourceItemHash !== item['file:checksum']) {
+          logger.debug({ sheetCode, source: item.href, sourceItemHash }, 'MapSheet:Compare:source-checksum-difference');
+          needsToBeCreated = true;
+          return;
+        }
+      }),
+    );
+
+    // No changes found, item can be removed
+    if (needsToBeCreated === false) sheetsToSkip.push(sheetCode);
+  }
+
+  return sheetsToSkip;
+}
