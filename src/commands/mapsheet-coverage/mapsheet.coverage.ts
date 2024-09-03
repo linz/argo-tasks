@@ -159,7 +159,7 @@ export const commandMapSheetCoverage = command({
         {
           layer: layer.name,
           title: collection.title,
-          layerSizeBytes: Math.round(JSON.stringify(captureArea.geometry).length),
+          layerSizeBytes: JSON.stringify(captureArea.geometry).length,
         },
         'Processing',
       );
