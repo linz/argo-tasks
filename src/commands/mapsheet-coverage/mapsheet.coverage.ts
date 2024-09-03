@@ -1,4 +1,3 @@
-import { writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
@@ -12,8 +11,7 @@ import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { hashBuffer, hashStream } from '../../utils/hash.js';
+import { hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
 import { config, registerCli, tryParseUrl, urlToString, verbose } from '../common.js';
 
