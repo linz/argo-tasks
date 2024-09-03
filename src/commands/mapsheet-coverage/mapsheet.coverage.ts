@@ -27,7 +27,7 @@ const Skip = new Set([
 const OutputPath = '/tmp/mapsheet-coverage/';
 
 /**
- * Number of decimal places to restrict capture areas too
+ * Number of decimal places to restrict capture areas to
  * Rough numbers of decimal places to precision in meters
  *
  * 5DP - 1m
@@ -117,7 +117,7 @@ export const commandMapSheetCoverage = command({
 
     const config = await fsa.readJson<ConfigTileSetRaster>(args.location);
 
-    /** All the layer's capture areas areas with some additonal metadata */
+    /** All the layers' capture areas with some additional metadata */
     const allLayers = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All previous capture area features restricted to the area needed for the output
