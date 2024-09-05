@@ -101,7 +101,7 @@ export const commandMapSheetCoverage = command({
   async handler(args) {
     const startTime = performance.now();
     registerCli(this, args);
-    logger.info('MapSheet:Start');
+    logger.info('MapSheetCoverage:Start');
 
     if (!ValidCodes.has(args.epsgCode)) {
       logger.error({ epsgCode: args.epsgCode }, 'Invalid:EpsgCode');
@@ -115,7 +115,7 @@ export const commandMapSheetCoverage = command({
 
     const config = await fsa.readJson<ConfigTileSetRaster>(args.location);
 
-    /** All the layers' capture areas with some additional metadata */
+    // All the layers' capture areas with some additional metadata
     const allLayers = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All previous capture area features restricted to the area needed for the output
@@ -189,7 +189,7 @@ export const commandMapSheetCoverage = command({
         if (args.mapSheet && args.mapSheet !== ms.mapSheet) continue;
 
         const existing = mapSheets.get(ms.mapSheet) ?? [];
-        // TODO this is not the safest way of getting access to the tiff, it would be best to load
+        // TODO this is not the safest way of getting access to the tiff, it would be best to load the stac item
         existing.unshift(url.href.replace('.json', '.tiff'));
         mapSheets.set(ms.mapSheet, existing);
       }
@@ -221,7 +221,7 @@ export const commandMapSheetCoverage = command({
     if (args.compare) {
       const sheetsToSkip = await compareCreation(args.compare, mapSheets);
       if (sheetsToSkip.length > 0) {
-        logger.info({ sheetsToSkip }, 'MapSheet:Skip');
+        logger.info({ sheetsToSkip }, 'MapSheetCoverage:Skip');
         for (const sheet of sheetsToSkip) mapSheets.delete(sheet);
       }
     }
@@ -249,7 +249,7 @@ async function compareCreation(
   mapSheets: Map<string, string[]>,
   hashQueueLength = 25,
 ): Promise<string[]> {
-  logger.info({ compareTo: compareLocation, mapSheetCount: mapSheets.size }, 'MapSheet:Compare');
+  logger.info({ compareTo: compareLocation, mapSheetCount: mapSheets.size }, 'MapSheetCoverage:Compare');
 
   // Limit the number of files hashing concurrently
   const hashQueue = pLimit(hashQueueLength);
@@ -267,7 +267,7 @@ async function compareCreation(
 
     // Mapsheet does not exist in current collection json, it is new file to be created
     if (itemLink == null) {
-      logger.info({ sheetCode: sheetCode, sourceFiles: sourceFiles.length }, 'MapSheet:Compare:New');
+      logger.info({ sheetCode: sheetCode, sourceFiles: sourceFiles.length }, 'MapSheetCoverage:Compare:New');
       continue;
     }
     const itemJson = await fsa.readJson<StacItem>(urlToString(new URL(itemLink.href, compareUrl)));
@@ -277,7 +277,7 @@ async function compareCreation(
     if (derivedFrom.length !== sourceFiles.length) {
       logger.debug(
         { sheetCode: sheetCode, sourceLocations: sourceFiles, oldLocations: derivedFrom.map((m) => m.href) },
-        'mapsheet:difference',
+        'MapSheetCoverage:difference',
       );
       continue;
     }
@@ -290,14 +290,14 @@ async function compareCreation(
 
         const sourceFile = sourceFiles[index];
         if (sourceFile == null || item.href !== sourceFile.replace('.tiff', '.json')) {
-          logger.debug({ sheetCode, source: item.href }, 'MapSheet:Compare:source-difference');
+          logger.debug({ sheetCode, source: item.href }, 'MapSheetCoverage:Compare:source-difference');
           needsToBeCreated = true;
           return;
         }
 
         // No checksum found in source collection link, force re-create the file
         if (item['file:checksum'] == null) {
-          logger.warn({ sheetCode, source: item.href }, 'MapSheet:Compare:source-checksum-missing');
+          logger.warn({ sheetCode, source: item.href }, 'MapSheetCoverage:Compare:source-checksum-missing');
           needsToBeCreated = true;
           return;
         }
@@ -306,11 +306,14 @@ async function compareCreation(
         const sourceItemHash = await hashQueue(() => hashStream(fsa.stream(item.href)));
         logger.trace(
           { source: item.href, hash: sourceItemHash, isOk: sourceItemHash === item['file:checksum'] },
-          'MapSheet:Compare:checksum',
+          'MapSheetCoverage:Compare:checksum',
         );
 
         if (sourceItemHash !== item['file:checksum']) {
-          logger.debug({ sheetCode, source: item.href, sourceItemHash }, 'MapSheet:Compare:source-checksum-difference');
+          logger.debug(
+            { sheetCode, source: item.href, sourceItemHash },
+            'MapSheetCoverage:Compare:source-checksum-difference',
+          );
           needsToBeCreated = true;
           return;
         }
