@@ -14,7 +14,7 @@ import { logger } from '../../log.js';
 import { hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
 import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.js';
-import { getPacificAucklandYear } from '../path/path.generate.js';
+import { getPacificAucklandYearMonthDay } from '../path/path.date.js';
 
 /** Datasets to skip */
 const Skip = new Set([
@@ -156,7 +156,7 @@ export const commandMapSheetCoverage = command({
 
       // As these times are mostly made up, convert them into NZ time to prevent
       // flown years being a year off when the interval is 2023-12-31T12:00:00.000Z (or Jan 1st NZT)
-      const [flownFrom, flownTo] = collection.extent.temporal.interval[0].map(getPacificAucklandYear);
+      const [flownFrom, flownTo] = collection.extent.temporal.interval[0].map(getPacificAucklandYearMonthDay);
 
       // Propagate properties from the source STAC collection into the capture area geojson
       captureArea.properties = captureArea.properties ?? {};
