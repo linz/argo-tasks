@@ -86,7 +86,7 @@ export const commandGeneratePath = command({
 });
 
 /**
- *Generates target path based on dataset category.
+ * Generates target path based on dataset category.
  *
  * @param {PathMetadata} metadata
  * @returns {string}
@@ -155,7 +155,7 @@ export function formatDate(collection: StacCollection): string {
  * @returns {string | undefined} Localised date/time string
  *
  */
-function getPacificAucklandYear(dateTimeString: string | null): string | undefined {
+export function getPacificAucklandYear(dateTimeString: string | null): string | undefined {
   if (dateTimeString == null) {
     return undefined;
   }

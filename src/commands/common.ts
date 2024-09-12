@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
-import { boolean, flag, option, optional, string } from 'cmd-ts';
+import { boolean, flag, option, optional, string, Type } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { fileURLToPath, pathToFileURL } from 'url';
 
@@ -127,3 +127,35 @@ export function urlToString(u: URL): string {
   if (u.protocol === 'file:') return fileURLToPath(u);
   return u.href;
 }
+
+/**
+ * Parse a input parameter as a URL.
+ *
+ * If it looks like a file path, it will be converted using `pathToFileURL`.
+ **/
+export const Url: Type<string, URL> = {
+  from(str) {
+    try {
+      return Promise.resolve(new URL(str));
+    } catch (e) {
+      return Promise.resolve(pathToFileURL(str));
+    }
+  },
+};
+
+/**
+ * Parse a input parameter as a URL which represents a folder.
+ *
+ * If it looks like a file path, it will be converted using `pathToFileURL`.
+ * Any search parameters or hash will be removed, and a trailing slash added
+ * to the path section if it's not present.
+ **/
+export const UrlFolder: Type<string, URL> = {
+  async from(str) {
+    const url = await Url.from(str);
+    url.search = '';
+    url.hash = '';
+    if (!url.pathname.endsWith('/')) url.pathname += '/';
+    return url;
+  },
+};

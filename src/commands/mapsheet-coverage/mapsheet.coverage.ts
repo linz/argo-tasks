@@ -13,16 +13,14 @@ import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
-import { config, registerCli, tryParseUrl, urlToString, verbose } from '../common.js';
+import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.js';
+import { getPacificAucklandYear } from '../path/path.generate.js';
 
 /** Datasets to skip */
 const Skip = new Set([
   /** This covers the entire country and can be ignored */
   'new-zealand_2012_dem_8m',
 ]);
-
-/** Location for the output files to be stored */
-const OutputPath = '/tmp/mapsheet-coverage/';
 
 /**
  * Number of decimal places to restrict capture areas to
@@ -81,11 +79,13 @@ export const commandMapSheetCoverage = command({
       defaultValue: () => EpsgCode.Nztm2000,
     }),
     location: option({
-      type: string,
+      type: Url,
       long: 'location',
       description: 'Location of the basemaps configuration file',
       defaultValueIsSerializable: true,
-      defaultValue: () => 'https://raw.githubusercontent.com/linz/basemaps-config/master/config/tileset/elevation.json',
+      defaultValue: () => {
+       return new URL('https://raw.githubusercontent.com/linz/basemaps-config/master/config/tileset/elevation.json'),
+      }
     }),
     mapSheet: option({
       type: optional(string),
@@ -96,6 +96,13 @@ export const commandMapSheetCoverage = command({
       type: optional(string),
       long: 'compare',
       description: 'Compare the output with an existing combined collection.json',
+    }),
+    output: option({
+      type: optional(UrlFolder),
+      long: 'output',
+      description: 'Where to store output files',
+      defaultValueIsSerializable: true,
+      defaultValue: () => tryParseUrl('/tmp/mapsheet-coverage/'),
     }),
   },
   async handler(args) {
@@ -113,13 +120,13 @@ export const commandMapSheetCoverage = command({
       return;
     }
 
-    const config = await fsa.readJson<ConfigTileSetRaster>(args.location);
+    const config = await fsa.readJson<ConfigTileSetRaster>(urlToString(args.location));
 
     // All the layers' capture areas with some additional metadata
     const allLayers = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All previous capture area features restricted to the area needed for the output
-    const layersRequired = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
+    const captureDates = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All the coordinates currently used
     let layersCombined: pc.MultiPolygon[] = [];
@@ -146,13 +153,26 @@ export const commandMapSheetCoverage = command({
       const targetCaptureAreaUrl = new URL(captureAreaLink.href, targetCollection.href);
 
       const captureArea = await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl.href);
+
+      // As these times are mostly made up, convert them into NZ time to prevent
+      // flown years being a year off when the interval is 2023-12-31T12:00:00.000Z (or Jan 1st NZT)
+      const [flownFrom, flownTo] = collection.extent.temporal.interval[0].map(getPacificAucklandYear);
+
       // Propagate properties from the source STAC collection into the capture area geojson
       captureArea.properties = captureArea.properties ?? {};
-      captureArea.properties['source'] = targetCaptureAreaUrl.href;
       captureArea.properties['title'] = collection.title;
+      captureArea.properties['description'] = collection.description;
+      captureArea.properties['id'] = collection.id;
+      captureArea.properties['license'] = collection.license;
+      captureArea.properties['providers'] = collection.providers;
+      captureArea.properties['source'] = targetCollection.href;
+      captureArea.properties['flown_from'] = flownFrom;
+      captureArea.properties['flown_to'] = flownTo;
+
       for (const [key, value] of Object.entries(collection)) {
         if (key.startsWith('linz:')) captureArea.properties[key] = value;
       }
+
       logger.debug(
         {
           layer: layer.name,
@@ -171,7 +191,8 @@ export const commandMapSheetCoverage = command({
       // Layer has no information included in the output
       if (diff.length === 0) {
         logger.warn({ layer: layer.name, location: targetCaptureAreaUrl.href }, 'FullyCovered');
-        await fsa.write(fsa.join(OutputPath, `remove-${layer.name}.geojson`), JSON.stringify(captureArea));
+        const outputPath = new URL(`remove-${layer.name}.geojson`, args.output);
+        await fsa.write(urlToString(outputPath), JSON.stringify(captureArea));
         continue;
       }
 
@@ -195,7 +216,7 @@ export const commandMapSheetCoverage = command({
       }
 
       layersCombined = pc.union(layersCombined, captureArea.geometry.coordinates as pc.MultiPolygon);
-      layersRequired.features.push({
+      captureDates.features.push({
         type: 'Feature',
         geometry: { type: 'MultiPolygon', coordinates: diff },
         properties: captureArea.properties,
@@ -205,18 +226,21 @@ export const commandMapSheetCoverage = command({
 
     // All the source layers as a single file
     logger.info('Write:SourceFeatures');
-    await fsa.write(fsa.join(OutputPath, 'layers-source.geojson.gz'), gzipSync(JSON.stringify(allLayers)));
+    const sourceFeaturePath = new URL('layers-source.geojson.gz', args.output);
+    await fsa.write(urlToString(sourceFeaturePath), gzipSync(JSON.stringify(allLayers)));
 
     // A single output feature for total capture area
     logger.info('Write:CombinedUnion');
+    const combinedPath = new URL('layers-source.geojson.gz', args.output);
     await fsa.write(
-      fsa.join(OutputPath, 'layers-combined.geojson.gz'),
+      urlToString(combinedPath),
       gzipSync(JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: layersCombined } })),
     );
 
-    // Which areas of each layers are needed for the output
+    // Which areas of each layers are needed for the output, this should be uncompressed to make it easier to be consumed and viewed
     logger.info('Write:RequiredLayers');
-    await fsa.write(fsa.join(OutputPath, 'layers-required.geojson.gz'), gzipSync(JSON.stringify(layersRequired)));
+    const captureDatesPath = new URL('capture-dates.geojson', args.output);
+    await fsa.write(urlToString(captureDatesPath), JSON.stringify(captureDates));
 
     if (args.compare) {
       const sheetsToSkip = await compareCreation(args.compare, mapSheets);
@@ -231,12 +255,13 @@ export const commandMapSheetCoverage = command({
       return { output: `${m[0]}`, input: m[1], includeDerived: true };
     });
 
-    await fsa.write(fsa.join(OutputPath, 'file-list.json'), JSON.stringify(todo));
+    const fileListPath = new URL('file-list.json', args.output);
+    await fsa.write(urlToString(fileListPath), JSON.stringify(todo));
     logger.info(
       {
         duration: performance.now() - startTime,
         layersFound: allLayers.features.length,
-        layersNeeded: layersRequired.features.length,
+        layersNeeded: captureDates.features.length,
         itemsToCreate: todo.length,
       },
       'MapSheetCoverage:Done',
