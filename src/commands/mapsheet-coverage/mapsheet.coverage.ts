@@ -84,8 +84,8 @@ export const commandMapSheetCoverage = command({
       description: 'Location of the basemaps configuration file',
       defaultValueIsSerializable: true,
       defaultValue: () => {
-       return new URL('https://raw.githubusercontent.com/linz/basemaps-config/master/config/tileset/elevation.json'),
-      }
+        return new URL('https://raw.githubusercontent.com/linz/basemaps-config/master/config/tileset/elevation.json');
+      },
     }),
     mapSheet: option({
       type: optional(string),
