@@ -116,6 +116,21 @@ describe('GeneratePathHistoricImagery', () => {
   });
 });
 
+describe('GeneratePathDemIgnoringDate', () => {
+  it('Should not include the date in the survey name', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      category: 'dem',
+      geographicDescription: 'new-zealand',
+      region: 'new-zealand',
+      date: '',
+      gsd: 1,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem_1m/2193/');
+  });
+});
+
 describe('formatName', () => {
   it('Should match - region', () => {
     assert.equal(formatName('hawkes-bay', undefined), 'hawkes-bay');
