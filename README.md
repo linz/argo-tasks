@@ -44,7 +44,7 @@ lds-fetch-layer  --target ./output 51002 51000
 
 Generate target path for ODR buckets using collection metadata.
 
-The date can be omitted from the survey name (example: `s3://nz-elevation/new-zealand/new-zealand/dem_1m/2193/`) by passing the `--ignore-date` flag.
+The date can be omitted from the survey name (example: `s3://nz-elevation/new-zealand/new-zealand/dem_1m/2193/`) by passing the `--no-date-in-survey-path` flag.
 
 For imagery naming conventions see: https://github.com/linz/imagery/blob/master/docs/naming.md
 For elevation naming conventions see: https://github.com/linz/elevation/blob/master/docs/naming.md
