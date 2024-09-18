@@ -135,7 +135,7 @@ export const commandStacGithubImport = command({
       path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
       content: JSON.stringify(parametersFileContent, null, 2),
     };
-    logger.info({ commit: `feat: import ${collection.title}`, branch: `feat/bot-${collection.id}` }, 'Git:Commit');
+    logger.info({ commit: `feat: import ${collection.title}`, branch }, 'Git:Commit');
     // create pull request
     await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
   },
