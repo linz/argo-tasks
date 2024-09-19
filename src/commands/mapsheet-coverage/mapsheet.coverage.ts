@@ -22,45 +22,6 @@ const Skip = new Set([
   'new-zealand_2012_dem_8m',
 ]);
 
-/**
- * Number of decimal places to restrict capture areas to
- * Rough numbers of decimal places to precision in meters
- *
- * 5DP - 1m
- * 6DP - 0.1m
- * 7DP - 0.01m (1cm)
- * 8DP - 0.001m (1mm)
- */
-const TruncationFactor = 8;
-
-/**
- * Truncate a multi polygon in lat,lng to {@link TruncationFactor} decimal places
- *
- * @warning This destroys the source geometry
- * @param polygons
- */
-function truncateGeoJson(feature: GeoJSON.Feature): asserts feature is GeoJSON.Feature<GeoJSON.MultiPolygon> {
-  const factor = Math.pow(10, TruncationFactor);
-
-  const geom = feature.geometry;
-  // force polygons to be multipolygons
-  if (geom.type === 'Polygon') feature.geometry = { type: 'MultiPolygon', coordinates: [geom.coordinates] };
-
-  // Only multipolygons can be truncated
-  if (feature.geometry.type !== 'MultiPolygon') throw new Error('Unable to truncate: ' + feature.geometry?.type);
-
-  const multiPoly = feature.geometry;
-
-  for (const poly of multiPoly.coordinates) {
-    for (const ring of poly) {
-      for (const pt of ring) {
-        pt[0] = Math.round(pt[0]! * factor) / factor;
-        pt[1] = Math.round(pt[1]! * factor) / factor;
-      }
-    }
-  }
-}
-
 /** allow the configuration layer choice between 2193 and 3857 */
 const ValidCodes = new Set([EpsgCode.Google, EpsgCode.Nztm2000]);
 
