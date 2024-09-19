@@ -123,7 +123,6 @@ export const commandMapSheetCoverage = command({
       logger.debug({ layer: layer.name, href: layerSource }, 'Layer:Load');
 
       const targetCollection = new URL('collection.json', layerSource);
-      console.log(targetCollection.href);
       const collection = await fsa.readJson<StacCollection>(targetCollection.href);
 
       // Capture area is the area where this layer has data for
