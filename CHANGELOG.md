@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.5](https://github.com/linz/argo-tasks/compare/v4.2.4...v4.2.5) (2024-09-18)
+
+
+### Bug Fixes
+
+* correct GitHub PR title and branch logged ([#1071](https://github.com/linz/argo-tasks/issues/1071)) ([f189d41](https://github.com/linz/argo-tasks/commit/f189d41fdbde443cd21549f215a5720d54ec807c))
+
 ## [4.2.4](https://github.com/linz/argo-tasks/compare/v4.2.3...v4.2.4) (2024-08-30)
 
 
