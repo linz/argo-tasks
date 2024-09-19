@@ -3,6 +3,7 @@ import { gzipSync } from 'node:zlib';
 import { ConfigTileSetRaster } from '@basemaps/config';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
+import { truncate } from '@linzjs/geojson';
 import { command, number, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { basename } from 'path/posix';
@@ -24,6 +25,21 @@ const Skip = new Set([
 
 /** allow the configuration layer choice between 2193 and 3857 */
 const ValidCodes = new Set([EpsgCode.Google, EpsgCode.Nztm2000]);
+
+/**
+ * Convert a Feature to MultiPolygon, throw if the feature the cannot be easily converted
+ *
+ * @throws if the feature is not a Polygon or MultiPolygon
+ * @param feature geojson feature to convert
+ * @returns
+ */
+function forceMultiPolygon(f: GeoJSON.Feature): GeoJSON.Feature<GeoJSON.MultiPolygon> {
+  if (f.geometry.type === 'MultiPolygon') return f as GeoJSON.Feature<GeoJSON.MultiPolygon>;
+  if (f.geometry.type === 'Polygon') {
+    return { ...f, geometry: { type: 'MultiPolygon', coordinates: [f.geometry.coordinates] } };
+  }
+  throw new Error(`${f.geometry.type}: is not a polygon`);
+}
 
 export const commandMapSheetCoverage = command({
   name: 'mapsheet-coverage',
@@ -104,20 +120,24 @@ export const commandMapSheetCoverage = command({
         logger.warn({ layer: layer.name, layerSource: args.epsgCode }, 'Layer:Missing');
         continue;
       }
+      logger.debug({ layer: layer.name, href: layerSource }, 'Layer:Load');
 
       const targetCollection = new URL('collection.json', layerSource);
+      console.log(targetCollection.href);
       const collection = await fsa.readJson<StacCollection>(targetCollection.href);
 
       // Capture area is the area where this layer has data for
       const captureAreaLink = collection.assets?.['capture_area'];
-      if (captureAreaLink == null) throw new Error('Missing capture area :' + targetCollection.href);
+      if (captureAreaLink == null) {
+        throw new Error(`Missing capture area asset in collection "${targetCollection.href}"`);
+      }
       const targetCaptureAreaUrl = new URL(captureAreaLink.href, targetCollection.href);
 
-      const captureArea = await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl.href);
+      const captureArea = forceMultiPolygon(await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl.href));
 
       // As these times are mostly made up, convert them into NZ time to prevent
       // flown years being a year off when the interval is 2023-12-31T12:00:00.000Z (or Jan 1st NZT)
-      const [flownFrom, flownTo] = collection.extent.temporal.interval[0].map(getPacificAucklandYearMonthDay);
+      const flownDates = collection.extent?.temporal?.interval?.[0].map(getPacificAucklandYearMonthDay);
 
       // Propagate properties from the source STAC collection into the capture area geojson
       captureArea.properties = captureArea.properties ?? {};
@@ -127,8 +147,8 @@ export const commandMapSheetCoverage = command({
       captureArea.properties['license'] = collection.license;
       captureArea.properties['providers'] = collection.providers;
       captureArea.properties['source'] = targetCollection.href;
-      captureArea.properties['flown_from'] = flownFrom;
-      captureArea.properties['flown_to'] = flownTo;
+      if (flownDates) captureArea.properties['flown_from'] = flownDates[0];
+      if (flownDates) captureArea.properties['flown_to'] = flownDates[1];
 
       for (const [key, value] of Object.entries(collection)) {
         if (key.startsWith('linz:')) captureArea.properties[key] = value;
@@ -144,7 +164,7 @@ export const commandMapSheetCoverage = command({
       );
 
       // GeoJSON over about 8 decimal places starts running into floating point math errors
-      truncateGeoJson(captureArea);
+      truncate(captureArea);
 
       // Determine if this layer has any additional information to the existing layers
       const diff = pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, layersCombined);
