@@ -21,6 +21,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "npx eslint . --ignore-path .gitignore",
+    "format": "npx prettier --write .",
     "test": "node --test build/"
   },
   "publishConfig": {
