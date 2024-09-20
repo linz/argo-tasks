@@ -1,0 +1,31 @@
+# list
+
+List and group files into collections of tasks
+
+## Usage
+
+list <options> [...location]
+
+### Arguments
+
+| Usage         | Description   | Options |
+| ------------- | ------------- | ------- |
+| [...location] | Where to list |         |
+
+### Options
+
+| Usage              | Description                                             | Options  |
+| ------------------ | ------------------------------------------------------- | -------- |
+| --config <str>     | Location of role configuration file                     | optional |
+| --include <str>    | Include files eg ".\*.tiff?$"                           | optional |
+| --exclude <str>    | Exclude files eg ".\*.prj$"                             | optional |
+| --group-size <str> | Group files into this size per group, eg "5Gi" or "3TB" | optional |
+| --group <number>   | Group files into this number per group                  | optional |
+| --limit <number>   | Limit the file count to this amount, -1 is no limit     | optional |
+| --output <str>     | Output location for the listing                         | optional |
+
+### Flags
+
+| Usage     | Description     | Options |
+| --------- | --------------- | ------- |
+| --verbose | Verbose logging |         |

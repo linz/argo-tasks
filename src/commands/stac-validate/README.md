@@ -1,0 +1,30 @@
+# stac-validate
+
+Validate STAC files
+
+## Usage
+
+stac-validate <options> [...location]
+
+### Arguments
+
+| Usage         | Description                            | Options |
+| ------------- | -------------------------------------- | ------- |
+| [...location] | Location of the STAC files to validate |         |
+
+### Options
+
+| Usage                  | Description                            | Options  |
+| ---------------------- | -------------------------------------- | -------- |
+| --config <str>         | Location of role configuration file    | optional |
+| --concurrency <number> | Number of requests to run concurrently | optional |
+
+### Flags
+
+| Usage             | Description                                               | Options |
+| ----------------- | --------------------------------------------------------- | ------- |
+| --verbose         | Verbose logging                                           |         |
+| --checksum-assets | Validate the file:checksum of each asset if it exists     |         |
+| --checksum-links  | Validate the file:checksum of each STAC link if it exists |         |
+| --recursive       | Follow and validate STAC links                            |         |
+| --strict          | Strict checking                                           |         |
