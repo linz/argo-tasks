@@ -29,14 +29,15 @@ function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
 
 async function parseRasterTargetInfo(
   target: string,
+  elevation: boolean,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const url = new URL(target);
   const bucket = url.hostname;
   const splits = url.pathname.split('/');
-  const epsg = Epsg.tryGet(Number(splits[1]));
-  const name = splits[2];
+  const epsg = elevation ? Epsg.tryGet(Number(splits[2])) : Epsg.tryGet(Number(splits[1]));
+  const name = elevation ? splits[3] : splits[2];
 
   assertValidBucket(bucket, validTargetBuckets);
 
@@ -178,7 +179,7 @@ export const basemapsCreatePullRequest = command({
       }
     } else {
       for (const target of targets) {
-        const info = await parseRasterTargetInfo(target, args.individual);
+        const info = await parseRasterTargetInfo(target, category === Category.Elevation, args.individual);
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;
