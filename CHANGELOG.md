@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.0](https://github.com/linz/argo-tasks/compare/v4.2.5...v4.3.0) (2024-09-22)
+
+
+### Features
+
+* generate CLI README.md ([#1075](https://github.com/linz/argo-tasks/issues/1075)) ([249799a](https://github.com/linz/argo-tasks/commit/249799a80b09678e0b023676253ed19ceb8bc077))
+
 ## [4.2.5](https://github.com/linz/argo-tasks/compare/v4.2.4...v4.2.5) (2024-09-18)
 
 
