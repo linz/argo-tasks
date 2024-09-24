@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.3.0](https://github.com/linz/argo-tasks/compare/v4.2.5...v4.3.0) (2024-09-22)
+
+
+### Features
+
+* generate CLI README.md ([#1075](https://github.com/linz/argo-tasks/issues/1075)) ([249799a](https://github.com/linz/argo-tasks/commit/249799a80b09678e0b023676253ed19ceb8bc077))
+
+## [4.2.5](https://github.com/linz/argo-tasks/compare/v4.2.4...v4.2.5) (2024-09-18)
+
+
+### Bug Fixes
+
+* correct GitHub PR title and branch logged ([#1071](https://github.com/linz/argo-tasks/issues/1071)) ([f189d41](https://github.com/linz/argo-tasks/commit/f189d41fdbde443cd21549f215a5720d54ec807c))
+
+## [4.2.4](https://github.com/linz/argo-tasks/compare/v4.2.3...v4.2.4) (2024-08-30)
+
+
+### Bug Fixes
+
+* build process where it doesnt like " " ([#1049](https://github.com/linz/argo-tasks/issues/1049)) ([90bce27](https://github.com/linz/argo-tasks/commit/90bce27bdbb602a616b8cd08857e4b6405a7c8cc))
+* include flatten parameter in stac-github-import TDE-1242 ([#1060](https://github.com/linz/argo-tasks/issues/1060)) ([201538d](https://github.com/linz/argo-tasks/commit/201538dc62f44664397c726004ed9249aa44571c))
+
 ## [4.2.3](https://github.com/linz/argo-tasks/compare/v4.2.2...v4.2.3) (2024-08-01)
 
 

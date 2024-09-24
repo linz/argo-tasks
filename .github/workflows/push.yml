@@ -8,6 +8,15 @@ jobs:
         with:
           node-version: 20.x
 
+      - name: Generate Readme
+        run: |
+          node build/src/readme.generate.js
+
+      # Validate no READMEs have been updated
+      - name: Validate Readme generation
+        run: |
+          git diff --exit-code
+
       # Only build containers on branches otherwise container builds are duplicated deploy-nonprod-containers
       - name: Set up Docker Buildx
         if: ${{ github.ref != 'refs/heads/master' }}
@@ -30,7 +39,7 @@ jobs:
     needs: ['build']
 
     # On push to master when it is not a release!
-    if: ${{ github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'chore(master): release') }}
+    if: ${{ github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'release:') }}
 
     permissions:
       id-token: write
