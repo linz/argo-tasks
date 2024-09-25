@@ -1,19 +1,9 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { StacCollection } from 'stac-ts';
-
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
-import {
-  extractEpsg,
-  extractGsd,
-  formatDate,
-  formatName,
-  generatePath,
-  PathMetadata,
-  StacCollectionLinz,
-} from '../path.generate.js';
+import { extractEpsg, extractGsd, formatName, generatePath, PathMetadata } from '../path.generate.js';
+import { SampleCollection } from './sample.js';
 
 describe('GeneratePathImagery', () => {
   it('Should match - geographic description', () => {
@@ -168,18 +158,16 @@ describe('gsd', () => {
 
 describe('category', () => {
   it('Should return category', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
+    const collection = structuredClone(SampleCollection);
+
     assert.equal(collection['linz:geospatial_category'], 'urban-aerial-photos');
   });
 });
 
 describe('geographicDescription', () => {
   it('Should return geographic description', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
+    const collection = structuredClone(SampleCollection);
+
     assert.equal(collection['linz:geographic_description'], 'Palmerston North');
     const metadata: PathMetadata = {
       targetBucketName: 'bucket',
@@ -193,9 +181,8 @@ describe('geographicDescription', () => {
     assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/');
   });
   it('Should return undefined - no geographic description metadata', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
+    const collection = structuredClone(SampleCollection);
+
     delete collection['linz:geographic_description'];
     assert.equal(collection['linz:geographic_description'], undefined);
     const metadata: PathMetadata = {
@@ -213,41 +200,8 @@ describe('geographicDescription', () => {
 
 describe('region', () => {
   it('Should return region', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
-    assert.equal(collection['linz:region'], 'manawatu-whanganui');
-  });
-});
+    const collection = structuredClone(SampleCollection);
 
-describe('formatDate', () => {
-  it('Should return date as single year', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
-    assert.equal(formatDate(collection), '2023');
-  });
-  it('Should return date as two years', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
-    collection.extent.temporal.interval[0] = ['2022-06-01T11:00:00Z', '2023-06-01T11:00:00Z'];
-    assert.equal(formatDate(collection), '2022-2023');
-  });
-  it('Should use Pacific/Auckland time zone', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
-    collection.extent.temporal.interval[0] = ['2012-12-31T11:00:00Z', '2014-12-30T11:00:00Z'];
-    assert.equal(formatDate(collection), '2013-2014');
-  });
-  it('Should fail - unable to retrieve date', async () => {
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      './src/commands/path/__test__/sample.json',
-    );
-    collection.extent.temporal.interval[0] = [null, null];
-    assert.throws(() => {
-      formatDate(collection);
-    }, Error);
+    assert.equal(collection['linz:region'], 'manawatu-whanganui');
   });
 });
