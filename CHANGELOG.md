@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.0](https://github.com/linz/argo-tasks/compare/v4.3.0...v4.4.0) (2024-09-25)
+
+
+### Features
+
+* add create mapsheet coverage command TDE-1130 ([#1048](https://github.com/linz/argo-tasks/issues/1048)) ([1447e85](https://github.com/linz/argo-tasks/commit/1447e85ec5f86b1cfe43a2980d812afb52101066))
+
 ## [4.3.0](https://github.com/linz/argo-tasks/compare/v4.2.5...v4.3.0) (2024-09-22)
 
 
