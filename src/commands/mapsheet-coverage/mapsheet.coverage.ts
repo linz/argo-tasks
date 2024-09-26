@@ -27,7 +27,7 @@ const Skip = new Set([
 const ValidCodes = new Set([EpsgCode.Google, EpsgCode.Nztm2000]);
 
 /**
- * Convert a Feature to MultiPolygon, throw if the feature the cannot be easily converted
+ * Convert a Feature to MultiPolygon, throw if the feature cannot be easily converted
  *
  * @throws if the feature is not a Polygon or MultiPolygon
  * @param feature geojson feature to convert
@@ -211,7 +211,7 @@ export const commandMapSheetCoverage = command({
 
     // A single output feature for total capture area
     logger.info('Write:CombinedUnion');
-    const combinedPath = new URL('layers-source.geojson.gz', args.output);
+    const combinedPath = new URL('layers-combined.geojson.gz', args.output);
     await fsa.write(
       urlToString(combinedPath),
       gzipSync(JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: layersCombined } })),
