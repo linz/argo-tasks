@@ -69,6 +69,7 @@ describe('mapsheet-coverage', () => {
     assert.deepEqual(files, [
       'ms://output/capture-dates.geojson',
       'ms://output/file-list.json',
+      'ms://output/layers-combined.geojson.gz',
       'ms://output/layers-source.geojson.gz',
     ]);
 
