@@ -8,7 +8,7 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 ## Command Line Tools
 
-List of [Commands](./COMMANDS.md) and their usage
+[Commands and their usage](./COMMANDS.md)
 
 
 ### `lds-fetch-layer`
