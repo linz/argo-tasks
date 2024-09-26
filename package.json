@@ -45,7 +45,7 @@
     "@linzjs/geojson": "^7.10.0",
     "@octokit/core": "^5.0.0",
     "@octokit/plugin-rest-endpoint-methods": "^10.1.1",
-    "@wtrpc/core": "^1.0.2",
+    "@wtrpc/core": "^1.0.4",
     "ajv": "^8.17.1",
     "ajv-formats": "^2.1.1",
     "cmd-ts": "^0.13.0",
