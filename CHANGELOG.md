@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.1](https://github.com/linz/argo-tasks/compare/v4.4.0...v4.4.1) (2024-09-26)
+
+
+### Bug Fixes
+
+* mapsheet-coverage output filename typo TDE-1164 ([#1085](https://github.com/linz/argo-tasks/issues/1085)) ([d8ba360](https://github.com/linz/argo-tasks/commit/d8ba360d72ab19f2be9b4a13a8bc2c55b264031d))
+
 ## [4.4.0](https://github.com/linz/argo-tasks/compare/v4.3.0...v4.4.0) (2024-09-25)
 
 
