@@ -1,7 +1,7 @@
 import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
-import { command, option, positional, string } from 'cmd-ts';
+import { boolean, command, flag, option, positional, string } from 'cmd-ts';
 import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -45,6 +45,14 @@ export const commandGeneratePath = command({
       description: 'Target bucket name, e.g. nz-imagery',
     }),
 
+    noDateInSurveyPath: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'no-date-in-survey-path',
+      description: 'Do not include the date in the survey path',
+      defaultValueIsSerializable: true,
+    }),
+
     source: positional({
       type: string,
       displayName: 'path',
@@ -70,7 +78,7 @@ export const commandGeneratePath = command({
       category: collection['linz:geospatial_category'],
       region: collection['linz:region'],
       geographicDescription: collection['linz:geographic_description'],
-      date: formatDate(collection),
+      date: args.noDateInSurveyPath ? '' : formatDate(collection),
       gsd: extractGsd(tiff),
       epsg: extractEpsg(tiff),
     };
@@ -94,21 +102,23 @@ export const commandGeneratePath = command({
  */
 export function generatePath(metadata: PathMetadata): string {
   const name = formatName(metadata.region, metadata.geographicDescription);
+  const surveyName = metadata.date ? `${name}_${metadata.date}` : name;
+
   if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated target generation not implemented for historic imagery`);
   }
 
   if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(metadata.category)) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${surveyName}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
   }
 
   if (metadata.category === dataCategories.SATELLITE_IMAGERY) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${surveyName}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
   }
 
   if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${name}_${metadata.date}/${metadata.category}_${metadata.gsd}m/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${surveyName}/${metadata.category}_${metadata.gsd}m/${metadata.epsg}/`;
   }
 
   throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.category}.`);
