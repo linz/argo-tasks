@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.4.1](https://github.com/linz/argo-tasks/compare/v4.4.0...v4.4.1) (2024-09-26)
+
+
+### Bug Fixes
+
+* mapsheet-coverage output filename typo TDE-1164 ([#1085](https://github.com/linz/argo-tasks/issues/1085)) ([d8ba360](https://github.com/linz/argo-tasks/commit/d8ba360d72ab19f2be9b4a13a8bc2c55b264031d))
+
+## [4.4.0](https://github.com/linz/argo-tasks/compare/v4.3.0...v4.4.0) (2024-09-25)
+
+
+### Features
+
+* add create mapsheet coverage command TDE-1130 ([#1048](https://github.com/linz/argo-tasks/issues/1048)) ([1447e85](https://github.com/linz/argo-tasks/commit/1447e85ec5f86b1cfe43a2980d812afb52101066))
+
+## [4.3.0](https://github.com/linz/argo-tasks/compare/v4.2.5...v4.3.0) (2024-09-22)
+
+
+### Features
+
+* generate CLI README.md ([#1075](https://github.com/linz/argo-tasks/issues/1075)) ([249799a](https://github.com/linz/argo-tasks/commit/249799a80b09678e0b023676253ed19ceb8bc077))
+
+## [4.2.5](https://github.com/linz/argo-tasks/compare/v4.2.4...v4.2.5) (2024-09-18)
+
+
+### Bug Fixes
+
+* correct GitHub PR title and branch logged ([#1071](https://github.com/linz/argo-tasks/issues/1071)) ([f189d41](https://github.com/linz/argo-tasks/commit/f189d41fdbde443cd21549f215a5720d54ec807c))
+
 ## [4.2.4](https://github.com/linz/argo-tasks/compare/v4.2.3...v4.2.4) (2024-08-30)
 
 
