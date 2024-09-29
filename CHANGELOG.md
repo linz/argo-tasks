@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.0](https://github.com/linz/argo-tasks/compare/v4.4.1...v4.5.0) (2024-09-29)
+
+
+### Features
+
+* allow excluding date from the survey name when generating path TDE-1261 ([#1067](https://github.com/linz/argo-tasks/issues/1067)) ([057e4d9](https://github.com/linz/argo-tasks/commit/057e4d9e5d8743c13f2348aab8c910e4b2c3f35b))
+
 ## [4.4.1](https://github.com/linz/argo-tasks/compare/v4.4.0...v4.4.1) (2024-09-26)
 
 
