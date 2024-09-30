@@ -12,6 +12,11 @@ function hasHelp(f: unknown): f is ProvidesHelp {
 }
 
 async function generateReadme(): Promise<void> {
+  const commandIndex: string[] = [];
+
+  commandIndex.push('|Command|Description|');
+  commandIndex.push('|---------|---------|');
+
   for (const [key, cmd] of Object.entries(AllCommands)) {
     if (key !== cmd.name) {
       console.log(`Command name mismatch ${key} vs "${cmd.name}".. skipping`);
@@ -77,7 +82,14 @@ async function generateReadme(): Promise<void> {
     const targetReadme = fsa.join(targetPath, 'README.md');
 
     writeFileSync(targetReadme, formatted);
+    const cmdHeader = [`[${cmd.name}](${targetReadme})`, cmd.description].join('|');
+    commandIndex.push(`|${cmdHeader}|`);
   }
+
+  const commandText = commandIndex.join('\n');
+
+  const formatted = await prettier.format(commandText, { filepath: 'readme.md' });
+  writeFileSync('COMMANDS.md', formatted);
 }
 
 generateReadme().catch((e) => console.log('Failed', e));

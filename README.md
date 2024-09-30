@@ -8,19 +8,8 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 ## Command Line Tools
 
-- [lds-fetch-layer](#lds-fetch-layer)
-- [create-manifest](#create-manifest)
-- [copy](#copy)
-- [group](#group)
-- [generate-path](#generate-path)
-- [list](#list)
-- [pretty-print](#pretty-print)
-- [stac catalog](#stac-catalog)
-- [stac github-import](#stac-github-import)
-- [stac sync](#stac-sync)
-- [stac validate](#stac-validate)
-- [tileindex-validate](#tileindex-validate)
-- [bm-create-pr](#bm-create-pr)
+[Commands and their usage](./COMMANDS.md)
+
 
 ### `lds-fetch-layer`
 

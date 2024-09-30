@@ -15,7 +15,7 @@ import { logger } from '../../log.js';
 import { hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
 import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.js';
-import { getPacificAucklandYearMonthDay } from '../path/path.date.js';
+import { getPacificAucklandYearMonthDay } from '../generate-path/path.date.js';
 
 /** Datasets to skip */
 const Skip = new Set([

@@ -7,7 +7,7 @@ import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
 import { GithubApi } from '../../utils/github.js';
 import { config, registerCli, verbose } from '../common.js';
-import { prettyPrint } from '../format/pretty.print.js';
+import { prettyPrint } from '../pretty-print/pretty.print.js';
 
 const Url: Type<string, URL> = {
   async from(str) {
