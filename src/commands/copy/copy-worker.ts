@@ -5,7 +5,7 @@ import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 
-import { logger, registerLogger } from '../../log.js';
+import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { HashKey, hashStream } from '../../utils/hash.js';
 import { HashTransform } from '../../utils/hash.stream.js';
