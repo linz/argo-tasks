@@ -4,7 +4,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { FileSystem } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { AwsCredentialConfig, FsAwsS3 } from '@chunkd/source-aws';
-import { FsAwsS3V3, S3LikeV3 } from '@chunkd/source-aws-v3';
+import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
 import { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 
 import { logger } from './log.js';
@@ -63,27 +63,38 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
   return eaiAgain;
 }
 
-const client = new S3Client();
-export const s3Fs = new FsAwsS3V3(client);
-client.middlewareStack.add(
-  eaiAgainBuilder((attempt: number) => 100 + attempt * 1000),
-  { name: 'EAI_AGAIN', step: 'build' },
-);
-client.middlewareStack.add(fqdn, { name: 'FQDN', step: 'finalizeRequest' });
+/**
+ * When a new AWS file system is created copy across the middleware, but only if the middleware does not exist
+ *
+ * @param fsClient Filesystem to setup
+ */
+export function setupS3FileSystem(fsClient: FsAwsS3V3): void {
+  fsClient.credentials.onFileSystemCreated = (acc: AwsCredentialConfig, fs: FileSystem): void => {
+    logger.debug({ prefix: acc.prefix, roleArn: acc.roleArn }, 'FileSystem:Register');
 
-FsAwsS3.MaxListCount = 1000;
-s3Fs.credentials.onFileSystemCreated = (acc: AwsCredentialConfig, fs: FileSystem): void => {
-  logger.debug({ prefix: acc.prefix, roleArn: acc.roleArn }, 'FileSystem:Register');
-
-  if (fs.protocol === 's3') {
     // TODO this cast can be removed once chunkd is upgraded
-    const fsS3 = fs as FsAwsS3V3;
-    const fsClient = fsS3.s3 as S3LikeV3;
+    if (fs.protocol === 's3') setupS3FileSystem(fs as FsAwsS3V3);
+
+    fsa.register(acc.prefix, fs);
+  };
+
+  // There doesnt appear to be a has or find, so the only option is to list all middleware
+  // which returns a list in a format: "FQDN - finalizeRequest"
+  const middleware = fsClient.client.middlewareStack.identify();
+
+  if (middleware.find((f) => f.startsWith('FQDN ')) == null) {
     fsClient.client.middlewareStack.add(fqdn, { name: 'FQDN', step: 'finalizeRequest' });
   }
 
-  fsa.register(acc.prefix, fs);
-};
+  if (middleware.find((f) => f.startsWith('EAI_AGAIN ')) == null) {
+    fsClient.client.middlewareStack.add(
+      eaiAgainBuilder((attempt: number) => 100 + attempt * 1000),
+      { name: 'EAI_AGAIN', step: 'build' },
+    );
+  }
+}
+
+FsAwsS3.MaxListCount = 1000;
 
 function splitConfig(x: string): string[] {
   if (x.startsWith('[')) return JSON.parse(x) as string[];
@@ -91,6 +102,9 @@ function splitConfig(x: string): string[] {
 }
 
 export function registerFileSystem(opts: { config?: string }): void {
+  const s3Fs = new FsAwsS3V3(new S3Client());
+  setupS3FileSystem(s3Fs);
+
   fsa.register('s3://', s3Fs);
 
   const configPath = opts.config ?? process.env['AWS_ROLE_CONFIG_PATH'];
