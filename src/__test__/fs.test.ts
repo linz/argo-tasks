@@ -3,7 +3,6 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
 import { FsMemory } from '@chunkd/source-memory';
-import { FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 
 import { setupS3FileSystem } from '../fs.register.js';
@@ -17,20 +16,7 @@ export class HttpError extends Error {
 }
 
 describe('Register', () => {
-  const seenBuckets = new Set();
-  const throw403: FinalizeRequestMiddleware<object, MetadataBearer> = (next) => {
-    return async (args) => {
-      const bucket = args.input['Bucket'] as string | undefined;
-      if (bucket == null) return next(args);
-      if (seenBuckets.has(bucket)) throw new HttpError(500, `Bucket: ${bucket} read multiple`);
-      seenBuckets.add(bucket);
-      throw new HttpError(403, 'Something');
-    };
-  };
-
   beforeEach(async () => {
-    seenBuckets.clear();
-
     const fsMem = new FsMemory();
     fsa.register('memory://', fsMem);
     const config = {
@@ -48,7 +34,7 @@ describe('Register', () => {
     setupS3FileSystem(s3Fs);
 
     const newFs = new FsAwsS3V3();
-    s3Fs.credentials.onFileSystemCreated({ type: 's3', prefix: 's3://linz-topographic/', roleArn: 'a' }, newFs);
+    s3Fs.credentials?.onFileSystemCreated?.({ type: 's3', prefix: 's3://linz-topographic/', roleArn: 'a' }, newFs);
     assert.equal(
       newFs.client.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
       'FQDN - finalizeRequest',
@@ -67,7 +53,7 @@ describe('Register', () => {
       'FQDN - finalizeRequest',
     );
 
-    s3Fs.credentials.onFileSystemCreated({ type: 's3', prefix: 's3://linz-topographic/', roleArn: 'a' }, s3Fs);
+    s3Fs.credentials?.onFileSystemCreated?.({ type: 's3', prefix: 's3://linz-topographic/', roleArn: 'a' }, s3Fs);
     assert.equal(
       s3Fs.client.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
       'FQDN - finalizeRequest',
