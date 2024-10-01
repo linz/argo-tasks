@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.2](https://github.com/linz/argo-tasks/compare/v4.5.1...v4.5.2) (2024-10-01)
+
+
+### Reverts
+
+* PR [#1090](https://github.com/linz/argo-tasks/issues/1090) ensure EAI_AGAIN middleware is added to new file systems TDE-1268 ([#1093](https://github.com/linz/argo-tasks/issues/1093)) ([ddda2e0](https://github.com/linz/argo-tasks/commit/ddda2e06a1e7520ca79616fd45d83be91c7fa778))
+
 ## [4.5.1](https://github.com/linz/argo-tasks/compare/v4.5.0...v4.5.1) (2024-10-01)
 
 
