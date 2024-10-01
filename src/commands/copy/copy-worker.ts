@@ -5,7 +5,7 @@ import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 
-import { baseLogger } from '../../log.js';
+import { logger } from '../../log.js';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
 import { HashKey, hashStream } from '../../utils/hash.js';
 import { HashTransform } from '../../utils/hash.stream.js';
@@ -57,11 +57,18 @@ async function tryHead(filePath: string, retryCount = 3): Promise<number | null>
   return null;
 }
 
+/** Current log id */
+let currentId: string | null = null;
+
 export const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
     const end = Math.min(args.start + args.size, args.manifest.length);
-    const log = baseLogger.child({ id: args.id, threadId });
+
+    if (currentId == null) {
+      logger.setBindings({ correlationId: args.id, threadId });
+      currentId = args.id;
+    }
 
     for (let i = args.start; i < end; i++) {
       const todo = args.manifest[i];
@@ -76,10 +83,10 @@ export const worker = new WorkerRpc<CopyContract>({
         }
 
         if (source.metadata[HashKey] == null) {
-          log.trace({ path: todo.source, size: source.size }, 'File:Copy:HashingSource');
+          logger.trace({ path: todo.source, size: source.size }, 'File:Copy:HashingSource');
           const startTime = performance.now();
           source.metadata[HashKey] = await hashStream(fsa.stream(todo.source));
-          log.info(
+          logger.info(
             {
               path: todo.source,
               size: source.size,
@@ -96,21 +103,21 @@ export const worker = new WorkerRpc<CopyContract>({
             source.metadata[HashKey] === target.metadata?.[HashKey] &&
             args.noClobber
           ) {
-            log.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
+            logger.info({ path: todo.target, size: target.size }, 'File:Copy:Skipped');
             stats.skipped++;
             stats.skippedBytes += source.size;
             return;
           }
 
           if (!args.force) {
-            log.error({ target: target.path, source: source.path }, 'File:Overwrite');
+            logger.error({ target: target.path, source: source.path }, 'File:Overwrite');
             throw new Error('Cannot overwrite file: ' + todo.target + ' source: ' + todo.source);
           }
         }
         const hTransform = new HashTransform('sha256');
         const sourceStream = fsa.stream(todo.source).pipe(hTransform);
 
-        log.trace(todo, 'File:Copy:start');
+        logger.trace(todo, 'File:Copy:start');
         const startTime = performance.now();
 
         await fsa.write(todo.target, sourceStream, args.fixContentType ? fixFileMetadata(todo.source, source) : source);
@@ -119,12 +126,12 @@ export const worker = new WorkerRpc<CopyContract>({
         const targetSize = await tryHead(todo.target);
 
         if (targetSize !== source.size || targetHash !== source.metadata[HashKey]) {
-          log.fatal({ ...todo, sourceHash: source.metadata[HashKey], targetHash: targetHash }, 'Copy:Failed');
+          logger.fatal({ ...todo, sourceHash: source.metadata[HashKey], targetHash: targetHash }, 'Copy:Failed');
           // Cleanup the failed copy so it can be retried
           if (targetSize != null) await fsa.delete(todo.target);
           throw new Error(`Failed to copy source:${todo.source} target:${todo.target}`);
         }
-        log.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
+        logger.debug({ ...todo, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
 
         stats.copied++;
         stats.copiedBytes += source.size;
@@ -132,7 +139,7 @@ export const worker = new WorkerRpc<CopyContract>({
     }
     await Q.join().catch((err: unknown) => {
       // Composite errors get swallowed when rethrown through worker threads
-      log.fatal({ err }, 'File:Copy:Failed');
+      logger.fatal({ err }, 'File:Copy:Failed');
       throw err;
     });
     return stats;
