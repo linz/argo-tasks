@@ -95,7 +95,6 @@ describe('Register', () => {
 
     // All requests to s3 will error with http 403
     s3Fs.client.middlewareStack.add(throw403, { name: 'throw403', step: 'build' });
-    s3Fs.credentials.registerConfig('memory://config', fsa);
 
     const fakeTopo = new FsMemory();
     await fakeTopo.write('s3://_linz-topographic/foo.json', 's3://_linz-topographic/foo.json');
