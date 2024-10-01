@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.5.1](https://github.com/linz/argo-tasks/compare/v4.5.0...v4.5.1) (2024-10-01)
+
+
+### Bug Fixes
+
+* **copy:** add threadId to all logs created when running from threads TDE-1268 ([#1089](https://github.com/linz/argo-tasks/issues/1089)) ([3b6e6fe](https://github.com/linz/argo-tasks/commit/3b6e6fe0c5bd7cbfe4e2dfd4d9b92776e8abd17b))
+* ensure EAI_AGAIN middleware is added to new file systems TDE-1268 ([#1090](https://github.com/linz/argo-tasks/issues/1090)) ([48ec902](https://github.com/linz/argo-tasks/commit/48ec902dd5ea63a994727fd7a1eb1530c706af91))
+
 ## [4.5.0](https://github.com/linz/argo-tasks/compare/v4.4.1...v4.5.0) (2024-09-29)
 
 
