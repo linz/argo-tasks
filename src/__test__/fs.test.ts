@@ -108,10 +108,7 @@ describe('Register', () => {
 
     assert.deepEqual(fsSystemsPath(), ['s3://']);
 
-    const ret = await fsa.read('s3://_linz-topographic/foo.json').catch((e) => {
-      console.log(e);
-      throw e;
-    });
+    const ret = await fsa.read('s3://_linz-topographic/foo.json');
 
     assert.equal(String(ret), 's3://_linz-topographic/foo.json');
     assert.deepEqual(fsSystemsPath(), ['s3://_linz-topographic/', 's3://']);
