@@ -38,7 +38,7 @@ export const commandStacSync = command({
   },
 });
 
-annotateExample(commandStacSync, 'Sync STAC to s3', md.code('bash', 'stac sync /path/to/stac/ s3://linz-imagery/'));
+annotateExample(commandStacSync, 'Sync STAC to s3', md.code('bash', 'stac sync /path/to/stac/ s3://nz-imagery/'));
 
 /**
  * Synchronise STAC (JSON) files from a path to another.

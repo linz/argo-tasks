@@ -11,7 +11,7 @@ stac-sync <options> <str> <arg>
 #### Sync STAC to s3
 
 ```bash
-stac sync /path/to/stac/ s3://linz-imagery/
+stac sync /path/to/stac/ s3://nz-imagery/
 ```
 
 ### Arguments
