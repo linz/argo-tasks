@@ -3,7 +3,7 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import { FileSystemAbstraction, fsa } from '@chunkd/fs';
 import { S3LikeV3 } from '@chunkd/source-aws-v3';
 import { FsMemory } from '@chunkd/source-memory';
-import { FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
+import { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 
 import { registerFileSystem } from '../fs.register.js';
@@ -18,9 +18,10 @@ export class HttpError extends Error {
 
 describe('Register', () => {
   const seenBuckets = new Set();
-  const throw403: FinalizeRequestMiddleware<object, MetadataBearer> = () => {
-    return async (args: { input: { Bucket?: string } }) => {
-      const bucket = args.input['Bucket'];
+  const throw403: InitializeMiddleware<object, MetadataBearer> = () => {
+    return async (args: unknown) => {
+      const inp = args as { input: { Bucket?: string } };
+      const bucket = inp.input.Bucket;
       if (seenBuckets.has(bucket)) throw new HttpError(500, `Bucket: ${bucket} read multiple`);
       seenBuckets.add(bucket);
       throw new HttpError(403, 'Something');
@@ -94,25 +95,25 @@ describe('Register', () => {
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
 
     // All requests to s3 will error with http 403
-    s3Fs.client.middlewareStack.add(throw403, { name: 'throw403', step: 'build' });
+    s3Fs.client.middlewareStack.add(throw403, { name: 'throw403', step: 'initialize', priority: 'high' });
 
     const fakeTopo = new FsMemory();
     await fakeTopo.write('s3://_linz-topographic/foo.json', 's3://_linz-topographic/foo.json');
     t.mock.method(s3Fs.credentials, 'createFileSystem', () => fakeTopo);
 
-    const toS3String = (): string[] => {
-      fsa.get('s3://', 'r'); // ensure systems array is sorted
-      return fsa.systems.filter((f) => f.path.startsWith('s3:/')).map((f) => f.path);
+    const fsSystemsPath = (): string[] => {
+      fsa.get('s3://', 'r'); // ensure systems' array is sorted
+      return fsa.systems.filter((f) => f.path.startsWith('s3://')).map((f) => f.path);
     };
 
-    assert.deepEqual(toS3String(), ['s3://']);
+    assert.deepEqual(fsSystemsPath(), ['s3://']);
 
     const ret = await fsa.read('s3://_linz-topographic/foo.json');
 
     assert.equal(String(ret), 's3://_linz-topographic/foo.json');
-    assert.deepEqual(toS3String(), ['s3://_linz-topographic/', 's3://']);
+    assert.deepEqual(fsSystemsPath(), ['s3://_linz-topographic/', 's3://']);
 
     await fsa.exists('s3://_linz-topographic-upload/foo.json');
-    assert.deepEqual(toS3String(), ['s3://_linz-topographic-upload/', 's3://_linz-topographic/', 's3://']);
+    assert.deepEqual(fsSystemsPath(), ['s3://_linz-topographic-upload/', 's3://_linz-topographic/', 's3://']);
   });
 });
