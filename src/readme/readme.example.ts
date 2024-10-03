@@ -1,23 +1,12 @@
 export const ExampleSymbol = Symbol('example-text');
 
 export interface CommandWithExamples {
+  /**
+   * list of examples
+   */
   [ExampleSymbol]: { title: string; text: string }[];
 }
 
-/**
- * Create a markdown code block
- *
- * @param body body of the code block
- * @param lang language to use eg `bash`
- * @returns markdown formatted code block
- */
-export function mdCode(lang: 'bash' | 'typescript', body: string): string {
-  return `
-\`\`\`${lang}
-${body}
-\`\`\`
-`;
-}
 /**
  * Annotate a command with examples
  *

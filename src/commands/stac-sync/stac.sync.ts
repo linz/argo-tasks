@@ -4,7 +4,8 @@ import { command, positional, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { annotateExample, mdCode } from '../../readme/readme.example.js';
+import { md } from '../../readme/markdown.js';
+import { annotateExample } from '../../readme/readme.example.js';
 import { hashBuffer, HashKey } from '../../utils/hash.js';
 import { config, registerCli, verbose } from '../common.js';
 
@@ -37,7 +38,7 @@ export const commandStacSync = command({
   },
 });
 
-annotateExample(commandStacSync, 'Sync STAC to s3', mdCode('bash', 'stac sync /path/to/stac/ s3://linz-imagery/'));
+annotateExample(commandStacSync, 'Sync STAC to s3', md.code('bash', 'stac sync /path/to/stac/ s3://linz-imagery/'));
 
 /**
  * Synchronise STAC (JSON) files from a path to another.
