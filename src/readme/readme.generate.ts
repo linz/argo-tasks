@@ -3,7 +3,8 @@ import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.js';
 import { writeFileSync } from 'fs';
 import * as prettier from 'prettier';
 
-import { AllCommands } from './commands/index.js';
+import { AllCommands } from '../commands/index.js';
+import { commandHasExample, ExampleSymbol } from './readme.example.js';
 const AnsiRemove = /\u001b\[.*?m/g;
 
 function hasHelp(f: unknown): f is ProvidesHelp {
@@ -55,6 +56,16 @@ async function generateReadme(): Promise<void> {
     data.push('## Usage');
     data.push();
     data.push(`${cmd.name} <options> ` + args.map((m) => m.usage).join(' '));
+
+    if (commandHasExample(cmd)) {
+      data.push();
+      data.push('## Examples');
+      for (const example of cmd[ExampleSymbol]) {
+        data.push(`#### ${example.title}`);
+        data.push();
+        data.push(example.text);
+      }
+    }
 
     for (const topics of [args, options, flags]) {
       const firstTopic = topics[0]?.category;
