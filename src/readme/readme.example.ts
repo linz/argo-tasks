@@ -2,7 +2,9 @@ export const ExampleSymbol = Symbol('example-text');
 
 export interface CommandWithExamples {
   /**
-   * list of examples
+   * list of examples to be added to the command README.md
+   *
+   * @see {@link generateReadme} for README generation
    */
   [ExampleSymbol]: { title: string; text: string }[];
 }
