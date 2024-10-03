@@ -6,6 +6,14 @@ Sync STAC files
 
 stac-sync <options> <str> <arg>
 
+## Examples
+
+#### Sync STAC to s3
+
+```bash
+stac sync /path/to/stac/ s3://linz-imagery/
+```
+
 ### Arguments
 
 | Usage | Description                                              | Options |

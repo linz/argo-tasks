@@ -209,15 +209,7 @@ stac github-import --source=SOURCE_S3_URL --target=TARGET_S3_URL [--repo-name=OW
 stac github-import --source=s3://linz-workflows-scratch/2024-03/13-is-niwe-hawkes-bay-all-blocks-xfcxl/flat/ --target=s3://nz-imagery/hawkes-bay/hawkes-bay_2023-2024_0.25m/rgb/2193/ --repo-name=linz/imagery-test --ticket=AIP-56 --copy-option=--force
 ```
 
-### `stac sync`
 
-Synchronise STAC (JSON) files from one path to another.
-
-#### Example
-
-```bash
-stac sync /path/to/stac/ s3://linz-imagery/
-```
 
 ### `stac validate`
 
