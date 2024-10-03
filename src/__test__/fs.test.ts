@@ -98,28 +98,21 @@ describe('Register', () => {
 
     const fakeTopo = new FsMemory();
     await fakeTopo.write('s3://_linz-topographic/foo.json', 's3://_linz-topographic/foo.json');
-
     t.mock.method(s3Fs.credentials, 'createFileSystem', () => fakeTopo);
 
-    assert.equal(
-      fsa.systems.find((f) => f.path === 's3://_linz-topographic/'),
-      undefined,
-    );
-    assert.equal(
-      fsa.systems.find((f) => f.path === 's3://_linz-topographic-upload/'),
-      undefined,
-    );
+    const toS3String = (): string[] => {
+      fsa.get('s3://', 'r'); // ensure systems array is sorted
+      return fsa.systems.filter((f) => f.path.startsWith('s3:/')).map((f) => f.path);
+    };
+
+    assert.deepEqual(toS3String(), ['s3://']);
 
     const ret = await fsa.read('s3://_linz-topographic/foo.json');
 
     assert.equal(String(ret), 's3://_linz-topographic/foo.json');
-    assert.ok(fsa.systems.find((f) => f.path === 's3://_linz-topographic/'));
-    assert.equal(
-      fsa.systems.find((f) => f.path === 's3://_linz-topographic-upload/'),
-      undefined,
-    );
+    assert.deepEqual(toS3String(), ['s3://_linz-topographic/', 's3://']);
 
     await fsa.exists('s3://_linz-topographic-upload/foo.json');
-    assert.ok(fsa.systems.find((f) => f.path === 's3://_linz-topographic-upload/'));
+    assert.deepEqual(toS3String(), ['s3://_linz-topographic-upload/', 's3://_linz-topographic/', 's3://']);
   });
 });
