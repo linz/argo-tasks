@@ -45,11 +45,11 @@ export const commandGeneratePath = command({
       description: 'Target bucket name, e.g. nz-imagery',
     }),
 
-    noDateInSurveyPath: flag({
+    addDateInSurveyPath: flag({
       type: boolean,
-      defaultValue: () => false,
-      long: 'no-date-in-survey-path',
-      description: 'Do not include the date in the survey path',
+      defaultValue: () => true,
+      long: 'add-date-in-survey-path',
+      description: 'Include the date in the survey path',
       defaultValueIsSerializable: true,
     }),
 
@@ -78,7 +78,7 @@ export const commandGeneratePath = command({
       category: collection['linz:geospatial_category'],
       region: collection['linz:region'],
       geographicDescription: collection['linz:geographic_description'],
-      date: args.noDateInSurveyPath ? '' : formatDate(collection),
+      date: args.addDateInSurveyPath ? formatDate(collection) : '',
       gsd: extractGsd(tiff),
       epsg: extractEpsg(tiff),
     };
