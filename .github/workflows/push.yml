@@ -10,7 +10,7 @@ jobs:
 
       - name: Generate Readme
         run: |
-          node build/src/readme/readme.generate.js
+          npm run docs
 
       # Validate no READMEs have been updated
       - name: Validate Readme generation
