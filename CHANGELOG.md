@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.6.0](https://github.com/linz/argo-tasks/compare/v4.5.2...v4.6.0) (2024-10-13)
+
+
+### Features
+
+* annotate commands with examples ([#1097](https://github.com/linz/argo-tasks/issues/1097)) ([41be2c1](https://github.com/linz/argo-tasks/commit/41be2c10f0c745903adc5e33cea12fe960cab77c))
+
+
+### Bug Fixes
+
+* avoid negative parameter TDE-1261 ([#1104](https://github.com/linz/argo-tasks/issues/1104)) ([5352975](https://github.com/linz/argo-tasks/commit/5352975726d92e2fdd72309c94e10502f7315948))
+* **basemaps:** Get the epsg and name correctly for elevation s3 path. BM-1088 ([#1074](https://github.com/linz/argo-tasks/issues/1074)) ([08e76e4](https://github.com/linz/argo-tasks/commit/08e76e480d068bf37af744d1678696e59f81b728))
+
 ## [4.5.2](https://github.com/linz/argo-tasks/compare/v4.5.1...v4.5.2) (2024-10-01)
 
 
