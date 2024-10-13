@@ -19,11 +19,47 @@ export enum ConfigType {
   Elevation = 'elevation',
 }
 
-function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
+export function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
   // Validate the target information
   logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
   if (!validBuckets.has(bucket)) {
     throw new Error(`Invalid s3 bucket ${bucket} from the target.`);
+  }
+}
+
+export interface targetInfo {
+  bucket: string;
+  epsg: Epsg;
+  name: string;
+  filename?: string;
+}
+
+/**
+ * Parse information from target url include raster, vector and elevation
+ * s3://linz-basemaps/3857/canterbury_rural_2014-2015_0-30m_RGBA/01HSF04SG9M1P3V667A4NZ1MN8/
+ * s3://linz-basemaps/elevation/3857/bay-of-plenty_2019-2022_dem_1m/01HSF04SG9M1P3V667A4NZ1MN8/
+ * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
+ *
+ * TODO: This should get from metadata instead of the parse string once we got the attributes in metadata
+ *
+ * @param target Target url to parse the information from
+ * @param offset Adding index offset to exclude the `/vector/` or `/elevation/` in s3 path. 0 for raster, 1 for vector and elevation.
+ */
+export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
+  // Parse target bucket, epsg and imagery name from the target url
+  const url = new URL(target);
+  const bucket = url.hostname;
+  const splits = url.pathname.split('/');
+  const epsg = Epsg.tryGet(Number(splits[1 + offset]));
+  const name = splits[2 + offset];
+  if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
+
+  // Get filename for vector target
+  if (target.endsWith('.tar.co')) {
+    const filename = splits.at(-1);
+    return { bucket, epsg, name, filename };
+  } else {
+    return { bucket, epsg, name };
   }
 }
 
@@ -33,15 +69,10 @@ async function parseRasterTargetInfo(
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
-  const url = new URL(target);
-  const bucket = url.hostname;
-  const splits = url.pathname.split('/');
-  const epsg = elevation ? Epsg.tryGet(Number(splits[2])) : Epsg.tryGet(Number(splits[1]));
-  const name = elevation ? splits[3] : splits[2];
+  const { bucket, epsg, name } = parseTargetUrl(target, elevation ? 1 : 0);
 
   assertValidBucket(bucket, validTargetBuckets);
 
-  if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   const collectionPath = fsa.join(target, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
@@ -77,16 +108,10 @@ async function parseRasterTargetInfo(
  */
 async function parseVectorTargetInfo(target: string): Promise<{ name: string; title: string; epsg: EpsgCode }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
-  const url = new URL(target);
-  const bucket = url.hostname;
-  const splits = url.pathname.split('/');
-  const epsg = Epsg.tryGet(Number(splits[2]));
-  const name = splits[3];
-  const filename = splits.at(-1);
+  const { bucket, epsg, name, filename } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, validTargetBuckets);
 
-  if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
   if (filename == null || !filename.endsWith('.tar.co')) {
     throw new Error(`Invalid cotar filename for vector map ${filename}.`);
   }
