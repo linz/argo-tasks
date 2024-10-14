@@ -122,16 +122,10 @@ describe('mapsheet-coverage', () => {
       id: 'layer-a-id',
       license: 'CC-BY-4.0',
       source: 'ms://layers/a/collection.json',
-      providers: [
-        {
-          name: 'First provider',
-          roles: ['producer', 'licensor', 'processor'],
-        },
-        {
-          name: 'Second provider',
-          roles: ['producer'],
-        },
-      ],
+      host: '',
+      licensor: 'First provider',
+      processor: 'First provider',
+      producer: 'First provider, Second provider',
     });
     assert.equal(captureDates.features.length, 1);
   });
