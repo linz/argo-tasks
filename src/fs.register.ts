@@ -82,7 +82,7 @@ export function setupS3FileSystem(fsClient: FsAwsS3V3): void {
 
     logger.debug({ prefix: path, roleArn: accountConfig.roleArn }, 'FileSystem:Register');
     fsa.register(accountConfig.prefix, fileSystem);
-    if (fileSystem.s3 && 'client' in fileSystem.s3) {
+    if (fileSystem.s3 != null && 'client' in fileSystem.s3) {
       addMiddlewareToS3Client((fileSystem.s3 as S3LikeV3).client);
     }
     return fileSystem;

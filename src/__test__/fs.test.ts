@@ -97,9 +97,9 @@ describe('Register', () => {
     assert.equal(fileSystems.length, 1);
     const newFs = fileSystems[0]!.s3 as S3LikeV3;
 
-    assert.equal(
-      newFs.client.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
-      'FQDN - finalizeRequest',
+    assert.deepEqual(
+      newFs.client.middlewareStack.identify().filter((f) => f.startsWith('FQDN -')),
+      ['FQDN - finalizeRequest'],
     );
   });
 
