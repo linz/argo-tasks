@@ -11,7 +11,7 @@ import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub } from './make.cog.github.js';
 
 const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
-const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);
 
 export enum ConfigType {
   Raster = 'raster',
