@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { Bounds, Point, Projection } from '@basemaps/geo';
+import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { Size, Tiff, TiffTag } from '@cogeotiff/core';
 import { BBox } from '@linzjs/geojson';
@@ -12,7 +12,7 @@ import { isArgo } from '../../utils/argo.js';
 import { extractBandInformation } from '../../utils/band.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
-import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
+import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.js';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
@@ -278,15 +278,16 @@ export const commandTileIndexValidate = command({
     let retileNeeded = false;
     for (const val of outputs.values()) {
       if (val.length < 2) continue;
+      // FIXME
       if (args.retile) {
         const bandType = validateConsistentBands(val);
         logger.info(
-          { tileName: val[0]?.tileName, uris: val.map((v) => v.source), bands: bandType },
+          { tileName: val[0]?.tileNames[0], uris: val.map((v) => v.source), bands: bandType },
           'TileIndex:Retile',
         );
       } else {
         retileNeeded = true;
-        logger.error({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
+        logger.error({ tileName: val[0]?.tileNames[0], uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
       }
     }
 
@@ -406,9 +407,15 @@ export async function extractTiffLocations(
         const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]]));
         const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]]));
 
-        console.log('topLeft', MapSheet.sheetCode(ulX!, ulY!));
+        if (ulX == null || ulY == null || lrX == null || lrY == null) {
+          logger.error(
+            { reason: 'Failed to reproject point', source: tiff.source },
+            'Reprojection:ExtracTiffLocations:Failed',
+          );
+          return null;
+        }
 
-        const covering = [...iterateMapSheets([ulX, ulY, lrX, lrY], gridSize)];
+        const covering = [...iterateMapSheets([ulX, ulY, lrX, lrY], gridSize)] as string[];
         assert.ok(covering.includes(tileName));
 
         // if (shouldValidate) {
@@ -535,7 +542,7 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   }
 }
 
-export function* iterateMapSheets(bounds: BBox, gridSize: GridSize): Iterator<string> {
+export function* iterateMapSheets(bounds: BBox, gridSize: GridSize): Generator<string> {
   const minX = Math.min(bounds[0], bounds[2]);
   const maxX = Math.max(bounds[0], bounds[2]);
   const minY = Math.min(bounds[1], bounds[3]);
