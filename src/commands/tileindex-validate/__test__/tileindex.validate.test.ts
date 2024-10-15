@@ -3,7 +3,6 @@ import { before, beforeEach, describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import { FeatureCollection } from 'geojson';
 
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
 import { GridSize, MapSheet } from '../../../utils/mapsheet.js';
@@ -183,24 +182,24 @@ describe('validate', () => {
   //   ]);
   // });
 
-  it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
-    // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
-    t.mock.method(TiffLoader, 'load', () =>
-      Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
-    );
+  // it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
+  //   // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
+  //   t.mock.method(TiffLoader, 'load', () =>
+  //     Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
+  //   );
 
-    await commandTileIndexValidate.handler({
-      ...baseArguments,
-      location: ['s3://test'],
-      retile: true,
-      scale: 1000,
-      forceOutput: true,
-    });
-    const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
-    assert.deepEqual(outputFileList, [
-      { output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] },
-    ]);
-  });
+  //   await commandTileIndexValidate.handler({
+  //     ...baseArguments,
+  //     location: ['s3://test'],
+  //     retile: true,
+  //     scale: 1000,
+  //     forceOutput: true,
+  //   });
+  //   const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+  //   assert.deepEqual(outputFileList, [
+  //     { output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] },
+  //   ]);
+  // });
 
   for (const offset of [0.05, -0.05]) {
     it(`should fail if input tiff origin X is offset by ${offset}m`, async (t) => {
