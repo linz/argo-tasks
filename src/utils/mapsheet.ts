@@ -171,12 +171,48 @@ export const MapSheet = {
 
     let y = firstLetterOffset + secondLetterOffset - baseYOffset;
 
-    // There are three missing map sheets
+    // There are three missing map sheet codes
     if (ms > 'CI') y -= 3;
     else if (ms > 'BO') y -= 2;
     else if (ms > 'BI') y--;
 
     return { x: MapSheet.width * x + MapSheet.origin.x, y: MapSheet.origin.y - MapSheet.height * y };
+  },
+
+  /**
+   * Calculate the Mapsheet sheet code from a NZTM2000 (EPSG:2193) X & Y point
+   *
+   * @warning this does **not** ensure the sheet code is inside the expected range see {@link MapSheet.isKnown}
+   *
+   * @example
+   * ```typescript
+   * MapSheet.offset(988000, 5982000) // "AZ00"
+   * ```
+   * @param x X offset of the sheet
+   * @param y Y offset of the sheet
+   * @returns Sheet code
+   */
+  sheetCode(x: number, y: number): string {
+    const offsetX = Math.round(Math.floor((x - MapSheet.origin.x) / MapSheet.width));
+    const offsetY = Math.round(Math.floor((MapSheet.origin.y - y) / MapSheet.height));
+
+    let charYOffset = offsetY;
+
+    // BI does not exist
+    if (charYOffset >= 16) charYOffset++;
+    // BO does not exist
+    if (charYOffset >= 22) charYOffset++;
+    // CI does not exist
+    if (charYOffset >= 42) charYOffset++;
+
+    // Sheet codes start at "AS"
+    const baseYOffset = charS - charA;
+    charYOffset = charYOffset + baseYOffset;
+
+    const firstLetterOffset = String.fromCharCode(Math.floor(charYOffset / 26) + charA);
+    const secondLetterOffset = String.fromCharCode((charYOffset % 26) + charA);
+
+    return `${firstLetterOffset}${secondLetterOffset}${String(offsetX).padStart(2, '0')}`;
   },
 
   /** Generate the size of tile inside a map sheet at a specific grid size */
