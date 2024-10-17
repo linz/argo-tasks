@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.7.0](https://github.com/linz/argo-tasks/compare/v4.6.0...v4.7.0) (2024-10-17)
+
+
+### Features
+
+* **basemaps:** Add nz-elevation bucket as valid source s3 bucket. BM-1088 ([#1109](https://github.com/linz/argo-tasks/issues/1109)) ([bc09b74](https://github.com/linz/argo-tasks/commit/bc09b74e53b99de36b9c941711e19380c0ae8ddd))
+
+
+### Bug Fixes
+
+* ensure file systems with matching roleArns are registered correctly TDE-1268 ([#1092](https://github.com/linz/argo-tasks/issues/1092)) ([e004506](https://github.com/linz/argo-tasks/commit/e00450605e3cfaf4b2d2ff2c399e3454cae0cbd8))
+
 ## [4.6.0](https://github.com/linz/argo-tasks/compare/v4.5.2...v4.6.0) (2024-10-13)
 
 
