@@ -35,9 +35,9 @@
     "build/src/**"
   ],
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.440.0",
-    "@aws-sdk/credential-providers": "^3.438.0",
-    "@aws-sdk/lib-storage": "^3.440.0",
+    "@aws-sdk/client-s3": "^3.673.0",
+    "@aws-sdk/credential-providers": "^3.670.0",
+    "@aws-sdk/lib-storage": "^3.673.0",
     "@basemaps/config": "^7.7.0",
     "@basemaps/geo": "^7.5.0",
     "@chunkd/fs": "^10.0.9",
