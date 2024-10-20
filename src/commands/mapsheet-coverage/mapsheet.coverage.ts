@@ -144,7 +144,19 @@ export const commandMapSheetCoverage = command({
       captureArea.properties['description'] = collection.description;
       captureArea.properties['id'] = collection.id;
       captureArea.properties['license'] = collection.license;
-      captureArea.properties['providers'] = collection.providers;
+
+      const roleToNames = new Map<string, Set<string>>();
+      for (const provider of collection.providers ?? []) {
+        for (const role of provider.roles ?? []) {
+          const names = roleToNames.get(role) ?? new Set<string>();
+          names.add(provider.name);
+          roleToNames.set(role, names);
+        }
+      }
+      for (const [role, names] of roleToNames) {
+        captureArea.properties[role] = [...names].join(', ');
+      }
+
       captureArea.properties['source'] = targetCollection.href;
       if (flownDates) captureArea.properties['flown_from'] = flownDates[0];
       if (flownDates) captureArea.properties['flown_to'] = flownDates[1];
