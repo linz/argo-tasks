@@ -9,7 +9,6 @@ import pLimit from 'p-limit';
 import { basename } from 'path/posix';
 import pc from 'polygon-clipping';
 import { StacCollection, StacItem } from 'stac-ts';
-import { StacRoles } from 'stac-ts/src/types/common.js';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
@@ -145,24 +144,17 @@ export const commandMapSheetCoverage = command({
       captureArea.properties['description'] = collection.description;
       captureArea.properties['id'] = collection.id;
       captureArea.properties['license'] = collection.license;
-      if (collection.providers) {
-        /*
-         We can't loop over `StacRoles from 'stac-ts'`, so we need to keep this list in sync with that type
-         */
-        const providersByRole = {
-          host: [] as string[],
-          licensor: [] as string[],
-          processor: [] as string[],
-          producer: [] as string[],
-        };
-        for (const provider of collection.providers) {
-          for (const role of provider.roles ?? []) {
-            providersByRole[role].push(provider.name);
-          }
+
+      const roleToNames = new Map<string, Set<string>>();
+      for (const provider of collection.providers ?? []) {
+        for (const role of provider.roles ?? []) {
+          const names = roleToNames.get(role) ?? new Set<string>();
+          names.add(provider.name);
+          roleToNames.set(role, names);
         }
-        for (const role in providersByRole) {
-          captureArea.properties[role] = providersByRole[role as StacRoles].join(', ');
-        }
+      }
+      for (const [role, names] of roleToNames) {
+        captureArea.properties[role] = [...names].join(', ');
       }
 
       captureArea.properties['source'] = targetCollection.href;

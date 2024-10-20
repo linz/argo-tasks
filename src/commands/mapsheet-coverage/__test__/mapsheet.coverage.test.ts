@@ -122,7 +122,6 @@ describe('mapsheet-coverage', () => {
       id: 'layer-a-id',
       license: 'CC-BY-4.0',
       source: 'ms://layers/a/collection.json',
-      host: '',
       licensor: 'First provider',
       processor: 'First provider',
       producer: 'First provider, Second provider',
