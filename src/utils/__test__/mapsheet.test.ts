@@ -44,12 +44,18 @@ describe('MapSheets', () => {
     assert.deepEqual(MapSheet.offset('BW14'), { x: 1324000, y: 5226000 });
   });
 
-  for (const ms of MapSheetData) {
-    it('should calculate for ' + ms.code, () => {
+  it('should calculate for all sheets', () => {
+    for (const ms of MapSheetData) {
       assert.deepEqual(MapSheet.offset(ms.code), ms.origin);
       assert.equal(MapSheet.isKnown(ms.code), true);
-    });
-  }
+    }
+  });
+
+  it('should round trip all sheets', () => {
+    for (const ms of MapSheetData) {
+      assert.equal(MapSheet.sheetCode(ms.origin.x, ms.origin.y), ms.code);
+    }
+  });
 
   it('should not know invalid mapsheets', () => {
     assert.equal(MapSheet.isKnown('BC39'), false);
