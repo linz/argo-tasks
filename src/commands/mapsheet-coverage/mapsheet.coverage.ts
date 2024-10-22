@@ -1,10 +1,9 @@
-import { writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
-import { EpsgCode, Projection } from '@basemaps/geo';
+import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { Area, iterate, MultiPolygon, truncate } from '@linzjs/geojson';
+import { Area, truncate } from '@linzjs/geojson';
 import buffer from '@turf/buffer';
 import { command, number, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
