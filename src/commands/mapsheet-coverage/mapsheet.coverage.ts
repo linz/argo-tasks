@@ -1,9 +1,11 @@
+import { writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
-import { EpsgCode } from '@basemaps/geo';
+import { EpsgCode, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { truncate } from '@linzjs/geojson';
+import { Area, iterate, MultiPolygon, truncate } from '@linzjs/geojson';
+import buffer from '@turf/buffer';
 import { command, number, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { basename } from 'path/posix';
@@ -134,6 +136,8 @@ export const commandMapSheetCoverage = command({
 
       const captureArea = forceMultiPolygon(await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl.href));
 
+      // writeFileSync('./' + layer.name + '-capture.area.geojson', JSON.stringify(captureArea));
+
       // As these times are mostly made up, convert them into NZ time to prevent
       // flown years being a year off when the interval is 2023-12-31T12:00:00.000Z (or Jan 1st NZT)
       const flownDates = collection.extent?.temporal?.interval?.[0].map(getPacificAucklandYearMonthDay);
@@ -175,10 +179,26 @@ export const commandMapSheetCoverage = command({
       );
 
       // GeoJSON over about 8 decimal places starts running into floating point math errors
-      truncate(captureArea);
+      truncate(captureArea, 8);
 
+      const diff = [];
       // Determine if this layer has any additional information to the existing layers
-      const diff = pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, layersCombined);
+      for (const poly of pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, layersCombined)) {
+        const polyArea = Area.polygon(poly);
+
+        // Area is stored as square degrees, 1e-6 is approx 1m^2 (?)
+        if (polyArea < 1e-6) {
+          // If the buffer in destroys the polygon this polygon likely isnt really useful
+          const bufferedIn = buffer({ type: 'Polygon', coordinates: poly }, -1, { units: 'meters' });
+          if (bufferedIn == null) {
+            continue;
+          }
+          // smallPoly.push(poly);
+          diff.push(poly);
+        } else {
+          diff.push(poly);
+        }
+      }
 
       // Layer has no information included in the output
       if (diff.length === 0) {
@@ -208,6 +228,7 @@ export const commandMapSheetCoverage = command({
       }
 
       layersCombined = pc.union(layersCombined, captureArea.geometry.coordinates as pc.MultiPolygon);
+
       captureDates.features.push({
         type: 'Feature',
         geometry: { type: 'MultiPolygon', coordinates: diff },
