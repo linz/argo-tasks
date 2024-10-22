@@ -136,8 +136,6 @@ export const commandMapSheetCoverage = command({
 
       const captureArea = forceMultiPolygon(await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl.href));
 
-      // writeFileSync('./' + layer.name + '-capture.area.geojson', JSON.stringify(captureArea));
-
       // As these times are mostly made up, convert them into NZ time to prevent
       // flown years being a year off when the interval is 2023-12-31T12:00:00.000Z (or Jan 1st NZT)
       const flownDates = collection.extent?.temporal?.interval?.[0].map(getPacificAucklandYearMonthDay);
@@ -187,13 +185,15 @@ export const commandMapSheetCoverage = command({
         const polyArea = Area.polygon(poly);
 
         // Area is stored as square degrees, 1e-6 is approx 1m^2 (?)
+        // TODO: is there a better number than 1e-6, could scale it from the GSD of the dataset
         if (polyArea < 1e-6) {
-          // If the buffer in destroys the polygon this polygon likely isnt really useful
+          // If the buffer in destroys the polygon this polygon likely isn't really useful
+          // TODO: 1m works when the dataset is 1m, but not all datasets are 1m resolution
           const bufferedIn = buffer({ type: 'Polygon', coordinates: poly }, -1, { units: 'meters' });
           if (bufferedIn == null) {
             continue;
           }
-          // smallPoly.push(poly);
+          // TODO: should the buffered dataset be used
           diff.push(poly);
         } else {
           diff.push(poly);
