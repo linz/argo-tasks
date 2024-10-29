@@ -4,7 +4,7 @@ import { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { isArgo } from '../../utils/argo.js';
+// import { isArgo } from '../../utils/argo.js';
 import { slugify } from '../../utils/slugify.js';
 import { config, registerCli, verbose } from '../common.js';
 import { dataCategories } from './category.constants.js';
@@ -17,6 +17,7 @@ export interface SlugMetadata {
   gsd: string;
 }
 
+// TODO: are all these really needed and if so why?
 export interface StacCollectionLinz {
   'linz:lifecycle': string;
   'linz:geospatial_category': string;
@@ -102,6 +103,9 @@ export const commandStacSetup = command({
       const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
         fsa.join(args.odrUrl, 'collection.json'), // TODO: handle with or without s3:// and also collection.json
       );
+      const slug = collection['linz:slug'];
+      const collectionId = collection['id'];
+      writeSetupFiles(slug, collectionId);
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
@@ -111,20 +115,15 @@ export const commandStacSetup = command({
         date: args.addDateInSurveyPath ? formatDate(args.startDate, args.endDate) : '',
         gsd: args.gsd,
       };
-
       const slug = generateSlug(metadata);
-      logger.info({ duration: performance.now() - startTime, slug: slug }, 'GenerateSlug:Done');
+      // TODO: generate collectionId
+      // const collectionId = generateId();
+      // writeSetupFiles(slug, collectionId);
+
+      logger.info({ duration: performance.now() - startTime, slug: slug }, 'GenerateSlugId:Done');
     }
-    if (isArgo()) {
-      // Paths to where the slug and collection ID are located
-      await fsa.write('/tmp/generate-slug-id/linz-slug', slug);
-      logger.info({ location: '/tmp/generate-slug-id/linz-slug', slug: slug }, 'GenerateSlug:Written');
-      await fsa.write('/tmp/generate-slug-id/collection-id', collectionId);
-      logger.info(
-        { location: '/tmp/generate-slug-id/collection-id', collectionId: collectionId },
-        'GenerateCollectionId:Written',
-      );
-    }
+
+    // TODO: generate timestamp for "now"
   },
 });
 
@@ -140,7 +139,7 @@ export function generateSlug(metadata: SlugMetadata): string {
 
   if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
-    throw new Error(`Automated target generation not implemented for historic imagery`);
+    throw new Error(`Automated slug generation not implemented for historic imagery`);
   }
 
   if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
@@ -153,7 +152,8 @@ export function generateSlug(metadata: SlugMetadata): string {
 /**
  * Format a STAC collection as a "startYear-endYear" or "startYear" in Pacific/Auckland time
  *
- * @param collection STAC collection to format
+ * @param startDate start capture date
+ * @param endDate end capture date
  * @returns the formatted slug dates
  */
 export function formatDate(startDate: string, endDate: string): string {
@@ -163,4 +163,18 @@ export function formatDate(startDate: string, endDate: string): string {
   if (startYear == null || endYear == null) throw new Error(`Missing datetime in interval: ${interval.join(', ')}`);
   if (startYear === endYear) return startYear;
   return `${startYear}-${endYear}`;
+}
+
+/**
+ * Write the STAC setup values to files for Argo to use
+ *
+ * @param slug the STAC linz:slug value to write
+ * @param collectionId the STAC collection ID value to write
+ */
+// TODO: isArgo?
+export async function writeSetupFiles(slug: string, collectionId: string): void {
+  await fsa.write('/tmp/generate-slug-id/linz-slug', slug);
+  logger.info({ location: '/tmp/generate-slug-id/linz-slug', slug }, 'GenerateSlug:Written');
+  await fsa.write('/tmp/generate-slug-id/collection-id', collectionId);
+  logger.info({ location: '/tmp/generate-slug-id/collection-id', collectionId }, 'GenerateCollectionId:Written');
 }

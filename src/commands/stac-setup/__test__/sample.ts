@@ -37,6 +37,7 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
   'linz:security_classification': 'unclassified',
   'linz:event_name': 'Storm',
   'linz:geographic_description': 'Palmerston North',
+  'linz:slug': 'palmerston-north_2024_0.3m',
   extent: {
     spatial: {
       bbox: [[175.4961876, -36.8000575, 175.5071491, -36.7933469]],
