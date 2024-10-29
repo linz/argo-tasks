@@ -17,6 +17,8 @@ export interface SlugMetadata {
   gsd: string;
 }
 
+console.log(typeof dataCategories);
+
 // TODO: are all these really needed and if so why?
 export interface StacCollectionLinz {
   'linz:lifecycle': string;
@@ -105,7 +107,7 @@ export const commandStacSetup = command({
       );
       const slug = collection['linz:slug'];
       const collectionId = collection['id'];
-      writeSetupFiles(slug, collectionId);
+      await writeSetupFiles(slug, collectionId);
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
@@ -118,7 +120,7 @@ export const commandStacSetup = command({
       const slug = generateSlug(metadata);
       // TODO: generate collectionId
       // const collectionId = generateId();
-      // writeSetupFiles(slug, collectionId);
+      // await writeSetupFiles(slug, collectionId);
 
       logger.info({ duration: performance.now() - startTime, slug: slug }, 'GenerateSlugId:Done');
     }
@@ -131,22 +133,30 @@ export const commandStacSetup = command({
  * Generates slug based on dataset category.
  *
  * @param metadata
- * @returns
+ * @returns slug
  */
 export function generateSlug(metadata: SlugMetadata): string {
   const geographicDescription = metadata.geographicDescription || metadata.region;
   const slug = slugify(metadata.date ? `${geographicDescription}_${metadata.date}` : geographicDescription);
 
+  if (
+    [
+      dataCategories.AERIAL_PHOTOS,
+      dataCategories.RURAL_AERIAL_PHOTOS,
+      dataCategories.SATELLITE_IMAGERY,
+      dataCategories.URBAN_AERIAL_PHOTOS,
+    ].includes(metadata.category)
+  ) {
+    return `${slug}_${metadata.gsd}m`;
+  }
+  if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
+    return `${slug}`;
+  }
   if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated slug generation not implemented for historic imagery`);
   }
-
-  if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
-    return `${slug}`;
-  } else {
-    return `${slug}_${metadata.gsd}m`;
-  }
+  throw new Error(`Slug Can't be generated from collection as no matching category: ${metadata.category}.`);
 }
 
 /**
@@ -160,7 +170,7 @@ export function formatDate(startDate: string, endDate: string): string {
   const startYear = startDate.slice(0, 4);
   const endYear = endDate.slice(0, 4);
 
-  if (startYear == null || endYear == null) throw new Error(`Missing datetime in interval: ${interval.join(', ')}`);
+  if (startYear == null || endYear == null) throw new Error(`Missing datetime field`);
   if (startYear === endYear) return startYear;
   return `${startYear}-${endYear}`;
 }
@@ -172,7 +182,7 @@ export function formatDate(startDate: string, endDate: string): string {
  * @param collectionId the STAC collection ID value to write
  */
 // TODO: isArgo?
-export async function writeSetupFiles(slug: string, collectionId: string): void {
+export async function writeSetupFiles(slug: string, collectionId: string): Promise<void> {
   await fsa.write('/tmp/generate-slug-id/linz-slug', slug);
   logger.info({ location: '/tmp/generate-slug-id/linz-slug', slug }, 'GenerateSlug:Written');
   await fsa.write('/tmp/generate-slug-id/collection-id', collectionId);
