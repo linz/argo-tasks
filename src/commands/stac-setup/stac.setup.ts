@@ -1,10 +1,10 @@
 import { fsa } from '@chunkd/fs';
+import ulid from 'ulid';
 import { boolean, command, flag, option, optional, string } from 'cmd-ts';
 import { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-// import { isArgo } from '../../utils/argo.js';
 import { slugify } from '../../utils/slugify.js';
 import { config, registerCli, verbose } from '../common.js';
 import { dataCategories } from './category.constants.js';
@@ -17,7 +17,6 @@ export interface SlugMetadata {
   gsd: string;
 }
 
-// TODO: are all these really needed and if so why?
 export interface StacCollectionLinz {
   'linz:lifecycle': string;
   'linz:geospatial_category': string;
@@ -97,6 +96,8 @@ export const commandStacSetup = command({
     registerCli(this, args);
     const startTime = performance.now();
 
+    const isoTime = new Date().toISOString();
+
     logger.info({ source: args.odrUrl }, 'GenerateSlugId:Start');
 
     if (args.odrUrl) {
@@ -105,7 +106,7 @@ export const commandStacSetup = command({
       );
       const slug = collection['linz:slug'];
       const collectionId = collection['id'];
-      await writeSetupFiles(slug, collectionId);
+      await writeSetupFiles(slug, collectionId, isoTime);
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
@@ -116,14 +117,12 @@ export const commandStacSetup = command({
         gsd: args.gsd,
       };
       const slug = generateSlug(metadata);
-      // TODO: generate collectionId
-      // const collectionId = generateId();
-      // await writeSetupFiles(slug, collectionId);
+      const collectionId = ulid.ulid();
+      await writeSetupFiles(slug, collectionId, isoTime);
 
       logger.info({ duration: performance.now() - startTime, slug: slug }, 'GenerateSlugId:Done');
     }
 
-    // TODO: generate timestamp for "now"
   },
 });
 
@@ -178,11 +177,12 @@ export function formatDate(startDate: string, endDate: string): string {
  *
  * @param slug the STAC linz:slug value to write
  * @param collectionId the STAC collection ID value to write
+ * @param isoTime the current time in ISO format
  */
 // TODO: isArgo?
-export async function writeSetupFiles(slug: string, collectionId: string): Promise<void> {
-  await fsa.write('/tmp/generate-slug-id/linz-slug', slug);
-  logger.info({ location: '/tmp/generate-slug-id/linz-slug', slug }, 'GenerateSlug:Written');
-  await fsa.write('/tmp/generate-slug-id/collection-id', collectionId);
+export async function writeSetupFiles(slug: string, collectionId: string, isoTime: string): Promise<void> {
+  await fsa.write('/tmp/stac-setup/linz-slug', slug);
+  await fsa.write('/tmp/stac-setup/collection-id', collectionId);
+  await fsa.write('/tmp/stac-setup/iso-time', isoTime);
   logger.info({ location: '/tmp/generate-slug-id/collection-id', collectionId }, 'GenerateCollectionId:Written');
 }
