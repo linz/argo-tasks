@@ -17,8 +17,6 @@ export interface SlugMetadata {
   gsd: string;
 }
 
-console.log(typeof dataCategories);
-
 // TODO: are all these really needed and if so why?
 export interface StacCollectionLinz {
   'linz:lifecycle': string;

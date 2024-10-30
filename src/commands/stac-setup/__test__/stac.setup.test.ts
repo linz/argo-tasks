@@ -76,6 +76,21 @@ describe('GenerateSlugSatelliteImagery', () => {
 describe('GenerateSlugHistoricImagery', () => {
   it('Should error', () => {
     const metadata: SlugMetadata = {
+      category: 'scanned-aerial-photos',
+      geographicDescription: undefined,
+      region: 'wellington',
+      date: '1963',
+      gsd: '1',
+    };
+    assert.throws(() => {
+      generateSlug(metadata);
+    }, Error);
+  });
+});
+
+describe('GenerateSlugUnknownCategory', () => {
+  it('Should error', () => {
+    const metadata: SlugMetadata = {
       category: 'scanned-aerial-imagery',
       geographicDescription: undefined,
       region: 'wellington',
@@ -100,18 +115,6 @@ describe('GenerateSlugDemIgnoringDate', () => {
     assert.equal(generateSlug(metadata), 'new-zealand');
   });
 });
-
-// describe('formatName', () => {
-//   it('Should match - region', () => {
-//     assert.equal(formatName('hawkes-bay', undefined), 'hawkes-bay');
-//   });
-//   it('Should match - region & geographic description', () => {
-//     assert.equal(formatName('hawkes-bay', 'Napier'), 'napier');
-//   });
-//   it('Should match - region & event', () => {
-//     assert.equal(formatName('canterbury', 'Christchurch Earthquake'), 'christchurch-earthquake');
-//   });
-// });
 
 describe('category', () => {
   it('Should return category', async () => {
