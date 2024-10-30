@@ -7,7 +7,7 @@ import { SampleCollection } from './sample.js';
 describe('GenerateSlugImagery', () => {
   it('Should match - geographic description', () => {
     const metadata: SlugMetadata = {
-      category: 'urban-aerial-photos',
+      geospatialCategory: 'urban-aerial-photos',
       geographicDescription: 'Napier',
       region: 'hawkes-bay',
       date: '2017-2018',
@@ -17,7 +17,7 @@ describe('GenerateSlugImagery', () => {
   });
   it('Should match - event', () => {
     const metadata: SlugMetadata = {
-      category: 'rural-aerial-photos',
+      geospatialCategory: 'rural-aerial-photos',
       geographicDescription: 'North Island Weather Event',
       region: 'hawkes-bay',
       date: '2023',
@@ -27,7 +27,7 @@ describe('GenerateSlugImagery', () => {
   });
   it('Should match - no optional metadata', () => {
     const metadata: SlugMetadata = {
-      category: 'urban-aerial-photos',
+      geospatialCategory: 'urban-aerial-photos',
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
@@ -40,7 +40,7 @@ describe('GenerateSlugImagery', () => {
 describe('GenerateSlugElevation', () => {
   it('Should match - dem (no optional metadata)', () => {
     const metadata: SlugMetadata = {
-      category: 'dem',
+      geospatialCategory: 'dem',
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
@@ -50,7 +50,7 @@ describe('GenerateSlugElevation', () => {
   });
   it('Should match - dsm (no optional metadata)', () => {
     const metadata: SlugMetadata = {
-      category: 'dsm',
+      geospatialCategory: 'dsm',
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
@@ -63,7 +63,7 @@ describe('GenerateSlugElevation', () => {
 describe('GenerateSlugSatelliteImagery', () => {
   it('Should match - geographic description & event', () => {
     const metadata: SlugMetadata = {
-      category: 'satellite-imagery',
+      geospatialCategory: 'satellite-imagery',
       geographicDescription: 'North Island Cyclone Gabrielle',
       region: 'new-zealand',
       date: '2023',
@@ -76,7 +76,7 @@ describe('GenerateSlugSatelliteImagery', () => {
 describe('GenerateSlugHistoricImagery', () => {
   it('Should error', () => {
     const metadata: SlugMetadata = {
-      category: 'scanned-aerial-photos',
+      geospatialCategory: 'scanned-aerial-photos',
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
@@ -88,10 +88,10 @@ describe('GenerateSlugHistoricImagery', () => {
   });
 });
 
-describe('GenerateSlugUnknownCategory', () => {
+describe('GenerateSlugUnknowngeospatialCategory', () => {
   it('Should error', () => {
     const metadata: SlugMetadata = {
-      category: 'scanned-aerial-imagery',
+      geospatialCategory: 'scanned-aerial-imagery',
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
@@ -106,7 +106,7 @@ describe('GenerateSlugUnknownCategory', () => {
 describe('GenerateSlugDemIgnoringDate', () => {
   it('Should not include the date in the survey name', () => {
     const metadata: SlugMetadata = {
-      category: 'dem',
+      geospatialCategory: 'dem',
       geographicDescription: 'new-zealand',
       region: 'new-zealand',
       date: '',
@@ -116,8 +116,8 @@ describe('GenerateSlugDemIgnoringDate', () => {
   });
 });
 
-describe('category', () => {
-  it('Should return category', async () => {
+describe('geospatialCategory', () => {
+  it('Should return geospatialCategory', async () => {
     const collection = structuredClone(SampleCollection);
 
     assert.equal(collection['linz:geospatial_category'], 'urban-aerial-photos');
@@ -130,7 +130,7 @@ describe('geographicDescription', () => {
 
     assert.equal(collection['linz:geographic_description'], 'Palmerston North');
     const metadata: SlugMetadata = {
-      category: 'urban-aerial-photos',
+      geospatialCategory: 'urban-aerial-photos',
       geographicDescription: collection['linz:geographic_description'],
       region: 'manawatu-whanganui',
       date: '2020',
@@ -144,7 +144,7 @@ describe('geographicDescription', () => {
     delete collection['linz:geographic_description'];
     assert.equal(collection['linz:geographic_description'], undefined);
     const metadata: SlugMetadata = {
-      category: 'urban-aerial-photos',
+      geospatialCategory: 'urban-aerial-photos',
       geographicDescription: collection['linz:geographic_description'],
       region: 'manawatu-whanganui',
       date: '2020',

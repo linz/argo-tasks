@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
-import ulid from 'ulid';
-import { boolean, command, flag, option, optional, string } from 'cmd-ts';
+import { command, flag, option, optional, string } from 'cmd-ts';
 import { StacCollection } from 'stac-ts';
+import ulid from 'ulid';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
@@ -10,7 +10,7 @@ import { config, registerCli, verbose } from '../common.js';
 import { dataCategories } from './category.constants.js';
 
 export interface SlugMetadata {
-  category: string;
+  geospatialCategory: string;
   geographicDescription?: string;
   region: string;
   date: string;
@@ -36,7 +36,6 @@ export const commandStacSetup = command({
     verbose,
 
     addDateInSurveyPath: flag({
-      type: boolean,
       defaultValue: () => true,
       long: 'add-date-in-survey-path',
       description: 'Include the date in the survey path',
@@ -73,10 +72,10 @@ export const commandStacSetup = command({
       description: 'Geographic Description of dataset',
     }),
 
-    category: option({
+    geospatialCategory: option({
       type: string,
-      long: 'geographic-category',
-      description: 'Geographic Category of dataset',
+      long: 'geospatial-category',
+      description: 'Geospatial category of dataset',
     }),
 
     eventName: option({
@@ -95,24 +94,22 @@ export const commandStacSetup = command({
   async handler(args) {
     registerCli(this, args);
     const startTime = performance.now();
-
     const isoTime = new Date().toISOString();
 
     logger.info({ source: args.odrUrl }, 'GenerateSlugId:Start');
 
     if (args.odrUrl) {
-      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-        fsa.join(args.odrUrl, 'collection.json'), // TODO: handle with or without s3:// and also collection.json
-      );
+      // TODO: handle with or without s3:// and also collection.json
+      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(args.odrUrl);
       const slug = collection['linz:slug'];
       const collectionId = collection['id'];
       await writeSetupFiles(slug, collectionId, isoTime);
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
-        category: args.category,
+        geospatialCategory: args.geospatialCategory,
         region: args.region,
-        geographicDescription: args.category,
+        geographicDescription: args.geographicDescription,
         date: args.addDateInSurveyPath ? formatDate(args.startDate, args.endDate) : '',
         gsd: args.gsd,
       };
@@ -122,7 +119,6 @@ export const commandStacSetup = command({
 
       logger.info({ duration: performance.now() - startTime, slug: slug }, 'GenerateSlugId:Done');
     }
-
   },
 });
 
@@ -142,18 +138,18 @@ export function generateSlug(metadata: SlugMetadata): string {
       dataCategories.RURAL_AERIAL_PHOTOS,
       dataCategories.SATELLITE_IMAGERY,
       dataCategories.URBAN_AERIAL_PHOTOS,
-    ].includes(metadata.category)
+    ].includes(metadata.geospatialCategory)
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
-  if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
+  if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.geospatialCategory)) {
     return `${slug}`;
   }
-  if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
+  if (metadata.geospatialCategory === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated slug generation not implemented for historic imagery`);
   }
-  throw new Error(`Slug Can't be generated from collection as no matching category: ${metadata.category}.`);
+  throw new Error(`Slug Can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
 }
 
 /**
@@ -179,7 +175,6 @@ export function formatDate(startDate: string, endDate: string): string {
  * @param collectionId the STAC collection ID value to write
  * @param isoTime the current time in ISO format
  */
-// TODO: isArgo?
 export async function writeSetupFiles(slug: string, collectionId: string, isoTime: string): Promise<void> {
   await fsa.write('/tmp/stac-setup/linz-slug', slug);
   await fsa.write('/tmp/stac-setup/collection-id', collectionId);
