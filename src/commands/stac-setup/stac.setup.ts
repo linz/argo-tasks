@@ -36,6 +36,8 @@ export const commandStacSetup = command({
     verbose,
 
     addDateInSurveyPath: flag({
+      // cmd-ts has a bug where defaultValue is always false and must be overridden
+      // Ref: https://github.com/Schniz/cmd-ts/issues/91
       defaultValue: () => true,
       long: 'add-date-in-survey-path',
       description: 'Include the date in the survey path',
@@ -96,14 +98,16 @@ export const commandStacSetup = command({
     const startTime = performance.now();
     const isoTime = new Date().toISOString();
 
-    logger.info({ source: args.odrUrl }, 'GenerateSlugId:Start');
+    logger.info('StacSetup:Start');
 
     if (args.odrUrl) {
-      // TODO: handle with or without s3:// and also collection.json
       const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(args.odrUrl);
       const slug = collection['linz:slug'];
+      if (slug !== slugify(slug)) {
+        throw new Error(`Invalid slug: ${slug}.`);
+      }
       const collectionId = collection['id'];
-      await writeSetupFiles(slug, collectionId, isoTime);
+      await writeSetupFiles(startTime, slug, collectionId, isoTime);
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
@@ -115,9 +119,7 @@ export const commandStacSetup = command({
       };
       const slug = generateSlug(metadata);
       const collectionId = ulid.ulid();
-      await writeSetupFiles(slug, collectionId, isoTime);
-
-      logger.info({ duration: performance.now() - startTime, slug: slug }, 'GenerateSlugId:Done');
+      await writeSetupFiles(startTime, slug, collectionId, isoTime);
     }
   },
 });
@@ -171,13 +173,19 @@ export function formatDate(startDate: string, endDate: string): string {
 /**
  * Write the STAC setup values to files for Argo to use
  *
+ * @param startTime start time for logging information
  * @param slug the STAC linz:slug value to write
  * @param collectionId the STAC collection ID value to write
  * @param isoTime the current time in ISO format
  */
-export async function writeSetupFiles(slug: string, collectionId: string, isoTime: string): Promise<void> {
+export async function writeSetupFiles(
+  startTime: number,
+  slug: string,
+  collectionId: string,
+  isoTime: string,
+): Promise<void> {
   await fsa.write('/tmp/stac-setup/linz-slug', slug);
   await fsa.write('/tmp/stac-setup/collection-id', collectionId);
   await fsa.write('/tmp/stac-setup/iso-time', isoTime);
-  logger.info({ location: '/tmp/generate-slug-id/collection-id', collectionId }, 'GenerateCollectionId:Written');
+  logger.info({ duration: performance.now() - startTime, slug, collectionId, isoTime }, 'StacSetup:Done');
 }
