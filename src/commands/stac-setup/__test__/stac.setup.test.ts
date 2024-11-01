@@ -21,7 +21,7 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from collection', async () => {
     const baseArgs = {
-      addDateInSurveyPath: false,
+      addDateInSurveyPath: true,
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
@@ -43,11 +43,18 @@ describe('stac-setup', () => {
       'memory://tmp/stac-setup/iso-time',
       'memory://tmp/stac-setup/linz-slug',
     ]);
+    const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
+    assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
+    const collectionId = await fsa.read('memory://tmp/stac-setup/collection-id');
+    assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
+    const isoTime = await fsa.read('memory://tmp/stac-setup/iso-time');
+    const isoTimeDate = new Date(isoTime.toString());
+    assert.strictEqual(isoTime.toString(), isoTimeDate.toISOString());
   });
 
   it('should retrieve setup from args', async () => {
     const baseArgs = {
-      addDateInSurveyPath: false,
+      addDateInSurveyPath: true,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
@@ -68,6 +75,13 @@ describe('stac-setup', () => {
       'memory://tmp/stac-setup/iso-time',
       'memory://tmp/stac-setup/linz-slug',
     ]);
+    const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
+    assert.strictEqual(slug.toString(), 'wairoa_2013-2014');
+    const collectionId = await fsa.read('memory://tmp/stac-setup/collection-id');
+    assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
+    const isoTime = await fsa.read('memory://tmp/stac-setup/iso-time');
+    const isoTimeDate = new Date(isoTime.toString());
+    assert.strictEqual(isoTime.toString(), isoTimeDate.toISOString());
   });
 });
 
