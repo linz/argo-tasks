@@ -33,7 +33,7 @@ describe('stac-setup', () => {
       geospatialCategory: 'dem',
       config: undefined,
     } as const;
-    await fsa.write('memory://collection.json', JSON.stringify(SampleCollection));
+    await fsa.write('memory://collection.json', JSON.stringify(structuredClone(SampleCollection)));
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
@@ -83,10 +83,65 @@ describe('stac-setup', () => {
     const isoTimeDate = new Date(isoTime.toString());
     assert.strictEqual(isoTime.toString(), isoTimeDate.toISOString());
   });
+
+  it('should construct from args with no date', async () => {
+    const baseArgs = {
+      addDateInSurveyPath: false,
+      odrUrl: '',
+      output: new URL('memory://tmp/stac-setup/'),
+      verbose: false,
+      startDate: '2013-11-17',
+      endDate: '2014-02-14',
+      gsd: '10',
+      region: 'new-zealand',
+      geographicDescription: '',
+      geospatialCategory: 'dem',
+      config: undefined,
+    } as const;
+    await commandStacSetup.handler(baseArgs);
+
+    const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
+    files.sort();
+    assert.deepStrictEqual(files, [
+      'memory://tmp/stac-setup/collection-id',
+      'memory://tmp/stac-setup/iso-time',
+      'memory://tmp/stac-setup/linz-slug',
+    ]);
+    const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
+    assert.strictEqual(slug.toString(), 'new-zealand');
+  });
+
+  it('should retrieve setup from collection ignoring no date', async () => {
+    const baseArgs = {
+      addDateInSurveyPath: false,
+      odrUrl: 'memory://collection.json',
+      output: new URL('memory://tmp/stac-setup/'),
+      verbose: false,
+      startDate: '2013-11-17',
+      endDate: '2014-02-14',
+      gsd: '1',
+      region: 'gisborne',
+      geographicDescription: 'Wairoa',
+      geospatialCategory: 'dem',
+      config: undefined,
+    } as const;
+    await fsa.write('memory://collection.json', JSON.stringify(structuredClone(SampleCollection)));
+    await commandStacSetup.handler(baseArgs);
+
+    const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
+    files.sort();
+    assert.deepStrictEqual(files, [
+      'memory://tmp/stac-setup/collection-id',
+      'memory://tmp/stac-setup/iso-time',
+      'memory://tmp/stac-setup/linz-slug',
+    ]);
+    const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
+    assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
+  });
 });
 
 describe('GenerateSlugImagery', () => {
-  it('Should match - geographic description', () => {
+  it('Should match - urban with geographic description', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'urban-aerial-photos',
       geographicDescription: 'Napier',
@@ -96,7 +151,7 @@ describe('GenerateSlugImagery', () => {
     };
     assert.equal(generateSlug(metadata), 'napier_2017-2018_0.05m');
   });
-  it('Should match - event', () => {
+  it('Should match - rural with geographic description', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'rural-aerial-photos',
       geographicDescription: 'North Island Weather Event',
@@ -106,7 +161,7 @@ describe('GenerateSlugImagery', () => {
     };
     assert.equal(generateSlug(metadata), 'north-island-weather-event_2023_0.25m');
   });
-  it('Should match - no optional metadata', () => {
+  it('Should match - region as no optional metadata', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'urban-aerial-photos',
       geographicDescription: undefined,
@@ -194,52 +249,6 @@ describe('GenerateSlugDemIgnoringDate', () => {
       gsd: '10',
     };
     assert.equal(generateSlug(metadata), 'new-zealand');
-  });
-});
-
-describe('geospatialCategory', () => {
-  it('Should return geospatialCategory', async () => {
-    const collection = structuredClone(SampleCollection);
-
-    assert.equal(collection['linz:geospatial_category'], 'urban-aerial-photos');
-  });
-});
-
-describe('geographicDescription', () => {
-  it('Should return geographic description', async () => {
-    const collection = structuredClone(SampleCollection);
-
-    assert.equal(collection['linz:geographic_description'], 'Palmerston North');
-    const metadata: SlugMetadata = {
-      geospatialCategory: 'urban-aerial-photos',
-      geographicDescription: collection['linz:geographic_description'],
-      region: 'manawatu-whanganui',
-      date: '2020',
-      gsd: '0.05',
-    };
-    assert.equal(generateSlug(metadata), 'palmerston-north_2020_0.05m');
-  });
-  it('Should return undefined - no geographic description metadata', async () => {
-    const collection = structuredClone(SampleCollection);
-
-    delete collection['linz:geographic_description'];
-    assert.equal(collection['linz:geographic_description'], undefined);
-    const metadata: SlugMetadata = {
-      geospatialCategory: 'urban-aerial-photos',
-      geographicDescription: collection['linz:geographic_description'],
-      region: 'manawatu-whanganui',
-      date: '2020',
-      gsd: '0.05',
-    };
-    assert.equal(generateSlug(metadata), 'manawatu-whanganui_2020_0.05m');
-  });
-});
-
-describe('region', () => {
-  it('Should return region', async () => {
-    const collection = structuredClone(SampleCollection);
-
-    assert.equal(collection['linz:region'], 'manawatu-whanganui');
   });
 });
 
