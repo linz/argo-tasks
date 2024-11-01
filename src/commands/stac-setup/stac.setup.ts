@@ -6,7 +6,7 @@ import ulid from 'ulid';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { slugify } from '../../utils/slugify.js';
-import { config, registerCli, verbose } from '../common.js';
+import { config, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.js';
 import { dataCategories } from './category.constants.js';
 
 export interface SlugMetadata {
@@ -80,16 +80,18 @@ export const commandStacSetup = command({
       description: 'Geospatial category of dataset',
     }),
 
-    eventName: option({
-      type: optional(string),
-      long: 'event-name',
-      description: 'Event Name for dataset (optional)',
-    }),
-
     odrUrl: option({
       type: optional(string),
       long: 'odr-url',
       description: 'Open Data Registry collection.json URL of existing dataset',
+    }),
+
+    output: option({
+      type: optional(UrlFolder),
+      long: 'output',
+      description: 'Where to store output files',
+      defaultValueIsSerializable: true,
+      defaultValue: () => tryParseUrl('/tmp/stac-setup/'),
     }),
   },
 
@@ -99,7 +101,6 @@ export const commandStacSetup = command({
     const isoTime = new Date().toISOString();
 
     logger.info('StacSetup:Start');
-
     if (args.odrUrl) {
       const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(args.odrUrl);
       const slug = collection['linz:slug'];
@@ -107,7 +108,7 @@ export const commandStacSetup = command({
         throw new Error(`Invalid slug: ${slug}.`);
       }
       const collectionId = collection['id'];
-      await writeSetupFiles(startTime, slug, collectionId, isoTime);
+      await writeSetupFiles(startTime, slug, collectionId, isoTime, args.output);
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
@@ -119,7 +120,7 @@ export const commandStacSetup = command({
       };
       const slug = generateSlug(metadata);
       const collectionId = ulid.ulid();
-      await writeSetupFiles(startTime, slug, collectionId, isoTime);
+      await writeSetupFiles(startTime, slug, collectionId, isoTime, args.output);
     }
   },
 });
@@ -177,15 +178,20 @@ export function formatDate(startDate: string, endDate: string): string {
  * @param slug the STAC linz:slug value to write
  * @param collectionId the STAC collection ID value to write
  * @param isoTime the current time in ISO format
+ * @param output the output path for the setup files
  */
 export async function writeSetupFiles(
   startTime: number,
   slug: string,
   collectionId: string,
   isoTime: string,
+  output?: URL,
 ): Promise<void> {
-  await fsa.write('/tmp/stac-setup/linz-slug', slug);
-  await fsa.write('/tmp/stac-setup/collection-id', collectionId);
-  await fsa.write('/tmp/stac-setup/iso-time', isoTime);
+  const slugPath = new URL('linz-slug', output);
+  const collectionIdPath = new URL('collection-id', output);
+  const isoTimePath = new URL('iso-time', output);
+  await fsa.write(urlToString(slugPath), slug);
+  await fsa.write(urlToString(collectionIdPath), collectionId);
+  await fsa.write(urlToString(isoTimePath), isoTime);
   logger.info({ duration: performance.now() - startTime, slug, collectionId, isoTime }, 'StacSetup:Done');
 }
