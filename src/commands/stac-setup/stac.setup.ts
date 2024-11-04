@@ -29,7 +29,7 @@ export interface StacCollectionLinz {
 
 export const commandStacSetup = command({
   name: 'stac-setup',
-  description: 'Setup STAC metadata',
+  description: 'Setup STAC metadata for standardising workflows',
   version: CliInfo.version,
   args: {
     config,
@@ -71,7 +71,7 @@ export const commandStacSetup = command({
     geographicDescription: option({
       type: string,
       long: 'geographic-description',
-      description: 'Geographic Description of dataset',
+      description: 'Geographic description of dataset',
     }),
 
     geospatialCategory: option({
@@ -83,7 +83,7 @@ export const commandStacSetup = command({
     odrUrl: option({
       type: optional(string),
       long: 'odr-url',
-      description: 'Open Data Registry collection.json URL of existing dataset',
+      description: 'Open Data Registry URL of existing dataset',
     }),
 
     output: option({
@@ -102,7 +102,10 @@ export const commandStacSetup = command({
 
     logger.info('StacSetup:Start');
     if (args.odrUrl) {
-      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(args.odrUrl);
+      const collectionPath = args.odrUrl.endsWith('collection.json')
+        ? args.odrUrl
+        : fsa.join(args.odrUrl, 'collection.json');
+      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionPath);
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) {
         throw new Error(`Invalid slug: ${slug}.`);
