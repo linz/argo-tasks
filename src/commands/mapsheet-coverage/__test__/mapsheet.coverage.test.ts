@@ -1,5 +1,4 @@
 import assert from 'node:assert';
-import { writeFileSync } from 'node:fs';
 import { afterEach, before, describe, it } from 'node:test';
 
 import { Nztm2000QuadTms, Projection } from '@basemaps/geo';

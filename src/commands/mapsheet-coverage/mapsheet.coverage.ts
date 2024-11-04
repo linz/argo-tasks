@@ -1,4 +1,3 @@
-import { writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
@@ -54,14 +53,14 @@ const DegreesSquareToMetersSquared = 1e-10;
 /**
  * Determine if the polygon is a large(ish) region
  *
- * @param poly Polygon in EPSG:4326 (lat, lon)
+ * @param poly Polygon in EPSG:4326 (WGS84 lat, lon)
  * @param areaInMeters Polygons that are at least this big are always included without further testing
  *
  * @returns if the polygon is considered small
  */
-export function isLargeRegion(poly: pc.Polygon, areaInMeters: number = 1_000): boolean {
+export function isLargeRegion(poly: pc.Polygon, areaInMetersSquared: number = 1_000): boolean {
   const polyArea = Area.polygon(poly);
-  const smallArea = areaInMeters * DegreesSquareToMetersSquared;
+  const smallArea = areaInMetersSquared * DegreesSquareToMetersSquared;
 
   // Area is stored as square degrees, 1e-10 is approx 1m^2 (?)
   // TODO: is there a better number than 1e-6, could scale it from the GSD of the dataset
@@ -141,7 +140,7 @@ export const commandMapSheetCoverage = command({
     const captureDates = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All the coordinates currently used
-    let layersCombined: pc.MultiPolygon[] = [];
+    let layersCombined: pc.MultiPolygon = [];
 
     // MapSheetName to List of source files required
     const mapSheets = new Map<string, string[]>();
