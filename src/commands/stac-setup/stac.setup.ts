@@ -105,13 +105,13 @@ export const commandStacSetup = command({
         ? args.odrUrl
         : fsa.join(args.odrUrl, 'collection.json');
       const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionPath);
+      if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) {
         throw new Error(`Invalid slug: ${slug}.`);
       }
       const collectionId = collection['id'];
       await writeSetupFiles(startTime, slug, collectionId, args.output);
-      if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
         geospatialCategory: args.geospatialCategory,
