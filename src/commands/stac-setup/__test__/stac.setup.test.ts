@@ -70,7 +70,7 @@ describe('stac-setup', () => {
     assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should construct from args with no date', async () => {
+  it('should not include the date in the path', async () => {
     const baseArgs = {
       addDateInSurveyPath: false,
       odrUrl: '',
@@ -93,7 +93,7 @@ describe('stac-setup', () => {
     assert.strictEqual(slug.toString(), 'new-zealand');
   });
 
-  it('should retrieve setup from collection ignoring no date', async () => {
+  it('should retrieve setup from collection ignoring addDateInSurveyPath flag', async () => {
     const baseArgs = {
       addDateInSurveyPath: false,
       odrUrl: 'memory://collection.json',
@@ -188,7 +188,7 @@ describe('GenerateSlugSatelliteImagery', () => {
 });
 
 describe('GenerateSlugHistoricImagery', () => {
-  it('Should error', () => {
+  it('Should error as historic imagery geospatial category is not supported', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'scanned-aerial-photos',
       geographicDescription: undefined,
@@ -203,7 +203,7 @@ describe('GenerateSlugHistoricImagery', () => {
 });
 
 describe('GenerateSlugUnknownGeospatialCategory', () => {
-  it('Should error', () => {
+  it('Should error as is not a matching geospatial category', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'scanned-aerial-imagery',
       geographicDescription: undefined,
