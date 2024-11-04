@@ -35,12 +35,13 @@ export const commandStacSetup = command({
     config,
     verbose,
 
-    addDateInSurveyPath: flag({
+    addDateInSlug: flag({
       // cmd-ts has a bug where defaultValue is always false and must be overridden
+      // To override: --add-date-in-slug=true
       // Ref: https://github.com/Schniz/cmd-ts/issues/91
       defaultValue: () => true,
-      long: 'add-date-in-survey-path',
-      description: 'Include the date in the survey path',
+      long: 'add-date-in-slug',
+      description: 'Include the date in the linz:slug',
       defaultValueIsSerializable: true,
     }),
 
@@ -117,7 +118,7 @@ export const commandStacSetup = command({
         geospatialCategory: args.geospatialCategory,
         region: args.region,
         geographicDescription: args.geographicDescription,
-        date: args.addDateInSurveyPath ? formatDate(args.startDate, args.endDate) : '',
+        date: args.addDateInSlug ? formatDate(args.startDate, args.endDate) : '',
         gsd: args.gsd,
       };
       const slug = generateSlug(metadata);

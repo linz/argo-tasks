@@ -21,7 +21,7 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from collection', async () => {
     const baseArgs = {
-      addDateInSurveyPath: true,
+      addDateInSlug: true,
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
@@ -47,7 +47,7 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from args', async () => {
     const baseArgs = {
-      addDateInSurveyPath: true,
+      addDateInSlug: true,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
@@ -70,9 +70,9 @@ describe('stac-setup', () => {
     assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should not include the date in the path', async () => {
+  it('should not include the date in the slug', async () => {
     const baseArgs = {
-      addDateInSurveyPath: false,
+      addDateInSlug: false,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
@@ -93,9 +93,9 @@ describe('stac-setup', () => {
     assert.strictEqual(slug.toString(), 'new-zealand');
   });
 
-  it('should retrieve setup from collection ignoring addDateInSurveyPath flag', async () => {
+  it('should retrieve setup from collection ignoring addDateInSlug flag', async () => {
     const baseArgs = {
-      addDateInSurveyPath: false,
+      addDateInSlug: false,
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
@@ -218,7 +218,7 @@ describe('GenerateSlugUnknownGeospatialCategory', () => {
 });
 
 describe('GenerateSlugDemIgnoringDate', () => {
-  it('Should not include the date in the survey name', () => {
+  it('Should not include the date in the slug', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'dem',
       geographicDescription: 'new-zealand',
