@@ -152,9 +152,9 @@ export function generateSlug(metadata: SlugMetadata): string {
   }
   if (metadata.geospatialCategory === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
-    throw new Error(`Automated slug generation not implemented for historic imagery`);
+    throw new Error(`Automated slug generation not implemented for historic imagery.`);
   }
-  throw new Error(`Slug Can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
+  throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
 }
 
 /**

@@ -198,12 +198,12 @@ describe('GenerateSlugHistoricImagery', () => {
     };
     assert.throws(() => {
       generateSlug(metadata);
-    }, Error);
+    }, Error('Automated slug generation not implemented for historic imagery.'));
   });
 });
 
 describe('GenerateSlugUnknownGeospatialCategory', () => {
-  it('Should error as is not a matching geospatial category', () => {
+  it('Should error as is not a matching geospatial category.', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'scanned-aerial-imagery',
       geographicDescription: undefined,
@@ -213,7 +213,7 @@ describe('GenerateSlugUnknownGeospatialCategory', () => {
     };
     assert.throws(() => {
       generateSlug(metadata);
-    }, Error);
+    }, Error("Slug can't be generated from collection as no matching category: scanned-aerial-imagery."));
   });
 });
 
