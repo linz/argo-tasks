@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 import { ConfigTileSetRaster } from '@basemaps/config';
@@ -40,6 +41,39 @@ function forceMultiPolygon(f: GeoJSON.Feature): GeoJSON.Feature<GeoJSON.MultiPol
     return { ...f, geometry: { type: 'MultiPolygon', coordinates: [f.geometry.coordinates] } };
   }
   throw new Error(`${f.geometry.type}: is not a polygon`);
+}
+
+/**
+ * a polygon of 0.00001 x 0.00001 (about 1m x 1m) converts to 1e-10 degrees^2
+ *
+ * @warning
+ * This is a approximation and should not be used for anything other than rough scale comparisons
+ */
+const DegreesSquareToMetersSquared = 1e-10;
+
+/**
+ * Determine if the polygon is a large(ish) region
+ *
+ * @param poly Polygon in EPSG:4326 (lat, lon)
+ * @param areaInMeters Polygons that are at least this big are always included without further testing
+ *
+ * @returns if the polygon is considered small
+ */
+export function isLargeRegion(poly: pc.Polygon, areaInMeters: number = 1_000): boolean {
+  const polyArea = Area.polygon(poly);
+  const smallArea = areaInMeters * DegreesSquareToMetersSquared;
+
+  // Area is stored as square degrees, 1e-10 is approx 1m^2 (?)
+  // TODO: is there a better number than 1e-6, could scale it from the GSD of the dataset
+  if (polyArea > smallArea) return true;
+
+  // If the buffer in destroys the polygon this polygon likely isn't really useful
+  // TODO: 1m works when the dataset is 1m, but not all datasets are 1m resolution
+  const bufferedIn = buffer({ type: 'Polygon', coordinates: poly }, -1, { units: 'meters' });
+  if (bufferedIn == null) return false;
+
+  // TODO: should the buffered dataset be used
+  return true;
 }
 
 export const commandMapSheetCoverage = command({
@@ -181,22 +215,7 @@ export const commandMapSheetCoverage = command({
       const diff = [];
       // Determine if this layer has any additional information to the existing layers
       for (const poly of pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, layersCombined)) {
-        const polyArea = Area.polygon(poly);
-
-        // Area is stored as square degrees, 1e-6 is approx 1m^2 (?)
-        // TODO: is there a better number than 1e-6, could scale it from the GSD of the dataset
-        if (polyArea < 1e-6) {
-          // If the buffer in destroys the polygon this polygon likely isn't really useful
-          // TODO: 1m works when the dataset is 1m, but not all datasets are 1m resolution
-          const bufferedIn = buffer({ type: 'Polygon', coordinates: poly }, -1, { units: 'meters' });
-          if (bufferedIn == null) {
-            continue;
-          }
-          // TODO: should the buffered dataset be used
-          diff.push(poly);
-        } else {
-          diff.push(poly);
-        }
+        if (isLargeRegion(poly)) diff.push(poly);
       }
 
       // Layer has no information included in the output
