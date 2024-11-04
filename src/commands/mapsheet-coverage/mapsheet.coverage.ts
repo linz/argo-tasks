@@ -51,12 +51,12 @@ function forceMultiPolygon(f: GeoJSON.Feature): GeoJSON.Feature<GeoJSON.MultiPol
 const DegreesSquareToMetersSquared = 1e-10;
 
 /**
- * Determine if the polygon is a large(ish) region
+ * Determine if the polygon is a large(ish) region,
  *
  * @param poly Polygon in EPSG:4326 (WGS84 lat, lon)
- * @param areaInMeters Polygons that are at least this big are always included without further testing
+ * @param areaInMetersSquared Polygons that are at least this big are always included without further testing
  *
- * @returns if the polygon is considered small
+ * @returns if the polygon is considered large
  */
 export function isLargeRegion(poly: pc.Polygon, areaInMetersSquared: number = 1_000): boolean {
   const polyArea = Area.polygon(poly);
