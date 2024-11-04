@@ -38,18 +38,11 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
     files.sort();
-    assert.deepStrictEqual(files, [
-      'memory://tmp/stac-setup/collection-id',
-      'memory://tmp/stac-setup/iso-time',
-      'memory://tmp/stac-setup/linz-slug',
-    ]);
+    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
     const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
     assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
     const collectionId = await fsa.read('memory://tmp/stac-setup/collection-id');
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
-    const isoTime = await fsa.read('memory://tmp/stac-setup/iso-time');
-    const isoTimeDate = new Date(isoTime.toString());
-    assert.strictEqual(isoTime.toString(), isoTimeDate.toISOString());
   });
 
   it('should retrieve setup from args', async () => {
@@ -70,18 +63,11 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
     files.sort();
-    assert.deepStrictEqual(files, [
-      'memory://tmp/stac-setup/collection-id',
-      'memory://tmp/stac-setup/iso-time',
-      'memory://tmp/stac-setup/linz-slug',
-    ]);
+    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
     const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
     assert.strictEqual(slug.toString(), 'wairoa_2013-2014');
     const collectionId = await fsa.read('memory://tmp/stac-setup/collection-id');
     assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
-    const isoTime = await fsa.read('memory://tmp/stac-setup/iso-time');
-    const isoTimeDate = new Date(isoTime.toString());
-    assert.strictEqual(isoTime.toString(), isoTimeDate.toISOString());
   });
 
   it('should construct from args with no date', async () => {
@@ -102,11 +88,7 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
     files.sort();
-    assert.deepStrictEqual(files, [
-      'memory://tmp/stac-setup/collection-id',
-      'memory://tmp/stac-setup/iso-time',
-      'memory://tmp/stac-setup/linz-slug',
-    ]);
+    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
     const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
     assert.strictEqual(slug.toString(), 'new-zealand');
   });
@@ -130,11 +112,7 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
     files.sort();
-    assert.deepStrictEqual(files, [
-      'memory://tmp/stac-setup/collection-id',
-      'memory://tmp/stac-setup/iso-time',
-      'memory://tmp/stac-setup/linz-slug',
-    ]);
+    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
     const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
     assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
   });

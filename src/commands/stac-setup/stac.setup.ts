@@ -98,7 +98,6 @@ export const commandStacSetup = command({
   async handler(args) {
     registerCli(this, args);
     const startTime = performance.now();
-    const isoTime = new Date().toISOString();
 
     logger.info('StacSetup:Start');
     if (args.odrUrl) {
@@ -111,7 +110,7 @@ export const commandStacSetup = command({
         throw new Error(`Invalid slug: ${slug}.`);
       }
       const collectionId = collection['id'];
-      await writeSetupFiles(startTime, slug, collectionId, isoTime, args.output);
+      await writeSetupFiles(startTime, slug, collectionId, args.output);
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
     } else {
       const metadata: SlugMetadata = {
@@ -123,7 +122,7 @@ export const commandStacSetup = command({
       };
       const slug = generateSlug(metadata);
       const collectionId = ulid.ulid();
-      await writeSetupFiles(startTime, slug, collectionId, isoTime, args.output);
+      await writeSetupFiles(startTime, slug, collectionId, args.output);
     }
   },
 });
@@ -180,21 +179,17 @@ export function formatDate(startDate: string, endDate: string): string {
  * @param startTime start time for logging information
  * @param slug the STAC linz:slug value to write
  * @param collectionId the STAC collection ID value to write
- * @param isoTime the current time in ISO format
  * @param output the output path for the setup files
  */
 export async function writeSetupFiles(
   startTime: number,
   slug: string,
   collectionId: string,
-  isoTime: string,
   output?: URL,
 ): Promise<void> {
   const slugPath = new URL('linz-slug', output);
   const collectionIdPath = new URL('collection-id', output);
-  const isoTimePath = new URL('iso-time', output);
   await fsa.write(urlToString(slugPath), slug);
   await fsa.write(urlToString(collectionIdPath), collectionId);
-  await fsa.write(urlToString(isoTimePath), isoTime);
-  logger.info({ duration: performance.now() - startTime, slug, collectionId, isoTime }, 'StacSetup:Done');
+  logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
 }
