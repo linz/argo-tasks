@@ -25,8 +25,8 @@ describe('stac-setup', () => {
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
-      startYear: '2013-11-17',
-      endYear: '2014-02-14',
+      startYear: '2013',
+      endYear: '2014',
       gsd: '1',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
@@ -90,29 +90,6 @@ describe('stac-setup', () => {
     assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
     const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
     assert.strictEqual(slug.toString(), 'new-zealand');
-  });
-
-  it('should retrieve setup from collection ignoring addDateInSlug flag', async () => {
-    const baseArgs = {
-      odrUrl: 'memory://collection.json',
-      output: new URL('memory://tmp/stac-setup/'),
-      verbose: false,
-      startYear: '2013',
-      endYear: '2014',
-      gsd: '1',
-      region: 'gisborne',
-      geographicDescription: 'Wairoa',
-      geospatialCategory: 'dem',
-      config: undefined,
-    } as const;
-    await fsa.write('memory://collection.json', JSON.stringify(structuredClone(SampleCollection)));
-    await commandStacSetup.handler(baseArgs);
-
-    const files = await fsa.toArray(fsa.list('memory://tmp/stac-setup/'));
-    files.sort();
-    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
-    const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
-    assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
   });
 });
 
@@ -196,7 +173,7 @@ describe('GenerateSlugHistoricImagery', () => {
     };
     assert.throws(() => {
       slugFromMetadata(metadata);
-    }, Error('Automated slug generation not implemented for historic imagery.'));
+    }, Error('Historic Imagery scanned-aerial-photos is out of scope for automated slug generation.'));
   });
 });
 
