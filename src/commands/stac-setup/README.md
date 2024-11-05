@@ -1,6 +1,6 @@
 # stac-setup
 
-Setup STAC metadata for standardising workflows
+Collection-related STAC metadata setup
 
 ## Usage
 

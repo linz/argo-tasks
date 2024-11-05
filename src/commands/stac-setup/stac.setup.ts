@@ -29,7 +29,7 @@ export interface StacCollectionLinz {
 
 export const commandStacSetup = command({
   name: 'stac-setup',
-  description: 'Setup STAC metadata for standardising workflows',
+  description: 'Collection-related STAC metadata setup',
   version: CliInfo.version,
   args: {
     config,
