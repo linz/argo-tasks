@@ -29,7 +29,7 @@ export interface StacCollectionLinz {
 
 export const commandStacSetup = command({
   name: 'stac-setup',
-  description: 'Collection-related STAC metadata setup',
+  description: 'Collection-related STAC metadata setup. Ouputs collection-id and linz-slug files within /tmp/stac-setup/',
   version: CliInfo.version,
   args: {
     config,
