@@ -25,8 +25,8 @@ describe('stac-setup', () => {
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
-      startDate: '2013-11-17',
-      endDate: '2014-02-14',
+      startYear: '2013-11-17',
+      endYear: '2014-02-14',
       gsd: '1',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
@@ -51,8 +51,8 @@ describe('stac-setup', () => {
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
-      startDate: '2013-11-17',
-      endDate: '2014-02-14',
+      startYear: '2013',
+      endYear: '2014',
       gsd: '1',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
@@ -72,12 +72,11 @@ describe('stac-setup', () => {
 
   it('should not include the date in the slug', async () => {
     const baseArgs = {
-      addDateInSlug: false,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
-      startDate: '2013-11-17',
-      endDate: '2014-02-14',
+      startYear: '',
+      endYear: '',
       gsd: '10',
       region: 'new-zealand',
       geographicDescription: '',
@@ -95,12 +94,11 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from collection ignoring addDateInSlug flag', async () => {
     const baseArgs = {
-      addDateInSlug: false,
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
-      startDate: '2013-11-17',
-      endDate: '2014-02-14',
+      startYear: '2013',
+      endYear: '2014',
       gsd: '1',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
@@ -232,14 +230,14 @@ describe('GenerateSlugDemIgnoringDate', () => {
 
 describe('formatDate', () => {
   it('Should return date as single year', async () => {
-    const startDate = '2023-01-02';
-    const endDate = '2023-02-02';
-    assert.equal(formatDate(startDate, endDate), '2023');
+    const startYear = '2023';
+    const endYear = '2023';
+    assert.equal(formatDate(startYear, endYear), '2023');
   });
 
   it('Should return date as two years', async () => {
-    const startDate = '2023-01-02';
-    const endDate = '2024-02-02';
-    assert.equal(formatDate(startDate, endDate), '2023-2024');
+    const startYear = '2023';
+    const endYear = '2024';
+    assert.equal(formatDate(startYear, endYear), '2023-2024');
   });
 });

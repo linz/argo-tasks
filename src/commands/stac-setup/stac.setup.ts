@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, flag, option, optional, string } from 'cmd-ts';
+import { command, option, optional, string } from 'cmd-ts';
 import { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
@@ -35,26 +35,16 @@ export const commandStacSetup = command({
     config,
     verbose,
 
-    addDateInSlug: flag({
-      // cmd-ts has a bug where defaultValue is always false and must be overridden
-      // To override: --add-date-in-slug=true
-      // Ref: https://github.com/Schniz/cmd-ts/issues/91
-      defaultValue: () => true,
-      long: 'add-date-in-slug',
-      description: 'Include the date in the linz:slug',
-      defaultValueIsSerializable: true,
+    startYear: option({
+      type: optional(string),
+      long: 'start-year',
+      description: 'Start year of survey capture',
     }),
 
-    startDate: option({
-      type: string,
-      long: 'start-date',
-      description: 'Start date of survey capture',
-    }),
-
-    endDate: option({
-      type: string,
-      long: 'end-date',
-      description: 'End date of survey capture',
+    endYear: option({
+      type: optional(string),
+      long: 'end-year',
+      description: 'End year of survey capture',
     }),
 
     gsd: option({
@@ -99,6 +89,7 @@ export const commandStacSetup = command({
   async handler(args) {
     registerCli(this, args);
     const startTime = performance.now();
+    const date = args.startYear && args.endYear ? formatDate(args.startYear, args.endYear) : '';
 
     logger.info('StacSetup:Start');
     if (args.odrUrl) {
@@ -112,18 +103,20 @@ export const commandStacSetup = command({
         throw new Error(`Invalid slug: ${slug}.`);
       }
       const collectionId = collection['id'];
-      await writeSetupFiles(startTime, slug, collectionId, args.output);
+      await writeSetupFiles(slug, collectionId, args.output);
+      logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
     } else {
       const metadata: SlugMetadata = {
         geospatialCategory: args.geospatialCategory,
         region: args.region,
         geographicDescription: args.geographicDescription,
-        date: args.addDateInSlug ? formatDate(args.startDate, args.endDate) : '',
+        date: date,
         gsd: args.gsd,
       };
       const slug = generateSlug(metadata);
       const collectionId = ulid.ulid();
-      await writeSetupFiles(startTime, slug, collectionId, args.output);
+      await writeSetupFiles(slug, collectionId, args.output);
+      logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
     }
   },
 });
@@ -161,15 +154,11 @@ export function generateSlug(metadata: SlugMetadata): string {
 /**
  * Format a STAC collection as a "startYear-endYear" or "startYear" in Pacific/Auckland time
  *
- * @param startDate start capture date
- * @param endDate end capture date
+ * @param startYear start capture date
+ * @param endYear end capture date
  * @returns the formatted slug dates
  */
-export function formatDate(startDate: string, endDate: string): string {
-  const startYear = startDate.slice(0, 4);
-  const endYear = endDate.slice(0, 4);
-
-  if (startYear == null || endYear == null) throw new Error(`Missing datetime field`);
+export function formatDate(startYear: string, endYear: string): string {
   if (startYear === endYear) return startYear;
   return `${startYear}-${endYear}`;
 }
@@ -177,20 +166,13 @@ export function formatDate(startDate: string, endDate: string): string {
 /**
  * Write the STAC setup values to files for Argo to use
  *
- * @param startTime start time for logging information
  * @param slug the STAC linz:slug value to write
  * @param collectionId the STAC collection ID value to write
  * @param output the output path for the setup files
  */
-export async function writeSetupFiles(
-  startTime: number,
-  slug: string,
-  collectionId: string,
-  output?: URL,
-): Promise<void> {
+export async function writeSetupFiles(slug: string, collectionId: string, output?: URL): Promise<void> {
   const slugPath = new URL('linz-slug', output);
   const collectionIdPath = new URL('collection-id', output);
   await fsa.write(urlToString(slugPath), slug);
   await fsa.write(urlToString(collectionIdPath), collectionId);
-  logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
 }
