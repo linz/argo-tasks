@@ -1,6 +1,6 @@
 # stac-setup
 
-Collection-related STAC metadata setup
+Collection-related STAC metadata setup. Outputs collection-id and linz-slug files within /tmp/stac-setup/
 
 ## Usage
 
