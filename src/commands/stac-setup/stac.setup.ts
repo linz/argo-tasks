@@ -113,7 +113,7 @@ export const commandStacSetup = command({
         date: date,
         gsd: args.gsd,
       };
-      const slug = generateSlug(metadata);
+      const slug = slugFromMetadata(metadata);
       const collectionId = ulid.ulid();
       await writeSetupFiles(slug, collectionId, args.output);
       logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
@@ -127,7 +127,7 @@ export const commandStacSetup = command({
  * @param metadata
  * @returns slug
  */
-export function generateSlug(metadata: SlugMetadata): string {
+export function slugFromMetadata(metadata: SlugMetadata): string {
   const geographicDescription = metadata.geographicDescription || metadata.region;
   const slug = slugify(metadata.date ? `${geographicDescription}_${metadata.date}` : geographicDescription);
 
@@ -142,11 +142,10 @@ export function generateSlug(metadata: SlugMetadata): string {
     return `${slug}_${metadata.gsd}m`;
   }
   if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.geospatialCategory)) {
-    return `${slug}`;
+    return slug;
   }
   if (metadata.geospatialCategory === dataCategories.SCANNED_AERIAL_PHOTOS) {
-    // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
-    throw new Error(`Automated slug generation not implemented for historic imagery.`);
+    throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated slug generation.`);
   }
   throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
 }

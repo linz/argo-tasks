@@ -5,7 +5,7 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
 import { commandStacSetup } from '../stac.setup.js';
-import { formatDate, generateSlug, SlugMetadata } from '../stac.setup.js';
+import { formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
 import { SampleCollection } from './sample.js';
 
 describe('stac-setup', () => {
@@ -125,7 +125,7 @@ describe('GenerateSlugImagery', () => {
       date: '2017-2018',
       gsd: '0.05',
     };
-    assert.equal(generateSlug(metadata), 'napier_2017-2018_0.05m');
+    assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m');
   });
   it('Should match - rural with geographic description', () => {
     const metadata: SlugMetadata = {
@@ -135,7 +135,7 @@ describe('GenerateSlugImagery', () => {
       date: '2023',
       gsd: '0.25',
     };
-    assert.equal(generateSlug(metadata), 'north-island-weather-event_2023_0.25m');
+    assert.equal(slugFromMetadata(metadata), 'north-island-weather-event_2023_0.25m');
   });
   it('Should match - region as no optional metadata', () => {
     const metadata: SlugMetadata = {
@@ -145,7 +145,7 @@ describe('GenerateSlugImagery', () => {
       date: '2023',
       gsd: '0.3',
     };
-    assert.equal(generateSlug(metadata), 'auckland_2023_0.3m');
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023_0.3m');
   });
 });
 
@@ -158,7 +158,7 @@ describe('GenerateSlugElevation', () => {
       date: '2023',
       gsd: '10',
     };
-    assert.equal(generateSlug(metadata), 'auckland_2023');
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
   it('Should match - dsm (no optional metadata)', () => {
     const metadata: SlugMetadata = {
@@ -168,7 +168,7 @@ describe('GenerateSlugElevation', () => {
       date: '2023',
       gsd: '10',
     };
-    assert.equal(generateSlug(metadata), 'auckland_2023');
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
 });
 
@@ -181,7 +181,7 @@ describe('GenerateSlugSatelliteImagery', () => {
       date: '2023',
       gsd: '0.5',
     };
-    assert.equal(generateSlug(metadata), 'north-island-cyclone-gabrielle_2023_0.5m');
+    assert.equal(slugFromMetadata(metadata), 'north-island-cyclone-gabrielle_2023_0.5m');
   });
 });
 
@@ -195,7 +195,7 @@ describe('GenerateSlugHistoricImagery', () => {
       gsd: '1',
     };
     assert.throws(() => {
-      generateSlug(metadata);
+      slugFromMetadata(metadata);
     }, Error('Automated slug generation not implemented for historic imagery.'));
   });
 });
@@ -210,7 +210,7 @@ describe('GenerateSlugUnknownGeospatialCategory', () => {
       gsd: '1',
     };
     assert.throws(() => {
-      generateSlug(metadata);
+      slugFromMetadata(metadata);
     }, Error("Slug can't be generated from collection as no matching category: scanned-aerial-imagery."));
   });
 });
@@ -224,7 +224,7 @@ describe('GenerateSlugDemIgnoringDate', () => {
       date: '',
       gsd: '10',
     };
-    assert.equal(generateSlug(metadata), 'new-zealand');
+    assert.equal(slugFromMetadata(metadata), 'new-zealand');
   });
 });
 
