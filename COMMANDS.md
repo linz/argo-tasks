@@ -8,7 +8,7 @@
 | [mapsheet-coverage](./src/commands/mapsheet-coverage/README.md)   | Create a list of mapsheets needing to be created from a basemaps configuration                        |
 | [stac-catalog](./src/commands/stac-catalog/README.md)             | Construct STAC catalog                                                                                |
 | [stac-github-import](./src/commands/stac-github-import/README.md) | Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository |
-| [stac-setup](./src/commands/stac-setup/README.md)                 | Setup STAC metadata for standardising workflows                                                       |
+| [stac-setup](./src/commands/stac-setup/README.md)                 | Collection-related STAC metadata setup                                                                |
 | [stac-sync](./src/commands/stac-sync/README.md)                   | Sync STAC files                                                                                       |
 | [stac-validate](./src/commands/stac-validate/README.md)           | Validate STAC files                                                                                   |
 | [tileindex-validate](./src/commands/tileindex-validate/README.md) | List input files and validate there are no duplicates.                                                |
