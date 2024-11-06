@@ -13,6 +13,7 @@ import { commandMapSheetCoverage } from './mapsheet-coverage/mapsheet.coverage.j
 import { commandPrettyPrint } from './pretty-print/pretty.print.js';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.js';
 import { commandStacGithubImport } from './stac-github-import/stac.github.import.js';
+import { commandStacSetup } from './stac-setup/stac.setup.js';
 import { commandStacSync } from './stac-sync/stac.sync.js';
 import { commandStacValidate } from './stac-validate/stac.validate.js';
 import { commandTileIndexValidate } from './tileindex-validate/tileindex.validate.js';
@@ -28,6 +29,7 @@ export const AllCommands = {
   'mapsheet-coverage': commandMapSheetCoverage,
   'stac-catalog': commandStacCatalog,
   'stac-github-import': commandStacGithubImport,
+  'stac-setup': commandStacSetup,
   'stac-sync': commandStacSync,
   'stac-validate': commandStacValidate,
   'tileindex-validate': commandTileIndexValidate,
@@ -36,6 +38,7 @@ export const AllCommands = {
     cmds: {
       catalog: commandStacCatalog,
       'github-import': commandStacGithubImport,
+      setup: commandStacSetup,
       sync: commandStacSync,
       validate: commandStacValidate,
     },
