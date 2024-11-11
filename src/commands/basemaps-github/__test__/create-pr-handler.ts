@@ -1,28 +1,13 @@
-import { randomUUID } from 'node:crypto';
-import { it } from 'node:test';
-import { afterEach } from 'node:test';
+import { afterEach, it } from 'node:test';
 
-import { ConfigTileSetRaster, TileSetType } from '@basemaps/config/build/config/tile.set.js';
+import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { StacCollection, StacVersion } from 'stac-ts';
+import { StacVersion } from 'stac-ts';
 
-import {
-  anyAsciiAlphanumeric,
-  anyAsciiPrintableString,
-  randomArrayEntry,
-  randomEnumValue,
-  randomSetEntry,
-} from '../../../utils/__test__/randomizers.js';
 import { anySlug } from '../../../utils/__test__/slugify.test.js';
 import { GithubApi } from '../../../utils/github.js';
-import { ConfigType } from '../create-pr.js';
-import {
-  basemapsCreatePullRequest,
-  LinzBasemapsSourceCollectionRel,
-  ValidSourceBuckets,
-  ValidTargetBuckets,
-} from '../create-pr.js';
+import { basemapsCreatePullRequest, ConfigType, LinzBasemapsSourceCollectionRel } from '../create-pr.js';
 import { Category } from '../make.cog.github.js';
 
 const originalEnv = Object.assign({}, process.env);
@@ -32,13 +17,38 @@ afterEach(() => {
 });
 
 await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) => {
-  const targetUrl = `s3://${anyValidTargetBucket()}/${anyEpsgCode()}/${anySlug()}`;
+  const targetUrl = `s3://linz-basemaps/${EpsgCode.Nztm2000}/${anySlug()}`;
   t.mock.method(fsa, 'readJson', () => {
-    return Promise.resolve(anyStacCollection());
+    return Promise.resolve({
+      stac_version: '1.0.0' as StacVersion,
+      type: 'Collection',
+      id: 'b871c4a7-2d8e-4cec-997a-ed755cf542b9',
+      title: 'any-title',
+      description: 'any-description',
+      license: 'any-license',
+      extent: { spatial: { bbox: [[]] }, temporal: { interval: [[null, null]] } },
+      links: [
+        {
+          href: `s3://nz-imagery/${EpsgCode.Wgs84}/${anySlug()}`,
+          rel: LinzBasemapsSourceCollectionRel,
+        },
+      ],
+    });
   });
-  process.env['GITHUB_API_TOKEN'] = anyAsciiPrintableString();
+  process.env['GITHUB_API_TOKEN'] = 'any-github-api-token';
   t.mock.method(GithubApi.prototype, 'getContent', () => {
-    return Promise.resolve(Buffer.from(JSON.stringify(anyConfigTileSetRaster())));
+    return Promise.resolve(
+      Buffer.from(
+        JSON.stringify({
+          type: TileSetType.Raster,
+          format: 'avif',
+          id: 'b48e08c3-ccef-4b42-870a-9c357cb15d1c',
+          layers: [],
+          name: 'any-name',
+          title: 'any-title',
+        }),
+      ),
+    );
   });
   t.mock.method(GithubApi.prototype, 'createBranch', () => {});
   t.mock.method(GithubApi.prototype, 'createBlob', () => {});
@@ -49,7 +59,7 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
 
   await basemapsCreatePullRequest.handler({
     target: targetUrlsString,
-    repository: `${anyGitHubOwner()}/${anyGitHubRepositoryName()}`,
+    repository: 'any-owner/any-repository',
     verbose: false,
     category: Category.Satellite,
     configType: ConfigType.Raster,
@@ -58,52 +68,3 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
     ticket: 'any ticket',
   });
 });
-
-function anyStacCollection(): StacCollection {
-  return {
-    stac_version: '1.0.0' as StacVersion,
-    type: 'Collection',
-    id: randomUUID(),
-    title: anyAsciiPrintableString(),
-    description: anyAsciiPrintableString(),
-    license: anyAsciiPrintableString(),
-    extent: { spatial: { bbox: [[]] }, temporal: { interval: [[null, null]] } },
-    links: [
-      {
-        href: `s3://${anyValidSourceBucket()}/${anyEpsgCode()}/${anySlug()}`,
-        rel: LinzBasemapsSourceCollectionRel,
-      },
-    ],
-  };
-}
-
-function anyConfigTileSetRaster(): ConfigTileSetRaster {
-  return {
-    type: TileSetType.Raster,
-    format: randomArrayEntry(['avif', 'jpeg', 'png', 'webp']),
-    id: randomUUID(),
-    layers: [],
-    name: anyAsciiPrintableString(),
-    title: anyAsciiPrintableString(),
-  };
-}
-
-function anyValidSourceBucket(): string {
-  return randomSetEntry(ValidSourceBuckets);
-}
-
-function anyValidTargetBucket(): string {
-  return randomSetEntry(ValidTargetBuckets);
-}
-
-function anyEpsgCode(): number {
-  return randomEnumValue(EpsgCode);
-}
-
-function anyGitHubOwner(): string {
-  return anyAsciiAlphanumeric();
-}
-
-function anyGitHubRepositoryName(): string {
-  return anyAsciiAlphanumeric();
-}
