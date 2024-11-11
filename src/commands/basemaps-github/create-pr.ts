@@ -11,7 +11,7 @@ import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub } from './make.cog.github.js';
 
 export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
-export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery']);
+export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);
 
 export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 

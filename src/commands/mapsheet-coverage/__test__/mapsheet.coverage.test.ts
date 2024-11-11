@@ -37,6 +37,16 @@ function fakeCollection(id: string): StacCollection {
     description: `Layer ${id.toUpperCase()} Description`,
     assets: { capture_area: { href: './capture-area.json' } },
     links: [],
+    providers: [
+      {
+        name: 'First provider',
+        roles: ['producer', 'licensor', 'processor'],
+      },
+      {
+        name: 'Second provider',
+        roles: ['producer'],
+      },
+    ],
   } as unknown as StacCollection;
 }
 
@@ -112,6 +122,9 @@ describe('mapsheet-coverage', () => {
       id: 'layer-a-id',
       license: 'CC-BY-4.0',
       source: 'ms://layers/a/collection.json',
+      licensor: 'First provider',
+      processor: 'First provider',
+      producer: 'First provider, Second provider',
     });
     assert.equal(captureDates.features.length, 1);
   });

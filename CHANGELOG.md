@@ -1,5 +1,32 @@
 # Changelog
 
+## [4.7.0](https://github.com/linz/argo-tasks/compare/v4.6.0...v4.7.0) (2024-10-21)
+
+
+### Features
+
+* **basemaps:** Add nz-elevation bucket as valid source s3 bucket. BM-1088 ([#1109](https://github.com/linz/argo-tasks/issues/1109)) ([bc09b74](https://github.com/linz/argo-tasks/commit/bc09b74e53b99de36b9c941711e19380c0ae8ddd))
+* expose method to calculate a sheet code from any x,y ([#1110](https://github.com/linz/argo-tasks/issues/1110)) ([ffa03ad](https://github.com/linz/argo-tasks/commit/ffa03ada33108985d3fe866fd9b4eb421c2ee556))
+* Flatten providers into strings per role TDE-1291 ([#1108](https://github.com/linz/argo-tasks/issues/1108)) ([92af2f9](https://github.com/linz/argo-tasks/commit/92af2f9b6343c8fe7bd77b253b55bb6c838e889b))
+
+
+### Bug Fixes
+
+* ensure file systems with matching roleArns are registered correctly TDE-1268 ([#1092](https://github.com/linz/argo-tasks/issues/1092)) ([e004506](https://github.com/linz/argo-tasks/commit/e00450605e3cfaf4b2d2ff2c399e3454cae0cbd8))
+
+## [4.6.0](https://github.com/linz/argo-tasks/compare/v4.5.2...v4.6.0) (2024-10-13)
+
+
+### Features
+
+* annotate commands with examples ([#1097](https://github.com/linz/argo-tasks/issues/1097)) ([41be2c1](https://github.com/linz/argo-tasks/commit/41be2c10f0c745903adc5e33cea12fe960cab77c))
+
+
+### Bug Fixes
+
+* avoid negative parameter TDE-1261 ([#1104](https://github.com/linz/argo-tasks/issues/1104)) ([5352975](https://github.com/linz/argo-tasks/commit/5352975726d92e2fdd72309c94e10502f7315948))
+* **basemaps:** Get the epsg and name correctly for elevation s3 path. BM-1088 ([#1074](https://github.com/linz/argo-tasks/issues/1074)) ([08e76e4](https://github.com/linz/argo-tasks/commit/08e76e480d068bf37af744d1678696e59f81b728))
+
 ## [4.5.2](https://github.com/linz/argo-tasks/compare/v4.5.1...v4.5.2) (2024-10-01)
 
 
