@@ -3,7 +3,8 @@ import { gzipSync } from 'node:zlib';
 import { ConfigTileSetRaster } from '@basemaps/config';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { truncate } from '@linzjs/geojson';
+import { Area, truncate } from '@linzjs/geojson';
+import buffer from '@turf/buffer';
 import { command, number, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { basename } from 'path/posix';
@@ -39,6 +40,39 @@ function forceMultiPolygon(f: GeoJSON.Feature): GeoJSON.Feature<GeoJSON.MultiPol
     return { ...f, geometry: { type: 'MultiPolygon', coordinates: [f.geometry.coordinates] } };
   }
   throw new Error(`${f.geometry.type}: is not a polygon`);
+}
+
+/**
+ * a polygon of 0.00001 x 0.00001 (about 1m x 1m) converts to 1e-10 degrees^2
+ *
+ * @warning
+ * This is a approximation and should not be used for anything other than rough scale comparisons
+ */
+const DegreesSquareToMetersSquared = 1e-10;
+
+/**
+ * Determine if the polygon is a large(ish) region,
+ *
+ * @param poly Polygon in EPSG:4326 (WGS84 lat, lon)
+ * @param areaInMetersSquared Polygons that are at least this big are always included without further testing
+ *
+ * @returns if the polygon is considered large
+ */
+export function isLargeRegion(poly: pc.Polygon, areaInMetersSquared: number = 1_000): boolean {
+  const polyArea = Area.polygon(poly);
+  const smallArea = areaInMetersSquared * DegreesSquareToMetersSquared;
+
+  // Area is stored as square degrees, 1e-10 is approx 1m^2 (?)
+  // TODO: is there a better number than 1e-6, could scale it from the GSD of the dataset
+  if (polyArea > smallArea) return true;
+
+  // If the buffer in destroys the polygon this polygon likely isn't really useful
+  // TODO: 1m works when the dataset is 1m, but not all datasets are 1m resolution
+  const bufferedIn = buffer({ type: 'Polygon', coordinates: poly }, -1, { units: 'meters' });
+  if (bufferedIn == null) return false;
+
+  // TODO: should the buffered dataset be used
+  return true;
 }
 
 export const commandMapSheetCoverage = command({
@@ -106,7 +140,7 @@ export const commandMapSheetCoverage = command({
     const captureDates = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
 
     // All the coordinates currently used
-    let layersCombined: pc.MultiPolygon[] = [];
+    let layersCombined: pc.MultiPolygon = [];
 
     // MapSheetName to List of source files required
     const mapSheets = new Map<string, string[]>();
@@ -175,10 +209,13 @@ export const commandMapSheetCoverage = command({
       );
 
       // GeoJSON over about 8 decimal places starts running into floating point math errors
-      truncate(captureArea);
+      truncate(captureArea, 8);
 
+      const diff = [];
       // Determine if this layer has any additional information to the existing layers
-      const diff = pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, layersCombined);
+      for (const poly of pc.difference(captureArea.geometry.coordinates as pc.MultiPolygon, layersCombined)) {
+        if (isLargeRegion(poly)) diff.push(poly);
+      }
 
       // Layer has no information included in the output
       if (diff.length === 0) {
@@ -208,6 +245,7 @@ export const commandMapSheetCoverage = command({
       }
 
       layersCombined = pc.union(layersCombined, captureArea.geometry.coordinates as pc.MultiPolygon);
+
       captureDates.features.push({
         type: 'Feature',
         geometry: { type: 'MultiPolygon', coordinates: diff },

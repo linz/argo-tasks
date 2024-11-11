@@ -8,7 +8,7 @@ import { featuresToMultiPolygon } from '@linzjs/geojson';
 import { StacCollection } from 'stac-ts';
 
 import { MapSheet } from '../../../utils/mapsheet.js';
-import { commandMapSheetCoverage } from '../mapsheet.coverage.js';
+import { commandMapSheetCoverage, isLargeRegion } from '../mapsheet.coverage.js';
 
 // convert a collection of map sheets into a multipolygon
 function mapSheetToGeoJson(...sheetCodes: string[]): GeoJSON.Feature {
@@ -198,5 +198,74 @@ describe('mapsheet-coverage', () => {
 
     assert.deepEqual(captureDates.features[0]?.properties?.['source'], 'ms://layers/b/collection.json');
     assert.equal(captureDates.features.length, 1);
+  });
+});
+
+describe('isLargeRegion', () => {
+  const OneMetreInDegrees = 1e-5;
+
+  it('should not remove large polygons', () => {
+    // this polygon is 1 degree x 1 degree at approx 110KM x 110KM
+    assert.equal(
+      isLargeRegion([
+        [
+          [0, 0],
+          [0, -1],
+          [-1, -1],
+          [-1, 0],
+          [0, 0],
+        ],
+      ]),
+      true,
+    );
+  });
+
+  it('should remove polygons with long slivers', () => {
+    // this polygon is 1 degree x 1cm very small slivers
+    // which will be destroyed by the buffering inwards
+    assert.equal(
+      isLargeRegion([
+        [
+          [0, 0],
+          [1, 0],
+          [1, OneMetreInDegrees * 0.01],
+          [0, OneMetreInDegrees * 0.01],
+          [0, 0],
+        ],
+      ]),
+      false,
+    );
+  });
+
+  it('should remove small squares', () => {
+    // this polygon is 1m x 1m, with a area of 1E-10, it should be removed
+    assert.equal(
+      isLargeRegion([
+        [
+          [0, 0],
+          [OneMetreInDegrees, 0],
+          [OneMetreInDegrees, OneMetreInDegrees],
+          [0, OneMetreInDegrees],
+          [0, 0],
+        ],
+      ]),
+      false,
+    );
+  });
+
+  it('should keep medium sized polygons', () => {
+    // this polygon is 100m x 100m
+    assert.equal(
+      isLargeRegion([
+        [
+          [0, 0],
+          [100 * OneMetreInDegrees, 0],
+          [100 * OneMetreInDegrees, 100 * OneMetreInDegrees],
+          [0, 100 * OneMetreInDegrees],
+          [0, 0],
+        ],
+      ]),
+      true,
+    );
   });
 });
