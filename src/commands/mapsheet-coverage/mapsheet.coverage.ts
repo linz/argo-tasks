@@ -13,10 +13,10 @@ import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { getPacificAucklandYearMonthDay } from '../../utils/date.js';
 import { hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
 import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.js';
-import { getPacificAucklandYearMonthDay } from '../generate-path/path.date.js';
 
 /** Datasets to skip */
 const Skip = new Set([

@@ -1,36 +1,21 @@
 import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
-import { boolean, command, flag, option, positional, string } from 'cmd-ts';
+import { command, option, positional, string } from 'cmd-ts';
 import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
-import { slugify } from '../../utils/slugify.js';
-import { config, createTiff, registerCli, verbose } from '../common.js';
-import { dataCategories } from './path.constants.js';
-import { formatDate } from './path.date.js';
+import { config, createTiff, geospatialDataCategories, registerCli, StacCollectionLinz, verbose } from '../common.js';
 
 export interface PathMetadata {
   targetBucketName: string;
-  category: string;
-  geographicDescription?: string;
+  geospatialCategory: string;
   region: string;
   slug: string;
-  date: string;
   gsd: number;
   epsg: number;
-}
-
-export interface StacCollectionLinz {
-  'linz:lifecycle': string;
-  'linz:geospatial_category': string;
-  'linz:region': string;
-  'linz:slug': string;
-  'linz:security_classification': string;
-  'linz:event_name'?: string;
-  'linz:geographic_description'?: string;
 }
 
 export const commandGeneratePath = command({
@@ -45,14 +30,6 @@ export const commandGeneratePath = command({
       type: string,
       long: 'target-bucket-name',
       description: 'Target bucket name, e.g. nz-imagery',
-    }),
-
-    addDateInSurveyPath: flag({
-      type: boolean,
-      defaultValue: () => true,
-      long: 'add-date-in-survey-path',
-      description: 'Include the date in the survey path',
-      defaultValueIsSerializable: true,
     }),
 
     source: positional({
@@ -77,11 +54,9 @@ export const commandGeneratePath = command({
 
     const metadata: PathMetadata = {
       targetBucketName: formatBucketName(args.targetBucketName),
-      category: collection['linz:geospatial_category'],
+      geospatialCategory: collection['linz:geospatial_category'],
       region: collection['linz:region'],
       slug: collection['linz:slug'],
-      geographicDescription: collection['linz:geographic_description'],
-      date: args.addDateInSurveyPath ? formatDate(collection) : '',
       gsd: extractGsd(tiff),
       epsg: extractEpsg(tiff),
     };
@@ -104,43 +79,31 @@ export const commandGeneratePath = command({
  * @returns
  */
 export function generatePath(metadata: PathMetadata): string {
-  if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
+  if (metadata.geospatialCategory === geospatialDataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
-    throw new Error(`Automated target generation not implemented for historic imagery`);
+    throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated slug generation.`);
   }
 
-  if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(metadata.category)) {
+  if (
+    [
+      geospatialDataCategories.URBAN_AERIAL_PHOTOS,
+      geospatialDataCategories.RURAL_AERIAL_PHOTOS,
+      geospatialDataCategories.SATELLITE_IMAGERY,
+    ].includes(metadata.geospatialCategory)
+  ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
 
-  if (metadata.category === dataCategories.SATELLITE_IMAGERY) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
+  if ([geospatialDataCategories.DEM, geospatialDataCategories.DSM].includes(metadata.geospatialCategory)) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}_${metadata.gsd}m/${metadata.epsg}/`;
   }
 
-  if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.category}_${metadata.gsd}m/${metadata.epsg}/`;
-  }
-
-  throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.category}.`);
+  throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
 }
 
 function formatBucketName(bucketName: string): string {
   if (bucketName.startsWith('s3://')) return bucketName.replace('s3://', '').replace('/', '');
   return bucketName;
-}
-
-/**
- * Generates specific dataset name based on metadata inputs
- *
- * see {@link slugify} for how it is formatted
- *
- * @param region
- * @param geographicDescription
- * @returns
- */
-export function formatName(region: string, geographicDescription?: string): string {
-  if (geographicDescription) return slugify(geographicDescription);
-  return slugify(region);
 }
 
 /*

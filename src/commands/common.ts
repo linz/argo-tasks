@@ -159,3 +159,23 @@ export const UrlFolder: Type<string, URL> = {
     return url;
   },
 };
+
+export interface StacCollectionLinz {
+  'linz:lifecycle': string;
+  'linz:geospatial_category': string;
+  'linz:region': string;
+  'linz:slug': string;
+  'linz:security_classification': string;
+  'linz:event_name'?: string;
+  'linz:geographic_description'?: string;
+}
+
+export const geospatialDataCategories = {
+  AERIAL_PHOTOS: 'aerial-photos',
+  SCANNED_AERIAL_PHOTOS: 'scanned-aerial-photos',
+  RURAL_AERIAL_PHOTOS: 'rural-aerial-photos',
+  SATELLITE_IMAGERY: 'satellite-imagery',
+  URBAN_AERIAL_PHOTOS: 'urban-aerial-photos',
+  DEM: 'dem',
+  DSM: 'dsm',
+};
