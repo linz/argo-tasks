@@ -17,6 +17,7 @@ export interface PathMetadata {
   category: string;
   geographicDescription?: string;
   region: string;
+  slug: string;
   date: string;
   gsd: number;
   epsg: number;
@@ -26,6 +27,7 @@ export interface StacCollectionLinz {
   'linz:lifecycle': string;
   'linz:geospatial_category': string;
   'linz:region': string;
+  'linz:slug': string;
   'linz:security_classification': string;
   'linz:event_name'?: string;
   'linz:geographic_description'?: string;
@@ -77,6 +79,7 @@ export const commandGeneratePath = command({
       targetBucketName: formatBucketName(args.targetBucketName),
       category: collection['linz:geospatial_category'],
       region: collection['linz:region'],
+      slug: collection['linz:slug'],
       geographicDescription: collection['linz:geographic_description'],
       date: args.addDateInSurveyPath ? formatDate(collection) : '',
       gsd: extractGsd(tiff),
@@ -101,24 +104,21 @@ export const commandGeneratePath = command({
  * @returns
  */
 export function generatePath(metadata: PathMetadata): string {
-  const name = formatName(metadata.region, metadata.geographicDescription);
-  const surveyName = metadata.date ? `${name}_${metadata.date}` : name;
-
   if (metadata.category === dataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Automated target generation not implemented for historic imagery`);
   }
 
   if ([dataCategories.URBAN_AERIAL_PHOTOS, dataCategories.RURAL_AERIAL_PHOTOS].includes(metadata.category)) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${surveyName}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
 
   if (metadata.category === dataCategories.SATELLITE_IMAGERY) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${surveyName}_${metadata.gsd}m/rgb/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
 
   if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.category)) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${surveyName}/${metadata.category}_${metadata.gsd}m/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.category}_${metadata.gsd}m/${metadata.epsg}/`;
   }
 
   throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.category}.`);

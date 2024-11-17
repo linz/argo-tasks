@@ -6,9 +6,9 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
   type: 'Collection',
   stac_version: '1.0.0',
   id: '01HGF4RAQSM53Z26Y7C27T1GMB',
-  title: 'Palmerston North 0.3m Storm Satellite Imagery (2024) - Preview',
+  title: 'Palmerston North 0.3m Storm Satellite Imagery (2023) - Preview',
   description:
-    'Satellite imagery within the Manawatū-Whanganui region captured in 2024, published as a record of the Storm event.',
+    'Satellite imagery within the Manawatū-Whanganui region captured in 2023, published as a record of the Storm event.',
   license: 'CC-BY-4.0',
   links: [
     { rel: 'self', href: './collection.json', type: 'application/json' },
@@ -34,6 +34,7 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
   'linz:lifecycle': 'preview',
   'linz:geospatial_category': 'urban-aerial-photos',
   'linz:region': 'manawatu-whanganui',
+  'linz:slug': 'palmerston-north_2023_0.3m',
   'linz:security_classification': 'unclassified',
   'linz:event_name': 'Storm',
   'linz:geographic_description': 'Palmerston North',
