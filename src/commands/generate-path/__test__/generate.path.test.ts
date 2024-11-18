@@ -3,32 +3,10 @@ import { describe, it } from 'node:test';
 
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
 import { extractEpsg, extractGsd, generatePath, PathMetadata } from '../path.generate.js';
-import { SampleCollection } from './sample.js';
+import { SampleCollectionDem, SampleCollectionUrbanImagery } from './sample.js';
 
 describe('GeneratePathImagery', () => {
-  it('Should match - geographic description', () => {
-    const metadata: PathMetadata = {
-      targetBucketName: 'nz-imagery',
-      geospatialCategory: 'urban-aerial-photos',
-      region: 'hawkes-bay',
-      slug: 'napier_2017-2018_0.05m',
-      gsd: 0.05,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://nz-imagery/hawkes-bay/napier_2017-2018_0.05m/rgb/2193/');
-  });
-  it('Should match - event', () => {
-    const metadata: PathMetadata = {
-      targetBucketName: 'nz-imagery',
-      geospatialCategory: 'rural-aerial-photos',
-      region: 'hawkes-bay',
-      slug: 'north-island-weather-event_2023_0.25m',
-      gsd: 0.25,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://nz-imagery/hawkes-bay/north-island-weather-event_2023_0.25m/rgb/2193/');
-  });
-  it('Should match - no optional metadata', () => {
+  it('Should match - urban aerial from slug', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       geospatialCategory: 'urban-aerial-photos',
@@ -42,7 +20,7 @@ describe('GeneratePathImagery', () => {
 });
 
 describe('GeneratePathElevation', () => {
-  it('Should match - dem (no optional metadata)', () => {
+  it('Should match - dem from slug', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dem',
@@ -53,7 +31,7 @@ describe('GeneratePathElevation', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/auckland/auckland_2023/dem_1m/2193/');
   });
-  it('Should match - dsm (no optional metadata)', () => {
+  it('Should match - dsm from slug', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dsm',
@@ -63,23 +41,6 @@ describe('GeneratePathElevation', () => {
       epsg: 2193,
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/auckland/auckland_2023/dsm_1m/2193/');
-  });
-});
-
-describe('GeneratePathSatelliteImagery', () => {
-  it('Should match - geographic description & event', () => {
-    const metadata: PathMetadata = {
-      targetBucketName: 'nz-imagery',
-      geospatialCategory: 'satellite-imagery',
-      region: 'new-zealand',
-      slug: 'north-island-cyclone-gabrielle_2023_0.5m',
-      gsd: 0.5,
-      epsg: 2193,
-    };
-    assert.equal(
-      generatePath(metadata),
-      's3://nz-imagery/new-zealand/north-island-cyclone-gabrielle_2023_0.5m/rgb/2193/',
-    );
   });
 });
 
@@ -96,20 +57,6 @@ describe('GeneratePathHistoricImagery', () => {
     assert.throws(() => {
       generatePath(metadata);
     }, Error);
-  });
-});
-
-describe('GeneratePathDemIgnoringDate', () => {
-  it('Should not include the date in the survey name', () => {
-    const metadata: PathMetadata = {
-      targetBucketName: 'nz-elevation',
-      geospatialCategory: 'dem',
-      region: 'new-zealand',
-      slug: 'new-zealand',
-      gsd: 1,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem_1m/2193/');
   });
 });
 
@@ -151,50 +98,43 @@ describe('gsd', () => {
   });
 });
 
+describe('slug dates', () => {
+  it('Should return path with slug dates', async () => {
+    const collection = structuredClone(SampleCollectionDem);
+
+    assert.equal(collection['linz:slug'], 'southland_2020-2023');
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      geospatialCategory: 'dem',
+      region: 'southland',
+      slug: 'southland_2020-2023',
+      gsd: 1,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/southland/southland_2020-2023/dem_1m/2193/');
+  });
+});
+
 describe('category', () => {
   it('Should return category', async () => {
-    const collection = structuredClone(SampleCollection);
+    const collection = structuredClone(SampleCollectionUrbanImagery);
 
     assert.equal(collection['linz:geospatial_category'], 'urban-aerial-photos');
   });
 });
 
-describe('geographicDescription', () => {
-  it('Should return geographic description', async () => {
-    const collection = structuredClone(SampleCollection);
+describe('region', () => {
+  it('Should return region', async () => {
+    const collection = structuredClone(SampleCollectionUrbanImagery);
 
-    assert.equal(collection['linz:geographic_description'], 'Palmerston North');
-    const metadata: PathMetadata = {
-      targetBucketName: 'bucket',
-      geospatialCategory: 'urban-aerial-photos',
-      region: 'manawatu-whanganui',
-      slug: 'palmerston-north_2020_0.05m',
-      gsd: 0.05,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2020_0.05m/rgb/2193/');
-  });
-  it('Should return undefined - no geographic description metadata', async () => {
-    const collection = structuredClone(SampleCollection);
-
-    delete collection['linz:geographic_description'];
-    assert.equal(collection['linz:geographic_description'], undefined);
-    const metadata: PathMetadata = {
-      targetBucketName: 'bucket',
-      geospatialCategory: 'urban-aerial-photos',
-      region: 'manawatu-whanganui',
-      slug: 'manawatu-whanganui_2020_0.05m',
-      gsd: 0.05,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/manawatu-whanganui_2020_0.05m/rgb/2193/');
+    assert.equal(collection['linz:region'], 'manawatu-whanganui');
   });
 });
 
-describe('region', () => {
-  it('Should return region', async () => {
-    const collection = structuredClone(SampleCollection);
+describe('slug', () => {
+  it('Should return slug', async () => {
+    const collection = structuredClone(SampleCollectionUrbanImagery);
 
-    assert.equal(collection['linz:region'], 'manawatu-whanganui');
+    assert.equal(collection['linz:slug'], 'palmerston-north_2024_0.3m');
   });
 });
