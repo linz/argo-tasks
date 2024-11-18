@@ -170,7 +170,7 @@ export interface StacCollectionLinz {
   'linz:geographic_description'?: string;
 }
 
-export const geospatialDataCategories = {
+export const GeospatialDataCategories = {
   AERIAL_PHOTOS: 'aerial-photos',
   SCANNED_AERIAL_PHOTOS: 'scanned-aerial-photos',
   RURAL_AERIAL_PHOTOS: 'rural-aerial-photos',
