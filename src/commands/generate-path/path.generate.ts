@@ -81,7 +81,7 @@ export const commandGeneratePath = command({
 export function generatePath(metadata: PathMetadata): string {
   if (metadata.geospatialCategory === geospatialDataCategories.SCANNED_AERIAL_PHOTOS) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
-    throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated slug generation.`);
+    throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated path generation.`);
   }
 
   if (
