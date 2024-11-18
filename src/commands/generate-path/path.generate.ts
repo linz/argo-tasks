@@ -98,7 +98,7 @@ export function generatePath(metadata: PathMetadata): string {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}_${metadata.gsd}m/${metadata.epsg}/`;
   }
 
-  throw new Error(`Path Can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
+  throw new Error(`Path can't be generated from collection as no matching category for ${metadata.geospatialCategory}.`);
 }
 
 function formatBucketName(bucketName: string): string {
