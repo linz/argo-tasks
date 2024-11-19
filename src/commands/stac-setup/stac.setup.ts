@@ -8,7 +8,7 @@ import { logger } from '../../log.js';
 import { slugify } from '../../utils/slugify.js';
 import {
   config,
-  geospatialDataCategories,
+  GeospatialDataCategories,
   registerCli,
   StacCollectionLinz,
   tryParseUrl,
@@ -132,18 +132,18 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
 
   if (
     [
-      geospatialDataCategories.AERIAL_PHOTOS,
-      geospatialDataCategories.RURAL_AERIAL_PHOTOS,
-      geospatialDataCategories.SATELLITE_IMAGERY,
-      geospatialDataCategories.URBAN_AERIAL_PHOTOS,
+      GeospatialDataCategories.AERIAL_PHOTOS,
+      GeospatialDataCategories.RURAL_AERIAL_PHOTOS,
+      GeospatialDataCategories.SATELLITE_IMAGERY,
+      GeospatialDataCategories.URBAN_AERIAL_PHOTOS,
     ].includes(metadata.geospatialCategory)
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
-  if ([geospatialDataCategories.DEM, geospatialDataCategories.DSM].includes(metadata.geospatialCategory)) {
+  if ([GeospatialDataCategories.DEM, GeospatialDataCategories.DSM].includes(metadata.geospatialCategory)) {
     return slug;
   }
-  if (metadata.geospatialCategory === geospatialDataCategories.SCANNED_AERIAL_PHOTOS) {
+  if (metadata.geospatialCategory === GeospatialDataCategories.SCANNED_AERIAL_PHOTOS) {
     throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated slug generation.`);
   }
   throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);

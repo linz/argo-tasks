@@ -99,15 +99,14 @@ describe('gsd', () => {
 });
 
 describe('slug dates', () => {
-  it('Should return path with slug dates', async () => {
+  it('Should return urban aerial photos path', async () => {
     const collection = structuredClone(SampleCollectionDem);
 
-    assert.equal(collection['linz:slug'], 'southland_2020-2023');
     const metadata: PathMetadata = {
       targetBucketName: 'bucket',
-      geospatialCategory: 'dem',
-      region: 'southland',
-      slug: 'southland_2020-2023',
+      geospatialCategory: collection['linz:geospatial_category'],
+      region: collection['linz:region'],
+      slug: collection['linz:slug'],
       gsd: 1,
       epsg: 2193,
     };
@@ -115,26 +114,18 @@ describe('slug dates', () => {
   });
 });
 
-describe('category', () => {
-  it('Should return category', async () => {
+describe('slug dates', () => {
+  it('Should return dem path', async () => {
     const collection = structuredClone(SampleCollectionUrbanImagery);
 
-    assert.equal(collection['linz:geospatial_category'], 'urban-aerial-photos');
-  });
-});
-
-describe('region', () => {
-  it('Should return region', async () => {
-    const collection = structuredClone(SampleCollectionUrbanImagery);
-
-    assert.equal(collection['linz:region'], 'manawatu-whanganui');
-  });
-});
-
-describe('slug', () => {
-  it('Should return slug', async () => {
-    const collection = structuredClone(SampleCollectionUrbanImagery);
-
-    assert.equal(collection['linz:slug'], 'palmerston-north_2024_0.3m');
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      geospatialCategory: collection['linz:geospatial_category'],
+      region: collection['linz:region'],
+      slug: collection['linz:slug'],
+      gsd: 1,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2024_0.3m/rgb/2193/');
   });
 });
