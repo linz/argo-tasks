@@ -270,8 +270,9 @@ export const basemapsCreatePullRequest = command({
         layer[info.epsg] = target;
         region = info.region;
       }
+      layer.category = category;
     }
-    layer.category = category;
+
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
