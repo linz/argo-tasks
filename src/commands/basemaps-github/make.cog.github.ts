@@ -1,4 +1,4 @@
-import { DefaultColorRampOutput, DefaultTerrainRgbOutput } from '@basemaps/config';
+import { DefaultColorRampOutput, DefaultTerrainRgbOutput, standardizeLayerName } from '@basemaps/config';
 import {
   ConfigLayer,
   ConfigTileSet,
@@ -32,7 +32,7 @@ export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   [Category.Urban]: { minZoom: 14 },
   [Category.Rural]: { minZoom: 13 },
   [Category.Satellite]: { minZoom: 5 },
-  [Category.Elevation]: {},
+  [Category.Elevation]: { minZoom: 9 },
   [Category.Scanned]: { minZoom: 0, maxZoom: 32 },
   [Category.Other]: {},
   [Category.Event]: {},
@@ -125,7 +125,6 @@ export class MakeCogGithub {
   async updateElevationTileSet(
     filename: string,
     layer: ConfigLayer,
-    category: Category,
     individual: boolean,
     region: string | undefined,
   ): Promise<void> {
@@ -137,17 +136,7 @@ export class MakeCogGithub {
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     if (individual) {
       if (region == null) region = 'individual';
-      // Prepare new standalone tileset config
-      const targetLayer = { ...layer, category, minZoom: 0, maxZoom: 32 };
-      const tileSet: ConfigTileSetRaster = {
-        type: TileSetType.Raster,
-        id: `ts_${layer.name}`,
-        name: layer.name,
-        title: layer.title,
-        category,
-        layers: [targetLayer],
-        outputs: [DefaultTerrainRgbOutput, DefaultColorRampOutput],
-      };
+      const tileSet = await this.prepareElevationTileSetConfig(layer);
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', `${layer.name}.json`);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
@@ -157,12 +146,57 @@ export class MakeCogGithub {
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Failed to get config elevation from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
-
-      // Just insert the new elevation at the bottom of config
-      tileSet.layers.push(layer);
+      const newTileSet = await this.prepareElevationTileSetConfig(layer, tileSet);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
     }
+  }
+
+  /**
+   * Prepare and create pull request for the aerial tileset config
+   */
+  async updateVectorTileSet(filename: string, layer: ConfigLayer, individual: boolean): Promise<void> {
+    const gh = new GithubApi(this.repository);
+    const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
+    const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
+
+    // Prepare new vector tileset config
+    logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
+    if (individual) {
+      const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
+      const newTileSet = await this.prepareVectorTileSetConfig(layer, undefined);
+      // Github create pull request
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+    } else {
+      const tileSetPath = fsa.joinAll('config', 'tileset', `topographic.json`);
+      const tileSetContent = await gh.getContent(tileSetPath);
+      if (tileSetContent == null) throw new Error(`Failed to get config topographic from config repo.`);
+      // update the existing tileset
+      const existingTileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
+      const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
+      // Github create pull request
+      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+    }
+  }
+
+  /**
+   * Create pull request for a tileset config
+   */
+  async createTileSetPullRequest(
+    gh: GithubApi,
+    branch: string,
+    title: string,
+    tileSetPath: string,
+    newTileSet: ConfigTileSet | undefined,
+  ): Promise<void> {
+    // skip pull request tileset prepare failure.
+    if (newTileSet == null) throw new Error(`Failed to prepare new tileSet for ${tileSetPath}.`);
+
+    // Github
+    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
+    const file = { path: tileSetPath, content };
+    // Github create pull request
+    await gh.createPullRequest(branch, title, botEmail, [file]);
   }
 
   /**
@@ -231,53 +265,6 @@ export class MakeCogGithub {
   }
 
   /**
-   * Prepare and create pull request for the aerial tileset config
-   */
-  async updateVectorTileSet(filename: string, layer: ConfigLayer, individual: boolean): Promise<void> {
-    const gh = new GithubApi(this.repository);
-    const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
-    const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
-
-    // Prepare new vector tileset config
-    logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
-    if (individual) {
-      const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
-      const newTileSet = await this.prepareVectorTileSetConfig(layer, undefined);
-      // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
-    } else {
-      const tileSetPath = fsa.joinAll('config', 'tileset', `topographic.json`);
-      const tileSetContent = await gh.getContent(tileSetPath);
-      if (tileSetContent == null) throw new Error(`Failed to get config topographic from config repo.`);
-      // update the existing tileset
-      const existingTileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
-      const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
-      // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
-    }
-  }
-
-  /**
-   * Create pull request for a tileset config
-   */
-  async createTileSetPullRequest(
-    gh: GithubApi,
-    branch: string,
-    title: string,
-    tileSetPath: string,
-    newTileSet: ConfigTileSet | undefined,
-  ): Promise<void> {
-    // skip pull request tileset prepare failure.
-    if (newTileSet == null) throw new Error(`Failed to prepare new tileSet for ${tileSetPath}.`);
-
-    // Github
-    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
-    const file = { path: tileSetPath, content };
-    // Github create pull request
-    await gh.createPullRequest(branch, title, botEmail, [file]);
-  }
-
-  /**
    * Prepare raster tileSet config json
    */
   async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
@@ -300,6 +287,38 @@ export class MakeCogGithub {
         return tileSet;
       }
     }
+    return tileSet;
+  }
+
+  /**
+   * Prepare raster tileSet config json
+   */
+  async prepareElevationTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetRaster): Promise<ConfigTileSetRaster> {
+    if (tileSet == null) {
+      // Prepare individual elevation tileset config
+      const targetLayer = { ...layer, Category: Category.Elevation, minZoom: 0, maxZoom: 32 };
+      return {
+        type: TileSetType.Raster,
+        id: `ts_${layer.name}`,
+        name: layer.name,
+        title: layer.title,
+        category: Category.Elevation,
+        layers: [targetLayer],
+        outputs: [DefaultTerrainRgbOutput, DefaultColorRampOutput],
+      };
+    }
+
+    this.setDefaultConfig(layer, Category.Elevation);
+
+    // Prepare elevation tileset config
+    for (let i = 0; i < tileSet.layers.length; i++) {
+      const name = tileSet.layers[i]?.name;
+      if (name != null && standardizeLayerName(name) === standardizeLayerName(layer.name)) {
+        tileSet.layers[i] = layer;
+        return tileSet;
+      }
+    }
+    tileSet.layers.push(layer);
     return tileSet;
   }
 }

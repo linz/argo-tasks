@@ -63,13 +63,17 @@ export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
   }
 }
 
+/**
+ * Pass Raster target location with the following format
+ * s3://linz-basemaps-staging/2193/west-coast_rural_2015-16_0-3m/01F6P21PNQC7D67W5SHQF806Z3/
+ * s3://linz-basemaps-staging/3857/west-coast_rural_2015-16_0-3m/01ED83TT0ZHKXTPFXEGFJHP2M5/
+ */
 async function parseRasterTargetInfo(
   target: string,
-  elevation: boolean,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
-  const { bucket, epsg, name } = parseTargetUrl(target, elevation ? 1 : 0);
+  const { bucket, epsg, name } = parseTargetUrl(target, 0);
 
   assertValidBucket(bucket, validTargetBuckets);
 
@@ -130,6 +134,53 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   if (title == null) throw new Error(`Failed to get title from collection.json.`);
 
   return { name: name, epsg: epsg.code, title };
+}
+
+/**
+ * Pass Elevation target location with the following format and add source location into layer
+ * s3://linz-basemaps/elevation/3857/kapiti-coast_2021_dem_1m/01HZ5W74E8B1DF2B0MDSKSTSTV/
+ */
+async function parseElevationTargetInfo(
+  target: string,
+  individual: boolean,
+): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined; source: string }> {
+  logger.info({ target }, 'CreatePR: Get the layer information from target');
+  const { bucket, epsg, name } = parseTargetUrl(target, 1);
+
+  assertValidBucket(bucket, validTargetBuckets);
+
+  const collectionPath = fsa.join(target, 'collection.json');
+  const collection = await fsa.readJson<StacCollection>(collectionPath);
+  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const title = collection.title;
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
+
+  // Validate the source location
+  const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
+  if (source == null) throw new Error(`Failed to get source url from collection.json.`);
+  const sourceUrl = new URL(source);
+  const sourceBucket = sourceUrl.hostname;
+  assertValidBucket(sourceBucket, validSourceBuckets);
+
+  // Try to get the region for individual layers
+  let region;
+  if (individual) {
+    logger.info({ source }, 'CreatePR: Get region for individual imagery');
+    const regionValue = sourceUrl.pathname.split('/')[1];
+    if (regionValue) region = regionValue;
+    else {
+      logger.warn({ source }, 'CreatePR: Failed to find region and use individual instead.');
+      region = 'individual';
+    }
+  }
+
+  return {
+    name: standardizeLayerName(name),
+    epsg: epsg.code,
+    title,
+    region,
+    source: source.replace('collection.json', ''),
+  };
 }
 
 export const CommandCreatePRArgs = {
@@ -202,17 +253,25 @@ export const basemapsCreatePullRequest = command({
         layer.title = info.title;
         layer[info.epsg] = target;
       }
+    } else if (configType === ConfigType.Elevation) {
+      for (const target of targets) {
+        const info = await parseElevationTargetInfo(target, args.individual);
+        layer.name = info.name;
+        layer.title = info.title;
+        layer[2193] = info.source;
+        layer[info.epsg] = target;
+        region = info.region;
+      }
     } else {
       for (const target of targets) {
-        const info = await parseRasterTargetInfo(target, category === Category.Elevation, args.individual);
+        const info = await parseRasterTargetInfo(target, args.individual);
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;
         region = info.region;
       }
-      layer.category = category;
     }
-
+    layer.category = category;
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
@@ -221,7 +280,7 @@ export const basemapsCreatePullRequest = command({
     } else if (configType === ConfigType.Raster) {
       await git.updateRasterTileSet(layer.name, layer, category, args.individual, region);
     } else if (configType === ConfigType.Elevation) {
-      await git.updateElevationTileSet(layer.name, layer, category, args.individual, region);
+      await git.updateElevationTileSet(layer.name, layer, args.individual, region);
     } else throw new Error(`Invalid Config File target: ${configType}`);
   },
 });
