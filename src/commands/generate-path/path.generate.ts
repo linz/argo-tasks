@@ -6,7 +6,6 @@ import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { isArgo } from '../../utils/argo.js';
 import { config, createTiff, GeospatialDataCategories, registerCli, StacCollectionLinz, verbose } from '../common.js';
 
 export interface PathMetadata {
@@ -64,11 +63,9 @@ export const commandGeneratePath = command({
     const target = generatePath(metadata);
     logger.info({ duration: performance.now() - startTime, target: target }, 'GeneratePath:Done');
 
-    if (isArgo()) {
-      // Path to where the target is located
-      await fsa.write('/tmp/generate-path/target', target);
-      logger.info({ location: '/tmp/generate-path/target', target: target }, 'GeneratePath:Written');
-    }
+    // Path to where the target is located
+    await fsa.write('/tmp/generate-path/target', target);
+    logger.info({ location: '/tmp/generate-path/target', target: target }, 'GeneratePath:Written');
   },
 });
 

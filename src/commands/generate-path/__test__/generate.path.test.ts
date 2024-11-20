@@ -1,9 +1,9 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { SampleCollection } from '../../stac-setup/__test__/sample.js';
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
 import { extractEpsg, extractGsd, generatePath, PathMetadata } from '../path.generate.js';
-import { SampleCollectionDem, SampleCollectionUrbanImagery } from './sample.js';
 
 describe('GeneratePathImagery', () => {
   it('Should match - urban aerial from slug', () => {
@@ -98,32 +98,16 @@ describe('gsd', () => {
   });
 });
 
-describe('slug dates', () => {
+describe('metadata from collection', () => {
   it('Should return urban aerial photos path', async () => {
-    const collection = structuredClone(SampleCollectionDem);
+    const collection = structuredClone(SampleCollection);
 
     const metadata: PathMetadata = {
       targetBucketName: 'bucket',
       geospatialCategory: collection['linz:geospatial_category'],
       region: collection['linz:region'],
       slug: collection['linz:slug'],
-      gsd: 1,
-      epsg: 2193,
-    };
-    assert.equal(generatePath(metadata), 's3://bucket/southland/southland_2020-2023/dem_1m/2193/');
-  });
-});
-
-describe('slug dates', () => {
-  it('Should return dem path', async () => {
-    const collection = structuredClone(SampleCollectionUrbanImagery);
-
-    const metadata: PathMetadata = {
-      targetBucketName: 'bucket',
-      geospatialCategory: collection['linz:geospatial_category'],
-      region: collection['linz:region'],
-      slug: collection['linz:slug'],
-      gsd: 1,
+      gsd: 0.3,
       epsg: 2193,
     };
     assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2024_0.3m/rgb/2193/');
