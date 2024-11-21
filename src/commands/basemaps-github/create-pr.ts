@@ -175,7 +175,7 @@ async function parseElevationTargetInfo(
   }
 
   return {
-    name: standardizeLayerName(name),
+    name, //TODO: We not standardize elevation layer name for now. And will update all others to match this in future. BM-1133
     epsg: epsg.code,
     title,
     region,
