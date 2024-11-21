@@ -128,8 +128,8 @@ describe('metadata from collection', () => {
   });
 });
 
-describe('metadata from collection', () => {
-  it('Should return urban aerial photos path', async () => {
+describe('metadata from collection with missing slug', () => {
+  it('Should fail', async () => {
     const collection = structuredClone(SampleCollectionNoSlug);
 
     const metadata: PathMetadata = {
