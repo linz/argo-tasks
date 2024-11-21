@@ -21,7 +21,6 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from collection', async () => {
     const baseArgs = {
-      addDateInSlug: true,
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,
@@ -47,7 +46,6 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from args', async () => {
     const baseArgs = {
-      addDateInSlug: true,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
       verbose: false,

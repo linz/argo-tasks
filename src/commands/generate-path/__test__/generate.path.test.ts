@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { SampleCollection } from '../../stac-setup/__test__/sample.js';
+import { SampleCollection, SampleCollectionNoSlug } from '../../generate-path/__test__/sample.js';
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.js';
 import { extractEpsg, extractGsd, generatePath, PathMetadata } from '../path.generate.js';
 
@@ -60,6 +60,20 @@ describe('GeneratePathHistoricImagery', () => {
   });
 });
 
+describe('GeneratePathImagery', () => {
+  it('Should match - urban aerial from slug', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      geospatialCategory: 'urban-aerial-photos',
+      region: 'auckland',
+      slug: 'auckland_2023_0.3m',
+      gsd: 0.3,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgb/2193/');
+  });
+});
+
 describe('epsg', () => {
   const TiffEPSG = new FakeCogTiff('s3://path/fake.tiff', {
     epsg: 2193,
@@ -101,6 +115,22 @@ describe('gsd', () => {
 describe('metadata from collection', () => {
   it('Should return urban aerial photos path', async () => {
     const collection = structuredClone(SampleCollection);
+
+    const metadata: PathMetadata = {
+      targetBucketName: 'bucket',
+      geospatialCategory: collection['linz:geospatial_category'],
+      region: collection['linz:region'],
+      slug: collection['linz:slug'],
+      gsd: 0.3,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2024_0.3m/rgb/2193/');
+  });
+});
+
+describe('metadata from collection', () => {
+  it('Should return urban aerial photos path', async () => {
+    const collection = structuredClone(SampleCollectionNoSlug);
 
     const metadata: PathMetadata = {
       targetBucketName: 'bucket',
