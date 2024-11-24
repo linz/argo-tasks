@@ -158,7 +158,7 @@ async function parseElevationTargetInfo(
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
-  assertValidBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, ValidTargetBuckets);
 
   const collectionPath = fsa.join(target, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
@@ -171,7 +171,7 @@ async function parseElevationTargetInfo(
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
-  assertValidBucket(sourceBucket, validSourceBuckets);
+  assertValidBucket(sourceBucket, ValidSourceBuckets);
 
   // Try to get the region for individual layers
   let region;
