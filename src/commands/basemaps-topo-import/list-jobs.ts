@@ -63,6 +63,8 @@ export const basemapsListTopoJobs = command({
       }
     }
 
+    if (outputs.length === 0) throw new Error('No tiff files found in the location');
+
     if (args.forceOutput || isArgo())
       await fsa.write('/tmp/list-topo-jobs/file-list.json', JSON.stringify(outputs, null, 2));
     logger.info({ duration: performance.now() - startTime }, 'ListJobs:Done');
