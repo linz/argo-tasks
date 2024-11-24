@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import { afterEach, it } from 'node:test';
 
 import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
@@ -54,10 +55,13 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
   t.mock.method(GithubApi.prototype, 'createBlob', () => {});
   t.mock.method(GithubApi.prototype, 'createCommit', () => {});
   t.mock.method(GithubApi.prototype, 'updateBranch', () => {});
-  t.mock.method(GithubApi.prototype, 'createPullRequest', () => {});
+  let createPullRequestCalled = false;
+  t.mock.method(GithubApi.prototype, 'createPullRequest', () => {
+    createPullRequestCalled = true;
+  });
   const targetUrlsString = JSON.stringify([targetUrl]);
 
-  await basemapsCreatePullRequest.handler({
+  const result = await basemapsCreatePullRequest.handler({
     target: targetUrlsString,
     repository: 'any-owner/any-repository',
     verbose: false,
@@ -67,4 +71,6 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
     vector: false,
     ticket: 'any ticket',
   });
+  assert.equal(result, undefined);
+  assert.ok(createPullRequestCalled);
 });
