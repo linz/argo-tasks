@@ -1,7 +1,7 @@
 {
   "name": "@linzjs/argo-tasks",
   "private": true,
-  "version": "4.7.0",
+  "version": "4.8.0",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "repository": "git@github.com:linz/argo-tasks.git",
@@ -46,6 +46,7 @@
     "@linzjs/geojson": "^7.10.0",
     "@octokit/core": "^5.0.0",
     "@octokit/plugin-rest-endpoint-methods": "^10.1.1",
+    "@turf/buffer": "^7.1.0",
     "@wtrpc/core": "^1.0.2",
     "ajv": "^8.17.1",
     "ajv-formats": "^2.1.1",
@@ -53,7 +54,7 @@
     "flatgeobuf": "^3.23.1",
     "p-limit": "^5.0.0",
     "pino": "^8.17.0",
-    "prettier": "^3.1.0",
+    "prettier": "^3.3.3",
     "pretty-json-log": "^1.4.0",
     "ulid": "^2.3.0",
     "zod": "^3.22.4"

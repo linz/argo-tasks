@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.8.0](https://github.com/linz/argo-tasks/compare/v4.7.0...v4.8.0) (2024-11-12)
+
+
+### Features
+
+* attempt to remove slivers by dropping small polygons TDE-1130 ([#1119](https://github.com/linz/argo-tasks/issues/1119)) ([aa1f931](https://github.com/linz/argo-tasks/commit/aa1f931684174eb24a55cc413d0f4ace780b9001))
+* generate initial collection-related STAC metadata TDE-1300 ([#1124](https://github.com/linz/argo-tasks/issues/1124)) ([e30dff9](https://github.com/linz/argo-tasks/commit/e30dff9cd5dd54067539f23b37715f9c5d179528))
+
 ## [4.7.0](https://github.com/linz/argo-tasks/compare/v4.6.0...v4.7.0) (2024-10-21)
 
 
