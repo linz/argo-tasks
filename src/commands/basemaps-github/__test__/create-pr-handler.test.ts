@@ -55,10 +55,7 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
   t.mock.method(GithubApi.prototype, 'createBlob', () => {});
   t.mock.method(GithubApi.prototype, 'createCommit', () => {});
   t.mock.method(GithubApi.prototype, 'updateBranch', () => {});
-  let createPullRequestCalled = false;
-  t.mock.method(GithubApi.prototype, 'createPullRequest', () => {
-    createPullRequestCalled = true;
-  });
+  const createPullRequestMock = t.mock.method(GithubApi.prototype, 'createPullRequest', () => {});
   const targetUrlsString = JSON.stringify([targetUrl]);
 
   const result = await basemapsCreatePullRequest.handler({
@@ -72,5 +69,5 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
     ticket: 'any ticket',
   });
   assert.equal(result, undefined);
-  assert.ok(createPullRequestCalled);
+  assert.equal(createPullRequestMock.mock.callCount(), 1);
 });
