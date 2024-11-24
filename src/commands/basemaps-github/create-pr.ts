@@ -10,8 +10,10 @@ import { logger } from '../../log.js';
 import { registerCli, verbose } from '../common.js';
 import { Category, MakeCogGithub } from './make.cog.github.js';
 
-const validTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
-const validSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);
+export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
+export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);
+
+export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 
 export enum ConfigType {
   Raster = 'raster',
@@ -52,6 +54,13 @@ export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
   const splits = url.pathname.split('/');
   const epsg = Epsg.tryGet(Number(splits[1 + offset]));
   const name = splits[2 + offset];
+
+  //Validate the target information
+  logger.info({ bucket }, 'CreatePR: Valid the target s3 bucket');
+  if (bucket == null || !ValidTargetBuckets.has(bucket)) {
+    throw new Error(`Invalid s3 bucket ${bucket} from the target ${target}.`);
+  }
+
   if (epsg == null || name == null) throw new Error(`Invalid target ${target} to parse the epsg and imagery name.`);
 
   // Get filename for vector target
@@ -75,21 +84,23 @@ async function parseRasterTargetInfo(
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 0);
 
-  assertValidBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, ValidTargetBuckets);
 
   const collectionPath = fsa.join(target, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionPath}`);
 
   // Validate the source location
-  const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
+  const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
-  assertValidBucket(sourceBucket, validSourceBuckets);
-
+  logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
+  if (sourceBucket == null || !ValidSourceBuckets.has(sourceBucket)) {
+    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceUrl.href}.`);
+  }
   // Try to get the region for individual layers
   let region;
   if (individual) {
@@ -114,7 +125,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name, filename } = parseTargetUrl(target, 1);
 
-  assertValidBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, ValidTargetBuckets);
 
   if (filename == null || !filename.endsWith('.tar.co')) {
     throw new Error(`Invalid cotar filename for vector map ${filename}.`);
@@ -147,7 +158,7 @@ async function parseElevationTargetInfo(
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
-  assertValidBucket(bucket, validTargetBuckets);
+  assertValidBucket(bucket, ValidTargetBuckets);
 
   const collectionPath = fsa.join(target, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
@@ -160,7 +171,7 @@ async function parseElevationTargetInfo(
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
   const sourceUrl = new URL(source);
   const sourceBucket = sourceUrl.hostname;
-  assertValidBucket(sourceBucket, validSourceBuckets);
+  assertValidBucket(sourceBucket, ValidSourceBuckets);
 
   // Try to get the region for individual layers
   let region;

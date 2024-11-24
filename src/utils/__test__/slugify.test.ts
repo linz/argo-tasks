@@ -73,7 +73,7 @@ describe('slugify', () => {
   });
 });
 
-function anySlug(): string {
+export function anySlug(): string {
   const length = 8;
   let result = '';
   for (let counter = 0; counter < length; counter++) {
