@@ -123,21 +123,26 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   const slug = slugify(metadata.date ? `${geographicDescription}_${metadata.date}` : geographicDescription);
 
   if (
-    [
-      GeospatialDataCategories.AerialPhotos,
-      GeospatialDataCategories.RuralAerialPhotos,
-      GeospatialDataCategories.SatelliteImagery,
-      GeospatialDataCategories.UrbanAerialPhotos,
-    ].includes(metadata.geospatialCategory)
+    (
+      [
+        GeospatialDataCategories.AerialPhotos,
+        GeospatialDataCategories.RuralAerialPhotos,
+        GeospatialDataCategories.SatelliteImagery,
+        GeospatialDataCategories.UrbanAerialPhotos,
+      ] as string[]
+    ).includes(metadata.geospatialCategory)
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
-  if ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm].includes(metadata.geospatialCategory)) {
+  if (
+    ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm] as string[]).includes(metadata.geospatialCategory)
+  ) {
     return slug;
   }
   if (metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos) {
     throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated slug generation.`);
   }
+
   throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
 }
 

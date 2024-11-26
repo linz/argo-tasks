@@ -16,4 +16,4 @@ export const GeospatialDataCategories = {
   UrbanAerialPhotos: 'urban-aerial-photos',
   Dem: 'dem',
   Dsm: 'dsm',
-};
+} as const;

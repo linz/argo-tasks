@@ -83,16 +83,20 @@ export function generatePath(metadata: PathMetadata): string {
   }
 
   if (
-    [
-      GeospatialDataCategories.UrbanAerialPhotos,
-      GeospatialDataCategories.RuralAerialPhotos,
-      GeospatialDataCategories.SatelliteImagery,
-    ].includes(metadata.geospatialCategory)
+    (
+      [
+        GeospatialDataCategories.UrbanAerialPhotos,
+        GeospatialDataCategories.RuralAerialPhotos,
+        GeospatialDataCategories.SatelliteImagery,
+      ] as string[]
+    ).includes(metadata.geospatialCategory)
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
 
-  if ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm].includes(metadata.geospatialCategory)) {
+  if (
+    ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm] as string[]).includes(metadata.geospatialCategory)
+  ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}_${metadata.gsd}m/${metadata.epsg}/`;
   }
 
