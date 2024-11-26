@@ -309,6 +309,8 @@ export class MakeCogGithub {
     }
 
     this.setDefaultConfig(layer, Category.Elevation);
+    // Remove elevation layer.category if already exists
+    if (layer.category) delete layer.category;
 
     // Prepare elevation tileset config
     for (let i = 0; i < tileSet.layers.length; i++) {
