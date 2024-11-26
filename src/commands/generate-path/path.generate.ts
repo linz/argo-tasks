@@ -6,7 +6,8 @@ import { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
-import { config, createTiff, GeospatialDataCategories, registerCli, StacCollectionLinz, verbose } from '../common.js';
+import { GeospatialDataCategories, StacCollectionLinz } from '../../utils/metadata.js';
+import { config, createTiff, registerCli, verbose } from '../common.js';
 
 export interface PathMetadata {
   targetBucketName: string;
@@ -76,22 +77,22 @@ export const commandGeneratePath = command({
  * @returns
  */
 export function generatePath(metadata: PathMetadata): string {
-  if (metadata.geospatialCategory === GeospatialDataCategories.SCANNED_AERIAL_PHOTOS) {
+  if (metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos) {
     // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
     throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated path generation.`);
   }
 
   if (
     [
-      GeospatialDataCategories.URBAN_AERIAL_PHOTOS,
-      GeospatialDataCategories.RURAL_AERIAL_PHOTOS,
-      GeospatialDataCategories.SATELLITE_IMAGERY,
+      GeospatialDataCategories.UrbanAerialPhotos,
+      GeospatialDataCategories.RuralAerialPhotos,
+      GeospatialDataCategories.SatelliteImagery,
     ].includes(metadata.geospatialCategory)
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
 
-  if ([GeospatialDataCategories.DEM, GeospatialDataCategories.DSM].includes(metadata.geospatialCategory)) {
+  if ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm].includes(metadata.geospatialCategory)) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}_${metadata.gsd}m/${metadata.epsg}/`;
   }
 

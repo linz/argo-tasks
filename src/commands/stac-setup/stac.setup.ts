@@ -5,17 +5,9 @@ import ulid from 'ulid';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { GeospatialDataCategories, StacCollectionLinz } from '../../utils/metadata.js';
 import { slugify } from '../../utils/slugify.js';
-import {
-  config,
-  GeospatialDataCategories,
-  registerCli,
-  StacCollectionLinz,
-  tryParseUrl,
-  UrlFolder,
-  urlToString,
-  verbose,
-} from '../common.js';
+import { config, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.js';
 
 export interface SlugMetadata {
   geospatialCategory: string;
@@ -132,18 +124,18 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
 
   if (
     [
-      GeospatialDataCategories.AERIAL_PHOTOS,
-      GeospatialDataCategories.RURAL_AERIAL_PHOTOS,
-      GeospatialDataCategories.SATELLITE_IMAGERY,
-      GeospatialDataCategories.URBAN_AERIAL_PHOTOS,
+      GeospatialDataCategories.AerialPhotos,
+      GeospatialDataCategories.RuralAerialPhotos,
+      GeospatialDataCategories.SatelliteImagery,
+      GeospatialDataCategories.UrbanAerialPhotos,
     ].includes(metadata.geospatialCategory)
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
-  if ([GeospatialDataCategories.DEM, GeospatialDataCategories.DSM].includes(metadata.geospatialCategory)) {
+  if ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm].includes(metadata.geospatialCategory)) {
     return slug;
   }
-  if (metadata.geospatialCategory === GeospatialDataCategories.SCANNED_AERIAL_PHOTOS) {
+  if (metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos) {
     throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated slug generation.`);
   }
   throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
