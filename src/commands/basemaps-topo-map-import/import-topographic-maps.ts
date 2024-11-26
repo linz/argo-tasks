@@ -1,6 +1,14 @@
+import { tmpdir } from 'node:os';
+
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
+import { createTileCover, TileCoverContext } from '@basemaps/cogify/build/tile.cover.js';
+import { ConfigProviderMemory } from '@basemaps/config';
+import { initConfigFromUrls } from '@basemaps/config-loader';
+import { Nztm2000QuadTms } from '@basemaps/geo';
+import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { fsa } from '@chunkd/fs';
 import { command, option, string } from 'cmd-ts';
+import pLimit from 'p-limit';
 import path from 'path';
 
 import { CliInfo } from '../../cli.info.js';
@@ -8,6 +16,8 @@ import { logger } from '../../log.js';
 import { config, forceOutput, registerCli, tryParseUrl, verbose } from '../common.js';
 import { isTiff } from '../tileindex-validate/tileindex.validate.js';
 import { gdalBuildCogCommands } from './gdal-commands.js';
+
+const Q = pLimit(10);
 
 interface ImportJob {
   /**
@@ -37,6 +47,8 @@ interface ImportJob {
    * @example TODO
    */
   output: string;
+
+  latest: boolean;
 }
 
 /**
@@ -74,9 +86,28 @@ export const importTopographicMaps = command({
     // extract all file paths from the source directory
     const files = await fsa.toArray(fsa.list(args.source));
 
+    const mem = new ConfigProviderMemory();
+    const cfg = await initConfigFromUrls(
+      mem,
+      files.map((f) => tryParseUrl(f)),
+    );
+    if (cfg.imagery.length === 0) throw new Error('No imagery found');
+    const im = cfg.imagery[0];
+    if (im == null) throw new Error('No imagery found');
+    logger.info({ files: im.files.length, title: im.title }, 'Imagery:Loaded');
+
+    const ctx: TileCoverContext = {
+      id: CliId,
+      imagery: im,
+      tileMatrix: Nztm2000QuadTms,
+      logger,
+      preset: 'webp',
+    };
+
+    const res = await createTileCover(ctx);
+
     // map each file path into an ImportJob
     const jobs: ImportJob[] = [];
-
     for (const file of files) {
       logger.info({ file }, 'ListJobs:File');
       if (!isTiff(file)) continue;
@@ -87,15 +118,36 @@ export const importTopographicMaps = command({
         mapCode,
         version,
         output: fsa.join(args.target, `${mapCode}_${version}.tiff`),
+        latest: false,
       };
+
+      // Tag latest version for the job
+
 
       jobs.push(job);
     }
 
+    // Upload the stac files into target location
+
     if (jobs.length === 0) throw new Error('No tiff files found in the location');
+
+    // Prepare the temporary folder for the source files and outputs source:tmp/source/*tif tmp/outputs:tmp/output/*tiff
+    const tmpPath = path.join(tmpdir(), CliId);
+    const tmpURL = tryParseUrl(tmpPath);
+    const tmpFolder = tmpURL.href.endsWith('/') ? new URL(tmpURL.href) : new URL(`${tmpURL.href}/`);
+
+    // async download and dgal commands plimit of 10
+    Q(async () => {
+      // download the source files
+      // run dgal_traslate for source and output
+      // fsa.write output to target location
+    });
 
     // run gdal_translate for each job
     for (const job of jobs) {
+      // Download the source file
+      for (const src of files) sources.register(new URL(src.href, i.url), i.item.id);
+
       const command = gdalBuildCogCommands(tryParseUrl(job.input), tryParseUrl(job.output));
       logger.level = 'debug';
       await new GdalRunner(command).run(logger);
