@@ -60,7 +60,12 @@ export const importTopographicMaps = command({
     registerCli(this, args);
     logger.info('ListJobs:Start');
 
-    const items = await loadTiffsToCreateStacs(args.source, args.target, args.title, args.forceOutput);
+    const items = await loadTiffsToCreateStacs(
+      tryParseUrl(args.source),
+      tryParseUrl(args.target),
+      args.title,
+      args.forceOutput,
+    );
     if (items.length === 0) throw new Error('No Stac items created');
 
     const tmpPath = path.join(tmpdir(), CliId);
@@ -69,7 +74,7 @@ export const importTopographicMaps = command({
     await Promise.all(
       items.map((item) =>
         Q(async () => {
-          await createCogs(item, args.target, tmpFolder);
+          await createCogs(item, tryParseUrl(args.target), tmpFolder);
         }),
       ),
     );
@@ -119,16 +124,10 @@ export function extractMapSheetNameWithVersion(file: string): { mapCode: string;
  *
  * @returns an array of StacItem objects
  */
-async function loadTiffsToCreateStacs(
-  source: string,
-  target: string,
-  title: string,
-  force: boolean,
-): Promise<StacItem[]> {
+async function loadTiffsToCreateStacs(source: URL, target: URL, title: string, force: boolean): Promise<StacItem[]> {
   // extract all file paths from the source directory and convert them into URL objects
   logger.info({ source }, 'LoadTiffs:Start');
-  const sourceUrl = tryParseUrl(source);
-  const files = await fsa.toArray(fsa.list(sourceUrl));
+  const files = await fsa.toArray(fsa.list(source));
   const tiffs = await loadTiffsFromPaths(files, Q);
   const projection = Projection.get(Nztm2000QuadTms);
   const cliDate = new Date().toISOString();
@@ -220,13 +219,14 @@ async function loadTiffsToCreateStacs(
     await fsa.write(collectionPath, JSON.stringify(collection, null, 2));
   }
 
-  const brokenPath = new URL('broken.json', `${target}/broken/`);
+  const brokenPath = new URL('./broken/broken.json', target);
   await fsa.write(brokenPath, JSON.stringify(Array.from(brokenTiffs.keys()), null, 2));
 
   return items;
 }
 
-async function createCogs(item: StacItem, target: string, tmpFolder: URL): Promise<void> {
+async function createCogs(item: StacItem, target: URL, tmp: URL): Promise<void> {
+  const tmpFolder = new URL(item.id, tmp);
   try {
     // Extract the source URL from the item
     logger.info({ item: item.id }, 'CogCreation:Start');
@@ -235,12 +235,13 @@ async function createCogs(item: StacItem, target: string, tmpFolder: URL): Promi
     await mkdir(tmpFolder, { recursive: true });
 
     // Download the source file
-    logger.info({ item: item.id }, 'CogCreation:Download');
+
     const sourceUrl = tryParseUrl(source);
     const filePath = path.parse(sourceUrl.href);
     const fileName = filePath.base;
     const hashStreamSource = fsa.readStream(sourceUrl).pipe(new HashTransform('sha256'));
     const inputPath = new URL(fileName, tmpFolder);
+    logger.info({ item: item.id, download: inputPath.href }, 'CogCreation:Download');
     await fsa.write(inputPath, hashStreamSource);
 
     // run gdal_translate for each job
@@ -256,7 +257,7 @@ async function createCogs(item: StacItem, target: string, tmpFolder: URL): Promi
     await fsa.write(outputPath, readStream);
   } finally {
     // Cleanup the temporary folder once everything is done
-    logger.info({ path: tmpFolder }, 'CogCreation:Cleanup');
-    await rm(tmpFolder, { recursive: true, force: true });
+    logger.info({ path: tmpFolder.href }, 'CogCreation:Cleanup');
+    await rm(tmpFolder.href, { recursive: true, force: true });
   }
 }
