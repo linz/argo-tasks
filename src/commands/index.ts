@@ -3,7 +3,7 @@ import { subcommands } from 'cmd-ts';
 import { CliInfo } from '../cli.info.js';
 import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 import { basemapsCreateMapSheet } from './basemaps-mapsheet/create-mapsheet.js';
-import { importTopographicMaps } from './basemaps-topo-map-import/import-topographic-maps.js';
+import { importTopographicMaps } from './basemaps-topo-import/import-topographic-maps.js';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
 import { commandGeneratePath } from './generate-path/path.generate.js';
