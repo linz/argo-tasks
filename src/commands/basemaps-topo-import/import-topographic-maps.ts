@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
 import { loadTiffsFromPaths } from '@basemaps/config-loader/build//json/tiff.config.js';
 import { Bounds, Nztm2000QuadTms, Projection } from '@basemaps/geo';
+import { fsa } from '@basemaps/shared';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
-import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
 import { command, option, string } from 'cmd-ts';
 import { mkdir, rm } from 'fs/promises';
@@ -127,10 +127,9 @@ async function loadTiffsToCreateStacs(
 ): Promise<StacItem[]> {
   // extract all file paths from the source directory and convert them into URL objects
   logger.info({ source }, 'LoadTiffs:Start');
-  const files = await fsa.toArray(fsa.list(source));
-  const fileUrls = files.map((f) => tryParseUrl(f));
-
-  const tiffs = await loadTiffsFromPaths(fileUrls, Q);
+  const sourceUrl = tryParseUrl(source);
+  const files = await fsa.toArray(fsa.list(sourceUrl));
+  const tiffs = await loadTiffsFromPaths(files, Q);
   const projection = Projection.get(Nztm2000QuadTms);
   const cliDate = new Date().toISOString();
 
@@ -214,15 +213,15 @@ async function loadTiffsToCreateStacs(
     logger.info({ target }, 'CreateStac:Output');
     logger.info({ items: items.length, collectionID: collection.id }, 'Stac:Output');
     for (const item of items) {
-      await fsa.write(fsa.join(target, `${item.id}.json`), JSON.stringify(item, null, 2));
+      const itemPath = new URL(`${item.id}.json`, target);
+      await fsa.write(itemPath, JSON.stringify(item, null, 2));
     }
-    await fsa.write(fsa.join(target, 'collection.json'), JSON.stringify(collection, null, 2));
+    const collectionPath = new URL('collection.json', target);
+    await fsa.write(collectionPath, JSON.stringify(collection, null, 2));
   }
 
-  await fsa.write(
-    fsa.join(`${target}/broken/`, 'broken.json'),
-    JSON.stringify(Array.from(brokenTiffs.keys()), null, 2),
-  );
+  const brokenPath = new URL('broken.json', `${target}/broken/`);
+  await fsa.write(brokenPath, JSON.stringify(Array.from(brokenTiffs.keys()), null, 2));
 
   return items;
 }
@@ -237,23 +236,24 @@ async function createCogs(item: StacItem, target: string, tmpFolder: URL): Promi
 
     // Download the source file
     logger.info({ item: item.id }, 'CogCreation:Download');
-    const url = tryParseUrl(source);
-    const filePath = path.parse(url.href);
+    const sourceUrl = tryParseUrl(source);
+    const filePath = path.parse(sourceUrl.href);
     const fileName = filePath.base;
-    const hashStreamSource = fsa.stream(source).pipe(new HashTransform('sha256'));
-    const input = fsa.join(tmpFolder.href, fileName);
-    await fsa.write(input, hashStreamSource);
+    const hashStreamSource = fsa.readStream(sourceUrl).pipe(new HashTransform('sha256'));
+    const inputPath = new URL(fileName, tmpFolder);
+    await fsa.write(inputPath, hashStreamSource);
 
     // run gdal_translate for each job
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');
-    const output = fsa.join(tmpFolder.href, `${item.id}.tiff`);
-    const command = gdalBuildCogCommands(tryParseUrl(input), tryParseUrl(output));
+    const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
+    const command = gdalBuildCogCommands(inputPath, tempPath);
     await new GdalRunner(command).run(logger);
 
     // fsa.write output to target location
     logger.info({ item: item.id }, 'CogCreation:Output');
-    const readStream = fsa.stream(output).pipe(new HashTransform('sha256'));
-    await fsa.write(fsa.join(target, `${item.id}.tiff`), readStream);
+    const readStream = fsa.readStream(tempPath).pipe(new HashTransform('sha256'));
+    const outputPath = new URL(`${item.id}.tiff`, target);
+    await fsa.write(outputPath, readStream);
   } finally {
     // Cleanup the temporary folder once everything is done
     logger.info({ path: tmpFolder }, 'CogCreation:Cleanup');
