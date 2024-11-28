@@ -30,7 +30,7 @@ const brokenTiffs = new Map<string, Tiff>();
  */
 export const topoStacCreation = command({
   name: 'topo-stac-creation',
-  description: 'List input topographic files and run dgal to standardize and import into target.',
+  description: 'List input topographic files, create StacItems, and generate tiles for grouping.',
   version: CliInfo.version,
   args: {
     config,
@@ -79,7 +79,7 @@ export const topoStacCreation = command({
     latest.forEach((item) => paths.push(new URL(`${args.scale}-latest/${item.id}.json`, targetURL).href));
 
     // write stac items into an JSON array
-    await fsa.write(tryParseUrl(`${args.target}/tiles.json`), JSON.stringify(paths, null, 2));
+    await fsa.write(tryParseUrl(`/tmp/topo-stac-creation/tiles.json`), JSON.stringify(paths, null, 2));
 
     logger.info({ duration: performance.now() - startTime }, 'ListJobs:Done');
   },
