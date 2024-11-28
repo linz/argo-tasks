@@ -111,7 +111,7 @@ async function loadTiffsToCreateStacs(
 ): Promise<{ latest: StacItem[]; others: StacItem[] }> {
   // extract all file paths from the source directory and convert them into URL objects
   logger.info({ source }, 'LoadTiffs:Start');
-  const files = (await fsa.toArray(fsa.list(source))).slice(0, 20);
+  const files = await fsa.toArray(fsa.list(source));
   const tiffs = await loadTiffsFromPaths(files, Q);
 
   // we need to assign each tiff to a group based on its map code (e.g. AB01)
@@ -335,7 +335,7 @@ function createStacCollection(title: string, imageryBound: BoundingBox, items: S
       temporal: { interval: [[cliDate, null]] },
     },
     links: items.map((item) => {
-      return { href: `./${item.id}.json`, rel: 'item', type: 'application/json', latest: true };
+      return { href: `./${item.id}.json`, rel: 'item', type: 'application/json' };
     }),
   };
 
