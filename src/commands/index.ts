@@ -3,7 +3,8 @@ import { subcommands } from 'cmd-ts';
 import { CliInfo } from '../cli.info.js';
 import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 import { basemapsCreateMapSheet } from './basemaps-mapsheet/create-mapsheet.js';
-import { importTopographicMaps } from './basemaps-topo-import/import-topographic-maps.js';
+import { topoCogCreation } from './basemaps-topo-import/topo-cog-creation.js';
+import { topoStacCreation } from './basemaps-topo-import/topo-stac-creation.js';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
 import { commandGeneratePath } from './generate-path/path.generate.js';
@@ -49,7 +50,8 @@ export const AllCommands = {
     cmds: {
       'create-pr': basemapsCreatePullRequest,
       'create-mapsheet': basemapsCreateMapSheet,
-      'import-topographic-maps': importTopographicMaps,
+      'topo-stac-creation': topoStacCreation,
+      'topo-cog-creation': topoCogCreation,
     },
   }),
   'pretty-print': commandPrettyPrint,

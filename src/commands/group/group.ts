@@ -23,7 +23,7 @@ export function groupItems<T>(items: T[], groupSize: number): T[][] {
 }
 
 /** Normalize an input as either a JSON array or just an array  */
-function loadInput(x: string): string[] {
+export function loadInput(x: string): string[] {
   if (x.startsWith('[')) return JSON.parse(x) as string[];
   return [x];
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { extractMapSheetNameWithVersion } from '../import-topographic-maps.js';
+import { extractMapSheetNameWithVersion } from '../topo-stac-creation.js';
 
 describe('extractMapSheetName', () => {
   const FakeDomain = 's3://topographic/fake-domain';
