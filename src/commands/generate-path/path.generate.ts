@@ -83,19 +83,16 @@ export function generatePath(metadata: PathMetadata): string {
   }
 
   if (
-    (
-      [
-        GeospatialDataCategories.UrbanAerialPhotos,
-        GeospatialDataCategories.RuralAerialPhotos,
-        GeospatialDataCategories.SatelliteImagery,
-      ] as string[]
-    ).includes(metadata.geospatialCategory)
+    metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.RuralAerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
 
   if (
-    ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm] as string[]).includes(metadata.geospatialCategory)
+    metadata.geospatialCategory === GeospatialDataCategories.Dem ||
+    metadata.geospatialCategory === GeospatialDataCategories.Dsm
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}_${metadata.gsd}m/${metadata.epsg}/`;
   }

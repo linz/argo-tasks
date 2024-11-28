@@ -48,7 +48,7 @@ describe('GeneratePathHistoricImagery', () => {
   it('Should error', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
-      geospatialCategory: 'scanned-aerial-imagery',
+      geospatialCategory: 'scanned-aerial-photos',
       region: 'wellington',
       slug: 'napier_2017-2018_0.05m',
       gsd: 0.5,
