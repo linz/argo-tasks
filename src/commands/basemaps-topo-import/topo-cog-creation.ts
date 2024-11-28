@@ -91,6 +91,7 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     const sourceUrl = tryParseUrl(source);
     const filePath = path.parse(sourceUrl.href);
     const fileName = filePath.base;
+    if (!(await fsa.exists(sourceUrl))) throw new Error('Source file not found');
     const hashStreamSource = fsa.readStream(sourceUrl).pipe(new HashTransform('sha256'));
     const inputPath = new URL(fileName, tmpFolder);
     logger.info({ item: item.id, download: inputPath.href }, 'CogCreation:Download');
