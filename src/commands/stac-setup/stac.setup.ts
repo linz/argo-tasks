@@ -134,6 +134,7 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
+
   if (
     ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm] as string[]).includes(metadata.geospatialCategory)
   ) {
