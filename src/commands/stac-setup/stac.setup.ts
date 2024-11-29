@@ -5,9 +5,9 @@ import ulid from 'ulid';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
+import { GeospatialDataCategories, StacCollectionLinz } from '../../utils/metadata.js';
 import { slugify } from '../../utils/slugify.js';
 import { config, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.js';
-import { dataCategories } from './category.constants.js';
 
 export interface SlugMetadata {
   geospatialCategory: string;
@@ -15,16 +15,6 @@ export interface SlugMetadata {
   region: string;
   date: string;
   gsd: string;
-}
-
-export interface StacCollectionLinz {
-  'linz:lifecycle': string;
-  'linz:geospatial_category': string;
-  'linz:region': string;
-  'linz:security_classification': string;
-  'linz:slug': string;
-  'linz:event_name'?: string;
-  'linz:geographic_description'?: string;
 }
 
 export const commandStacSetup = command({
@@ -133,21 +123,26 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   const slug = slugify(metadata.date ? `${geographicDescription}_${metadata.date}` : geographicDescription);
 
   if (
-    [
-      dataCategories.AERIAL_PHOTOS,
-      dataCategories.RURAL_AERIAL_PHOTOS,
-      dataCategories.SATELLITE_IMAGERY,
-      dataCategories.URBAN_AERIAL_PHOTOS,
-    ].includes(metadata.geospatialCategory)
+    (
+      [
+        GeospatialDataCategories.AerialPhotos,
+        GeospatialDataCategories.RuralAerialPhotos,
+        GeospatialDataCategories.SatelliteImagery,
+        GeospatialDataCategories.UrbanAerialPhotos,
+      ] as string[]
+    ).includes(metadata.geospatialCategory)
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
-  if ([dataCategories.DEM, dataCategories.DSM].includes(metadata.geospatialCategory)) {
+  if (
+    ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm] as string[]).includes(metadata.geospatialCategory)
+  ) {
     return slug;
   }
-  if (metadata.geospatialCategory === dataCategories.SCANNED_AERIAL_PHOTOS) {
+  if (metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos) {
     throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated slug generation.`);
   }
+
   throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
 }
 

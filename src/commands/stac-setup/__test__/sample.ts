@@ -1,6 +1,6 @@
 import { StacCollection } from 'stac-ts';
 
-import { StacCollectionLinz } from '../stac.setup.js';
+import { StacCollectionLinz } from '../../../utils/metadata.js';
 
 export const SampleCollection: StacCollection & StacCollectionLinz = {
   type: 'Collection',
