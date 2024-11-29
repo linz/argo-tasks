@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.9.0](https://github.com/linz/argo-tasks/compare/v4.8.0...v4.9.0) (2024-11-29)
+
+
+### Features
+
+* **basemaps:** Update elevation config to insert the source is 2193 layer. BM-1125 ([#1139](https://github.com/linz/argo-tasks/issues/1139)) ([37f9030](https://github.com/linz/argo-tasks/commit/37f90305afb5fe39aee064ab4947f3e41d3a7f1e))
+* generate path from slug TDE-1319 ([#1136](https://github.com/linz/argo-tasks/issues/1136)) ([48c29ac](https://github.com/linz/argo-tasks/commit/48c29acf3249c990f21989364f10d3bfd702e51c))
+
+
+### Bug Fixes
+
+* **basemaps:** Remove the elevation category for elevation layers. BM-1125 ([#1148](https://github.com/linz/argo-tasks/issues/1148)) ([40e8e0e](https://github.com/linz/argo-tasks/commit/40e8e0e579c98cd50c2b45ad1d74be91488b5baf))
+
 ## [4.8.0](https://github.com/linz/argo-tasks/compare/v4.7.0...v4.8.0) (2024-11-12)
 
 
