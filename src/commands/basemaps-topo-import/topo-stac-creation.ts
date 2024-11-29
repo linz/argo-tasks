@@ -281,7 +281,7 @@ async function extractBounds(tiff: Tiff): Promise<Bounds | null> {
 /**
  * This function creates a base StacItem object based on the provided parameters.
  * @param id: The id of the StacItem
- * @example
+ * @example "CJ10" or "CJ10_v1-00"
  *
  * @param mapCode The map code of the map sheet
  * @example "CJ10"
@@ -307,11 +307,6 @@ function createBaseStacItem(id: string, mapCode: string, version: string, tiff: 
       { rel: 'parent', href: './collection.json', type: 'application/json' },
     ],
     assets: {
-      cog: {
-        href: `./${id}.tiff`,
-        type: 'image/tiff; application=geotiff; profile=cloud-optimized',
-        roles: ['data'],
-      },
       source: {
         href: tiff.source.url.href,
         type: 'image/tiff; application=geotiff',
@@ -351,7 +346,12 @@ function createStacCollection(title: string, imageryBound: BoundingBox, items: S
       // },
       { rel: 'self', href: './collection.json', type: 'application/json' },
       ...items.map((item) => {
-        return { href: `./${item.id}.json`, rel: 'item', type: 'application/json' };
+        return {
+          href: `./${item.id}.json`,
+          rel: 'item',
+          type: 'application/json',
+          // "file:checksum": "122061aa9d0283cda0a587d812a5c31a9cfb07c54e0f68f87f2d886675bf8a409709"
+        };
       }),
     ],
     providers: [{ name: 'Land Information New Zealand', roles: ['host', 'licensor', 'processor', 'producer'] }],

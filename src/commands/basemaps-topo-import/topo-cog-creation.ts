@@ -1,6 +1,7 @@
 import { tmpdir } from 'node:os';
 
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
+import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
 import { fsa } from '@basemaps/shared';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { command, option, optional, restPositionals, string } from 'cmd-ts';
@@ -78,6 +79,7 @@ export const topoCogCreation = command({
 });
 
 async function createCogs(input: URL, tmp: URL): Promise<void> {
+  const startTime = performance.now();
   const item = await fsa.readJson<StacItem>(input);
   const tmpFolder = new URL(item.id, tmp);
   try {
@@ -108,9 +110,20 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     const readStream = fsa.readStream(tempPath).pipe(new HashTransform('sha256'));
     const outputPath = tryParseUrl(input.href.replace('.json', '.tiff'));
     await fsa.write(outputPath, readStream);
+
+    // Add the asset of created cog into stac item
+    const stac = await fsa.read(outputPath);
+    item.assets['cog'] = {
+      href: `./${item.id}.tiff`,
+      type: 'image/tiff; application=geotiff; profile=cloud-optimized',
+      roles: ['data'],
+      ...createFileStats(stac),
+    };
+    await fsa.write(input, JSON.stringify(item, null, 2));
   } finally {
     // Cleanup the temporary folder once everything is done
     logger.info({ path: tmpFolder.href }, 'CogCreation:Cleanup');
     await rm(tmpFolder.href, { recursive: true, force: true });
+    logger.info({ duration: performance.now() - startTime }, 'CogCreation:Done');
   }
 }
