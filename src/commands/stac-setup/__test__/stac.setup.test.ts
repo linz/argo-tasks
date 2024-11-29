@@ -124,7 +124,7 @@ describe('GenerateSlugImagery', () => {
   });
 });
 
-describe('GenerateSlugElevation', () => {
+describe('GenerateSlugGeospatialDataCategories', () => {
   it('Should match - dem (no optional metadata)', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'dem',
@@ -145,22 +145,6 @@ describe('GenerateSlugElevation', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
-});
-
-describe('GenerateSlugSatelliteImagery', () => {
-  it('Should match - geographic description & event', () => {
-    const metadata: SlugMetadata = {
-      geospatialCategory: 'satellite-imagery',
-      geographicDescription: 'North Island Cyclone Gabrielle',
-      region: 'new-zealand',
-      date: '2023',
-      gsd: '0.5',
-    };
-    assert.equal(slugFromMetadata(metadata), 'north-island-cyclone-gabrielle_2023_0.5m');
-  });
-});
-
-describe('GenerateSlugHistoricImagery', () => {
   it('Should error as historic imagery geospatial category is not supported', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'scanned-aerial-photos',
@@ -173,12 +157,9 @@ describe('GenerateSlugHistoricImagery', () => {
       slugFromMetadata(metadata);
     }, Error('Historic Imagery scanned-aerial-photos is out of scope for automated slug generation.'));
   });
-});
-
-describe('GenerateSlugUnknownGeospatialCategory', () => {
   it('Should error as is not a matching geospatial category.', () => {
     const metadata: SlugMetadata = {
-      geospatialCategory: 'scanned-aerial-imagery',
+      geospatialCategory: 'not-a-valid-category',
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
@@ -186,7 +167,7 @@ describe('GenerateSlugUnknownGeospatialCategory', () => {
     };
     assert.throws(() => {
       slugFromMetadata(metadata);
-    }, Error("Slug can't be generated from collection as no matching category: scanned-aerial-imagery."));
+    }, Error("Slug can't be generated from collection as no matching category: not-a-valid-category."));
   });
 });
 

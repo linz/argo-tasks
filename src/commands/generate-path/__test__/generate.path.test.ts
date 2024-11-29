@@ -19,7 +19,7 @@ describe('GeneratePathImagery', () => {
   });
 });
 
-describe('GeneratePathElevation', () => {
+describe('GeneratePathGeospatialDataCategories', () => {
   it('Should match - dem from slug', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
@@ -42,10 +42,20 @@ describe('GeneratePathElevation', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/auckland/auckland_2023/dsm_1m/2193/');
   });
-});
-
-describe('GeneratePathHistoricImagery', () => {
-  it('Should error', () => {
+  it('Should error - invalid geospatial category', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      geospatialCategory: 'not-a-valid-category',
+      region: 'wellington',
+      slug: 'napier_2017-2018_0.05m',
+      gsd: 0.5,
+      epsg: 2193,
+    };
+    assert.throws(() => {
+      generatePath(metadata);
+    }, Error("Path can't be generated from collection as no matching category for not-a-valid-category."));
+  });
+  it('Should error - does not support historical aerial photos', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       geospatialCategory: 'scanned-aerial-photos',
@@ -56,7 +66,7 @@ describe('GeneratePathHistoricImagery', () => {
     };
     assert.throws(() => {
       generatePath(metadata);
-    }, Error);
+    }, Error('Historic Imagery scanned-aerial-photos is out of scope for automated path generation.'));
   });
 });
 
