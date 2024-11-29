@@ -13,7 +13,7 @@ import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
-import { config, forceOutput, registerCli, tryParseUrl, verbose } from '../common.js';
+import { config, forceOutput, registerCli, tryParseUrl, UrlFolder, verbose } from '../common.js';
 
 const Q = pLimit(10);
 const projection = Projection.get(Nztm2000QuadTms);
@@ -42,12 +42,12 @@ export const topoStacCreation = command({
       description: 'Imported imagery title',
     }),
     source: option({
-      type: string,
+      type: UrlFolder,
       long: 'source',
       description: 'Location of the source files',
     }),
     target: option({
-      type: string,
+      type: UrlFolder,
       long: 'target',
       description: 'Target location for the output files',
     }),
@@ -62,12 +62,9 @@ export const topoStacCreation = command({
     registerCli(this, args);
     logger.info('ListJobs:Start');
 
-    const sourceURL = tryParseUrl(args.source);
-    const targetURL = tryParseUrl(args.target);
-
     const { latest, others } = await loadTiffsToCreateStacs(
-      sourceURL,
-      targetURL,
+      args.source,
+      args.target,
       args.title,
       args.forceOutput,
       args.scale,
@@ -75,8 +72,8 @@ export const topoStacCreation = command({
     if (latest.length === 0 || others.length === 0) throw new Error('No Stac items created');
 
     const paths: string[] = [];
-    others.forEach((item) => paths.push(new URL(`${args.scale}/${item.id}.json`, targetURL).href));
-    latest.forEach((item) => paths.push(new URL(`${args.scale}-latest/${item.id}.json`, targetURL).href));
+    others.forEach((item) => paths.push(new URL(`${args.scale}/${item.id}.json`, args.target).href));
+    latest.forEach((item) => paths.push(new URL(`${args.scale}-latest/${item.id}.json`, args.target).href));
 
     // write stac items into an JSON array
     await fsa.write(tryParseUrl(`/tmp/topo-stac-creation/tiles.json`), JSON.stringify(paths, null, 2));
@@ -88,6 +85,7 @@ export const topoStacCreation = command({
 interface VersionedTiff {
   version: string;
   tiff: Tiff;
+  bounds: Bounds;
 }
 
 /**
@@ -130,12 +128,18 @@ async function loadTiffsToCreateStacs(
     const source = tiff.source.url.href;
     const { mapCode, version } = extractMapSheetNameWithVersion(source);
 
+    const bounds = await extractBounds(tiff);
+    if (bounds == null) {
+      brokenTiffs.set(`${mapCode}_${version}`, tiff);
+      continue;
+    }
+
     const entry = versionsByMapCode.get(mapCode);
 
     if (entry == null) {
-      versionsByMapCode.set(mapCode, [{ version, tiff }]);
+      versionsByMapCode.set(mapCode, [{ version, tiff, bounds }]);
     } else {
-      entry.push({ version, tiff });
+      entry.push({ version, tiff, bounds });
     }
   }
 
@@ -170,9 +174,9 @@ async function loadTiffsToCreateStacs(
     otherStacs.push(...stacItems.others);
 
     if (imageryBound == null) {
-      imageryBound = stacItems.bounds;
+      imageryBound = latest.bounds;
     } else {
-      imageryBound = imageryBound.union(stacItems.bounds);
+      imageryBound = imageryBound.union(latest.bounds);
     }
   }
 
@@ -231,10 +235,10 @@ async function createStacItems(
   others: VersionedTiff[],
   target: URL,
   scale: string,
-): Promise<{ latest: StacItem; others: StacItem[]; bounds: Bounds }> {
-  const latestStacItem = await createBaseStacItem(mapCode, mapCode, latest.version, latest.tiff);
-  const othersStacItems = await Promise.all(
-    [...others, latest].map(({ version, tiff }) => createBaseStacItem(`${mapCode}_${version}`, mapCode, version, tiff)),
+): Promise<{ latest: StacItem; others: StacItem[] }> {
+  const latestStacItem = createBaseStacItem(mapCode, mapCode, latest.version, latest.tiff, latest.bounds);
+  const othersStacItems = [...others, latest].map(({ version, tiff, bounds }) =>
+    createBaseStacItem(`${mapCode}_${version}`, mapCode, version, tiff, bounds),
   );
 
   // need to do the part where they add special fields to each group
@@ -250,69 +254,80 @@ async function createStacItems(
   });
 
   // add link to latest referencing its copy that will live in topo50 dir
-  latestStacItem?.links.push({
+  latestStacItem.links.push({
     href: latestURL.href,
     rel: 'derived_from',
     type: 'application/json',
   });
 
-  // since all of the given tiffs are for the same map code,
-  // their bounds should be the same, so we can grab the bounds of the latest
+  return { latest: latestStacItem, others: othersStacItems.flatMap((item) => (item ? item : [])) };
+}
+
+/**
+ * This function attempts to extract bounds from the given Tiff object.
+ *
+ * @param tiff: The Tiff object from which to extract bounds
+ *
+ * @returns if succeeded, a Bounds object. Otherwise, null.
+ */
+async function extractBounds(tiff: Tiff): Promise<Bounds | null> {
   try {
-    const bounds = Bounds.fromBbox(await findBoundingBox(latest.tiff));
-
-    if (latestStacItem == null) {
-      throw new Error(`Error creating StacItem for latest version of ${mapCode} sheets`);
-    }
-
-    return { latest: latestStacItem, others: othersStacItems.flatMap((item) => (item ? item : [])), bounds };
+    return Bounds.fromBbox(await findBoundingBox(tiff));
   } catch (e) {
-    throw new Error(`Couldn't extract bounds from the ${mapCode}'s latest map sheet`);
+    return null;
   }
 }
 
-async function createBaseStacItem(id: string, mapCode: string, version: string, tiff: Tiff): Promise<StacItem | null> {
-  const source = tiff.source.url.href;
-
-  let bounds;
-  try {
-    bounds = Bounds.fromBbox(await findBoundingBox(tiff));
-  } catch (e) {
-    brokenTiffs.set(id, tiff);
-    return null;
-  }
-
+/**
+ * This function creates a base StacItem object based on the provided parameters.
+ * @param id: The id of the StacItem
+ * @example
+ *
+ * @param mapCode The map code of the map sheet
+ * @example "CJ10"
+ *
+ * @param version The version of the map sheet
+ * @example "v1-00"
+ *
+ * @param tiff TODO
+ *
+ * @param bounds TODO
+ *
+ * @returns
+ */
+function createBaseStacItem(id: string, mapCode: string, version: string, tiff: Tiff, bounds: Bounds): StacItem {
   logger.info({ id }, 'CreateStac:Item');
   const item: StacItem = {
-    id: id,
     type: 'Feature',
-    collection: CliId,
     stac_version: '1.0.0',
-    stac_extensions: [],
+    id: id,
+    links: [
+      { rel: 'self', href: `./${id}.json`, type: 'application/json' },
+      { rel: 'collection', href: './collection.json', type: 'application/json' },
+      { rel: 'parent', href: './collection.json', type: 'application/json' },
+    ],
+    assets: {
+      cog: {
+        href: `./${id}.tiff`,
+        type: 'image/tiff; application=geotiff; profile=cloud-optimized',
+        roles: ['data'],
+      },
+      source: {
+        href: tiff.source.url.href,
+        type: 'image/tiff; application=geotiff',
+        roles: ['data'],
+      },
+    },
+    stac_extensions: ['https://stac-extensions.github.io/file/v2.0.0/schema.json'],
+    properties: {
+      datetime: cliDate,
+      map_code: mapCode, // e.g. "CJ10"
+      version: version.replace('-', '.'), // convert from "v1-00" to "v1.00"
+      'proj:epsg': projection.epsg.code,
+    },
     geometry: projection.boundsToGeoJsonFeature(bounds).geometry as GeoJSONPolygon,
     bbox: projection.boundsToWgs84BoundingBox(bounds),
-    links: [
-      { href: `./${id}.json`, rel: 'self' },
-      { href: './collection.json', rel: 'collection' },
-      { href: './collection.json', rel: 'parent' },
-      { href: source, rel: 'linz_basemaps:source', type: 'image/tiff; application=geotiff' },
-    ],
-    properties: {
-      mapCode,
-      version,
-      datetime: cliDate,
-      start_datetime: undefined,
-      end_datetime: undefined,
-      'proj:epsg': projection.epsg.code,
-      created_at: cliDate,
-      updated_at: cliDate,
-      'linz:lifecycle': 'ongoing',
-      'linz:geospatial_category': 'topographic-maps',
-      'linz:region': 'new-zealand',
-      'linz:security_classification': 'unclassified',
-      'linz:slug': 'topo50',
-    },
-    assets: {},
+    collection: CliId,
   };
 
   return item;
@@ -321,22 +336,36 @@ async function createBaseStacItem(id: string, mapCode: string, version: string, 
 function createStacCollection(title: string, imageryBound: BoundingBox, items: StacItem[]): StacCollection {
   logger.info({ items: items.length }, 'CreateStac:Collection');
   const collection: StacCollection = {
-    id: CliId,
     type: 'Collection',
     stac_version: '1.0.0',
-    stac_extensions: [],
-    license: 'CC-BY-4.0',
+    id: CliId,
     title,
     description: 'Topographic maps of New Zealand',
+    license: 'CC-BY-4.0',
+    links: [
+      // TODO: We not have an ODR bucket for the linz-topographic yet.
+      // {
+      //   rel: 'root',
+      //   href: 'https://nz-imagery.s3.ap-southeast-2.amazonaws.com/catalog.json',
+      //   type: 'application/json',
+      // },
+      { rel: 'self', href: './collection.json', type: 'application/json' },
+      ...items.map((item) => {
+        return { href: `./${item.id}.json`, rel: 'item', type: 'application/json' };
+      }),
+    ],
     providers: [{ name: 'Land Information New Zealand', roles: ['host', 'licensor', 'processor', 'producer'] }],
+    'linz:lifecycle': 'ongoing',
+    'linz:geospatial_category': 'topographic-maps',
+    'linz:region': 'new-zealand',
+    'linz:security_classification': 'unclassified',
+    'linz:slug': 'topo50',
     extent: {
       spatial: { bbox: [projection.boundsToWgs84BoundingBox(imageryBound)] },
-      // Default  the temporal time today if no times were found as it is required for STAC
+      // Default the temporal time today if no times were found as it is required for STAC
       temporal: { interval: [[cliDate, null]] },
     },
-    links: items.map((item) => {
-      return { href: `./${item.id}.json`, rel: 'item', type: 'application/json' };
-    }),
+    stac_extensions: ['https://stac-extensions.github.io/file/v2.0.0/schema.json'],
   };
 
   return collection;

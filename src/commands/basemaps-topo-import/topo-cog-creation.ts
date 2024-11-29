@@ -83,7 +83,7 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
   try {
     // Extract the source URL from the item
     logger.info({ item: item.id }, 'CogCreation:Start');
-    const source = item.links.find((l) => l.rel === 'linz_basemaps:source')?.href;
+    const source = item.assets['source']?.href;
     if (source == null) throw new Error('No source file found in the item');
     await mkdir(tmpFolder, { recursive: true });
 
