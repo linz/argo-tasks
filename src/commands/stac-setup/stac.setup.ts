@@ -123,19 +123,16 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   const slug = slugify(metadata.date ? `${geographicDescription}_${metadata.date}` : geographicDescription);
 
   if (
-    (
-      [
-        GeospatialDataCategories.AerialPhotos,
-        GeospatialDataCategories.RuralAerialPhotos,
-        GeospatialDataCategories.SatelliteImagery,
-        GeospatialDataCategories.UrbanAerialPhotos,
-      ] as string[]
-    ).includes(metadata.geospatialCategory)
+    metadata.geospatialCategory === GeospatialDataCategories.AerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.RuralAerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
+    metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
   if (
-    ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm] as string[]).includes(metadata.geospatialCategory)
+    metadata.geospatialCategory === GeospatialDataCategories.Dem ||
+    metadata.geospatialCategory === GeospatialDataCategories.Dsm
   ) {
     return slug;
   }
