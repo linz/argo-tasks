@@ -102,7 +102,7 @@ export const commandStacSetup = command({
         region: args.region,
         geographicDescription: args.geographicDescription,
         date: date,
-        gsd: args.gsd,
+        gsd: formatGsd(args.gsd),
       };
       const slug = slugFromMetadata(metadata);
       const collectionId = ulid.ulid();
@@ -123,19 +123,16 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   const slug = slugify(metadata.date ? `${geographicDescription}_${metadata.date}` : geographicDescription);
 
   if (
-    (
-      [
-        GeospatialDataCategories.AerialPhotos,
-        GeospatialDataCategories.RuralAerialPhotos,
-        GeospatialDataCategories.SatelliteImagery,
-        GeospatialDataCategories.UrbanAerialPhotos,
-      ] as string[]
-    ).includes(metadata.geospatialCategory)
+    metadata.geospatialCategory === GeospatialDataCategories.AerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.RuralAerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
+    metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
   if (
-    ([GeospatialDataCategories.Dem, GeospatialDataCategories.Dsm] as string[]).includes(metadata.geospatialCategory)
+    metadata.geospatialCategory === GeospatialDataCategories.Dem ||
+    metadata.geospatialCategory === GeospatialDataCategories.Dsm
   ) {
     return slug;
   }
@@ -144,6 +141,20 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   }
 
   throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
+}
+
+/**
+ * Remove a trailing 'm' from a GSD value and log warning if it is present
+ *
+ * @param gsd GSD value from command line input
+ * @returns GSD without trailing 'm'
+ */
+export function formatGsd(gsd: string): string {
+  if (gsd.endsWith('m')) {
+    logger.warn(`${gsd} supplied as GSD; future supported format will require numerical value only.`);
+    return gsd.slice(0, -1);
+  }
+  return gsd;
 }
 
 /**
