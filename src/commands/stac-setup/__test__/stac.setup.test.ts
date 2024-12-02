@@ -5,7 +5,7 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
 import { commandStacSetup } from '../stac.setup.js';
-import { formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
+import { formatDate, formatGsd, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
 import { SampleCollection } from './sample.js';
 
 describe('stac-setup', () => {
@@ -195,5 +195,17 @@ describe('formatDate', () => {
     const startYear = '2023';
     const endYear = '2024';
     assert.equal(formatDate(startYear, endYear), '2023-2024');
+  });
+});
+
+describe('formatGsd', () => {
+  it('Should return GSD unaltered', async () => {
+    const gsd = '0.3';
+    assert.equal(formatGsd(gsd), '0.3');
+  });
+
+  it('Should return GSD with trailing m removed', async () => {
+    const gsd = '0.3m';
+    assert.equal(formatGsd(gsd), '0.3');
   });
 });
