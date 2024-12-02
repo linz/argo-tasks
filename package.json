@@ -22,14 +22,14 @@
     "build": "tsc",
     "docs": "node build/src/readme/readme.generate.js",
     "lint": "npx eslint . --ignore-path .gitignore",
-    "test": "node --test build/"
+    "test": "node --test"
   },
   "publishConfig": {
     "access": "restricted"
   },
   "type": "module",
   "engines": {
-    "node": "^20.13.1"
+    "node": "^22.11.0"
   },
   "files": [
     "build/src/**"
