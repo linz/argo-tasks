@@ -205,7 +205,6 @@ describe('formatGsd', () => {
   });
 
   it('Should return GSD with trailing m removed', async () => {
-    const gsd = '0.3m';
-    assert.equal(formatGsd(gsd), '0.3');
+    assert.equal(formatGsd('0.3m'), '0.3');
   });
 });
