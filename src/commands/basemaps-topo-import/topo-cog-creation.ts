@@ -15,7 +15,7 @@ import { logger } from '../../log.js';
 import { HashTransform } from '../../utils/hash.stream.js';
 import { config, forceOutput, registerCli, tryParseUrl, verbose } from '../common.js';
 import { loadInput } from '../group/group.js';
-import { gdalBuildCogCommands } from './gdal-commands.js';
+import { gdalBuildCogCommands, gdalBuildVrt } from './gdal-commands.js';
 const Q = pLimit(10);
 
 /**
@@ -99,11 +99,16 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     logger.info({ item: item.id, download: inputPath.href }, 'CogCreation:Download');
     await fsa.write(inputPath, hashStreamSource);
 
+    // run gdal_buildvrt for the source file
+    const vrtPath = new URL(`${item.id}.vrt`, tmpFolder);
+    const commandBuildVrt = gdalBuildVrt(vrtPath, [inputPath]);
+    await new GdalRunner(commandBuildVrt).run(logger);
+
     // run gdal_translate for each job
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');
     const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
-    const command = gdalBuildCogCommands(inputPath, tempPath);
-    await new GdalRunner(command).run(logger);
+    const commandTranslate = gdalBuildCogCommands(vrtPath, tempPath);
+    await new GdalRunner(commandTranslate).run(logger);
 
     // fsa.write output to target location
     logger.info({ item: item.id }, 'CogCreation:Output');

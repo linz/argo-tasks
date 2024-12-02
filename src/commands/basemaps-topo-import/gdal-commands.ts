@@ -2,6 +2,15 @@ import { GdalCommand } from '@basemaps/cogify/build/cogify/gdal.runner.js';
 
 import { urlToString } from '../common.js';
 
+export function gdalBuildVrt(targetVrt: URL, source: URL[]): GdalCommand {
+  if (source.length === 0) throw new Error('No source files given for :' + targetVrt.href);
+  return {
+    output: targetVrt,
+    command: 'gdalbuildvrt',
+    args: ['-addalpha', urlToString(targetVrt), ...source.map(urlToString)],
+  };
+}
+
 export function gdalBuildCogCommands(input: URL, output: URL): GdalCommand {
   return {
     command: 'gdal_translate',
@@ -11,7 +20,7 @@ export function gdalBuildCogCommands(input: URL, output: URL): GdalCommand {
       ['-of', 'COG'], // Output format
       ['-stats'], // Force stats (re)computation
       ['-a_srs', `EPSG:2193`], // Projection override
-      // creation options (-co)
+      ['-co', 'ADD_ALPHA=YES'],
       ['-co', 'NUM_THREADS=ALL_CPUS'], // Use all CPUS
       ['-co', 'SPARSE_OK=TRUE'], // Allow for sparse writes
       ['-co', 'BIGTIFF=NO'],
