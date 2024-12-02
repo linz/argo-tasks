@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { extractMapSheetNameWithVersion } from '../topo-stac-creation.js';
+import { extractMapCodeAndVersion } from '../extractors/extract-map-code-and-version.js';
 
 describe('extractMapSheetName', () => {
   const FakeDomain = 's3://topographic/fake-domain';
@@ -22,7 +22,7 @@ describe('extractMapSheetName', () => {
 
   it('Should parse the correct MapSheet Names', async () => {
     for (const file of FakeFiles) {
-      const output = extractMapSheetNameWithVersion(file.input);
+      const output = extractMapCodeAndVersion(file.input);
       assert.equal(output.mapCode, file.expected.mapCode, 'Map code does not match');
       assert.equal(output.version, file.expected.version, 'Version does not match');
     }
@@ -31,7 +31,7 @@ describe('extractMapSheetName', () => {
   it('Should not able to parse a version from file', async () => {
     const wrongFiles = [`${FakeDomain}/MB07_GeoTif1-00.tif`, `${FakeDomain}/MB07_TIFF_600v1.tif`];
     for (const file of wrongFiles) {
-      assert.throws(() => extractMapSheetNameWithVersion(file), new Error('Version not found in the file name'));
+      assert.throws(() => extractMapCodeAndVersion(file), new Error('Version not found in the file name'));
     }
   });
 });
