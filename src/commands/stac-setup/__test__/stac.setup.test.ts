@@ -200,8 +200,7 @@ describe('formatDate', () => {
 
 describe('formatGsd', () => {
   it('Should return GSD unaltered', async () => {
-    const gsd = '0.3';
-    assert.equal(formatGsd(gsd), '0.3');
+    assert.equal(formatGsd('0.3'), '0.3');
   });
 
   it('Should return GSD with trailing m removed', async () => {
