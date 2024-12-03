@@ -100,9 +100,9 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     logger.info({ item: item.id, download: inputPath.href }, 'CogCreation:Download');
     // Add checksum for source file
     if (item.assets['source'] == null) throw new Error('No source file found in the item');
+    await fsa.write(inputPath, hashStreamSource);
     item.assets['source']['file:checksum'] = hashStreamSource.multihash;
     item.assets['source']['file:size'] = hashStreamSource.size;
-    await fsa.write(inputPath, hashStreamSource);
 
     // run gdal commands for each the source file
     logger.info({ item: item.id }, 'CogCreation:gdalbuildvrt');

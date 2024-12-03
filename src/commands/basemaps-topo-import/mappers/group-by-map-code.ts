@@ -1,6 +1,7 @@
 import { Bounds, Epsg, Projection } from '@basemaps/geo';
 import { Tiff } from '@cogeotiff/core';
 
+import { logger } from '../../../log.js';
 import { extractBounds } from '../extractors/extract-bounds.js';
 import { extractEpsgFromTiff } from '../extractors/extract-epsg-from-tiff.js';
 import { extractMapCodeAndVersion } from '../extractors/extract-map-code-and-version.js';
@@ -48,20 +49,26 @@ export async function groupTiffsByMapCodeAndLatest(tiffs: Tiff[]): Promise<Group
   const versionsByMapCode: VersionsByMapCode = new Map();
 
   for (const tiff of tiffs) {
-    // extract the epsg code from the Tiff object
-    const epsg = extractEpsgFromTiff(tiff);
-    const projection = Projection.tryGet(epsg);
-    if (projection == null) throw new Error(`Could not find a projection for epsg:${epsg.code}`);
-
     const source = tiff.source.url.href;
     const { mapCode, version } = extractMapCodeAndVersion(source);
 
     const bounds = await extractBounds(tiff);
     if (bounds == null) {
       brokenTiffs.set(`${mapCode}_${version}`, tiff);
+      logger.warn({ mapCode, version }, 'Could not extract bounds from tiff');
       continue;
     }
     const entry = versionsByMapCode.get(mapCode);
+
+    // extract the epsg code from the Tiff object
+    const epsg = extractEpsgFromTiff(tiff);
+    if (epsg == null) {
+      brokenTiffs.set(`${mapCode}_${version}`, tiff);
+      logger.warn({ mapCode, version }, 'Could not extract epsg from tiff');
+      continue;
+    }
+    const projection = Projection.tryGet(epsg);
+    if (projection == null) throw new Error(`Could not find a projection for epsg:${epsg.code}`);
 
     // Convert bounds to WGS84 for different source epsg
     const boundsCoverted = Bounds.fromBbox(projection.boundsToWgs84BoundingBox(bounds));

@@ -5,7 +5,6 @@ import { basemapsCreatePullRequest } from './basemaps-github/create-pr.js';
 import { basemapsCreateMapSheet } from './basemaps-mapsheet/create-mapsheet.js';
 import { topoCogCreation } from './basemaps-topo-import/topo-cog-creation.js';
 import { topoStacCreation } from './basemaps-topo-import/topo-stac-creation.js';
-import { topoStacValidation } from './basemaps-topo-import/topo-stac-validation.js';
 import { commandCopy } from './copy/copy.js';
 import { commandCreateManifest } from './create-manifest/create-manifest.js';
 import { commandGeneratePath } from './generate-path/path.generate.js';
@@ -53,7 +52,6 @@ export const AllCommands = {
       'create-mapsheet': basemapsCreateMapSheet,
       'topo-stac-creation': topoStacCreation,
       'topo-cog-creation': topoCogCreation,
-      'topo-stac-validation': topoStacValidation,
     },
   }),
   'pretty-print': commandPrettyPrint,

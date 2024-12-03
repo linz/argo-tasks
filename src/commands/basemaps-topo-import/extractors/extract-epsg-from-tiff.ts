@@ -4,7 +4,7 @@ import { Tiff, TiffTagGeo } from '@cogeotiff/core';
 import { logger } from '../../../log.js';
 import { extractEpsg } from '../../generate-path/path.generate.js';
 
-export function extractEpsgFromTiff(tiff: Tiff): Epsg {
+export function extractEpsgFromTiff(tiff: Tiff): Epsg | null {
   try {
     const epsg = Epsg.tryGet(extractEpsg(tiff));
     if (epsg != null) return epsg;
@@ -26,5 +26,5 @@ export function extractEpsgFromTiff(tiff: Tiff): Epsg {
     return Epsg.Nztm2000;
   }
 
-  throw new Error('Could not extract epsg code');
+  return null;
 }
