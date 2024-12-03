@@ -74,6 +74,7 @@ export const topoStacCreation = command({
 
     // write stac items into an JSON array
     await fsa.write(tryParseUrl(`/tmp/topo-stac-creation/tiles.json`), JSON.stringify(paths, null, 2));
+    await fsa.write(tryParseUrl(`/tmp/topo-stac-creation/broken.json`), JSON.stringify(brokenTiffs, null, 2));
 
     logger.info({ duration: performance.now() - startTime }, 'ListJobs:Done');
   },
