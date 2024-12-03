@@ -1,12 +1,12 @@
-import { Bounds, Nztm2000QuadTms, Projection } from '@basemaps/geo';
+import { Bounds, Projection } from '@basemaps/geo';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { Tiff } from '@cogeotiff/core';
 import { StacItem } from 'stac-ts';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
 
 import { logger } from '../../../log.js';
+import { extractEpsgFromTiff } from '../extractors/extract-epsg-from-tiff.js';
 
-const projection = Projection.get(Nztm2000QuadTms);
 const cliDate = new Date().toISOString();
 
 /**
@@ -28,6 +28,11 @@ const cliDate = new Date().toISOString();
  */
 export function createBaseStacItem(id: string, mapCode: string, version: string, tiff: Tiff, bounds: Bounds): StacItem {
   logger.info({ id }, 'createBaseStacItem()');
+
+  const epsg = extractEpsgFromTiff(tiff);
+  const projection = Projection.tryGet(epsg);
+  if (projection == null) throw new Error(`Could not find a projection for epsg:${epsg.code}`);
+
   const item: StacItem = {
     type: 'Feature',
     stac_version: '1.0.0',

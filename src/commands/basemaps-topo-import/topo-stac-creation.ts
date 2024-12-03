@@ -102,7 +102,7 @@ async function loadTiffsToCreateStacs(
   // extract all file paths from the source directory and convert them into URL objects
   const fileURLs = await fsa.toArray(fsa.list(source));
   // process all of the URL objects into Tiff objects
-  const tiffs = await loadTiffsFromPaths(fileURLs.slice(0, 10), Q);
+  const tiffs = await loadTiffsFromPaths(fileURLs, Q);
   logger.info({ numTiffs: tiffs.length }, 'LoadTiffs:End');
 
   logger.info('GroupTiffs:Start');

@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { extractMapCodeAndVersion } from '../extractors/extract-map-code-and-version.js';
 
-describe('extractMapSheetName', () => {
+describe('extractMapCodeAndVersion', () => {
   const FakeDomain = 's3://topographic/fake-domain';
   const FakeFiles = [
     { input: `${FakeDomain}/MB07_GeoTifv1-00.tif`, expected: { mapCode: 'MB07', version: 'v1-00' } },
