@@ -13,6 +13,7 @@ export function gdalBuildVrt(targetVrt: URL, source: URL[]): GdalCommand {
 }
 
 export function gdalBuildVrtWarp(targetVrt: URL, sourceVrt: URL, sourceProj: Epsg): GdalCommand {
+  const targetResolution = Nztm2000QuadTms.pixelScale(0);
   return {
     output: targetVrt,
     command: 'gdalwarp',
@@ -22,6 +23,7 @@ export function gdalBuildVrtWarp(targetVrt: URL, sourceVrt: URL, sourceProj: Eps
       ['-wo', 'NUM_THREADS=ALL_CPUS'], // Multithread the warp
       ['-s_srs', sourceProj.toEpsgString()], // Source EPSG
       ['-t_srs', Nztm2000QuadTms.projection.toEpsgString()], // Target EPSG
+      ['-tr', targetResolution, targetResolution],
       urlToString(sourceVrt),
       urlToString(targetVrt),
     ]
