@@ -2,6 +2,7 @@ import { tmpdir } from 'node:os';
 
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
 import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
+import { Epsg } from '@basemaps/geo';
 import { fsa } from '@basemaps/shared';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { command, option, optional, restPositionals, string } from 'cmd-ts';
@@ -15,7 +16,7 @@ import { logger } from '../../log.js';
 import { HashTransform } from '../../utils/hash.stream.js';
 import { config, forceOutput, registerCli, tryParseUrl, verbose } from '../common.js';
 import { loadInput } from '../group/group.js';
-import { gdalBuildCogCommands, gdalBuildVrt } from './gdal-commands.js';
+import { gdalBuildCogCommands, gdalBuildVrt, gdalBuildVrtWarp } from './gdal-commands.js';
 const Q = pLimit(10);
 
 /**
@@ -99,15 +100,23 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     logger.info({ item: item.id, download: inputPath.href }, 'CogCreation:Download');
     await fsa.write(inputPath, hashStreamSource);
 
-    // run gdal_buildvrt for the source file
+    // run gdal commands for each the source file
+    logger.info({ item: item.id }, 'CogCreation:gdalbuildvrt');
     const vrtPath = new URL(`${item.id}.vrt`, tmpFolder);
     const commandBuildVrt = gdalBuildVrt(vrtPath, [inputPath]);
     await new GdalRunner(commandBuildVrt).run(logger);
 
-    // run gdal_translate for each job
-    logger.info({ item: item.id }, 'CogCreation:gdal_translate');
+    logger.info({ item: item.id }, 'CogCreation:gdalwarp');
     const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
-    const commandTranslate = gdalBuildCogCommands(vrtPath, tempPath);
+    const sourceEpsg = Number(item.properties['source:epsg']);
+    const sourceProj = Epsg.tryGet(sourceEpsg);
+    if (sourceProj == null) throw new Error(`Unknown source projection ${sourceEpsg}`);
+    const vrtWarpPath = new URL(`${item.id}-warp.vrt`, tmpFolder);
+    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj);
+    await new GdalRunner(commandBuildVrtWarp).run(logger);
+
+    logger.info({ item: item.id }, 'CogCreation:gdal_translate');
+    const commandTranslate = gdalBuildCogCommands(vrtWarpPath, tempPath);
     await new GdalRunner(commandTranslate).run(logger);
 
     // fsa.write output to target location

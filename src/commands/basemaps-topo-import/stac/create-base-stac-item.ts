@@ -1,11 +1,10 @@
-import { Bounds, Projection } from '@basemaps/geo';
+import { Epsg } from '@basemaps/geo';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
-import { Tiff } from '@cogeotiff/core';
 import { StacItem } from 'stac-ts';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
 
 import { logger } from '../../../log.js';
-import { extractEpsgFromTiff } from '../extractors/extract-epsg-from-tiff.js';
+import { VersionedTiff } from '../mappers/group-by-map-code.js';
 
 const cliDate = new Date().toISOString();
 
@@ -26,12 +25,8 @@ const cliDate = new Date().toISOString();
  *
  * @returns
  */
-export function createBaseStacItem(id: string, mapCode: string, version: string, tiff: Tiff, bounds: Bounds): StacItem {
+export function createBaseStacItem(id: string, mapCode: string, versionedTiff: VersionedTiff): StacItem {
   logger.info({ id }, 'createBaseStacItem()');
-
-  const epsg = extractEpsgFromTiff(tiff);
-  const projection = Projection.tryGet(epsg);
-  if (projection == null) throw new Error(`Could not find a projection for epsg:${epsg.code}`);
 
   const item: StacItem = {
     type: 'Feature',
@@ -44,20 +39,23 @@ export function createBaseStacItem(id: string, mapCode: string, version: string,
     ],
     assets: {
       source: {
-        href: tiff.source.url.href,
+        href: versionedTiff.source,
         type: 'image/tiff; application=geotiff',
         roles: ['data'],
+        'file:checksum': versionedTiff.stats['file:checksum'],
+        'file:size': versionedTiff.stats['file:size'],
       },
     },
     stac_extensions: ['https://stac-extensions.github.io/file/v2.0.0/schema.json'],
     properties: {
       datetime: cliDate,
       map_code: mapCode, // e.g. "CJ10"
-      version: version.replace('-', '.'), // convert from "v1-00" to "v1.00"
-      'proj:epsg': projection.epsg.code,
+      version: versionedTiff.version.replace('-', '.'), // convert from "v1-00" to "v1.00"
+      'proj:epsg': Epsg.Nztm2000.code,
+      'source:epsg': versionedTiff.epsg.code,
     },
-    geometry: projection.boundsToGeoJsonFeature(bounds).geometry as GeoJSONPolygon,
-    bbox: projection.boundsToWgs84BoundingBox(bounds),
+    geometry: { type: 'Polygon', coordinates: versionedTiff.bounds.toPolygon() } as GeoJSONPolygon,
+    bbox: versionedTiff.bounds.toBbox(),
     collection: CliId,
   };
 

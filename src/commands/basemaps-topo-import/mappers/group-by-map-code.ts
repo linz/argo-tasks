@@ -1,14 +1,25 @@
-import { Bounds } from '@basemaps/geo';
+import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
+import { Bounds, Epsg, Projection } from '@basemaps/geo';
+import { fsa } from '@basemaps/shared';
 import { Tiff } from '@cogeotiff/core';
 
 import { extractBounds } from '../extractors/extract-bounds.js';
+import { extractEpsgFromTiff } from '../extractors/extract-epsg-from-tiff.js';
 import { extractMapCodeAndVersion } from '../extractors/extract-map-code-and-version.js';
 import { brokenTiffs } from '../topo-stac-creation.js';
+
+export interface FileStats {
+  'file:size': number;
+  'file:checksum': string;
+}
 
 export interface VersionedTiff {
   version: string;
   tiff: Tiff;
+  stats: FileStats;
+  epsg: Epsg;
   bounds: Bounds;
+  source: string;
 }
 
 type VersionsByMapCode = Map<string, VersionedTiff[]>;
@@ -40,6 +51,11 @@ export async function groupTiffsByMapCodeAndLatest(tiffs: Tiff[]): Promise<Group
   const versionsByMapCode: VersionsByMapCode = new Map();
 
   for (const tiff of tiffs) {
+    // extract the epsg code from the Tiff object
+    const epsg = extractEpsgFromTiff(tiff);
+    const projection = Projection.tryGet(epsg);
+    if (projection == null) throw new Error(`Could not find a projection for epsg:${epsg.code}`);
+
     const source = tiff.source.url.href;
     const { mapCode, version } = extractMapCodeAndVersion(source);
 
@@ -48,13 +64,19 @@ export async function groupTiffsByMapCodeAndLatest(tiffs: Tiff[]): Promise<Group
       brokenTiffs.set(`${mapCode}_${version}`, tiff);
       continue;
     }
-
     const entry = versionsByMapCode.get(mapCode);
 
+    // Get tiff check sum
+    const buffer = await fsa.read(tiff.source.url);
+    const stats = createFileStats(buffer);
+
+    // Convert bounds to WGS84 for different source epsg
+    const boundsCoverted = Bounds.fromBbox(projection.boundsToWgs84BoundingBox(bounds));
+
     if (entry == null) {
-      versionsByMapCode.set(mapCode, [{ version, tiff, bounds }]);
+      versionsByMapCode.set(mapCode, [{ version, tiff, bounds: boundsCoverted, stats, epsg, source }]);
     } else {
-      entry.push({ version, tiff, bounds });
+      entry.push({ version, tiff, bounds: boundsCoverted, stats, epsg, source });
     }
   }
 

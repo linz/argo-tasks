@@ -123,7 +123,7 @@ async function loadTiffsToCreateStacs(
     allBounds.push(...[latest, ...others].map((vt) => vt.bounds));
 
     // create StacItem object groups
-    const stacItems = await createStacItemGroups(mapCode, latest, others, target, scale);
+    const stacItems = await createStacItemGroups(mapCode, latest, others, scale);
 
     // push StacItem objects to their respective arrays
     latestItems.push(stacItems.latest);

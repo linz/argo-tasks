@@ -1,4 +1,5 @@
 import { GdalCommand } from '@basemaps/cogify/build/cogify/gdal.runner.js';
+import { Epsg, Nztm2000QuadTms } from '@basemaps/geo';
 
 import { urlToString } from '../common.js';
 
@@ -11,6 +12,25 @@ export function gdalBuildVrt(targetVrt: URL, source: URL[]): GdalCommand {
   };
 }
 
+export function gdalBuildVrtWarp(targetVrt: URL, sourceVrt: URL, sourceProj: Epsg): GdalCommand {
+  return {
+    output: targetVrt,
+    command: 'gdalwarp',
+    args: [
+      ['-of', 'vrt'], // Output as a VRT
+      '-multi', // Mutithread IO
+      ['-wo', 'NUM_THREADS=ALL_CPUS'], // Multithread the warp
+      ['-s_srs', sourceProj.toEpsgString()], // Source EPSG
+      ['-t_srs', Nztm2000QuadTms.projection.toEpsgString()], // Target EPSG
+      urlToString(sourceVrt),
+      urlToString(targetVrt),
+    ]
+      .filter((f) => f != null)
+      .flat()
+      .map(String),
+  };
+}
+
 export function gdalBuildCogCommands(input: URL, output: URL): GdalCommand {
   return {
     command: 'gdal_translate',
@@ -19,7 +39,7 @@ export function gdalBuildCogCommands(input: URL, output: URL): GdalCommand {
       ['-q'], // Supress non-error output
       ['-of', 'COG'], // Output format
       ['-stats'], // Force stats (re)computation
-      ['-a_srs', `EPSG:2193`], // Projection override
+      ['-a_srs', Nztm2000QuadTms.projection.toEpsgString()], // Projection override
       ['-co', 'ADD_ALPHA=YES'],
       ['-co', 'NUM_THREADS=ALL_CPUS'], // Use all CPUS
       ['-co', 'SPARSE_OK=TRUE'], // Allow for sparse writes

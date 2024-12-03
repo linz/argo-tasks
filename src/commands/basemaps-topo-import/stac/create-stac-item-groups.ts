@@ -15,21 +15,17 @@ export async function createStacItemGroups(
   mapCode: string,
   latest: VersionedTiff,
   others: VersionedTiff[],
-  target: URL,
   scale: string,
 ): Promise<{ latest: StacItem; all: StacItem[] }> {
-  const latestStacItem = createBaseStacItem(mapCode, mapCode, latest.version, latest.tiff, latest.bounds);
-  const allStacItems = [...others, latest].map(({ version, tiff, bounds }) =>
-    createBaseStacItem(`${mapCode}_${version}`, mapCode, version, tiff, bounds),
+  const latestStacItem = createBaseStacItem(mapCode, mapCode, latest);
+  const allStacItems = [...others, latest].map((versionedTiff) =>
+    createBaseStacItem(`${mapCode}_${versionedTiff.version}`, mapCode, versionedTiff),
   );
-
-  // need to do the part where they add special fields to each group
-  const latestURL = new URL(`${scale}/${mapCode}_${latest.version}.json`, target);
 
   // add link to all items pointing to the latest version
   allStacItems.forEach((item) => {
     item?.links.push({
-      href: latestURL.href,
+      href: `./${mapCode}_${latest.version}.json`,
       rel: 'latest-version',
       type: 'application/json',
     });
@@ -37,7 +33,7 @@ export async function createStacItemGroups(
 
   // add link to the latest item referencing its copy that will live in the topo[50/250] directory
   latestStacItem.links.push({
-    href: latestURL.href,
+    href: `../${scale}/${mapCode}_${latest.version}.json`,
     rel: 'derived_from',
     type: 'application/json',
   });
