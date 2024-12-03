@@ -42,8 +42,6 @@ export function createBaseStacItem(id: string, mapCode: string, versionedTiff: V
         href: versionedTiff.source,
         type: 'image/tiff; application=geotiff',
         roles: ['data'],
-        'file:checksum': versionedTiff.stats['file:checksum'],
-        'file:size': versionedTiff.stats['file:size'],
       },
     },
     stac_extensions: ['https://stac-extensions.github.io/file/v2.0.0/schema.json'],

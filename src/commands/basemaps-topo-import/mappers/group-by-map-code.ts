@@ -1,6 +1,4 @@
-import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
 import { Bounds, Epsg, Projection } from '@basemaps/geo';
-import { fsa } from '@basemaps/shared';
 import { Tiff } from '@cogeotiff/core';
 
 import { extractBounds } from '../extractors/extract-bounds.js';
@@ -16,7 +14,6 @@ export interface FileStats {
 export interface VersionedTiff {
   version: string;
   tiff: Tiff;
-  stats: FileStats;
   epsg: Epsg;
   bounds: Bounds;
   source: string;
@@ -66,17 +63,13 @@ export async function groupTiffsByMapCodeAndLatest(tiffs: Tiff[]): Promise<Group
     }
     const entry = versionsByMapCode.get(mapCode);
 
-    // Get tiff check sum
-    const buffer = await fsa.read(tiff.source.url);
-    const stats = createFileStats(buffer);
-
     // Convert bounds to WGS84 for different source epsg
     const boundsCoverted = Bounds.fromBbox(projection.boundsToWgs84BoundingBox(bounds));
 
     if (entry == null) {
-      versionsByMapCode.set(mapCode, [{ version, tiff, bounds: boundsCoverted, stats, epsg, source }]);
+      versionsByMapCode.set(mapCode, [{ version, tiff, bounds: boundsCoverted, epsg, source }]);
     } else {
-      entry.push({ version, tiff, bounds: boundsCoverted, stats, epsg, source });
+      entry.push({ version, tiff, bounds: boundsCoverted, epsg, source });
     }
   }
 
