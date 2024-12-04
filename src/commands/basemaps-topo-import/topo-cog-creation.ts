@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
 import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
 import { Epsg } from '@basemaps/geo';
-import { fsa } from '@basemaps/shared';
+import { fsa, Tiff } from '@basemaps/shared';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { command, option, optional, restPositionals, string } from 'cmd-ts';
 import { mkdir, rm } from 'fs/promises';
@@ -96,6 +96,7 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     const fileName = filePath.base;
     if (!(await fsa.exists(sourceUrl))) throw new Error('Source file not found');
     const hashStreamSource = fsa.readStream(sourceUrl).pipe(new HashTransform('sha256'));
+
     const inputPath = new URL(fileName, tmpFolder);
     logger.info({ item: item.id, download: inputPath.href }, 'CogCreation:Download');
     // Add checksum for source file
@@ -103,6 +104,11 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     await fsa.write(inputPath, hashStreamSource);
     item.assets['source']['file:checksum'] = hashStreamSource.multihash;
     item.assets['source']['file:size'] = hashStreamSource.size;
+
+    // read resolution from first image of tiff
+    const tiff = await new Tiff(fsa.source(inputPath)).init();
+    const sourceRes = tiff.images[0]?.resolution;
+    if (sourceRes == null) throw new Error('Could not read resolution from first image');
 
     // run gdal commands for each the source file
     logger.info({ item: item.id }, 'CogCreation:gdalbuildvrt');
@@ -116,7 +122,7 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     const sourceProj = Epsg.tryGet(sourceEpsg);
     if (sourceProj == null) throw new Error(`Unknown source projection ${sourceEpsg}`);
     const vrtWarpPath = new URL(`${item.id}-warp.vrt`, tmpFolder);
-    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj);
+    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj, sourceRes);
     await new GdalRunner(commandBuildVrtWarp).run(logger);
 
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');

@@ -1,5 +1,5 @@
 import { GdalCommand } from '@basemaps/cogify/build/cogify/gdal.runner.js';
-import { Epsg, Nztm2000QuadTms } from '@basemaps/geo';
+import { Epsg, Nztm2000QuadTms, Projection } from '@basemaps/geo';
 
 import { urlToString } from '../common.js';
 
@@ -12,8 +12,14 @@ export function gdalBuildVrt(targetVrt: URL, source: URL[]): GdalCommand {
   };
 }
 
-export function gdalBuildVrtWarp(targetVrt: URL, sourceVrt: URL, sourceProj: Epsg): GdalCommand {
-  const targetResolution = Nztm2000QuadTms.pixelScale(0);
+export function gdalBuildVrtWarp(
+  targetVrt: URL,
+  sourceVrt: URL,
+  sourceProj: Epsg,
+  sourceRes: [number, number, number],
+): GdalCommand {
+  const resZoom = Projection.getTiffResZoom(Nztm2000QuadTms, sourceRes[0]);
+  const targetResolution = Nztm2000QuadTms.pixelScale(resZoom);
   return {
     output: targetVrt,
     command: 'gdalwarp',
