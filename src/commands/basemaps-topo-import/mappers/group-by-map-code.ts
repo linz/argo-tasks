@@ -17,7 +17,7 @@ export interface VersionedTiff {
   tiff: Tiff;
   epsg: Epsg;
   bounds: Bounds;
-  source: string;
+  source: URL;
 }
 
 type VersionsByMapCode = Map<string, VersionedTiff[]>;
@@ -49,8 +49,8 @@ export async function groupTiffsByMapCodeAndLatest(tiffs: Tiff[]): Promise<Group
   const versionsByMapCode: VersionsByMapCode = new Map();
 
   for (const tiff of tiffs) {
-    const source = tiff.source.url.href;
-    const { mapCode, version } = extractMapCodeAndVersion(source);
+    const source = tiff.source.url;
+    const { mapCode, version } = extractMapCodeAndVersion(source.href);
 
     const bounds = await extractBounds(tiff);
     if (bounds == null) {

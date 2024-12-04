@@ -1,4 +1,3 @@
-import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
 import { BoundingBox, Nztm2000QuadTms, Projection } from '@basemaps/geo';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { StacCollection, StacItem } from 'stac-ts';
@@ -26,13 +25,12 @@ export function createStacCollection(title: string, imageryBound: BoundingBox, i
       // },
       { rel: 'self', href: './collection.json', type: 'application/json' },
       ...items.map((item) => {
-        const stats = createFileStats(JSON.stringify(item, null, 2));
         return {
           href: `./${item.id}.json`,
           rel: 'item',
           type: 'application/json',
-          'file:checksum': stats['file:checksum'],
-          'file:size': stats['file:size'],
+          // 'file:checksum': stats['file:checksum'],
+          // 'file:size': stats['file:size'],
         };
       }),
     ],

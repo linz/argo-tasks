@@ -39,7 +39,7 @@ export function createBaseStacItem(id: string, mapCode: string, versionedTiff: V
     ],
     assets: {
       source: {
-        href: versionedTiff.source,
+        href: versionedTiff.source.href,
         type: 'image/tiff; application=geotiff',
         roles: ['data'],
       },
