@@ -112,6 +112,7 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
 
     // run gdal commands for each the source file
     logger.info({ item: item.id }, 'CogCreation:gdalbuildvrt');
+
     const vrtPath = new URL(`${item.id}.vrt`, tmpFolder);
     const commandBuildVrt = gdalBuildVrt(vrtPath, [inputPath]);
     await new GdalRunner(commandBuildVrt).run(logger);
@@ -122,7 +123,7 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     const sourceProj = Epsg.tryGet(sourceEpsg);
     if (sourceProj == null) throw new Error(`Unknown source projection ${sourceEpsg}`);
     const vrtWarpPath = new URL(`${item.id}-warp.vrt`, tmpFolder);
-    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj, sourceRes);
+    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj);
     await new GdalRunner(commandBuildVrtWarp).run(logger);
 
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');

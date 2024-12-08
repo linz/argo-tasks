@@ -1,6 +1,6 @@
 import { StacItem } from 'stac-ts';
 
-import { VersionedTiff } from '../mappers/group-by-map-code.js';
+import { TiffItem } from '../types/tiff-item.js';
 import { createBaseStacItem } from './create-base-stac-item.js';
 
 /**
@@ -11,20 +11,21 @@ import { createBaseStacItem } from './create-base-stac-item.js';
  * All versions need a StacItem object that lives in the topo[50/250] directory
  * The latest version needs a second StacItem object that lives in the topo[50/250]-latest dir
  */
-export async function createStacItemGroups(
-  mapCode: string,
-  latest: VersionedTiff,
-  others: VersionedTiff[],
+export async function createStacItemPair(
   scale: string,
-): Promise<{ latest: StacItem; all: StacItem[] }> {
-  const latestStacItem = createBaseStacItem(mapCode, mapCode, latest);
-  const allStacItems = [...others, latest].map((versionedTiff) =>
-    createBaseStacItem(`${mapCode}_${versionedTiff.version}`, mapCode, versionedTiff),
-  );
+  mapCode: string,
+  all: TiffItem[],
+  latest: TiffItem,
+): Promise<{ latest: { item: TiffItem; stac: StacItem }; all: { item: TiffItem; stac: StacItem }[] }> {
+  const latestStacItem = { item: latest, stac: createBaseStacItem(mapCode, mapCode, latest) };
+  const allStacItems = all.map((tiffItem) => ({
+    item: tiffItem,
+    stac: createBaseStacItem(`${mapCode}_${tiffItem.version}`, mapCode, tiffItem),
+  }));
 
   // add link to all items pointing to the latest version
-  allStacItems.forEach((item) => {
-    item?.links.push({
+  allStacItems.forEach((pair) => {
+    pair.stac?.links.push({
       href: `./${mapCode}_${latest.version}.json`,
       rel: 'latest-version',
       type: 'application/json',
@@ -32,7 +33,7 @@ export async function createStacItemGroups(
   });
 
   // add link to the latest item referencing its copy that will live in the topo[50/250] directory
-  latestStacItem.links.push({
+  latestStacItem.stac.links.push({
     href: `../${scale}/${mapCode}_${latest.version}.json`,
     rel: 'derived_from',
     type: 'application/json',

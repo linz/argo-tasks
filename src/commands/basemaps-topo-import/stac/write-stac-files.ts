@@ -3,7 +3,6 @@ import { StacCollection, StacItem } from 'stac-ts';
 
 import { logger } from '../../../log.js';
 import { isArgo } from '../../../utils/argo.js';
-import { brokenTiffs } from '../topo-stac-creation.js';
 
 export async function writeStacFiles(
   target: URL,
@@ -22,7 +21,4 @@ export async function writeStacFiles(
     const collectionPath = new URL('collection.json', target);
     await fsa.write(collectionPath, JSON.stringify(collection, null, 2));
   }
-
-  const brokenPath = new URL('/tmp/topo-stac-creation/output/broken.json', target);
-  await fsa.write(brokenPath, JSON.stringify(Array.from(brokenTiffs.keys()), null, 2));
 }

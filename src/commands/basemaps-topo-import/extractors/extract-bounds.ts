@@ -1,6 +1,7 @@
 import { Bounds } from '@basemaps/geo';
 import { Tiff } from '@cogeotiff/core';
 
+import { logger } from '../../../log.js';
 import { findBoundingBox } from '../../../utils/geotiff.js';
 
 /**
@@ -12,8 +13,12 @@ import { findBoundingBox } from '../../../utils/geotiff.js';
  */
 export async function extractBounds(tiff: Tiff): Promise<Bounds | null> {
   try {
-    return Bounds.fromBbox(await findBoundingBox(tiff));
+    const bounds = Bounds.fromBbox(await findBoundingBox(tiff));
+
+    logger.info({ found: true }, 'extractBounds()');
+    return bounds;
   } catch (e) {
+    logger.info({ found: false }, 'extractBounds()');
     return null;
   }
 }

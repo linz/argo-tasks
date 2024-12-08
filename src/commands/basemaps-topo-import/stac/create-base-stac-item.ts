@@ -4,7 +4,7 @@ import { StacItem } from 'stac-ts';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
 
 import { logger } from '../../../log.js';
-import { VersionedTiff } from '../mappers/group-by-map-code.js';
+import { TiffItem } from '../types/tiff-item.js';
 
 const cliDate = new Date().toISOString();
 
@@ -25,7 +25,7 @@ const cliDate = new Date().toISOString();
  *
  * @returns
  */
-export function createBaseStacItem(id: string, mapCode: string, versionedTiff: VersionedTiff): StacItem {
+export function createBaseStacItem(id: string, mapCode: string, tiffItem: TiffItem): StacItem {
   logger.info({ id }, 'createBaseStacItem()');
 
   const item: StacItem = {
@@ -39,7 +39,7 @@ export function createBaseStacItem(id: string, mapCode: string, versionedTiff: V
     ],
     assets: {
       source: {
-        href: versionedTiff.source.href,
+        href: tiffItem.source.href,
         type: 'image/tiff; application=geotiff',
         roles: ['data'],
       },
@@ -48,12 +48,12 @@ export function createBaseStacItem(id: string, mapCode: string, versionedTiff: V
     properties: {
       datetime: cliDate,
       map_code: mapCode, // e.g. "CJ10"
-      version: versionedTiff.version.replace('-', '.'), // convert from "v1-00" to "v1.00"
+      version: tiffItem.version.replace('-', '.'), // convert from "v1-00" to "v1.00"
       'proj:epsg': Epsg.Nztm2000.code,
-      'source:epsg': versionedTiff.epsg.code,
+      'source:epsg': tiffItem.epsg.code,
     },
-    geometry: { type: 'Polygon', coordinates: versionedTiff.bounds.toPolygon() } as GeoJSONPolygon,
-    bbox: versionedTiff.bounds.toBbox(),
+    geometry: { type: 'Polygon', coordinates: tiffItem.bounds.toPolygon() } as GeoJSONPolygon,
+    bbox: tiffItem.bounds.toBbox(),
     collection: CliId,
   };
 
