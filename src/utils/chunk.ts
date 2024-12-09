@@ -103,7 +103,7 @@ export type FileFilter = {
    */
   sizeMin?: number;
 };
-export async function getFiles(paths: string[], args: FileFilter = { sizeMin: 1 }): Promise<string[][]> {
+export async function getFiles(paths: string[], args: FileFilter = {}): Promise<string[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const minSize = args.sizeMin ?? 1; // ignore 0 byte files
   const groupSize = parseSize(args.groupSize ?? '-1');
