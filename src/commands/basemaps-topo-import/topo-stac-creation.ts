@@ -83,7 +83,8 @@ export const topoStacCreation = command({
 
       // for create-config: we need to tell create-config to create a bundled config for each epsg folder (latest only).
       // workflow: will loop 'targets.json' and create a node for each path where each node's job is to create a bundled config.
-      await fsa.write(new URL('targets.json', targetURL), JSON.stringify(epsgDirectoryPaths, null, 2));
+      const targetPaths = epsgDirectoryPaths.map((url) => ({ url }));
+      await fsa.write(new URL('targets.json', targetURL), JSON.stringify(targetPaths, null, 2));
 
       // tiles.json makes the tiff files
       await fsa.write(new URL('tiles.json', targetURL), JSON.stringify(stacItemPaths, null, 2));
