@@ -1,7 +1,7 @@
 import { tmpdir } from 'node:os';
 
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
-import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
+import { createFileStats, GdalResampling } from '@basemaps/cogify/build/cogify/stac.js';
 import { Epsg } from '@basemaps/geo';
 import { fsa, Tiff } from '@basemaps/shared';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
@@ -16,7 +16,11 @@ import { logger } from '../../log.js';
 import { HashTransform } from '../../utils/hash.stream.js';
 import { config, forceOutput, registerCli, tryParseUrl, verbose } from '../common.js';
 import { loadInput } from '../group/group.js';
-import { gdalBuildCogCommands, gdalBuildVrt, gdalBuildVrtWarp } from './gdal-commands.js';
+import { gdalBuildCogCommands as gdalBuildCog } from './gdal/gdal-build-cog.js';
+import { gdalBuildVrt } from './gdal/gdal-build-vrt.js';
+import { gdalBuildVrtWarp } from './gdal/gdal-build-vrt-warp.js';
+import { checkResamplingMethod as isValidResamplingOption } from './gdal/gdal-opts.js';
+
 const Q = pLimit(10);
 
 /**
@@ -45,11 +49,26 @@ export const topoCogCreation = command({
       long: 'from-file',
       description: 'JSON file to load inputs from, must be a JSON Array',
     }),
+    resamplingMethod: option({
+      type: optional(string),
+      long: 'resampling-method',
+      description: 'the GDAL resampling algorithm to use',
+    }),
   },
   async handler(args) {
     const startTime = performance.now();
     registerCli(this, args);
     logger.info('ListJobs:Start');
+
+    // check if resampling method is a valid option
+    const resamplingMethod = args.resamplingMethod;
+
+    if (resamplingMethod != null) {
+      if (!isValidResamplingOption(resamplingMethod)) {
+        throw new Error('the provided resampling method is not a valid option');
+      }
+    }
+
     // Load the items for processing
     const inputs: string[] = [];
     for (const input of args.inputs) inputs.push(...loadInput(input));
@@ -70,7 +89,7 @@ export const topoCogCreation = command({
     await Promise.all(
       inputs.map((input) =>
         Q(async () => {
-          await createCogs(tryParseUrl(input), tmpFolder);
+          await createCogs(tryParseUrl(input), tmpFolder, resamplingMethod);
         }),
       ),
     );
@@ -79,7 +98,7 @@ export const topoCogCreation = command({
   },
 });
 
-async function createCogs(input: URL, tmp: URL): Promise<void> {
+async function createCogs(input: URL, tmp: URL, resamplingMethod?: GdalResampling): Promise<void> {
   const startTime = performance.now();
   const item = await fsa.readJson<StacItem>(input);
   const tmpFolder = new URL(item.id, tmp);
@@ -110,24 +129,42 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
     const sourceRes = tiff.images[0]?.resolution;
     if (sourceRes == null) throw new Error('Could not read resolution from first image');
 
-    // run gdal commands for each the source file
+    // run gdal commands for each source file
+
+    /**
+     * command: gdal build vrt
+     */
     logger.info({ item: item.id }, 'CogCreation:gdalbuildvrt');
 
     const vrtPath = new URL(`${item.id}.vrt`, tmpFolder);
-    const commandBuildVrt = gdalBuildVrt(vrtPath, [inputPath]);
+    const commandBuildVrt = gdalBuildVrt(vrtPath, [inputPath], { resamplingMethod });
+
     await new GdalRunner(commandBuildVrt).run(logger);
 
+    /**
+     * command: gdal build warp vrt
+     */
     logger.info({ item: item.id }, 'CogCreation:gdalwarp');
-    const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
-    const sourceEpsg = Number(item.properties['proj:epsg']);
+
+    const sourceEpsg = item.properties['proj:epsg'];
+    if (typeof sourceEpsg !== 'number') throw new Error(`Could not read 'proj:epsg' property from StacItem`);
+
     const sourceProj = Epsg.tryGet(sourceEpsg);
     if (sourceProj == null) throw new Error(`Unknown source projection ${sourceEpsg}`);
+
     const vrtWarpPath = new URL(`${item.id}-warp.vrt`, tmpFolder);
-    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj);
+    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj, { resamplingMethod });
+
     await new GdalRunner(commandBuildVrtWarp).run(logger);
 
+    /**
+     * command: gdal build cog
+     */
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');
-    const commandTranslate = gdalBuildCogCommands(vrtWarpPath, tempPath);
+
+    const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
+    const commandTranslate = gdalBuildCog(vrtWarpPath, tempPath, { resamplingMethod });
+
     await new GdalRunner(commandTranslate).run(logger);
 
     // fsa.write output to target location
