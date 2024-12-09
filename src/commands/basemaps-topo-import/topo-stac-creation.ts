@@ -1,7 +1,7 @@
 import { loadTiffsFromPaths } from '@basemaps/config-loader/build//json/tiff.config.js';
 import { Bounds } from '@basemaps/geo';
 import { fsa } from '@basemaps/shared';
-import { command, option, string } from 'cmd-ts';
+import { boolean, command, flag, option, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { StacItem } from 'stac-ts';
 
@@ -11,10 +11,8 @@ import { isArgo } from '../../utils/argo.js';
 import { config, forceOutput, registerCli, tryParseUrl, UrlFolder, verbose } from '../common.js';
 import { groupTiffsByDirectory } from './mappers/group-tiffs-by-directory.js';
 import { createStacCollection } from './stac/create-stac-collection.js';
-import { createStacItemPair } from './stac/create-stac-item-groups.js';
+import { createStacItems } from './stac/create-stac-item-groups.js';
 import { writeStacFiles } from './stac/write-stac-files.js';
-import { ByDirectory } from './types/by-directory.js';
-import { TiffItem } from './types/tiff-item.js';
 
 const Q = pLimit(10);
 export const brokenTiffs = { noBounds: [] as string[], noEpsg: [] as string[] };
@@ -53,7 +51,14 @@ export const topoStacCreation = command({
     scale: option({
       type: string,
       long: 'scale',
-      description: 'topo50 or topo250',
+      description: 'topo25, topo50, or topo250',
+    }),
+    latestOnly: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'latest-only',
+      description: 'Only process the latest version of each map sheet',
+      defaultValueIsSerializable: true,
     }),
   },
   async handler(args) {
@@ -61,28 +66,28 @@ export const topoStacCreation = command({
     registerCli(this, args);
     logger.info('ListJobs:Start');
 
-    const { latest, all } = await loadTiffsToCreateStacs(
+    const { epsgDirectoryPaths, stacItemPaths } = await loadTiffsToCreateStacs(
+      args.latestOnly,
       args.source,
       args.target,
       args.title,
       args.forceOutput,
       args.scale,
     );
-    if (latest.length === 0 || all.length === 0) throw new Error('No Stac items created');
 
-    const paths: string[] = [];
-    all.forEach((item) => paths.push(new URL(`${args.scale}/${item.id}.json`, args.target).href));
-    latest.forEach((item) => paths.push(new URL(`${args.scale}_latest/${item.id}.json`, args.target).href));
+    if (epsgDirectoryPaths.length === 0 || stacItemPaths.length === 0) throw new Error('No Stac items created');
 
     // write stac items into an JSON array
     if (args.forceOutput || isArgo()) {
-      if (isArgo()) {
-        await fsa.write(tryParseUrl(`/tmp/topo-stac-creation/tiles.json`), JSON.stringify(paths, null, 2));
-        await fsa.write(tryParseUrl(`/tmp/topo-stac-creation/brokenTiffs.json`), JSON.stringify(brokenTiffs, null, 2));
-      } else {
-        await fsa.write(new URL('tiles.json', args.target), JSON.stringify(paths, null, 2));
-        await fsa.write(new URL('brokenTiffs.json', args.target), JSON.stringify(brokenTiffs, null, 2));
-      }
+      const targetURL = isArgo() ? tryParseUrl('/tmp/topo-stac-creation/') : args.target;
+
+      // for create-config: we need to tell create-config to create a bundled config for each epsg folder (latest only).
+      // workflow: will loop 'targets.json' and create a node for each path where each node's job is to create a bundled config.
+      await fsa.write(new URL('targets.json', targetURL), JSON.stringify(epsgDirectoryPaths, null, 2));
+
+      // tiles.json makes the tiff files
+      await fsa.write(new URL('tiles.json', targetURL), JSON.stringify(stacItemPaths, null, 2));
+      await fsa.write(new URL('brokenTiffs.json', targetURL), JSON.stringify(brokenTiffs, null, 2));
     }
 
     logger.info({ duration: performance.now() - startTime }, 'ListJobs:Done');
@@ -102,12 +107,13 @@ export const topoStacCreation = command({
  * @returns an array of StacItem objects
  */
 async function loadTiffsToCreateStacs(
+  latestOnly: boolean,
   source: URL,
   target: URL,
   title: string,
   force: boolean,
   scale: string,
-): Promise<{ latest: StacItem[]; all: StacItem[] }> {
+): Promise<{ epsgDirectoryPaths: URL[]; stacItemPaths: URL[] }> {
   logger.info({ source }, 'LoadTiffs:Start');
   // extract all file paths from the source directory and convert them into URL objects
   const fileURLs = await fsa.toArray(fsa.list(source));
@@ -117,79 +123,61 @@ async function loadTiffsToCreateStacs(
 
   // group all of the Tiff objects by epsg and map code
   logger.info('GroupTiffs:Start');
-
   const itemsByDir = await groupTiffsByDirectory(tiffs);
   const itemsByDirPath = new URL('itemsByDirectory.json', target);
   await fsa.write(itemsByDirPath, JSON.stringify(itemsByDir, null, 2));
-
   logger.info('GroupTiffs:End');
 
-  // pair all of the TiffItem objects with StacItem objects
-  logger.info('CreateStacItems:Start');
+  const epsgDirectoryPaths: URL[] = [];
+  const stacItemPaths: URL[] = [];
 
-  const pairsByDir = new ByDirectory<{ item: TiffItem; stac: StacItem }>();
-
+  // create and write stac items and collections
   for (const [epsg, itemsByMapCode] of itemsByDir.all.entries()) {
+    const allTargetURL = new URL(`${scale}/${epsg}/`, target);
+    const latestTargetURL = new URL(`${scale}_latest/${epsg}/`, target);
+
+    const allBounds: Bounds[] = [];
+    const allStacItems: StacItem[] = [];
+
+    const latestBounds: Bounds[] = [];
+    const latestStacItems: StacItem[] = [];
+
+    // create stac items
+    logger.info({ epsg }, 'CreateStacItems:Start');
     for (const [mapCode, items] of itemsByMapCode.entries()) {
       // get latest item
       const latest = itemsByDir.latest.get(epsg).get(mapCode);
 
       // create stac items
-      const stacItems = await createStacItemPair(scale, mapCode, items, latest);
+      const stacItems = await createStacItems(allTargetURL, items, latest);
 
-      // store stac items
-      pairsByDir.all.get(epsg).set(mapCode, stacItems.all);
-      pairsByDir.latest.get(epsg).set(mapCode, stacItems.latest);
+      allBounds.push(...items.map((item) => item.bounds));
+      allStacItems.push(...stacItems.all);
+
+      latestBounds.push(latest.bounds);
+      latestStacItems.push(stacItems.latest);
     }
-  }
 
-  // const pairsByDirPath = new URL('pairsByDirectory.json', target);
-  // await fsa.write(pairsByDirPath, JSON.stringify(pairsByDir, null, 2));
+    // create collections
+    const collection = createStacCollection(title, Bounds.union(allBounds), allStacItems);
+    const latestCollection = createStacCollection(title, Bounds.union(latestBounds), latestStacItems);
+    logger.info({ epsg }, 'CreateStacItems:End');
 
-  logger.info('CreateStacItems:End');
+    if (force || isArgo()) {
+      // epsgDirectoryPaths.push(allTargetURL);
+      epsgDirectoryPaths.push(latestTargetURL);
 
-  logger.info('WriteStacFiles:Start');
-
-  const latestItems: StacItem[] = [];
-  const allItems: StacItem[] = [];
-
-  // write 'all' stac items and collection
-  for (const [epsg, pairsByMapCode] of pairsByDir.all.entries()) {
-    const boundsByEpsg: Bounds[] = [];
-    const itemsByEpsg: StacItem[] = [];
-
-    for (const [, pairs] of pairsByMapCode.entries()) {
-      for (const pair of pairs) {
-        boundsByEpsg.push(pair.item.bounds);
-        itemsByEpsg.push(pair.stac);
-        allItems.push(pair.stac);
+      // write stac items and collections
+      logger.info({ epsg }, 'WriteStacFiles:Start');
+      if (!latestOnly) {
+        const allPaths = await writeStacFiles(allTargetURL, allStacItems, collection);
+        stacItemPaths.push(...allPaths.itemPaths);
       }
+      const latestPaths = await writeStacFiles(latestTargetURL, latestStacItems, latestCollection);
+      stacItemPaths.push(...latestPaths.itemPaths);
+      logger.info({ epsg }, 'WriteStacFiles:End');
     }
-
-    // create collection
-    const collection = createStacCollection(title, Bounds.union(boundsByEpsg), itemsByEpsg);
-    // write stac items and collection
-    await writeStacFiles(new URL(`${scale}/${epsg}/`, target), force, itemsByEpsg, collection);
   }
 
-  // write 'latest' stac items and collection
-  for (const [epsg, itemsByMapCode] of pairsByDir.latest.entries()) {
-    const boundsByEpsg: Bounds[] = [];
-    const itemsByEpsg: StacItem[] = [];
-
-    for (const [, pair] of itemsByMapCode.entries()) {
-      boundsByEpsg.push(pair.item.bounds);
-      itemsByEpsg.push(pair.stac);
-      latestItems.push(pair.stac);
-    }
-
-    // create collection
-    const collection = createStacCollection(title, Bounds.union(boundsByEpsg), itemsByEpsg);
-    // write stac items and collection
-    await writeStacFiles(new URL(`${scale}_latest/${epsg}/`, target), force, itemsByEpsg, collection);
-  }
-
-  logger.info('WriteStacFiles:End');
-
-  return { latest: latestItems, all: allItems };
+  return { epsgDirectoryPaths, stacItemPaths };
 }

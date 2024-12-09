@@ -1,4 +1,3 @@
-import { Epsg } from '@basemaps/geo';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { StacItem } from 'stac-ts';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
@@ -10,30 +9,23 @@ const cliDate = new Date().toISOString();
 
 /**
  * This function creates a base StacItem object based on the provided parameters.
- * @param id: The id of the StacItem
+ *
+ * @param fileName: The map sheet's filename
  * @example "CJ10" or "CJ10_v1-00"
  *
- * @param mapCode The map code of the map sheet
- * @example "CJ10"
+ * @param tiffItem TODO
  *
- * @param version The version of the map sheet
- * @example "v1-00"
- *
- * @param tiff TODO
- *
- * @param bounds TODO
- *
- * @returns
+ * @returns a StacItem object
  */
-export function createBaseStacItem(id: string, mapCode: string, tiffItem: TiffItem): StacItem {
-  logger.info({ id }, 'createBaseStacItem()');
+export function createBaseStacItem(fileName: string, tiffItem: TiffItem): StacItem {
+  logger.info({ fileName }, 'createBaseStacItem()');
 
   const item: StacItem = {
     type: 'Feature',
     stac_version: '1.0.0',
-    id: id,
+    id: fileName,
     links: [
-      { rel: 'self', href: `./${id}.json`, type: 'application/json' },
+      { rel: 'self', href: `./${fileName}.json`, type: 'application/json' },
       { rel: 'collection', href: './collection.json', type: 'application/json' },
       { rel: 'parent', href: './collection.json', type: 'application/json' },
     ],
@@ -47,10 +39,9 @@ export function createBaseStacItem(id: string, mapCode: string, tiffItem: TiffIt
     stac_extensions: ['https://stac-extensions.github.io/file/v2.0.0/schema.json'],
     properties: {
       datetime: cliDate,
-      map_code: mapCode, // e.g. "CJ10"
+      map_code: tiffItem.mapCode, // e.g. "CJ10"
       version: tiffItem.version.replace('-', '.'), // convert from "v1-00" to "v1.00"
-      'proj:epsg': Epsg.Nztm2000.code,
-      'source:epsg': tiffItem.epsg.code,
+      'proj:epsg': tiffItem.epsg.code,
     },
     geometry: { type: 'Polygon', coordinates: tiffItem.bounds.toPolygon() } as GeoJSONPolygon,
     bbox: tiffItem.bounds.toBbox(),

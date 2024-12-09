@@ -1,13 +1,12 @@
-import { BoundingBox, Nztm2000QuadTms, Projection } from '@basemaps/geo';
+import { Bounds } from '@basemaps/geo';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { StacCollection, StacItem } from 'stac-ts';
 
 import { logger } from '../../../log.js';
 
-const projection = Projection.get(Nztm2000QuadTms);
 const cliDate = new Date().toISOString();
 
-export function createStacCollection(title: string, imageryBound: BoundingBox, items: StacItem[]): StacCollection {
+export function createStacCollection(title: string, imageryBounds: Bounds, items: StacItem[]): StacCollection {
   logger.info({ items: items.length }, 'CreateStacCollection()');
   const collection: StacCollection = {
     type: 'Collection',
@@ -41,7 +40,7 @@ export function createStacCollection(title: string, imageryBound: BoundingBox, i
     'linz:security_classification': 'unclassified',
     'linz:slug': 'topo50',
     extent: {
-      spatial: { bbox: [projection.boundsToWgs84BoundingBox(imageryBound)] },
+      spatial: { bbox: [imageryBounds.toBbox()] },
       // Default the temporal time today if no times were found as it is required for STAC
       temporal: { interval: [[cliDate, null]] },
     },

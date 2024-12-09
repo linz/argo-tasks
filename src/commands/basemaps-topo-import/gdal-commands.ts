@@ -8,7 +8,13 @@ export function gdalBuildVrt(targetVrt: URL, source: URL[]): GdalCommand {
   return {
     output: targetVrt,
     command: 'gdalbuildvrt',
-    args: [['-addalpha'], urlToString(targetVrt), ...source.map(urlToString)]
+    args: [
+      ['-addalpha'],
+      ['-hidenodata'],
+      ['-vrtnodata', '208 231 244'],
+      urlToString(targetVrt),
+      ...source.map(urlToString),
+    ]
       .filter((f) => f != null)
       .flat()
       .map(String),

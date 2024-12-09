@@ -119,7 +119,7 @@ async function createCogs(input: URL, tmp: URL): Promise<void> {
 
     logger.info({ item: item.id }, 'CogCreation:gdalwarp');
     const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
-    const sourceEpsg = Number(item.properties['source:epsg']);
+    const sourceEpsg = Number(item.properties['proj:epsg']);
     const sourceProj = Epsg.tryGet(sourceEpsg);
     if (sourceProj == null) throw new Error(`Unknown source projection ${sourceEpsg}`);
     const vrtWarpPath = new URL(`${item.id}-warp.vrt`, tmpFolder);

@@ -11,30 +11,29 @@ import { createBaseStacItem } from './create-base-stac-item.js';
  * All versions need a StacItem object that lives in the topo[50/250] directory
  * The latest version needs a second StacItem object that lives in the topo[50/250]-latest dir
  */
-export async function createStacItemPair(
-  scale: string,
-  mapCode: string,
+export async function createStacItems(
+  allTargetURL: URL,
   all: TiffItem[],
   latest: TiffItem,
-): Promise<{ latest: { item: TiffItem; stac: StacItem }; all: { item: TiffItem; stac: StacItem }[] }> {
-  const latestStacItem = { item: latest, stac: createBaseStacItem(mapCode, mapCode, latest) };
-  const allStacItems = all.map((tiffItem) => ({
-    item: tiffItem,
-    stac: createBaseStacItem(`${mapCode}_${tiffItem.version}`, mapCode, tiffItem),
-  }));
+): Promise<{ all: StacItem[]; latest: StacItem }> {
+  const allStacItems = all.map((item) => createBaseStacItem(`${item.mapCode}_${item.version}`, item));
+
+  const latestURL = new URL(`${latest.mapCode}_${latest.version}.json`, allTargetURL);
 
   // add link to all items pointing to the latest version
-  allStacItems.forEach((pair) => {
-    pair.stac?.links.push({
-      href: `./${mapCode}_${latest.version}.json`,
+  allStacItems.forEach((stacItem) => {
+    stacItem.links.push({
+      href: latestURL.href,
       rel: 'latest-version',
       type: 'application/json',
     });
   });
 
+  const latestStacItem = createBaseStacItem(latest.mapCode, latest);
+
   // add link to the latest item referencing its copy that will live in the topo[50/250] directory
-  latestStacItem.stac.links.push({
-    href: `../${scale}/${mapCode}_${latest.version}.json`,
+  latestStacItem.links.push({
+    href: latestURL.href,
     rel: 'derived_from',
     type: 'application/json',
   });

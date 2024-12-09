@@ -1,4 +1,3 @@
-import { Bounds, Projection } from '@basemaps/geo';
 import { Tiff } from '@cogeotiff/core';
 
 import { logger } from '../../../log.js';
@@ -14,8 +13,8 @@ import { TiffItem } from '../types/tiff-item.js';
  * For each group, we then need to identify the latest version and set it aside from the rest.
  * The latest version will have special metadata, whereas the rest will have similar metadata.
  *
- * @param tiffs: The tiffs to group by map code and version
- * @returns a `SplitEpsgMap` Map object
+ * @param tiffs: The tiffs to group by epsg, and map code
+ * @returns a `ByDirectory<TiffItem>` promise
  */
 export async function groupTiffsByDirectory(tiffs: Tiff[]): Promise<ByDirectory<TiffItem>> {
   // group the tiffs by directory, epsg, and map code
@@ -43,13 +42,7 @@ export async function groupTiffsByDirectory(tiffs: Tiff[]): Promise<ByDirectory<
       continue;
     }
 
-    const projection = Projection.tryGet(epsg);
-    if (projection == null) throw new Error(`Could not find a projection for epsg:${epsg.code}`);
-
-    // Convert bounds to WGS84 for different source epsg
-    const boundsCoverted = Bounds.fromBbox(projection.boundsToWgs84BoundingBox(bounds));
-
-    const item = new TiffItem(tiff, source, mapCode, version, boundsCoverted, epsg);
+    const item = new TiffItem(tiff, source, mapCode, version, bounds, epsg);
 
     // push the item into 'all' by {epsg} and {map code}
     byDirectory.all.get(epsg.toString()).get(mapCode, []).push(item);
