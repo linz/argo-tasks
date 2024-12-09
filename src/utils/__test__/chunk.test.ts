@@ -33,4 +33,10 @@ describe('getFiles', () => {
     const files = await getFiles(['gf://a/;gf://b/\ngf://c/']);
     assert.deepEqual(files, [['gf://a/a.txt', 'gf://b/b.txt', 'gf://c/c.txt']]);
   });
+
+  it('should skip zero byte files by default', async () => {
+    await fsa.write('gf://a/a.txt', Buffer.from(''));
+    assert.deepEqual(await getFiles(['gf://a/']), []);
+    assert.deepEqual(await getFiles(['gf://a/'], { sizeMin: 0 }), [['gf://a/a.txt']]);
+  });
 });

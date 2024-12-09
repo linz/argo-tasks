@@ -183,6 +183,22 @@ describe('validate', () => {
     ]);
   });
 
+  it('should fail with 0 byte tiffs', async () => {
+    await fsa.write('/tmp/empty/foo.tiff', Buffer.from(''));
+    const ret = await commandTileIndexValidate
+      .handler({
+        ...baseArguments,
+        location: ['/tmp/empty/'],
+        retile: false,
+        validate: true,
+        scale: 1000,
+        forceOutput: true,
+      })
+      .catch((e: Error) => e);
+
+    assert.ok(String(ret).startsWith('Error: Tiff loading failed: '));
+  });
+
   it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     t.mock.method(TiffLoader, 'load', () =>
