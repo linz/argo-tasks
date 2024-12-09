@@ -564,8 +564,8 @@ export function* iterateMapSheets(bounds: BBox, gridSize: GridSize): Generator<s
 
   const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheet);
   const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheet);
-  for (let x = minX; x <= maxX + tileWidth - 1; x += tileWidth) {
-    for (let y = maxY; y >= minY - tileHeight - 1; y -= tileHeight) {
+  for (let x = minX; x < maxX; x += tileWidth) {
+    for (let y = maxY; y > minY; y -= tileHeight) {
       yield getTileName(x, y, gridSize);
     }
   }
