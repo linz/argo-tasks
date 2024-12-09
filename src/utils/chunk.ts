@@ -67,11 +67,15 @@ export type FileFilter = {
 
   /**
    * Limit the number of the output files
+   *
+   * @default -1 - No limit
    */
   limit?: number;
 
   /**
    * Group files into this number of items group
+   *
+   * @default -1 - No limit
    */
   group?: number;
 
@@ -82,6 +86,8 @@ export type FileFilter = {
    * ```
    * 5GB // 5 GB chunks
    * ```
+   *
+   * @default -1 - No limit
    */
   groupSize?: string;
 
@@ -95,7 +101,7 @@ export type FileFilter = {
    * ```
    * @default 1
    */
-  sizeMin: number;
+  sizeMin?: number;
 };
 export async function getFiles(paths: string[], args: FileFilter = { sizeMin: 1 }): Promise<string[][]> {
   const limit = args.limit ?? -1; // no limit by default
