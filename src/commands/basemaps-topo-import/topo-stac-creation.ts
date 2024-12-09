@@ -53,6 +53,11 @@ export const topoStacCreation = command({
       long: 'scale',
       description: 'topo25, topo50, or topo250',
     }),
+    resolution: option({
+      type: string,
+      long: 'resolution',
+      description: 'e.g. gridless_600dpi',
+    }),
     latestOnly: flag({
       type: boolean,
       defaultValue: () => false,
@@ -73,6 +78,7 @@ export const topoStacCreation = command({
       args.title,
       args.forceOutput,
       args.scale,
+      args.resolution,
     );
 
     if (epsgDirectoryPaths.length === 0 || stacItemPaths.length === 0) throw new Error('No Stac items created');
@@ -83,8 +89,7 @@ export const topoStacCreation = command({
 
       // for create-config: we need to tell create-config to create a bundled config for each epsg folder (latest only).
       // workflow: will loop 'targets.json' and create a node for each path where each node's job is to create a bundled config.
-      const targetPaths = epsgDirectoryPaths.map((url) => ({ url }));
-      await fsa.write(new URL('targets.json', targetURL), JSON.stringify(targetPaths, null, 2));
+      await fsa.write(new URL('targets.json', targetURL), JSON.stringify(epsgDirectoryPaths, null, 2));
 
       // tiles.json makes the tiff files
       await fsa.write(new URL('tiles.json', targetURL), JSON.stringify(stacItemPaths, null, 2));
@@ -114,7 +119,8 @@ async function loadTiffsToCreateStacs(
   title: string,
   force: boolean,
   scale: string,
-): Promise<{ epsgDirectoryPaths: URL[]; stacItemPaths: URL[] }> {
+  resolution: string,
+): Promise<{ epsgDirectoryPaths: { epsg: string; url: URL }[]; stacItemPaths: URL[] }> {
   logger.info({ source }, 'LoadTiffs:Start');
   // extract all file paths from the source directory and convert them into URL objects
   const fileURLs = await fsa.toArray(fsa.list(source));
@@ -129,13 +135,13 @@ async function loadTiffsToCreateStacs(
   await fsa.write(itemsByDirPath, JSON.stringify(itemsByDir, null, 2));
   logger.info('GroupTiffs:End');
 
-  const epsgDirectoryPaths: URL[] = [];
+  const epsgDirectoryPaths: { epsg: string; url: URL }[] = [];
   const stacItemPaths: URL[] = [];
 
   // create and write stac items and collections
   for (const [epsg, itemsByMapCode] of itemsByDir.all.entries()) {
-    const allTargetURL = new URL(`${scale}/${epsg}/`, target);
-    const latestTargetURL = new URL(`${scale}_latest/${epsg}/`, target);
+    const allTargetURL = new URL(`${scale}/${resolution}/${epsg}/`, target);
+    const latestTargetURL = new URL(`${scale}_latest/${resolution}/${epsg}/`, target);
 
     const allBounds: Bounds[] = [];
     const allStacItems: StacItem[] = [];
@@ -165,8 +171,7 @@ async function loadTiffsToCreateStacs(
     logger.info({ epsg }, 'CreateStacItems:End');
 
     if (force || isArgo()) {
-      // epsgDirectoryPaths.push(allTargetURL);
-      epsgDirectoryPaths.push(latestTargetURL);
+      epsgDirectoryPaths.push({ epsg, url: latestTargetURL });
 
       // write stac items and collections
       logger.info({ epsg }, 'WriteStacFiles:Start');
