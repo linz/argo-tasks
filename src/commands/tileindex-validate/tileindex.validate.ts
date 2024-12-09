@@ -27,7 +27,8 @@ export const TiffLoader = {
    * @returns Initialized tiff
    */
   async load(locations: string[], args?: FileFilter): Promise<Tiff[]> {
-    const files = await getFiles(locations, args);
+    // Include 0 byte files and filter them out with {@see isTiff}
+    const files = await getFiles(locations, { ...args, sizeMin: 0 });
     const tiffLocations = files.flat().filter(isTiff);
     const startTime = performance.now();
     logger.info({ count: tiffLocations.length }, 'Tiff:Load:Start');

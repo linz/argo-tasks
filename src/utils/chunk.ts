@@ -61,10 +61,52 @@ export function splitPaths(paths: string[]): string[] {
   return paths.map((m) => m.split(PathSplitCharacters)).flat();
 }
 
-export type FileFilter = { include?: string; exclude?: string; limit?: number; group?: number; groupSize?: string };
+export type FileFilter = {
+  include?: string;
+  exclude?: string;
+
+  /**
+   * Limit the number of the output files
+   *
+   * @default -1 - No limit
+   */
+  limit?: number;
+
+  /**
+   * Group files into this number of items group
+   *
+   * @default -1 - No limit
+   */
+  group?: number;
+
+  /**
+   * Group the files into this size groups, see {@link parseSize}
+   *
+   * @example
+   * ```
+   * 5GB // 5 GB chunks
+   * ```
+   *
+   * @default -1 - No limit
+   */
+  groupSize?: string;
+
+  /**
+   * Files less than size are ignored
+   *
+   * @example
+   *
+   * ```typescript
+   * if(file.size < sizeMin) continue
+   * ```
+   * @default 1
+   */
+  sizeMin?: number;
+};
 export async function getFiles(paths: string[], args: FileFilter = {}): Promise<string[][]> {
   const limit = args.limit ?? -1; // no limit by default
-  const maxSize = parseSize(args.groupSize ?? '-1');
+  const minSize = args.sizeMin ?? 1; // ignore 0 byte files
+  const groupSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
   const outputFiles: FileSizeInfo[] = [];
 
@@ -76,18 +118,19 @@ export async function getFiles(paths: string[], args: FileFilter = {}): Promise<
     const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), args));
     logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
 
-    let size = 0;
+    let totalSize = 0;
     for (const file of fileList) {
-      // Skip empty files
-      if (file.size === 0) continue;
-      if (file.size != null) size += file.size;
+      if (file.size != null) {
+        if (file.size < minSize) continue;
+        totalSize += file.size;
+      }
       outputFiles.push(file);
       if (limit > 0 && outputFiles.length >= limit) break;
     }
     if (limit > 0 && outputFiles.length >= limit) break;
 
-    logger.info({ path: targetPath, fileCount: fileList.length, totalSize: size }, 'List:Size');
+    logger.info({ path: targetPath, fileCount: fileList.length, totalSize }, 'List:Size');
   }
 
-  return chunkFiles(outputFiles, maxLength, maxSize);
+  return chunkFiles(outputFiles, maxLength, groupSize);
 }
