@@ -1,7 +1,7 @@
 import { Tiff } from '@cogeotiff/core';
 
 import { logger } from '../../../log.js';
-import { extractBounds } from '../extractors/extract-bounds.js';
+import { extractBounds, extractSize } from '../extractors/extract-bounds.js';
 import { extractEpsgFromTiff } from '../extractors/extract-epsg-from-tiff.js';
 import { extractMapCodeAndVersion } from '../extractors/extract-map-code-and-version.js';
 import { brokenTiffs } from '../topo-stac-creation.js';
@@ -27,8 +27,9 @@ export async function groupTiffsByDirectory(tiffs: Tiff[]): Promise<ByDirectory<
 
     const bounds = await extractBounds(tiff);
     const epsg = extractEpsgFromTiff(tiff);
+    const size = extractSize(tiff);
 
-    if (bounds == null || epsg == null) {
+    if (bounds == null || epsg == null || size == null) {
       if (bounds == null) {
         brokenTiffs.noBounds.push(`${mapCode}_${version}`);
         logger.warn({ mapCode, version }, 'Could not extract bounds from tiff');
@@ -39,10 +40,15 @@ export async function groupTiffsByDirectory(tiffs: Tiff[]): Promise<ByDirectory<
         logger.warn({ mapCode, version }, 'Could not extract epsg from tiff');
       }
 
+      if (size == null) {
+        brokenTiffs.noSize.push(`${mapCode}_${version}`);
+        logger.warn({ mapCode, version }, 'Could not extract width or height from tiff');
+      }
+
       continue;
     }
 
-    const item = new TiffItem(tiff, source, mapCode, version, bounds, epsg);
+    const item = new TiffItem(tiff, source, mapCode, version, bounds, epsg, size);
 
     // push the item into 'all' by {epsg} and {map code}
     byDirectory.all.get(epsg.toString()).get(mapCode, []).push(item);

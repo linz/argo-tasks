@@ -42,6 +42,8 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): StacIt
       map_code: tiffItem.mapCode, // e.g. "CJ10"
       version: tiffItem.version.replace('-', '.'), // convert from "v1-00" to "v1.00"
       'proj:epsg': tiffItem.epsg.code,
+      'source.width': tiffItem.size.width,
+      'source.height': tiffItem.size.height,
     },
     geometry: { type: 'Polygon', coordinates: tiffItem.bounds.toPolygon() } as GeoJSONPolygon,
     bbox: tiffItem.bounds.toBbox(),

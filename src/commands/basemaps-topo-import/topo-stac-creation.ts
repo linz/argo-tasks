@@ -15,7 +15,7 @@ import { createStacItems } from './stac/create-stac-item-groups.js';
 import { writeStacFiles } from './stac/write-stac-files.js';
 
 const Q = pLimit(10);
-export const brokenTiffs = { noBounds: [] as string[], noEpsg: [] as string[] };
+export const brokenTiffs = { noBounds: [] as string[], noEpsg: [] as string[], noSize: [] as string[] };
 
 /**
  * List all the tiffs in a directory for topographic maps and create cogs for each.

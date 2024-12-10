@@ -3,6 +3,8 @@ import { GdalResampling } from '@basemaps/cogify/build/cogify/stac.js';
 
 import { urlToString } from '../../common.js';
 
+export const DEFAULT_TRIM_PIXEL_RIGHT = 1.7;
+
 interface gdalBuildCogOptions {
   /**
    * Resampling algorithm. Nearest is the default.
@@ -11,6 +13,7 @@ interface gdalBuildCogOptions {
    * https://gdal.org/en/stable/programs/gdal_translate.html#cmdoption-gdal_translate-r
    */
   resamplingMethod?: GdalResampling;
+  pixelTrim?: number;
 }
 
 /**
@@ -21,7 +24,14 @@ interface gdalBuildCogOptions {
  * @param opts
  * @returns
  */
-export function gdalBuildCogCommands(input: URL, output: URL, opts?: gdalBuildCogOptions): GdalCommand {
+export function gdalBuildCogCommands(
+  input: URL,
+  output: URL,
+  width: number,
+  height: number,
+  opts?: gdalBuildCogOptions,
+): GdalCommand {
+  const pixelTrim = opts?.pixelTrim ?? DEFAULT_TRIM_PIXEL_RIGHT;
   const command: GdalCommand = {
     output,
     command: 'gdal_translate',
@@ -31,6 +41,7 @@ export function gdalBuildCogCommands(input: URL, output: URL, opts?: gdalBuildCo
       ['-of', 'COG'], // Output format
 
       // https://gdal.org/en/latest/drivers/raster/cog.html#creation-options
+      ['-srcwin', `0`, `0`, `${width - pixelTrim}`, `${height}`],
       ['-co', 'BIGTIFF=NO'],
       ['-co', 'BLOCKSIZE=512'],
       ['-co', 'COMPRESS=WEBP'],

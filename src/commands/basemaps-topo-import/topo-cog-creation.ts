@@ -5,7 +5,7 @@ import { createFileStats, GdalResampling } from '@basemaps/cogify/build/cogify/s
 import { Epsg } from '@basemaps/geo';
 import { fsa, Tiff } from '@basemaps/shared';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
-import { command, option, optional, restPositionals, string } from 'cmd-ts';
+import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { mkdir, rm } from 'fs/promises';
 import pLimit from 'p-limit';
 import path from 'path';
@@ -54,6 +54,11 @@ export const topoCogCreation = command({
       long: 'resampling-method',
       description: 'the GDAL resampling algorithm to use',
     }),
+    pixelTrim: option({
+      type: optional(number),
+      long: 'pixel-trim',
+      description: 'number of pixels to trim from the right side of the image',
+    }),
   },
   async handler(args) {
     const startTime = performance.now();
@@ -89,7 +94,7 @@ export const topoCogCreation = command({
     await Promise.all(
       inputs.map((input) =>
         Q(async () => {
-          await createCogs(tryParseUrl(input), tmpFolder, resamplingMethod);
+          await createCogs(tryParseUrl(input), tmpFolder, args.pixelTrim, resamplingMethod);
         }),
       ),
     );
@@ -98,7 +103,7 @@ export const topoCogCreation = command({
   },
 });
 
-async function createCogs(input: URL, tmp: URL, resamplingMethod?: GdalResampling): Promise<void> {
+async function createCogs(input: URL, tmp: URL, pixelTrim?: number, resamplingMethod?: GdalResampling): Promise<void> {
   const startTime = performance.now();
   const item = await fsa.readJson<StacItem>(input);
   const tmpFolder = new URL(item.id, tmp);
@@ -162,8 +167,10 @@ async function createCogs(input: URL, tmp: URL, resamplingMethod?: GdalResamplin
      */
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');
 
+    const width = Number(item.properties['source.width']);
+    const height = Number(item.properties['source.height']);
     const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
-    const commandTranslate = gdalBuildCog(vrtWarpPath, tempPath, { resamplingMethod });
+    const commandTranslate = gdalBuildCog(vrtWarpPath, tempPath, width, height, { resamplingMethod, pixelTrim });
 
     await new GdalRunner(commandTranslate).run(logger);
 

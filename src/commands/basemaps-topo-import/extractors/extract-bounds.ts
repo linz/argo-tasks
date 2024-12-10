@@ -1,4 +1,4 @@
-import { Bounds } from '@basemaps/geo';
+import { Bounds, Size } from '@basemaps/geo';
 import { Tiff } from '@cogeotiff/core';
 
 import { logger } from '../../../log.js';
@@ -21,4 +21,17 @@ export async function extractBounds(tiff: Tiff): Promise<Bounds | null> {
     logger.info({ found: false }, 'extractBounds()');
     return null;
   }
+}
+
+/**
+ * This function attempts to extract bounds from the given Tiff object.
+ *
+ * @param tiff: The Tiff object from which to extract bounds
+ *
+ * @returns if succeeded, a Bounds object. Otherwise, null.
+ */
+export function extractSize(tiff: Tiff): Size | null {
+  const size = tiff.images[0]?.size;
+  if (size == null || size.width == null || size.height == null) return null;
+  return size;
 }
