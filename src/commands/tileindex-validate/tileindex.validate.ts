@@ -392,7 +392,7 @@ export async function extractTiffLocations(
         const targetProjection = Projection.get(2193);
         const sourceProjection = Projection.get(sourceEpsg);
 
-        const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
+        const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY])).map(Math.round);
         if (x == null || y == null) {
           logger.error(
             { reason: 'Failed to reproject point', source: tiff.source },
@@ -404,8 +404,8 @@ export async function extractTiffLocations(
         // Tilename from center
         const tileName = getTileName(x, y, gridSize);
 
-        const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]]));
-        const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]]));
+        const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]])).map(Math.round);
+        const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]])).map(Math.round);
 
         if (ulX == null || ulY == null || lrX == null || lrY == null) {
           logger.error(
@@ -502,7 +502,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
 export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const sheetCode = MapSheet.sheetCode(x, y);
   // TODO: re-enable this check when validation logic
-  // if (!MapSheet.isKnown(sheetCode)) throw new Error('Map sheet outside known range: ' + sheetCode);
+  if (!MapSheet.isKnown(sheetCode)) throw new Error('Map sheet outside known range: ' + sheetCode);
 
   // Shorter tile names for 1:50k
   if (gridSize === MapSheetTileGridSize) return sheetCode;
@@ -548,19 +548,7 @@ export function* iterateMapSheets(bounds: BBox, gridSize: GridSize): Generator<s
   const minY = Math.min(bounds[1], bounds[3]);
   const maxY = Math.max(bounds[1], bounds[3]);
 
-  // const minOffsetX = Math.round(Math.floor((minX - MapSheet.origin.x) / MapSheet.width));
-  // const minOffsetY = Math.round(Math.floor((MapSheet.origin.y - maxY) / MapSheet.height));
-
-  // const maxOffsetX = Math.round(Math.floor((maxX - MapSheet.origin.x) / MapSheet.width));
-  // const maxOffsetY = Math.round(Math.floor((MapSheet.origin.y - minY) / MapSheet.height));
-  // console.log({ minOffsetX, minOffsetY }, { maxOffsetX, maxOffsetY });
-
-  // const offsetX = Math.round(Math.floor((minX - MapSheet.origin.x) / MapSheet.width));
-  // const offsetY = Math.round(Math.floor((MapSheet.origin.y - minY) / MapSheet.height));
-  // console.log(bounds);
-
   const tilesPerMapSheet = Math.floor(MapSheet.gridSizeMax / gridSize);
-  console.log({ minX, minY, maxX, maxY });
 
   const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheet);
   const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheet);
