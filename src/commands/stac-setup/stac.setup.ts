@@ -41,7 +41,7 @@ export const commandStacSetup = command({
     gsd: option({
       type: string,
       long: 'gsd',
-      description: 'GSD of dataset',
+      description: 'GSD of dataset, e.g. 0.3',
     }),
 
     region: option({
@@ -102,7 +102,7 @@ export const commandStacSetup = command({
         region: args.region,
         geographicDescription: args.geographicDescription,
         date: date,
-        gsd: formatGsd(args.gsd),
+        gsd: checkGsd(args.gsd),
       };
       const slug = slugFromMetadata(metadata);
       const collectionId = ulid.ulid();
@@ -144,15 +144,19 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
 }
 
 /**
- * Remove a trailing 'm' from a GSD value and log warning if it is present
+ * Remove a trailing 'm' from a GSD value, logging warning if it is present. Check if GSD is a number.
  *
  * @param gsd GSD value from command line input
  * @returns GSD without trailing 'm'
  */
-export function formatGsd(gsd: string): string {
-  if (gsd.endsWith('m')) {
-    logger.warn(`${gsd} supplied as GSD; future supported format will require numerical value only.`);
-    return gsd.slice(0, -1);
+export function checkGsd(suppliedGsd: string): string {
+  let gsd = suppliedGsd;
+  if (suppliedGsd.endsWith('m')) {
+    logger.warn(`${suppliedGsd} supplied as GSD; future supported format will require numerical value only.`);
+    gsd = suppliedGsd.slice(0, -1);
+  }
+  if (isNaN(Number(gsd))) {
+    throw new Error(`Invalid GSD value: ${gsd}. GSD must be a number.`);
   }
   return gsd;
 }

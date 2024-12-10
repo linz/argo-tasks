@@ -5,7 +5,7 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
 import { commandStacSetup } from '../stac.setup.js';
-import { formatDate, formatGsd, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
+import { checkGsd, formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
 import { SampleCollection } from './sample.js';
 
 describe('stac-setup', () => {
@@ -190,7 +190,6 @@ describe('formatDate', () => {
     const endYear = '2023';
     assert.equal(formatDate(startYear, endYear), '2023');
   });
-
   it('Should return date as two years', async () => {
     const startYear = '2023';
     const endYear = '2024';
@@ -198,12 +197,16 @@ describe('formatDate', () => {
   });
 });
 
-describe('formatGsd', () => {
+describe('checkGsd', () => {
   it('Should return GSD unaltered', async () => {
-    assert.equal(formatGsd('0.3'), '0.3');
+    assert.equal(checkGsd('0.3'), '0.3');
   });
-
   it('Should return GSD with trailing m removed', async () => {
-    assert.equal(formatGsd('0.3m'), '0.3');
+    assert.equal(checkGsd('0.3m'), '0.3');
+  });
+  it('Should throw error if GSD is not a number', async () => {
+    assert.throws(() => {
+      checkGsd('foo');
+    }, Error('Invalid GSD value: foo. GSD must be a number.'));
   });
 });
