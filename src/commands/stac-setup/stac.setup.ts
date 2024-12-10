@@ -152,7 +152,6 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
 export function checkGsd(suppliedGsd: string): string {
   let gsd = suppliedGsd;
   if (suppliedGsd.endsWith('m')) {
-    logger.warn(`${suppliedGsd} supplied as GSD; future supported format will require numerical value only.`);
     gsd = suppliedGsd.slice(0, -1);
   }
   if (isNaN(Number(gsd))) {
