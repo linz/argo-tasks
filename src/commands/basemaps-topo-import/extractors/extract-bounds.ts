@@ -31,7 +31,11 @@ export async function extractBounds(tiff: Tiff): Promise<Bounds | null> {
  * @returns if succeeded, a Bounds object. Otherwise, null.
  */
 export function extractSize(tiff: Tiff): Size | null {
-  const size = tiff.images[0]?.size;
-  if (size == null || size.width == null || size.height == null) return null;
-  return size;
+  try {
+    const size = tiff.images[0]?.size ?? null;
+    return size;
+  } catch (e) {
+    logger.info({ found: false }, 'extractSize()');
+    return null;
+  }
 }
