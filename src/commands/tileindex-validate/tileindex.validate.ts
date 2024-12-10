@@ -246,7 +246,7 @@ export const commandTileIndexValidate = command({
           return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
             source: loc.source,
             tileName: loc.tileNames.join(', '),
-            isDuplicate: true, // (outputs.get(loc.tileNames)?.length ?? 1) > 1,
+            isDuplicate: (outputs.get(loc.tileNames.join(', '))?.length ?? 1) > 1,
           });
         }),
       });
