@@ -502,7 +502,10 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
 export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const sheetCode = MapSheet.sheetCode(x, y);
   // TODO: re-enable this check when validation logic
-  if (!MapSheet.isKnown(sheetCode)) throw new Error('Map sheet outside known range: ' + sheetCode);
+  if (!MapSheet.isKnown(sheetCode)) {
+    logger.warn('Map sheet outside known range: ' + sheetCode);
+    return '';
+  }
 
   // Shorter tile names for 1:50k
   if (gridSize === MapSheetTileGridSize) return sheetCode;
