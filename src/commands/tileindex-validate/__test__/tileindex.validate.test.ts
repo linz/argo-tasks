@@ -89,8 +89,8 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[0] = 1684000;
     TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000);
-    assert.equal(location[0]?.tileName, 'AS21_1000_0101');
-    assert.equal(location[1]?.tileName, 'AY29_1000_0101');
+    assert.equal(location[0]?.tileNames[0], 'AS21_1000_0101');
+    assert.equal(location[1]?.tileNames[0], 'AY29_1000_0101');
   });
 
   it('should find duplicates', async () => {
@@ -118,7 +118,7 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[0] = 19128043.69337794;
     TiffAy29.images[0].origin[1] = -4032710.6009459053;
     const location = await extractTiffLocations([TiffAy29], 1000);
-    assert.equal(location[0]?.tileName, 'AS21_1000_0101');
+    assert.equal(location[0]?.tileNames[0], 'AS21_1000_0101');
   });
 
   it('should fail if one location is not extracted', async () => {
