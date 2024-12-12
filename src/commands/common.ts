@@ -169,12 +169,12 @@ export const UrlFolder: Type<string, URL> = {
  */
 export const MeterAsString: Type<string, string> = {
   from(str) {
-    const gsd = str.endsWith('m') ? str.slice(0, -1) : str;
+    const meters = str.endsWith('m') ? str.slice(0, -1) : str;
 
-    if (isNaN(Number(gsd))) {
-      throw new Error(`Invalid GSD value: ${gsd}. GSD must be a number.`);
+    if (isNaN(Number(meters))) {
+      throw new Error(`Invalid value: ${meters}. must be a number.`);
     }
 
-    return Promise.resolve(gsd);
+    return Promise.resolve(meters);
   },
 };

@@ -207,13 +207,10 @@ describe('checkGsd', () => {
   });
 
   it('Should throw error if GSD is not a number', async () => {
-    await assert.rejects(
-      async () => await MeterAsString.from('foo'),
-      Error('Invalid GSD value: foo. GSD must be a number.'),
-    );
+    await assert.rejects(async () => await MeterAsString.from('foo'), Error('Invalid value: foo. must be a number.'));
     await assert.rejects(
       async () => await MeterAsString.from('1.4deg'),
-      Error('Invalid GSD value: 1.4deg. GSD must be a number.'),
+      Error('Invalid value: 1.4deg. must be a number.'),
     );
   });
 });
