@@ -7,7 +7,7 @@ import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { GeospatialDataCategories, StacCollectionLinz } from '../../utils/metadata.js';
 import { slugify } from '../../utils/slugify.js';
-import { config, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.js';
+import { config, MeterAsString, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.js';
 
 export interface SlugMetadata {
   geospatialCategory: string;
@@ -39,7 +39,7 @@ export const commandStacSetup = command({
     }),
 
     gsd: option({
-      type: string,
+      type: MeterAsString,
       long: 'gsd',
       description: 'GSD of dataset, e.g. 0.3',
     }),
@@ -102,7 +102,7 @@ export const commandStacSetup = command({
         region: args.region,
         geographicDescription: args.geographicDescription,
         date: date,
-        gsd: checkGsd(args.gsd),
+        gsd: args.gsd,
       };
       const slug = slugFromMetadata(metadata);
       const collectionId = ulid.ulid();
@@ -141,23 +141,6 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   }
 
   throw new Error(`Slug can't be generated from collection as no matching category: ${metadata.geospatialCategory}.`);
-}
-
-/**
- * Remove a trailing 'm' from a GSD value, logging warning if it is present. Check if GSD is a number.
- *
- * @param gsd GSD value from command line input
- * @returns GSD without trailing 'm'
- */
-export function checkGsd(suppliedGsd: string): string {
-  let gsd = suppliedGsd;
-  if (suppliedGsd.endsWith('m')) {
-    gsd = suppliedGsd.slice(0, -1);
-  }
-  if (isNaN(Number(gsd))) {
-    throw new Error(`Invalid GSD value: ${gsd}. GSD must be a number.`);
-  }
-  return gsd;
 }
 
 /**

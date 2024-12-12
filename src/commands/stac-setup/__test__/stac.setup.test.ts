@@ -4,8 +4,8 @@ import { afterEach, before, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { commandStacSetup } from '../stac.setup.js';
-import { checkGsd, formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
+import { MeterAsString } from '../../common.js';
+import { commandStacSetup, formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
 import { SampleCollection } from './sample.js';
 
 describe('stac-setup', () => {
@@ -199,14 +199,21 @@ describe('formatDate', () => {
 
 describe('checkGsd', () => {
   it('Should return GSD unaltered', async () => {
-    assert.equal(checkGsd('0.3'), '0.3');
+    assert.equal(await MeterAsString.from('0.3'), '0.3');
   });
+
   it('Should return GSD with trailing m removed', async () => {
-    assert.equal(checkGsd('0.3m'), '0.3');
+    assert.equal(await MeterAsString.from('0.3m'), '0.3');
   });
+
   it('Should throw error if GSD is not a number', async () => {
-    assert.throws(() => {
-      checkGsd('foo');
-    }, Error('Invalid GSD value: foo. GSD must be a number.'));
+    await assert.rejects(
+      async () => await MeterAsString.from('foo'),
+      Error('Invalid GSD value: foo. GSD must be a number.'),
+    );
+    await assert.rejects(
+      async () => await MeterAsString.from('1.4deg'),
+      Error('Invalid GSD value: 1.4deg. GSD must be a number.'),
+    );
   });
 });
