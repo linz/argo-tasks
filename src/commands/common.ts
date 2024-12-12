@@ -159,3 +159,22 @@ export const UrlFolder: Type<string, URL> = {
     return url;
   },
 };
+
+/**
+ * Remove a trailing 'm' from a input value and validate the input is a number.
+ *
+ * @param str input value
+ * @returns value without trailing 'm' (if it exists)
+ * @throws if input is not a valid number
+ */
+export const MeterAsString: Type<string, string> = {
+  from(str) {
+    const meters = str.endsWith('m') ? str.slice(0, -1) : str;
+
+    if (isNaN(Number(meters))) {
+      throw new Error(`Invalid value: ${meters}. must be a number.`);
+    }
+
+    return Promise.resolve(meters);
+  },
+};

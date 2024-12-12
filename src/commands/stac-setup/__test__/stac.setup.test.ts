@@ -4,8 +4,8 @@ import { afterEach, before, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { commandStacSetup } from '../stac.setup.js';
-import { formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
+import { MeterAsString } from '../../common.js';
+import { commandStacSetup, formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
 import { SampleCollection } from './sample.js';
 
 describe('stac-setup', () => {
@@ -190,10 +190,27 @@ describe('formatDate', () => {
     const endYear = '2023';
     assert.equal(formatDate(startYear, endYear), '2023');
   });
-
   it('Should return date as two years', async () => {
     const startYear = '2023';
     const endYear = '2024';
     assert.equal(formatDate(startYear, endYear), '2023-2024');
+  });
+});
+
+describe('checkGsd', () => {
+  it('Should return GSD unaltered', async () => {
+    assert.equal(await MeterAsString.from('0.3'), '0.3');
+  });
+
+  it('Should return GSD with trailing m removed', async () => {
+    assert.equal(await MeterAsString.from('0.3m'), '0.3');
+  });
+
+  it('Should throw error if GSD is not a number', async () => {
+    await assert.rejects(async () => await MeterAsString.from('foo'), Error('Invalid value: foo. must be a number.'));
+    await assert.rejects(
+      async () => await MeterAsString.from('1.4deg'),
+      Error('Invalid value: 1.4deg. must be a number.'),
+    );
   });
 });

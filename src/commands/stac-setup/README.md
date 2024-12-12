@@ -13,7 +13,7 @@ stac-setup <options>
 | --config <str>                 | Location of role configuration file        | optional                         |
 | --start-year <str>             | Start year of survey capture               | optional                         |
 | --end-year <str>               | End year of survey capture                 | optional                         |
-| --gsd <str>                    | GSD of dataset                             |                                  |
+| --gsd <value>                  | GSD of dataset, e.g. 0.3                   |                                  |
 | --region <str>                 | Region of dataset                          |                                  |
 | --geographic-description <str> | Geographic description of dataset          |                                  |
 | --geospatial-category <str>    | Geospatial category of dataset             |                                  |
