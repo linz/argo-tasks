@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.9.1](https://github.com/linz/argo-tasks/compare/v4.9.0...v4.9.1) (2024-12-12)
+
+
+### Bug Fixes
+
+* include zero byte tiffs when validating files TDE-1348 ([#1156](https://github.com/linz/argo-tasks/issues/1156)) ([a1e54de](https://github.com/linz/argo-tasks/commit/a1e54de2f72b86764ee60415c543a9e549d3882c))
+* remove GSD unit from stac setup command inputs TDE-1339 TDE-1211 ([#1153](https://github.com/linz/argo-tasks/issues/1153)) ([29d1871](https://github.com/linz/argo-tasks/commit/29d18710225db7b371dce3c9eca256088c92ba5f))
+
 ## [4.9.0](https://github.com/linz/argo-tasks/compare/v4.8.0...v4.9.0) (2024-11-29)
 
 
