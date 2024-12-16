@@ -147,7 +147,7 @@ export const commandMapSheetCoverage = command({
 
     // Reverse the configuration so the highest priority datasets come first
     for (const layer of config.layers.reverse()) {
-      if (Skip.has(layer.name)) continue;
+      //if (Skip.has(layer.name)) continue;
 
       const layerSource = layer[args.epsgCode as 2193 | 3857];
       if (layerSource == null) {
