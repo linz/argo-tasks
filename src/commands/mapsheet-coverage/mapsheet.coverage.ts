@@ -18,12 +18,6 @@ import { hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
 import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.js';
 
-/** Datasets to skip */
-const Skip = new Set([
-  /** This covers the entire country and can be ignored */
-  'new-zealand_2012_dem_8m',
-]);
-
 /** allow the configuration layer choice between 2193 and 3857 */
 const ValidCodes = new Set([EpsgCode.Google, EpsgCode.Nztm2000]);
 
@@ -147,8 +141,6 @@ export const commandMapSheetCoverage = command({
 
     // Reverse the configuration so the highest priority datasets come first
     for (const layer of config.layers.reverse()) {
-      //if (Skip.has(layer.name)) continue;
-
       const layerSource = layer[args.epsgCode as 2193 | 3857];
       if (layerSource == null) {
         logger.warn({ layer: layer.name, layerSource: args.epsgCode }, 'Layer:Missing');
