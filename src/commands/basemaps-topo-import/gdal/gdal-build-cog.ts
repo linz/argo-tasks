@@ -1,5 +1,4 @@
 import { GdalCommand } from '@basemaps/cogify/build/cogify/gdal.runner.js';
-import { GdalResampling } from '@basemaps/cogify/build/cogify/stac.js';
 
 import { urlToString } from '../../common.js';
 
@@ -7,12 +6,13 @@ export const DEFAULT_TRIM_PIXEL_RIGHT = 1.7;
 
 interface gdalBuildCogOptions {
   /**
-   * Resampling algorithm. Nearest is the default.
+   * The number of pixels to remove from the right side of the imagery.
    *
-   * @link
-   * https://gdal.org/en/stable/programs/gdal_translate.html#cmdoption-gdal_translate-r
+   * If the value is a decimal number ending in above .5, the number of
+   * pixels removed will be the value rounded up to the nearest integer.
+   * The imagery will then be scaled to fulfil the difference.
+   *
    */
-  resamplingMethod?: GdalResampling;
   pixelTrim?: number;
 }
 
@@ -32,6 +32,7 @@ export function gdalBuildCogCommands(
   opts?: gdalBuildCogOptions,
 ): GdalCommand {
   const pixelTrim = opts?.pixelTrim ?? DEFAULT_TRIM_PIXEL_RIGHT;
+
   const command: GdalCommand = {
     output,
     command: 'gdal_translate',
@@ -39,9 +40,9 @@ export function gdalBuildCogCommands(
       ['-q'], // Supress non-error output
       ['-stats'], // Force stats (re)computation
       ['-of', 'COG'], // Output format
+      ['-srcwin', '0', '0', `${width - pixelTrim}`, `${height}`],
 
       // https://gdal.org/en/latest/drivers/raster/cog.html#creation-options
-      ['-srcwin', `0`, `0`, `${width - pixelTrim}`, `${height}`],
       ['-co', 'BIGTIFF=NO'],
       ['-co', 'BLOCKSIZE=512'],
       ['-co', 'COMPRESS=WEBP'],
@@ -55,17 +56,14 @@ export function gdalBuildCogCommands(
 
       // https://gdal.org/en/latest/drivers/raster/cog.html#reprojection-related-creation-options
       ['-co', 'ADD_ALPHA=YES'],
+
+      urlToString(input),
+      urlToString(output),
     ]
       .filter((f) => f != null)
       .flat()
       .map(String),
   };
-
-  if (opts?.resamplingMethod != null) {
-    command.args.push('-r', opts.resamplingMethod);
-  }
-
-  command.args.push(urlToString(input), urlToString(output));
 
   return command;
 }
