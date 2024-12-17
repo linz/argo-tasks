@@ -3,7 +3,6 @@ import { Bounds } from '@basemaps/geo';
 import { fsa } from '@basemaps/shared';
 import { boolean, command, flag, option, string } from 'cmd-ts';
 import pLimit from 'p-limit';
-import { StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
@@ -13,6 +12,7 @@ import { groupTiffsByDirectory } from './mappers/group-tiffs-by-directory.js';
 import { createStacCollection } from './stac/create-stac-collection.js';
 import { createStacItems } from './stac/create-stac-item-groups.js';
 import { writeStacFiles } from './stac/write-stac-files.js';
+import { MapSheetStacItem } from './types/map-sheet-stac-item.js';
 
 const Q = pLimit(10);
 export const brokenTiffs = { noBounds: [] as string[], noEpsg: [] as string[], noSize: [] as string[] };
@@ -144,10 +144,10 @@ async function loadTiffsToCreateStacs(
     const latestTargetURL = new URL(`${scale}_latest/${resolution}/${epsg}/`, target);
 
     const allBounds: Bounds[] = [];
-    const allStacItems: StacItem[] = [];
+    const allStacItems: MapSheetStacItem[] = [];
 
     const latestBounds: Bounds[] = [];
-    const latestStacItems: StacItem[] = [];
+    const latestStacItems: MapSheetStacItem[] = [];
 
     // create stac items
     logger.info({ epsg }, 'CreateStacItems:Start');

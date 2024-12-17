@@ -24,7 +24,7 @@ export function extractMapCodeAndVersion(file: string): { mapCode: string; versi
   const mapCode = fileName.split('_')[0];
   if (mapCode == null) throw new Error('Map sheet not found in the file name');
 
-  // extract version from tail of the file name (e.g. v1-0)
+  // extract version from tail of the file name (e.g. v1-00)
   const version = fileName.match(/v(\d)-(\d\d)/)?.[0];
   if (version == null) throw new Error('Version not found in the file name');
 

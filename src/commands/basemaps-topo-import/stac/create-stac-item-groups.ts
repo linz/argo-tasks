@@ -1,5 +1,4 @@
-import { StacItem } from 'stac-ts';
-
+import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 import { TiffItem } from '../types/tiff-item.js';
 import { createBaseStacItem } from './create-base-stac-item.js';
 
@@ -15,7 +14,7 @@ export async function createStacItems(
   allTargetURL: URL,
   all: TiffItem[],
   latest: TiffItem,
-): Promise<{ all: StacItem[]; latest: StacItem }> {
+): Promise<{ all: MapSheetStacItem[]; latest: MapSheetStacItem }> {
   const allStacItems = all.map((item) => createBaseStacItem(`${item.mapCode}_${item.version}`, item));
 
   const latestURL = new URL(`${latest.mapCode}_${latest.version}.json`, allTargetURL);

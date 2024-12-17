@@ -1,11 +1,12 @@
 import { fsa } from '@basemaps/shared';
-import { StacCollection, StacItem } from 'stac-ts';
+import { StacCollection } from 'stac-ts';
 
 import { logger } from '../../../log.js';
+import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 
 export async function writeStacFiles(
   target: URL,
-  items: StacItem[],
+  items: MapSheetStacItem[],
   collection: StacCollection,
 ): Promise<{ itemPaths: URL[]; collectionPath: URL }> {
   // Create collection json for all topo50-latest items.

@@ -9,7 +9,6 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { mkdir, rm } from 'fs/promises';
 import pLimit from 'p-limit';
 import path from 'path';
-import { StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
@@ -19,6 +18,7 @@ import { loadInput } from '../group/group.js';
 import { gdalBuildCogCommands as gdalBuildCog } from './gdal/gdal-build-cog.js';
 import { gdalBuildVrt } from './gdal/gdal-build-vrt.js';
 import { gdalBuildVrtWarp } from './gdal/gdal-build-vrt-warp.js';
+import { MapSheetStacItem } from './types/map-sheet-stac-item.js';
 
 const Q = pLimit(10);
 
@@ -90,29 +90,29 @@ export const topoCogCreation = command({
 
 async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<void> {
   const startTime = performance.now();
-  const item = await fsa.readJson<StacItem>(input);
+  const item = await fsa.readJson<MapSheetStacItem>(input);
   const tmpFolder = new URL(item.id, tmp);
   try {
     // Extract the source URL from the item
     logger.info({ item: item.id }, 'CogCreation:Start');
-    const source = item.assets['source']?.href;
-    if (source == null) throw new Error('No source file found in the item');
+    const source = item.assets.source.href;
     await mkdir(tmpFolder, { recursive: true });
 
     // Download the source file
     const sourceUrl = tryParseUrl(source);
-    const filePath = path.parse(sourceUrl.href);
-    const fileName = filePath.base;
     if (!(await fsa.exists(sourceUrl))) throw new Error('Source file not found');
     const hashStreamSource = fsa.readStream(sourceUrl).pipe(new HashTransform('sha256'));
 
+    const filePath = path.parse(sourceUrl.href);
+    const fileName = filePath.base;
     const inputPath = new URL(fileName, tmpFolder);
+
     logger.info({ item: item.id, download: inputPath.href }, 'CogCreation:Download');
     // Add checksum for source file
     if (item.assets['source'] == null) throw new Error('No source file found in the item');
     await fsa.write(inputPath, hashStreamSource);
-    item.assets['source']['file:checksum'] = hashStreamSource.multihash;
     item.assets['source']['file:size'] = hashStreamSource.size;
+    item.assets['source']['file:checksum'] = hashStreamSource.multihash;
 
     // read resolution from first image of tiff
     const tiff = await new Tiff(fsa.source(inputPath)).init();
@@ -137,8 +137,6 @@ async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<voi
     logger.info({ item: item.id }, 'CogCreation:gdalwarp');
 
     const sourceEpsg = item.properties['proj:epsg'];
-    if (typeof sourceEpsg !== 'number') throw new Error(`Could not read 'proj:epsg' property from StacItem`);
-
     const sourceProj = Epsg.tryGet(sourceEpsg);
     if (sourceProj == null) throw new Error(`Unknown source projection ${sourceEpsg}`);
 
@@ -152,8 +150,8 @@ async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<voi
      */
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');
 
-    const width = Number(item.properties['source.width']);
-    const height = Number(item.properties['source.height']);
+    const width = item.properties['source.width'];
+    const height = item.properties['source.height'];
     const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
     const commandTranslate = gdalBuildCog(vrtWarpPath, tempPath, width, height, { pixelTrim });
 
@@ -167,7 +165,7 @@ async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<voi
 
     // Add the asset of created cog into stac item
     const stac = await fsa.read(outputPath);
-    item.assets['cog'] = {
+    item.assets.cog = {
       href: `./${item.id}.tiff`,
       type: 'image/tiff; application=geotiff; profile=cloud-optimized',
       roles: ['data'],

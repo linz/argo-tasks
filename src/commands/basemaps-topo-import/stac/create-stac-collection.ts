@@ -1,12 +1,13 @@
 import { Bounds } from '@basemaps/geo';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
-import { StacCollection, StacItem } from 'stac-ts';
+import { StacCollection } from 'stac-ts';
 
 import { logger } from '../../../log.js';
+import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 
 const cliDate = new Date().toISOString();
 
-export function createStacCollection(title: string, imageryBounds: Bounds, items: StacItem[]): StacCollection {
+export function createStacCollection(title: string, imageryBounds: Bounds, items: MapSheetStacItem[]): StacCollection {
   logger.info({ items: items.length }, 'CreateStacCollection()');
   const collection: StacCollection = {
     type: 'Collection',
@@ -28,8 +29,6 @@ export function createStacCollection(title: string, imageryBounds: Bounds, items
           href: `./${item.id}.json`,
           rel: 'item',
           type: 'application/json',
-          // 'file:checksum': stats['file:checksum'],
-          // 'file:size': stats['file:size'],
         };
       }),
     ],

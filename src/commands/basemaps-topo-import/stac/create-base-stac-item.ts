@@ -1,8 +1,8 @@
 import { CliId } from '@basemaps/shared/build/cli/info.js';
-import { StacItem } from 'stac-ts';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
 
 import { logger } from '../../../log.js';
+import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 import { TiffItem } from '../types/tiff-item.js';
 
 const cliDate = new Date().toISOString();
@@ -17,10 +17,10 @@ const cliDate = new Date().toISOString();
  *
  * @returns a StacItem object
  */
-export function createBaseStacItem(fileName: string, tiffItem: TiffItem): StacItem {
+export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapSheetStacItem {
   logger.info({ fileName }, 'createBaseStacItem()');
 
-  const item: StacItem = {
+  const item: MapSheetStacItem = {
     type: 'Feature',
     stac_version: '1.0.0',
     id: fileName,
@@ -39,8 +39,8 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): StacIt
     stac_extensions: ['https://stac-extensions.github.io/file/v2.0.0/schema.json'],
     properties: {
       datetime: cliDate,
-      map_code: tiffItem.mapCode, // e.g. "CJ10"
-      version: tiffItem.version.replace('-', '.'), // convert from "v1-00" to "v1.00"
+      map_code: tiffItem.mapCode,
+      version: tiffItem.version.replace('-', '.'), // e.g. "v1-00" to "v1.00"
       'proj:epsg': tiffItem.epsg.code,
       'source.width': tiffItem.size.width,
       'source.height': tiffItem.size.height,

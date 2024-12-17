@@ -1,9 +1,10 @@
 import { Tiff } from '@cogeotiff/core';
 
 import { logger } from '../../../log.js';
-import { extractBounds, extractSize } from '../extractors/extract-bounds.js';
+import { extractBoundsFromTiff as extractBoundsFromTiff } from '../extractors/extract-bounds-from-tiff.js';
 import { extractEpsgFromTiff } from '../extractors/extract-epsg-from-tiff.js';
 import { extractMapCodeAndVersion } from '../extractors/extract-map-code-and-version.js';
+import { extractSizeFromTiff as extractSizeFromTiff } from '../extractors/extract-size-from-tiff.js';
 import { brokenTiffs } from '../topo-stac-creation.js';
 import { ByDirectory } from '../types/by-directory.js';
 import { TiffItem } from '../types/tiff-item.js';
@@ -25,9 +26,9 @@ export async function groupTiffsByDirectory(tiffs: Tiff[]): Promise<ByDirectory<
     const source = tiff.source.url;
     const { mapCode, version } = extractMapCodeAndVersion(source.href);
 
-    const bounds = await extractBounds(tiff);
+    const bounds = await extractBoundsFromTiff(tiff);
     const epsg = extractEpsgFromTiff(tiff);
-    const size = extractSize(tiff);
+    const size = extractSizeFromTiff(tiff);
 
     if (bounds == null || epsg == null || size == null) {
       if (bounds == null) {
