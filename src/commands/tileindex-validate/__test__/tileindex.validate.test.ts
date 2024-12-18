@@ -83,11 +83,11 @@ describe('getTileName', () => {
 describe('tiffLocation', () => {
   it('get location from tiff', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
-    // TiffAs21.images[0].origin[0] = 1492000;
-    // TiffAs21.images[0].origin[1] = 6234000;
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
-    // TiffAy29.images[0].origin[0] = 1684000;
-    // TiffAy29.images[0].origin[1] = 6018000;
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000);
     assert.deepEqual(location[0]?.tileNames, ['AS21_1000_0101']);
     assert.deepEqual(location[1]?.tileNames, ['AY29_1000_0101']);
@@ -95,11 +95,11 @@ describe('tiffLocation', () => {
 
   it('should find duplicates', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
-    // TiffAs21.images[0].origin[0] = 1492000;
-    // TiffAs21.images[0].origin[1] = 6234000;
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
-    // TiffAy29.images[0].origin[0] = 1684000;
-    // TiffAy29.images[0].origin[1] = 6018000;
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
     const duplicates = groupByTileName(location);
     assert.deepEqual(
@@ -123,11 +123,11 @@ describe('tiffLocation', () => {
 
   it('should fail if one location is not extracted', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
-    // TiffAs21.images[0].origin[0] = 1492000;
-    // TiffAs21.images[0].origin[1] = 6234000;
+    TiffAs21.images[0].origin[0] = 1492000;
+    TiffAs21.images[0].origin[1] = 6234000;
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
-    // TiffAy29.images[0].origin[0] = 1684000;
-    // TiffAy29.images[0].origin[1] = 6018000;
+    TiffAy29.images[0].origin[0] = 1684000;
+    TiffAy29.images[0].origin[1] = 6018000;
     TiffAy29.images[0].epsg = 0; // make the projection failing
     await assert.rejects(extractTiffLocations([TiffAs21, TiffAy29], 1000));
   });
@@ -204,7 +204,7 @@ describe('validate', () => {
 
   for (const offset of [0.05, -0.05]) {
     it(`should fail if input tiff origin X is offset by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AU25_1000_0101');
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].origin[0] = fakeTiff.images[0].origin[0] + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
@@ -222,7 +222,7 @@ describe('validate', () => {
       }
     });
     it(`should fail if input tiff origin Y is offset by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AU25_1000_0101');
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].origin[1] = fakeTiff.images[0].origin[1] + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
@@ -246,7 +246,7 @@ describe('validate', () => {
     // 720x481 => 720x481
     // 721x481 => 721x481
     it(`should fail if input tiff width is off by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AU25_1000_0101');
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].size.width = fakeTiff.images[0].size.width + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
@@ -264,7 +264,7 @@ describe('validate', () => {
       }
     });
     it(`should fail if input tiff height is off by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AU25_1000_0101');
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
       fakeTiff.images[0].size.height = fakeTiff.images[0].size.height + offset;
       t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
       try {
