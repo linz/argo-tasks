@@ -2,13 +2,13 @@ import { tmpdir } from 'node:os';
 
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
 import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
-import { Epsg } from '@basemaps/geo';
 import { fsa, Tiff } from '@basemaps/shared';
 import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { mkdir, rm } from 'fs/promises';
 import pLimit from 'p-limit';
 import path from 'path';
+import ulid from 'ulid';
 
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
@@ -17,7 +17,6 @@ import { config, forceOutput, registerCli, tryParseUrl, verbose } from '../commo
 import { loadInput } from '../group/group.js';
 import { gdalBuildCogCommands as gdalBuildCog } from './gdal/gdal-build-cog.js';
 import { gdalBuildVrt } from './gdal/gdal-build-vrt.js';
-import { gdalBuildVrtWarp } from './gdal/gdal-build-vrt-warp.js';
 import { MapSheetStacItem } from './types/map-sheet-stac-item.js';
 
 const Q = pLimit(10);
@@ -91,7 +90,8 @@ export const topoCogCreation = command({
 async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<void> {
   const startTime = performance.now();
   const item = await fsa.readJson<MapSheetStacItem>(input);
-  const tmpFolder = new URL(item.id, tmp);
+  const jobId = ulid.ulid();
+  const tmpFolder = new URL(jobId, tmp);
   try {
     // Extract the source URL from the item
     logger.info({ item: item.id }, 'CogCreation:Start');
@@ -132,20 +132,6 @@ async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<voi
     await new GdalRunner(commandBuildVrt).run(logger);
 
     /**
-     * command: gdal build warp vrt
-     */
-    logger.info({ item: item.id }, 'CogCreation:gdalwarp');
-
-    const sourceEpsg = item.properties['proj:epsg'];
-    const sourceProj = Epsg.tryGet(sourceEpsg);
-    if (sourceProj == null) throw new Error(`Unknown source projection ${sourceEpsg}`);
-
-    const vrtWarpPath = new URL(`${item.id}-warp.vrt`, tmpFolder);
-    const commandBuildVrtWarp = gdalBuildVrtWarp(vrtWarpPath, vrtPath, sourceProj);
-
-    await new GdalRunner(commandBuildVrtWarp).run(logger);
-
-    /**
      * command: gdal build cog
      */
     logger.info({ item: item.id }, 'CogCreation:gdal_translate');
@@ -153,7 +139,7 @@ async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<voi
     const width = item.properties['source.width'];
     const height = item.properties['source.height'];
     const tempPath = new URL(`${item.id}.tiff`, tmpFolder);
-    const commandTranslate = gdalBuildCog(vrtWarpPath, tempPath, width, height, { pixelTrim });
+    const commandTranslate = gdalBuildCog(vrtPath, tempPath, width, height, { pixelTrim });
 
     await new GdalRunner(commandTranslate).run(logger);
 

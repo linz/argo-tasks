@@ -1,6 +1,5 @@
 import { GdalCommand } from '@basemaps/cogify/build/cogify/gdal.runner.js';
-
-import { urlToString } from '../../common.js';
+import { urlToString } from '@basemaps/shared';
 
 /**
  * Constructs a 'gdalBuildVrt' GdalCommand.

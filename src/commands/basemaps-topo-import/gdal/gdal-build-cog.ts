@@ -1,6 +1,5 @@
 import { GdalCommand } from '@basemaps/cogify/build/cogify/gdal.runner.js';
-
-import { urlToString } from '../../common.js';
+import { urlToString } from '@basemaps/shared';
 
 export const DEFAULT_TRIM_PIXEL_RIGHT = 1.7;
 
