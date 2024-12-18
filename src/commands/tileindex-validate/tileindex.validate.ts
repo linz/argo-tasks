@@ -278,7 +278,8 @@ export const commandTileIndexValidate = command({
 
     let retileNeeded = false;
     for (const [tileName, tiffs] of outputTiles.entries()) {
-      if (tiffs.length < 2) continue;
+      if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
+      if (tiffs.length === 1) continue;
       if (args.retile) {
         const bandType = validateConsistentBands(tiffs);
         logger.info({ tileName, uris: tiffs.map((v) => v.source), bands: bandType }, 'TileIndex:Retile');
@@ -362,39 +363,17 @@ export interface TiffLocation {
 }
 
 /**
- * Calculate the number grid tiles touched by a TIFF with min being the lowest width/height, and max the largest.
- * @param inputMin lowest extent of misaligned tile on one dimension (left or bottom)
- * @param inputMax largest extent of misaligned tile on same dimension (right or top)
- * @param gridOrigin grid origin (x or y corresponding to min/max dimension)
- * @param tileSize height or width of the target grid tile (corresponding to min/max dimension)
- */
-const calculateSteps = (inputMin: number, inputMax: number, gridOrigin: number, tileSize: number): number => {
-  const startStep = Math.floor((inputMin - gridOrigin) / tileSize);
-  const endStep = Math.floor((inputMax - gridOrigin - 1) / tileSize);
-
-  return endStep - startStep + 1;
-};
-
-/**
  * Reproject the bounding box if the source and target projections are different.
  * @param bbox input bounding box
  * @param sourceProjection CRS of the input bounding box
  * @param targetProjection target CRS
  */
-function reprojectIfNeeded(
-  bbox: BBox,
-  sourceProjection: Projection,
-  targetProjection: Projection,
-): [number | undefined, number | undefined, number | undefined, number | undefined] {
+export function reprojectIfNeeded(bbox: BBox, sourceProjection: Projection, targetProjection: Projection): BBox | null {
   {
-    if (targetProjection !== sourceProjection) {
-      const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]]));
-      const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]]));
-
-      return [ulX, lrY, lrX, ulY];
-    }
-
-    return bbox;
+    if (targetProjection === sourceProjection) return bbox;
+    const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]])) as [number, number]; // Typescript inferred this as number[] but should be [number, number] | [number, number, number]
+    const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]])) as [number, number]; // Typescript inferred this as number[] but should be [number, number] | [number, number, number]
+    return [Math.min(ulX, lrX), Math.min(lrY, ulY), Math.max(ulX, lrX), Math.max(lrY, ulY)];
   }
 }
 
@@ -414,7 +393,7 @@ export async function extractTiffLocations(
   const result = await Promise.all(
     tiffs.map(async (tiff): Promise<TiffLocation | null> => {
       try {
-        const bbox = await findBoundingBox(tiff);
+        const sourceBbox = await findBoundingBox(tiff);
 
         const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
         if (sourceEpsg == null) {
@@ -425,9 +404,9 @@ export async function extractTiffLocations(
         const targetProjection = Projection.get(2193);
         const sourceProjection = Projection.get(sourceEpsg);
 
-        const [ulX, lrY, lrX, ulY] = reprojectIfNeeded(bbox, sourceProjection, targetProjection);
+        const targetBbox = reprojectIfNeeded(sourceBbox, sourceProjection, targetProjection);
 
-        if (ulX == null || ulY == null || lrX == null || lrY == null) {
+        if (targetBbox === null) {
           logger.error(
             { reason: 'Failed to reproject point', source: tiff.source },
             'Reprojection:ExtracTiffLocations:Failed',
@@ -435,7 +414,7 @@ export async function extractTiffLocations(
           return null;
         }
 
-        const covering = [...iterateMapSheets([ulX, ulY, lrX, lrY], gridSize)] as string[];
+        const covering = getCovering(targetBbox, gridSize);
 
         // if (shouldValidate) {
         //   // Is the tiff bounding box the same as the map sheet bounding box!
@@ -443,7 +422,7 @@ export async function extractTiffLocations(
         //   // assert bbox == MapSheet.getMapTileIndex(tileName).bbox
         // }
         return {
-          bbox,
+          bbox: targetBbox,
           source: tiff.source.url.href,
           tileNames: covering,
           epsg: tiff.images[0]?.epsg,
@@ -520,7 +499,10 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
 export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const sheetCode = MapSheet.sheetCode(x, y);
   if (!MapSheet.isKnown(sheetCode)) {
-    logger.info(`Map sheet (${sheetCode}) at coordinates (${x}, ${y}) is outside the known range.`);
+    logger.info(
+      { sheetCode, x, y, gridSize },
+      `Map sheet (${sheetCode}) at coordinates (${x}, ${y}) is outside the known range.`,
+    );
   }
 
   // Shorter tile names for 1:50k
@@ -561,44 +543,58 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   }
 }
 
-export function* iterateMapSheets(bbox: BBox, gridSize: GridSize): Generator<string> {
-  const bounds = Bounds.fromBbox(bbox);
+/**
+ * Get the list of map sheets / tiles that intersect with the given bounding box.
+ *
+ * @param bbox Bounding box of the area of interest (in EPSG:2193) to get the map sheets for (e.g. TIFF area).
+ * @param gridSize Grid size of the map sheets / tiles to get.
+ * @param minIntersectionMeters Minimum intersection area in meters (width or height) to include the map sheet.
+ */
+function getCovering(bbox: BBox, gridSize: GridSize, minIntersectionMeters = 0.15): string[] {
+  const SurroundingTiles = [
+    { x: 1, y: 0 },
+    { x: 0, y: -1 }, // inverted Y axis
+    // Future versions may want to explore tiles in all directions
+    // { x: 0, y: 1 },
+    // { x: -1, y: 0 },
+  ];
 
-  const minX = Math.min(bbox[0], bbox[2]);
-  const maxX = Math.max(bbox[0], bbox[2]);
-  const minY = Math.min(bbox[1], bbox[3]);
-  const maxY = Math.max(bbox[1], bbox[3]);
+  const targetBounds = Bounds.fromBbox(bbox);
 
+  const output: string[] = [];
   const tilesPerMapSheetSide = Math.floor(MapSheet.gridSizeMax / gridSize);
 
   const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheetSide);
   const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheetSide);
 
-  const stepsX = calculateSteps(minX, maxX, MapSheet.origin.x, tileWidth);
-  const stepsY = calculateSteps(-maxY, -minY, -MapSheet.origin.y, tileHeight); // Inverted Y axis
+  const seen = new Set();
+  const todo: Bounds[] = [];
 
-  for (let stepY = 0; stepY < stepsY; stepY += 1) {
-    const y = maxY - stepY * tileHeight;
-    for (let stepX = 0; stepX < stepsX; stepX += 1) {
-      const x = minX + stepX * tileWidth;
-      const tileName = getTileName(x, y, gridSize);
-      const tile = MapSheet.getMapTileIndex(tileName);
-      if (tile == null) {
-        logger.error({ tileName, x, y, gridSize }, `No MapTileIndex for tile ${tileName} at xy ${x}, ${y}`);
-        continue;
-      }
-      const intersection = bounds.intersection(Bounds.fromBbox(tile.bbox));
-      if (intersection === null) {
-        logger.warn({ tileName, tile, x, y, gridSize }, `Source TIFF at xy ${x}, ${y} does not intersect tile. Skipping ${tileName}`);
-      } else if (intersection?.width <= 1 || intersection?.height <= 1) {
-        // TODO: Check if we can make this relative to GSD and use <1 pixel instead of meters.
-        logger.warn(
-          { tileName, tile, x, y, gridSize, intersection },
-          `Minor intersection w${intersection.width} by h${intersection.height} at xy ${x}, ${y}. Skipping tile ${tileName}`,
-        );
-      } else {
-        yield tileName;
-      }
-    }
+  const sheetName = getTileName(bbox[0], bbox[3], gridSize);
+  const sheetInfo = MapSheet.getMapTileIndex(sheetName);
+  if (sheetInfo == null) throw new Error('Unable to extract sheet information for point: ' + bbox[0]);
+
+  todo.push(Bounds.fromBbox(sheetInfo.bbox));
+  while (todo.length > 0) {
+    const nextBounds = todo.shift();
+    if (nextBounds == null) continue;
+
+    const nextX = nextBounds.x;
+    const nextY = nextBounds.bottom; // inverted Y axis
+    const bboxId = `${nextX}:${nextY}:${nextBounds.width}:${nextBounds.height}`;
+    // Only process each sheet once
+    if (seen.has(bboxId)) continue;
+    seen.add(bboxId);
+
+    const intersection = targetBounds.intersection(nextBounds);
+    if (intersection == null) continue; // no intersection, target mapshet is outside bounds of source
+    // Check all the surrounding tiles
+    for (const pt of SurroundingTiles) todo.push(nextBounds.add({ x: pt.x * tileWidth, y: pt.y * tileHeight })); // intersection not null, so add all neighbours
+    // Add to output only if the intersection is above the minimum coverage
+    if (intersection.width < minIntersectionMeters || intersection.height < minIntersectionMeters) continue;
+    output.push(getTileName(nextX, nextY, gridSize));
   }
+
+  output.sort();
+  return output;
 }
