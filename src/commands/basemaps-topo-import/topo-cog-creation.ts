@@ -91,7 +91,7 @@ async function createCogs(input: URL, tmp: URL, pixelTrim?: number): Promise<voi
   const startTime = performance.now();
   const item = await fsa.readJson<MapSheetStacItem>(input);
   const jobId = ulid.ulid();
-  const tmpFolder = new URL(jobId, tmp);
+  const tmpFolder = new URL(`${jobId}/`, tmp);
   try {
     // Extract the source URL from the item
     logger.info({ item: item.id }, 'CogCreation:Start');
