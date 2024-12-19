@@ -1,6 +1,7 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { Size, Tiff, TiffTag } from '@cogeotiff/core';
+import { BBox } from '@linzjs/geojson';
 import { boolean, command, flag, number, option, optional, restPositionals, string, Type } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.js';
@@ -9,7 +10,7 @@ import { isArgo } from '../../utils/argo.js';
 import { extractBandInformation } from '../../utils/band.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
-import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize, SheetRanges } from '../../utils/mapsheet.js';
+import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.js';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
 import { CommandListArgs } from '../list/list.js';
 
@@ -223,19 +224,23 @@ export const commandTileIndexValidate = command({
     }
 
     const groupByTileNameStartTime = performance.now();
-    const locations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
+    const tiffLocations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
 
-    const outputs = groupByTileName(locations);
+    const outputTiles = groupByTileName(tiffLocations);
 
     logger.info(
-      { duration: performance.now() - groupByTileNameStartTime, files: locations.length, outputs: outputs.size },
+      {
+        duration: performance.now() - groupByTileNameStartTime,
+        files: tiffLocations.length,
+        outputs: outputTiles.size,
+      },
       'TileIndex: Manifest Assessed for Duplicates',
     );
 
     if (args.forceOutput || isArgo()) {
       await fsa.write('/tmp/tile-index-validate/input.geojson', {
         type: 'FeatureCollection',
-        features: locations.map((loc) => {
+        features: tiffLocations.map((loc) => {
           const epsg = args.sourceEpsg ?? loc.epsg;
           if (epsg == null) {
             logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
@@ -243,8 +248,7 @@ export const commandTileIndexValidate = command({
           }
           return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
             source: loc.source,
-            tileName: loc.tileName,
-            isDuplicate: (outputs.get(loc.tileName)?.length ?? 1) > 1,
+            tileName: loc.tileNames.join(', '),
           });
         }),
       });
@@ -252,14 +256,12 @@ export const commandTileIndexValidate = command({
 
       await fsa.write('/tmp/tile-index-validate/output.geojson', {
         type: 'FeatureCollection',
-        features: [...outputs.values()].map((locs) => {
-          const firstLoc = locs[0];
-          if (firstLoc == null) throw new Error('Unable to extract tiff locations from: ' + args.location.join(', '));
-          const mapTileIndex = MapSheet.getMapTileIndex(firstLoc.tileName);
-          if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + firstLoc.tileName);
+        features: [...outputTiles.keys()].map((key) => {
+          const mapTileIndex = MapSheet.getMapTileIndex(key);
+          if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + key);
           return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
-            source: locs.map((l) => l.source),
-            tileName: firstLoc.tileName,
+            source: outputTiles.get(key)?.map((l) => l.source),
+            tileName: key,
           });
         }),
       });
@@ -267,36 +269,37 @@ export const commandTileIndexValidate = command({
 
       await fsa.write(
         '/tmp/tile-index-validate/file-list.json',
-        [...outputs.values()].map((locs) => {
-          return { output: locs[0]?.tileName, input: locs.map((l) => l.source) };
+        [...outputTiles.keys()].map((key) => {
+          const locs = outputTiles.get(key);
+          return { output: key, input: locs?.map((l) => l.source) };
         }),
       );
-      logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputs.size }, 'Write:FileList');
+      logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputTiles.size }, 'Write:FileList');
     }
 
     let retileNeeded = false;
-    for (const val of outputs.values()) {
-      if (val.length < 2) continue;
+    for (const [tileName, tiffs] of outputTiles.entries()) {
+      if (tiffs.length === 0) throw new Error(`Output tile with no source tile: ${tileName}`);
+      if (tiffs.length === 1) continue;
       if (args.retile) {
-        const bandType = validateConsistentBands(val);
-        logger.info(
-          { tileName: val[0]?.tileName, uris: val.map((v) => v.source), bands: bandType },
-          'TileIndex:Retile',
-        );
+        const bandType = validateConsistentBands(tiffs);
+        logger.info({ tileName, uris: tiffs.map((v) => v.source), bands: bandType }, 'TileIndex:Retile');
       } else {
         retileNeeded = true;
-        logger.error({ tileName: val[0]?.tileName, uris: val.map((v) => v.source) }, 'TileIndex:Duplicate');
+        logger.error({ tileName, uris: tiffs.map((v) => v.source) }, 'TileIndex:Duplicate');
       }
     }
 
     // Validate that all tiffs align to tile grid
     if (args.validate) {
       let allValid = true;
-      for (const tiff of locations) {
-        const currentValid = validateTiffAlignment(tiff);
+      for (const tiffLocation of tiffLocations) {
+        const currentValid = validateTiffAlignment(tiffLocation);
         allValid = allValid && currentValid;
       }
-      if (!allValid) throw new Error(`Tile alignment validation failed`);
+      if (!allValid) {
+        throw new Error(`Tile alignment validation failed`);
+      }
     }
 
     if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
@@ -334,9 +337,11 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
 export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
   const duplicates: Map<string, TiffLocation[]> = new Map();
   for (const loc of tiffs) {
-    const uris = duplicates.get(loc.tileName) ?? [];
-    uris.push(loc);
-    duplicates.set(loc.tileName, uris);
+    for (const sheetCode of loc.tileNames) {
+      const uris = duplicates.get(sheetCode) ?? [];
+      uris.push(loc);
+      duplicates.set(sheetCode, uris);
+    }
   }
   return duplicates;
 }
@@ -345,17 +350,46 @@ export interface TiffLocation {
   /** Location to the image */
   source: string;
   /** bbox, [minX, minY, maxX, maxY] */
-  bbox: [number, number, number, number];
+  bbox: BBox;
   /** EPSG code of the tiff if found */
   epsg?: number | null;
   /** Output tile name */
-  tileName: string;
+  tileNames: string[];
   /**
    * List of bands inside the tiff in the format `uint8` `uint16`
    *
    * @see {@link extractBandInformation} for more information on bad types
    */
   bands: string[];
+}
+
+/**
+ * Reproject the bounding box if the source and target projections are different.
+ * @param bbox input bounding box
+ * @param sourceProjection CRS of the input bounding box
+ * @param targetProjection target CRS
+ */
+function reprojectIfNeeded(bbox: BBox, sourceProjection: Projection, targetProjection: Projection): BBox | null {
+  {
+    if (targetProjection !== sourceProjection) {
+      const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]]));
+      const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]]));
+      if (ulX === undefined || ulY === undefined || lrX === undefined || lrY === undefined) {
+        logger.error(
+          {
+            reason: 'Failed to reproject point',
+            sourceBbox: bbox,
+            sourceProjection: sourceProjection,
+            targetProjection: targetProjection,
+          },
+          'Reprojection:Failed',
+        );
+        return null;
+      }
+      return [Math.min(ulX, lrX), Math.min(lrY, ulY), Math.max(ulX, lrX), Math.max(lrY, ulY)];
+    }
+    return bbox;
+  }
 }
 
 /**
@@ -374,7 +408,7 @@ export async function extractTiffLocations(
   const result = await Promise.all(
     tiffs.map(async (tiff): Promise<TiffLocation | null> => {
       try {
-        const bbox = await findBoundingBox(tiff);
+        const sourceBbox = await findBoundingBox(tiff);
 
         const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
         if (sourceEpsg == null) {
@@ -382,14 +416,12 @@ export async function extractTiffLocations(
           return null;
         }
 
-        const centerX = (bbox[0] + bbox[2]) / 2;
-        const centerY = (bbox[1] + bbox[3]) / 2;
-        // bbox is not epsg:2193
         const targetProjection = Projection.get(2193);
         const sourceProjection = Projection.get(sourceEpsg);
 
-        const [x, y] = targetProjection.fromWgs84(sourceProjection.toWgs84([centerX, centerY]));
-        if (x == null || y == null) {
+        const targetBbox = reprojectIfNeeded(sourceBbox, sourceProjection, targetProjection);
+
+        if (targetBbox === null) {
           logger.error(
             { reason: 'Failed to reproject point', source: tiff.source },
             'Reprojection:ExtracTiffLocations:Failed',
@@ -397,8 +429,7 @@ export async function extractTiffLocations(
           return null;
         }
 
-        // Tilename from center
-        const tileName = getTileName(x, y, gridSize);
+        const covering = getMapSheets(targetBbox, gridSize);
 
         // if (shouldValidate) {
         //   // Is the tiff bounding box the same as the map sheet bounding box!
@@ -406,9 +437,9 @@ export async function extractTiffLocations(
         //   // assert bbox == MapSheet.getMapTileIndex(tileName).bbox
         // }
         return {
-          bbox,
+          bbox: targetBbox,
           source: tiff.source.url.href,
-          tileName,
+          tileNames: covering,
           epsg: tiff.images[0]?.epsg,
           bands: await extractBandInformation(tiff),
         };
@@ -430,15 +461,18 @@ export async function extractTiffLocations(
   return output;
 }
 
-export function getSize(extent: [number, number, number, number]): Size {
+export function getSize(extent: BBox): Size {
   return { width: extent[2] - extent[0], height: extent[3] - extent[1] };
 }
 
-export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015): boolean {
-  const mapTileIndex = MapSheet.getMapTileIndex(tiff.tileName);
+export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0.015): boolean {
+  if (tiff.tileNames.length !== 1) return false;
+  const tileName = tiff.tileNames[0];
+  if (tileName == null) return false;
+  const mapTileIndex = MapSheet.getMapTileIndex(tileName);
   if (mapTileIndex == null) {
     logger.error(
-      { reason: `Failed to extract bounding box from: ${tiff.tileName}`, source: tiff.source },
+      { reason: `Failed to extract bounding box from: ${tileName}`, source: tiff.source },
       'TileInvalid:Validation:Failed',
     );
     return false;
@@ -446,7 +480,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
   // Top Left
   const errX = Math.abs(tiff.bbox[0] - mapTileIndex.bbox[0]);
   const errY = Math.abs(tiff.bbox[3] - mapTileIndex.bbox[3]);
-  if (errX > allowedError || errY > allowedError) {
+  if (errX > allowedErrorMetres || errY > allowedErrorMetres) {
     logger.error(
       { reason: `The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]}`, source: tiff.source },
       'TileInvalid:Validation:Failed',
@@ -454,7 +488,6 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
     return false;
   }
 
-  // TODO do we validate bottom right
   const tiffSize = getSize(tiff.bbox);
   if (tiffSize.width !== mapTileIndex.width) {
     logger.error(
@@ -479,14 +512,13 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedError = 0.015):
 }
 
 export function getTileName(x: number, y: number, gridSize: GridSize): string {
-  const offsetX = Math.round(Math.floor((x - MapSheet.origin.x) / MapSheet.width));
-  const offsetY = Math.round(Math.floor((MapSheet.origin.y - y) / MapSheet.height));
-
-  // Build name
-  const letters = Object.keys(SheetRanges)[offsetY];
-  const sheetCode = `${letters}${`${offsetX}`.padStart(2, '0')}`;
-  // TODO: re-enable this check when validation logic
-  // if (!MapSheet.isKnown(sheetCode)) throw new Error('Map sheet outside known range: ' + sheetCode);
+  const sheetCode = MapSheet.sheetCode(x, y);
+  if (!MapSheet.isKnown(sheetCode)) {
+    logger.info(
+      { sheetCode, x, y, gridSize },
+      `Map sheet (${sheetCode}) at coordinates (${x}, ${y}) is outside the known range.`,
+    );
+  }
 
   // Shorter tile names for 1:50k
   if (gridSize === MapSheetTileGridSize) return sheetCode;
@@ -497,6 +529,8 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
 
   const nbDigits = gridSize === 500 ? 3 : 2;
 
+  const offsetX = Math.floor((x - MapSheet.origin.x) / MapSheet.width);
+  const offsetY = Math.floor((MapSheet.origin.y - y) / MapSheet.height);
   const maxY = MapSheet.origin.y - offsetY * MapSheet.height;
   const minX = MapSheet.origin.x + offsetX * MapSheet.width;
   const tileX = Math.round(Math.floor((x - minX) / tileWidth + 1));
@@ -522,4 +556,53 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8)) {
     throw new Error(`${tiff.source.url.href} is not a 8 bits TIFF`);
   }
+}
+
+function getMapSheets(bbox: BBox, gridSize: GridSize): string[] {
+  const mapSheets: string[] = [];
+
+  const bounds = Bounds.fromBbox(bbox);
+
+  const tilesPerMapSheetSide = Math.floor(MapSheet.gridSizeMax / gridSize);
+
+  const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheetSide);
+  const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheetSide);
+
+  const checkPosition: [number, number] = [bounds.x, bounds.y + bounds.height]; // inverted Y axis
+  let tileName = getTileName(...checkPosition, gridSize);
+  let tile = MapSheet.getMapTileIndex(tileName);
+  if (tile == null)
+    throw new Error(
+      `Tile ${tileName} at ${checkPosition[0]},${checkPosition[1]} does not have a MapTileIndex in ${gridSize} grid.`,
+    );
+
+  let intersection = bounds.intersection(Bounds.fromBbox(tile?.bbox));
+  while (intersection && intersection.height > 0) {
+    while (intersection && intersection.width > 0) {
+      if (intersection.width > 1 && intersection.height > 1) {
+        // Todo: can we use GSD to convert to pixels and use <1 pixel instead of implicit meters?
+        mapSheets.push(tileName);
+      }
+      checkPosition[0] += tileWidth;
+
+      tileName = getTileName(...checkPosition, gridSize); // Todo: remove this and create a MapSheet.getTileIndexFromXY(x, y, gridSize) method ?
+      tile = MapSheet.getMapTileIndex(tileName);
+      if (tile == null)
+        throw new Error(
+          `Tile ${tileName} at ${checkPosition[0]},${checkPosition[1]} does not have a MapTileIndex in ${gridSize} grid.`,
+        );
+      intersection = bounds.intersection(Bounds.fromBbox(tile.bbox));
+    }
+    checkPosition[0] = bounds.x;
+    checkPosition[1] -= tileHeight;
+
+    tileName = getTileName(...checkPosition, gridSize);
+    tile = MapSheet.getMapTileIndex(tileName);
+    if (tile == null)
+      throw new Error(
+        `Tile ${tileName} at ${checkPosition[0]},${checkPosition[1]} does not have a MapTileIndex in ${gridSize} grid.`,
+      );
+    intersection = bounds.intersection(Bounds.fromBbox(tile.bbox));
+  }
+  return mapSheets;
 }

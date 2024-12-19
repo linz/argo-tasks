@@ -89,8 +89,8 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[0] = 1684000;
     TiffAy29.images[0].origin[1] = 6018000;
     const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000);
-    assert.equal(location[0]?.tileName, 'AS21_1000_0101');
-    assert.equal(location[1]?.tileName, 'AY29_1000_0101');
+    assert.deepEqual(location[0]?.tileNames, ['AS21_1000_0101']);
+    assert.deepEqual(location[1]?.tileNames, ['AY29_1000_0101']);
   });
 
   it('should find duplicates', async () => {
@@ -118,7 +118,7 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[0] = 19128043.69337794;
     TiffAy29.images[0].origin[1] = -4032710.6009459053;
     const location = await extractTiffLocations([TiffAy29], 1000);
-    assert.equal(location[0]?.tileName, 'AS21_1000_0101');
+    assert.deepEqual(location[0]?.tileNames, ['AS21_1000_0101']);
   });
 
   it('should fail if one location is not extracted', async () => {
@@ -323,5 +323,26 @@ describe('is8BitsTiff', () => {
       name: 'Error',
       message: `${testTiff.source.url.href} is not a 8 bits TIFF`,
     });
+  });
+});
+
+describe('TiffFromMisalignedTiff', () => {
+  it('should properly identify all tiles under a tiff not aligned to our grid', async () => {
+    const fakeTiffCover4 = FakeCogTiff.fromTileName('CJ09');
+    fakeTiffCover4.images[0].origin[0] -= 10;
+    fakeTiffCover4.images[0].origin[1] += 10;
+    const fakeTiffCover9 = FakeCogTiff.fromTileName('BA33');
+    fakeTiffCover9.images[0].origin[0] -= 10;
+    fakeTiffCover9.images[0].origin[1] += 10;
+    fakeTiffCover9.images[0].size.width += 100;
+    fakeTiffCover9.images[0].size.height += 100;
+    const fakeTiffCover3 = FakeCogTiff.fromTileName('BL32');
+    fakeTiffCover3.images[0].origin[1] -= 10;
+    fakeTiffCover3.images[0].size.height *= 2;
+    const locations = await extractTiffLocations([fakeTiffCover4, fakeTiffCover9, fakeTiffCover3], 50000);
+
+    assert.deepEqual(locations[0]?.tileNames, ['CH08', 'CH09', 'CJ08', 'CJ09']);
+    assert.deepEqual(locations[1]?.tileNames, ['AZ32', 'AZ33', 'AZ34', 'BA32', 'BA33', 'BA34', 'BB32', 'BB33', 'BB34']);
+    assert.deepEqual(locations[2]?.tileNames, ['BL32', 'BM32', 'BN32']);
   });
 });
