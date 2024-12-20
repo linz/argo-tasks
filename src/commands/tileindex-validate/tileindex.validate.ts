@@ -371,8 +371,10 @@ export interface TiffLocation {
 export function reprojectIfNeeded(bbox: BBox, sourceProjection: Projection, targetProjection: Projection): BBox | null {
   {
     if (targetProjection === sourceProjection) return bbox;
-    const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]])) as [number, number]; // Typescript inferred this as number[] but should be [number, number] | [number, number, number]
-    const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]])) as [number, number]; // Typescript inferred this as number[] but should be [number, number] | [number, number, number]
+    // fromWgs84 and toWgs84 functions are typed as number[] but could be refined to [number, number] | [number, number, number].
+    // With 2 input args, they will return [number, number].
+    const [ulX, ulY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[0], bbox[3]])) as [number, number];
+    const [lrX, lrY] = targetProjection.fromWgs84(sourceProjection.toWgs84([bbox[2], bbox[1]])) as [number, number];
     return [Math.min(ulX, lrX), Math.min(lrY, ulY), Math.max(ulX, lrX), Math.max(lrY, ulY)];
   }
 }
@@ -553,10 +555,9 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
 function getCovering(bbox: BBox, gridSize: GridSize, minIntersectionMeters = 0.15): string[] {
   const SurroundingTiles = [
     { x: 1, y: 0 },
-    { x: 0, y: -1 }, // inverted Y axis
-    // Future versions may want to explore tiles in all directions
-    // { x: 0, y: 1 },
-    // { x: -1, y: 0 },
+    { x: 0, y: -1 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
   ];
 
   const targetBounds = Bounds.fromBbox(bbox);
@@ -595,6 +596,5 @@ function getCovering(bbox: BBox, gridSize: GridSize, minIntersectionMeters = 0.1
     output.push(getTileName(nextX, nextY, gridSize));
   }
 
-  output.sort();
-  return output;
+  return output.sort();
 }
