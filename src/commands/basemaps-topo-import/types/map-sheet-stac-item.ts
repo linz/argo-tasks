@@ -69,5 +69,10 @@ export interface MapSheetStacItem extends StacItem {
      * The height of a map sheet in pixels.
      */
     'source.height': number;
+
+    /**
+     * An object of key-value pairs describing options for Basemaps' cogify process.
+     */
+    'linz_basemaps:options': { [key: string]: unknown };
   };
 }

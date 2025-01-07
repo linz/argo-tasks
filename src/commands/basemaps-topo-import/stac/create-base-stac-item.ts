@@ -5,7 +5,8 @@ import { logger } from '../../../log.js';
 import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 import { TiffItem } from '../types/tiff-item.js';
 
-const cliDate = new Date().toISOString();
+const CLI_DATE = new Date().toISOString();
+const DEFAULT_TRIM_PIXEL_RIGHT = 1.7;
 
 /**
  * This function creates a base StacItem object based on the provided parameters.
@@ -38,12 +39,27 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapShe
     },
     stac_extensions: ['https://stac-extensions.github.io/file/v2.0.0/schema.json'],
     properties: {
-      datetime: cliDate,
+      datetime: CLI_DATE,
       map_code: tiffItem.mapCode,
       version: tiffItem.version.replace('-', '.'), // e.g. "v1-00" to "v1.00"
       'proj:epsg': tiffItem.epsg.code,
       'source.width': tiffItem.size.width,
       'source.height': tiffItem.size.height,
+      'linz_basemaps:options': {
+        preset: 'webp',
+        blockSize: 512,
+        bigTIFF: 'no',
+        compression: 'webp',
+        quality: 100,
+        overviewCompress: 'webp',
+        overviewQuality: 90,
+        overviewResampling: 'lanczos',
+        tileId: fileName,
+        sourceEpsg: tiffItem.epsg.code,
+        addalpha: true,
+        noReprojecting: true,
+        srcwin: [0, 0, tiffItem.size.width - DEFAULT_TRIM_PIXEL_RIGHT, tiffItem.size.height],
+      },
     },
     geometry: { type: 'Polygon', coordinates: tiffItem.bounds.toPolygon() } as GeoJSONPolygon,
     bbox: tiffItem.bounds.toBbox(),
