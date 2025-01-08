@@ -74,5 +74,10 @@ export interface MapSheetStacItem extends StacItem {
      * An object of key-value pairs describing options for Basemaps' cogify process.
      */
     'linz_basemaps:options': { [key: string]: unknown };
+
+    /**
+     * An object of key-value pairs information for basemaps cli packages.
+     */
+    'linz_basemaps:generated': { [key: string]: unknown };
   };
 }

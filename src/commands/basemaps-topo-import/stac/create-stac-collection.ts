@@ -1,7 +1,7 @@
 import { Bounds } from '@basemaps/geo';
-import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { StacCollection } from 'stac-ts';
 
+import { CliId } from '../../../cli.info.js';
 import { logger } from '../../../log.js';
 import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 

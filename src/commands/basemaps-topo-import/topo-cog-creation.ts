@@ -3,14 +3,13 @@ import { tmpdir } from 'node:os';
 import { GdalRunner } from '@basemaps/cogify/build/cogify/gdal.runner.js';
 import { createFileStats } from '@basemaps/cogify/build/cogify/stac.js';
 import { fsa, Tiff } from '@basemaps/shared';
-import { CliId } from '@basemaps/shared/build/cli/info.js';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { mkdir, rm } from 'fs/promises';
 import pLimit from 'p-limit';
 import path from 'path';
 import ulid from 'ulid';
 
-import { CliInfo } from '../../cli.info.js';
+import { CliId, CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { HashTransform } from '../../utils/hash.stream.js';
 import { config, forceOutput, registerCli, tryParseUrl, verbose } from '../common.js';

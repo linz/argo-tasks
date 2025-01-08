@@ -1,6 +1,7 @@
-import { CliId } from '@basemaps/shared/build/cli/info.js';
+import { Nztm2000Tms } from '@basemaps/geo';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
 
+import { CliId, CliInfo } from '../../../cli.info.js';
 import { logger } from '../../../log.js';
 import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 import { TiffItem } from '../types/tiff-item.js';
@@ -29,6 +30,7 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapShe
       { rel: 'self', href: `./${fileName}.json`, type: 'application/json' },
       { rel: 'collection', href: './collection.json', type: 'application/json' },
       { rel: 'parent', href: './collection.json', type: 'application/json' },
+      { rel: 'linz_basemaps:source', href: tiffItem.source.href, type: 'image/tiff; application=geotiff' },
     ],
     assets: {
       source: {
@@ -46,6 +48,8 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapShe
       'source.width': tiffItem.size.width,
       'source.height': tiffItem.size.height,
       'linz_basemaps:options': {
+        tileId: fileName,
+        tileMatrix: Nztm2000Tms.identifier, // TODO: We will need to get the tileMatrix by epsg in future once we support these tileMatrix - > TileMatrixSets.get(tiffItem.epsg).identifier,
         preset: 'webp',
         blockSize: 512,
         bigTIFF: 'no',
@@ -54,11 +58,16 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapShe
         overviewCompress: 'webp',
         overviewQuality: 90,
         overviewResampling: 'lanczos',
-        tileId: fileName,
         sourceEpsg: tiffItem.epsg.code,
         addalpha: true,
         noReprojecting: true,
         srcwin: [0, 0, tiffItem.size.width - DEFAULT_TRIM_PIXEL_RIGHT, tiffItem.size.height],
+      },
+      'linz_basemaps:generated': {
+        package: CliInfo.package,
+        hash: CliInfo.hash,
+        version: CliInfo.version,
+        datetime: CLI_DATE,
       },
     },
     geometry: { type: 'Polygon', coordinates: tiffItem.bounds.toPolygon() } as GeoJSONPolygon,
