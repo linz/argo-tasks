@@ -8,16 +8,16 @@ export async function writeStacFiles(
   target: URL,
   items: MapSheetStacItem[],
   collection: StacCollection,
-): Promise<{ itemPaths: URL[]; collectionPath: URL }> {
+): Promise<{ itemPaths: { path: URL }[]; collectionPath: URL }> {
   // Create collection json for all topo50-latest items.
   logger.info({ target }, 'CreateStac:Output');
   logger.info({ items: items.length, collectionID: collection.id }, 'Stac:Output');
 
-  const itemPaths: URL[] = [];
+  const itemPaths = [];
 
   for (const item of items) {
     const itemPath = new URL(`${item.id}.json`, target);
-    itemPaths.push(itemPath);
+    itemPaths.push({ path: itemPath });
 
     await fsa.write(itemPath, JSON.stringify(item, null, 2));
   }

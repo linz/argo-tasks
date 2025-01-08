@@ -120,7 +120,7 @@ async function loadTiffsToCreateStacs(
   force: boolean,
   scale: string,
   resolution: string,
-): Promise<{ epsgDirectoryPaths: { epsg: string; url: URL }[]; stacItemPaths: URL[] }> {
+): Promise<{ epsgDirectoryPaths: { epsg: string; url: URL }[]; stacItemPaths: { path: URL }[] }> {
   logger.info({ source }, 'LoadTiffs:Start');
   // extract all file paths from the source directory and convert them into URL objects
   const fileURLs = await fsa.toArray(fsa.list(source));
@@ -136,7 +136,7 @@ async function loadTiffsToCreateStacs(
   logger.info('GroupTiffs:End');
 
   const epsgDirectoryPaths: { epsg: string; url: URL }[] = [];
-  const stacItemPaths: URL[] = [];
+  const stacItemPaths = [];
 
   // create and write stac items and collections
   for (const [epsg, itemsByMapCode] of itemsByDir.all.entries()) {
