@@ -1,4 +1,3 @@
-import { Nztm2000Tms } from '@basemaps/geo';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
 
 import { CliId, CliInfo } from '../../../cli.info.js';
@@ -49,7 +48,6 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapShe
       'source.height': tiffItem.size.height,
       'linz_basemaps:options': {
         tileId: fileName,
-        tileMatrix: Nztm2000Tms.identifier, // TODO: We will need to get the tileMatrix by epsg in future once we support these tileMatrix - > TileMatrixSets.get(tiffItem.epsg).identifier,
         preset: 'webp',
         blockSize: 512,
         bigTIFF: 'no',
