@@ -1,21 +1,24 @@
+import { TileMatrixSet } from '@basemaps/geo';
+
 import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 import { TiffItem } from '../types/tiff-item.js';
 import { createBaseStacItem } from './create-base-stac-item.js';
 
 /**
  * This function needs to create two groups:
- * - StacItem objects that will live in the "topo[50/250]" directory
- * - StacItem objects that will live in the "topo[50/250]-latest" directory
+ * - StacItem objects that will live in the "topo[50|250]" directory
+ * - StacItem objects that will live in the "topo[50|250]_latest" directory
  *
- * All versions need a StacItem object that lives in the topo[50/250] directory
- * The latest version needs a second StacItem object that lives in the topo[50/250]-latest dir
+ * All versions need a StacItem object that will live in the topo[50/250] directory
+ * The latest version needs a second StacItem object that will live in the topo[50|250]_latest directory
  */
 export async function createStacItems(
   allTargetURL: URL,
+  tileMatrix: TileMatrixSet,
   all: TiffItem[],
   latest: TiffItem,
 ): Promise<{ all: MapSheetStacItem[]; latest: MapSheetStacItem }> {
-  const allStacItems = all.map((item) => createBaseStacItem(`${item.mapCode}_${item.version}`, item));
+  const allStacItems = all.map((item) => createBaseStacItem(`${item.mapCode}_${item.version}`, item, tileMatrix));
 
   const latestURL = new URL(`${latest.mapCode}_${latest.version}.json`, allTargetURL);
 
@@ -28,7 +31,7 @@ export async function createStacItems(
     });
   });
 
-  const latestStacItem = createBaseStacItem(latest.mapCode, latest);
+  const latestStacItem = createBaseStacItem(latest.mapCode, latest, tileMatrix);
 
   // add link to the latest item referencing its copy that will live in the topo[50/250] directory
   latestStacItem.links.push({

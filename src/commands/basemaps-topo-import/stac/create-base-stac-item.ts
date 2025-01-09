@@ -1,3 +1,4 @@
+import { TileMatrixSet } from '@basemaps/geo';
 import { GeoJSONPolygon } from 'stac-ts/src/types/geojson.js';
 
 import { CliId, CliInfo } from '../../../cli.info.js';
@@ -18,7 +19,7 @@ const DEFAULT_TRIM_PIXEL_RIGHT = 1.7;
  *
  * @returns a StacItem object
  */
-export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapSheetStacItem {
+export function createBaseStacItem(fileName: string, tiffItem: TiffItem, tileMatrix: TileMatrixSet): MapSheetStacItem {
   logger.info({ fileName }, 'createBaseStacItem()');
 
   const item: MapSheetStacItem = {
@@ -48,6 +49,7 @@ export function createBaseStacItem(fileName: string, tiffItem: TiffItem): MapShe
       'source.height': tiffItem.size.height,
       'linz_basemaps:options': {
         tileId: fileName,
+        tileMatrix: tileMatrix.identifier,
         preset: 'webp',
         blockSize: 512,
         bigTIFF: 'no',

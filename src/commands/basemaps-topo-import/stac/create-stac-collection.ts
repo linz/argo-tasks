@@ -7,7 +7,12 @@ import { MapSheetStacItem } from '../types/map-sheet-stac-item.js';
 
 const cliDate = new Date().toISOString();
 
-export function createStacCollection(title: string, imageryBounds: Bounds, items: MapSheetStacItem[]): StacCollection {
+export function createStacCollection(
+  title: string,
+  linzSlug: string,
+  imageryBounds: Bounds,
+  items: MapSheetStacItem[],
+): StacCollection {
   logger.info({ items: items.length }, 'CreateStacCollection()');
   const collection: StacCollection = {
     type: 'Collection',
@@ -37,7 +42,7 @@ export function createStacCollection(title: string, imageryBounds: Bounds, items
     'linz:geospatial_category': 'topographic-maps',
     'linz:region': 'new-zealand',
     'linz:security_classification': 'unclassified',
-    'linz:slug': 'topo50',
+    'linz:slug': linzSlug,
     extent: {
       spatial: { bbox: [imageryBounds.toBbox()] },
       // Default the temporal time today if no times were found as it is required for STAC

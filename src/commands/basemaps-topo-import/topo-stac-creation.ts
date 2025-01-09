@@ -1,5 +1,5 @@
 import { loadTiffsFromPaths } from '@basemaps/config-loader/build//json/tiff.config.js';
-import { Bounds } from '@basemaps/geo';
+import { Bounds, Epsg, Nztm2000Tms, TileMatrixSets } from '@basemaps/geo';
 import { fsa } from '@basemaps/shared';
 import { boolean, command, flag, option, string } from 'cmd-ts';
 import pLimit from 'p-limit';
@@ -9,6 +9,7 @@ import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { config, forceOutput, registerCli, tryParseUrl, UrlFolder, verbose } from '../common.js';
 import { groupTiffsByDirectory } from './mappers/group-tiffs-by-directory.js';
+import { mapEpsgToSlug } from './mappers/map-epsg-to-slug.js';
 import { createStacCollection } from './stac/create-stac-collection.js';
 import { createStacItems } from './stac/create-stac-item-groups.js';
 import { writeStacFiles } from './stac/write-stac-files.js';
@@ -149,6 +150,14 @@ async function loadTiffsToCreateStacs(
     const latestBounds: Bounds[] = [];
     const latestStacItems: MapSheetStacItem[] = [];
 
+    // parse epsg
+    const epsgCode = Epsg.parse(epsg);
+    if (epsgCode == null) throw new Error(`Failed to parse epsg '${epsg}'`);
+
+    // convert epsg to tile matrix
+    const tileMatrix = TileMatrixSets.tryGet(epsgCode) ?? Nztm2000Tms; // TODO: support other tile matrices
+    if (tileMatrix == null) throw new Error(`Failed to convert epsg code '${epsgCode.code}' to a tile matrix`);
+
     // create stac items
     logger.info({ epsg }, 'CreateStacItems:Start');
     for (const [mapCode, items] of itemsByMapCode.entries()) {
@@ -156,7 +165,7 @@ async function loadTiffsToCreateStacs(
       const latest = itemsByDir.latest.get(epsg).get(mapCode);
 
       // create stac items
-      const stacItems = await createStacItems(allTargetURL, items, latest);
+      const stacItems = await createStacItems(allTargetURL, tileMatrix, items, latest);
 
       allBounds.push(...items.map((item) => item.bounds));
       allStacItems.push(...stacItems.all);
@@ -165,9 +174,15 @@ async function loadTiffsToCreateStacs(
       latestStacItems.push(stacItems.latest);
     }
 
+    // convert epsg to slug
+    const epsgSlug = mapEpsgToSlug(epsgCode.code);
+    if (epsgSlug == null) throw new Error(`Failed to map epsg code '${epsgCode.code}' to a slug`);
+
+    const linzSlug = `${scale}-${epsgSlug}`;
+
     // create collections
-    const collection = createStacCollection(title, Bounds.union(allBounds), allStacItems);
-    const latestCollection = createStacCollection(title, Bounds.union(latestBounds), latestStacItems);
+    const collection = createStacCollection(title, linzSlug, Bounds.union(allBounds), allStacItems);
+    const latestCollection = createStacCollection(title, linzSlug, Bounds.union(latestBounds), latestStacItems);
     logger.info({ epsg }, 'CreateStacItems:End');
 
     if (force || isArgo()) {
