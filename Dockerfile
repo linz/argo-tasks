@@ -1,6 +1,6 @@
 FROM node:20-slim@sha256:cffed8cd39d6a380434e6d08116d188c53e70611175cd5ec7700f93f32a935a6
 
-RUN apt-get update && apt-get install openssh-client git docker.io -y
+RUN apt-get update && apt-get install openssh-client git -y
 
 WORKDIR /app
 
