@@ -7,6 +7,7 @@ import { FsMemory } from '@chunkd/source-memory';
 import { BBox } from '@linzjs/geojson';
 import { FeatureCollection } from 'geojson';
 
+import { logger } from '../../../log.js';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
 import { GridSize, MapSheet } from '../../../utils/mapsheet.js';
 import { createTiff } from '../../common.js';
@@ -19,6 +20,7 @@ import {
   reprojectIfNeeded,
   TiffLoader,
   validate8BitsTiff,
+  validatePreset,
 } from '../tileindex.validate.js';
 import { FakeCogTiff } from './tileindex.validate.data.js';
 
@@ -326,6 +328,23 @@ describe('is8BitsTiff', () => {
       name: 'Error',
       message: `${testTiff.source.url.href} is not a 8 bits TIFF`,
     });
+  });
+});
+
+describe.only('validatePreset', () => {
+  it('should validate multiple tiffs', async (t) => {
+    const test16bTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
+    const test8bTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
+    const fatalStub = t.mock.method(logger, 'fatal');
+    await assert.rejects(validatePreset('webp', [test16bTiff, test16bTiff, test8bTiff]), {
+      name: 'Error',
+      message: `Tiff preset:"webp" validation failed`,
+    });
+
+    assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
+    const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+    assert.equal(opts['preset'], 'webp');
+    assert.ok(opts['reason']?.includes('is not a 8 bits TIFF'));
   });
 });
 

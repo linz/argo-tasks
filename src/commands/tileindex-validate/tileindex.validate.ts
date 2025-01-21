@@ -122,21 +122,20 @@ export const GridSizeFromString: Type<string, GridSize> = {
  * @param preset preset to validate against
  * @param tiffs tiffs to validate.
  */
-async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
-  let rejected: boolean = false;
+export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
+  let rejected = false;
 
   if (preset === 'webp') {
-    const promises = tiffs.map((f) => validate8BitsTiff(f));
-    const results = await Promise.allSettled(promises);
-    for (const r of results) {
-      if (r.status === 'rejected') {
+    const promises = tiffs.map((f) => {
+      return validate8BitsTiff(f).catch((err) => {
+        logger.fatal({ reason: String(err), source: f.source.url.href, preset }, 'Tiff:ValidatePreset:failed');
         rejected = true;
-        logger.fatal({ reason: r.reason as string }, 'Tiff:ValidatePreset:failed');
-      }
-    }
+      });
+    });
+    await Promise.allSettled(promises);
   }
 
-  if (rejected) throw new Error('Tiff preset validation failed');
+  if (rejected) throw new Error(`Tiff preset:"${preset}" validation failed`);
 }
 
 /**
