@@ -308,24 +308,27 @@ export async function validateStacChecksum(
 
   if (checksum == null) {
     if (allowMissing) return true;
-    logger.error({ source, checksum }, 'Validate:Checksum:Missing');
+    logger.error({ source, checksum, type: stacObject.rel, parent: path }, 'Validate:Checksum:Missing');
     return false;
   }
 
   if (!checksum.startsWith(Sha256Prefix)) {
-    logger.error({ source, checksum }, 'Validate:Checksum:Unknown');
+    logger.error({ source, checksum, type: stacObject.rel, parent: path }, 'Validate:Checksum:Unknown');
     return false;
   }
   logger.debug({ source, checksum }, 'Validate:Checksum');
   const startTime = performance.now();
   const hash = await hashStream(fsa.stream(source));
   const duration = performance.now() - startTime;
-
+  stacObject.rel;
   if (hash !== checksum) {
-    logger.error({ source, checksum, found: hash, duration }, 'Checksum:Validation:Failed');
+    logger.error(
+      { source, checksum, found: hash, type: stacObject.rel, parent: path, duration },
+      'Checksum:Validation:Failed',
+    );
     return false;
   }
-  logger.debug({ source, checksum, duration }, 'Checksum:Validation:Ok');
+  logger.debug({ source, checksum, type: stacObject.rel, parent: path, duration }, 'Checksum:Validation:Ok');
   return true;
 }
 
