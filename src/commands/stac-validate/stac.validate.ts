@@ -320,7 +320,7 @@ export async function validateStacChecksum(
   const startTime = performance.now();
   const hash = await hashStream(fsa.stream(source));
   const duration = performance.now() - startTime;
-  stacObject.rel;
+
   if (hash !== checksum) {
     logger.error(
       { source, checksum, found: hash, type: stacObject.rel, parent: path, duration },
