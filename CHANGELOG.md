@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.11.0](https://github.com/linz/argo-tasks/compare/v4.10.0...v4.11.0) (2025-02-04)
+
+
+### Features
+
+* improve stac-validate logs TDE-1385 ([#1189](https://github.com/linz/argo-tasks/issues/1189)) ([27e0acf](https://github.com/linz/argo-tasks/commit/27e0acf637a9146d0e339d77425e364d9d7acf59))
+
+
+### Bug Fixes
+
+* **tileindex-validate:** log errors when validating presets fail ([#1180](https://github.com/linz/argo-tasks/issues/1180)) ([e2d75d7](https://github.com/linz/argo-tasks/commit/e2d75d78f85401ec5ef846ae27b98cee6335ce6d))
+
 ## [4.10.0](https://github.com/linz/argo-tasks/compare/v4.9.0...v4.10.0) (2024-12-20)
 
 
