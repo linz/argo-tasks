@@ -19,6 +19,57 @@ describe('GeneratePathImagery', () => {
   });
 });
 
+describe('GeneratePathHillshade', () => {
+  it('Should match - hillshade 8m igor', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      geospatialCategory: 'dem-hillshade-igor',
+      region: 'new-zealand',
+      slug: 'new-zealand-contour',
+      gsd: 8,
+      epsg: 2193,
+    };
+    assert.equal(
+      generatePath(metadata),
+      's3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade-igor_8m/2193/',
+    );
+  });
+
+  it('Should match - hillshade 8m default', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      geospatialCategory: 'dem-hillshade',
+      region: 'new-zealand',
+      slug: 'new-zealand-contour',
+      gsd: 8,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade_8m/2193/');
+  });
+  it('Should match - hillshade combined igor', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      geospatialCategory: 'dem-hillshade-igor',
+      region: 'new-zealand',
+      slug: 'new-zealand',
+      gsd: 1,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade-igor/2193/');
+  });
+  it('Should match - hillshade combined default', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      geospatialCategory: 'dem-hillshade',
+      region: 'new-zealand',
+      slug: 'new-zealand',
+      gsd: 1,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade/2193/');
+  });
+});
+
 describe('GeneratePathGeospatialDataCategories', () => {
   it('Should match - dem from slug', () => {
     const metadata: PathMetadata = {
