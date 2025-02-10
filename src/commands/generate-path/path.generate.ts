@@ -92,9 +92,19 @@ export function generatePath(metadata: PathMetadata): string {
 
   if (
     metadata.geospatialCategory === GeospatialDataCategories.Dem ||
-    metadata.geospatialCategory === GeospatialDataCategories.Dsm
+    metadata.geospatialCategory === GeospatialDataCategories.Dsm ||
+    (metadata.gsd === 8 &&
+      (metadata.geospatialCategory === GeospatialDataCategories.DemHillshade ||
+        metadata.geospatialCategory === GeospatialDataCategories.DemHillshadeIgor))
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}_${metadata.gsd}m/${metadata.epsg}/`;
+  }
+
+  if (
+    metadata.geospatialCategory === GeospatialDataCategories.DemHillshade ||
+    metadata.geospatialCategory === GeospatialDataCategories.DemHillshadeIgor
+  ) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}/${metadata.epsg}/`;
   }
 
   throw new Error(

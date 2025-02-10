@@ -132,7 +132,9 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.Dem ||
-    metadata.geospatialCategory === GeospatialDataCategories.Dsm
+    metadata.geospatialCategory === GeospatialDataCategories.Dsm ||
+    metadata.geospatialCategory === GeospatialDataCategories.DemHillshade ||
+    metadata.geospatialCategory === GeospatialDataCategories.DemHillshadeIgor
   ) {
     return slug;
   }
