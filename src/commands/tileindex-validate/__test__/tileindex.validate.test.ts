@@ -153,6 +153,7 @@ describe('validate', () => {
     validate: true,
     preset: 'none',
     sourceEpsg: undefined,
+    includeDerived: false,
   };
 
   it('should fail if duplicate tiles are detected', async (t) => {
@@ -219,7 +220,11 @@ describe('validate', () => {
     });
     const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
     assert.deepEqual(outputFileList, [
-      { output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] },
+      {
+        output: 'AS21_1000_0101',
+        input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
+        includeDerived: false,
+      },
     ]);
   });
 
