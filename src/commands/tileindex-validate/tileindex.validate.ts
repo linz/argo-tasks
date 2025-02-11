@@ -207,7 +207,7 @@ export const commandTileIndexValidate = command({
       long: 'includeDerived',
       description: 'Include input tiles as STAC `derived_from` links',
       defaultValueIsSerializable: true,
-      defaultValue: () => false,
+      defaultValue: () => true,
     }),
     location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
