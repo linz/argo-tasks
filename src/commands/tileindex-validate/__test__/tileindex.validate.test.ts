@@ -9,6 +9,7 @@ import { FeatureCollection } from 'geojson';
 
 import { logger } from '../../../log.js';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
+import { FileListEntry } from '../../../utils/filelist.js';
 import { GridSize, MapSheet } from '../../../utils/mapsheet.js';
 import { createTiff } from '../../common.js';
 import {
@@ -153,7 +154,24 @@ describe('validate', () => {
     validate: true,
     preset: 'none',
     sourceEpsg: undefined,
+    includeDerived: false,
   };
+
+  it('should set the includeDerived flag in file-list.json based on its input flag', async (t) => {
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101')]));
+    for (const includeDerived of [true, false]) {
+      await commandTileIndexValidate.handler({
+        ...baseArguments,
+        location: ['s3://test'],
+        retile: true,
+        scale: 1000,
+        forceOutput: true,
+        includeDerived: includeDerived,
+      });
+      const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+      assert.strictEqual(outputFileList[0]?.includeDerived, includeDerived);
+    }
+  });
 
   it('should fail if duplicate tiles are detected', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
@@ -219,7 +237,11 @@ describe('validate', () => {
     });
     const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
     assert.deepEqual(outputFileList, [
-      { output: 'AS21_1000_0101', input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'] },
+      {
+        output: 'AS21_1000_0101',
+        input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
+        includeDerived: false,
+      },
     ]);
   });
 
