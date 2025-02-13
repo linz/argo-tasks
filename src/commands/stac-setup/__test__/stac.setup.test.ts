@@ -225,7 +225,7 @@ describe('formatDate', () => {
   it('Should return date as two years', async () => {
     assert.equal(formatDate('2023', '2024'), '2023-2024');
   });
-  it('Should only return a data if both are set', () => {
+  it('Should only return a date if both are set', () => {
     assert.equal(formatDate(undefined, '2023'), '');
     assert.equal(formatDate('', '2023'), '');
 
