@@ -4,6 +4,7 @@ import { afterEach, before, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
+import { GeospatialDataCategory } from '../../../utils/metadata.js';
 import { MeterAsString } from '../../common.js';
 import { commandStacSetup, formatDate, slugFromMetadata, SlugMetadata } from '../stac.setup.js';
 import { SampleCollection } from './sample.js';
@@ -89,6 +90,26 @@ describe('stac-setup', () => {
     const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
     assert.strictEqual(slug.toString(), 'new-zealand');
   });
+
+  it('should generate a slug with a survey id', async () => {
+    const baseArgs = {
+      odrUrl: '',
+      output: new URL('memory://tmp/stac-setup/'),
+      verbose: false,
+      startYear: '1982',
+      endYear: '1983',
+      gsd: '0.375',
+      region: 'chatham-islands',
+      surveyId: 'SN8066',
+      geographicDescription: 'Chatham Islands',
+      geospatialCategory: 'scanned-aerial-photos',
+      config: undefined,
+    } as const;
+    await commandStacSetup.handler(baseArgs);
+
+    const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
+    assert.equal(String(slug), 'chatham-islands_sn8066_1982-1983_0.375m');
+  });
 });
 
 describe('GenerateSlugImagery', () => {
@@ -145,7 +166,7 @@ describe('GenerateSlugGeospatialDataCategories', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
-  it('Should error as historic imagery geospatial category is not supported', () => {
+  it('Should error as historic imagery needs a surveyId', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'scanned-aerial-photos',
       geographicDescription: undefined,
@@ -155,11 +176,12 @@ describe('GenerateSlugGeospatialDataCategories', () => {
     };
     assert.throws(() => {
       slugFromMetadata(metadata);
-    }, Error('Historic Imagery scanned-aerial-photos is out of scope for automated slug generation.'));
+    }, Error('Historical imagery needs a surveyId'));
   });
+
   it('Should error as is not a matching geospatial category.', () => {
     const metadata: SlugMetadata = {
-      geospatialCategory: 'not-a-valid-category',
+      geospatialCategory: 'not-a-valid-category' as unknown as GeospatialDataCategory,
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
