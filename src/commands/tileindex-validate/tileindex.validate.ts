@@ -9,6 +9,7 @@ import { logger } from '../../log.js';
 import { isArgo } from '../../utils/argo.js';
 import { extractBandInformation } from '../../utils/band.js';
 import { FileFilter, getFiles } from '../../utils/chunk.js';
+import { createFileList } from '../../utils/filelist.js';
 import { findBoundingBox } from '../../utils/geotiff.js';
 import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.js';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
@@ -68,6 +69,9 @@ export const TiffLoader = {
  * If --retile
  * The script will not error as it is assumed the 'duplicate' tiffs are to be retiled and merged.
  *
+ * If --includeDerived
+ * Sets includeDerived in file-list.json (determines whether to create derived_from links in STAC)
+ *
  * @output
  * /tmp/tile-index-validate/input.geojson
  * Geometry:
@@ -87,11 +91,12 @@ export const TiffLoader = {
  * - tileName (string): target tileName for target tile index
  *
  * /tmp/tile-index-validate/file-list.json
- * Filelist grouped by target tileNames
+ * Filelist grouped by target tileNames with includeDerived flag
  *
  * Attributes:
  * - input (string[]): paths to source tiffs
  * - output (string): target tileName for target tile index
+ * - includeDerived (boolean): include input tiles as STAC `derived_from` links
  *
  * @example
  * Validate all source tiffs align to scale grid
@@ -197,6 +202,13 @@ export const commandTileIndexValidate = command({
       defaultValueIsSerializable: true,
       defaultValue: () => 'none',
     }),
+    includeDerived: flag({
+      type: boolean,
+      long: 'includeDerived',
+      description: 'Include input tiles as STAC `derived_from` links',
+      defaultValueIsSerializable: true,
+      defaultValue: () => false,
+    }),
     location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
   },
   async handler(args) {
@@ -266,13 +278,7 @@ export const commandTileIndexValidate = command({
       });
       logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:OutputGeojson');
 
-      await fsa.write(
-        '/tmp/tile-index-validate/file-list.json',
-        [...outputTiles.keys()].map((key) => {
-          const locs = outputTiles.get(key);
-          return { output: key, input: locs?.map((l) => l.source) };
-        }),
-      );
+      await fsa.write('/tmp/tile-index-validate/file-list.json', createFileList(outputTiles, args.includeDerived));
       logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputTiles.size }, 'Write:FileList');
     }
 

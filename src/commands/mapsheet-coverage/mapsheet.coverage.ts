@@ -14,6 +14,7 @@ import { StacCollection, StacItem } from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { getPacificAucklandYearMonthDay } from '../../utils/date.js';
+import { createFileList } from '../../utils/filelist.js';
 import { hashStream } from '../../utils/hash.js';
 import { MapSheet } from '../../utils/mapsheet.js';
 import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.js';
@@ -280,19 +281,17 @@ export const commandMapSheetCoverage = command({
       }
     }
 
-    // List of files to be created
-    const todo = [...mapSheets].map((m) => {
-      return { output: `${m[0]}`, input: m[1], includeDerived: true };
-    });
+    // List of tiles to be created, and files from which to create
+    const tilesToProcess = createFileList(mapSheets, true);
 
     const fileListPath = new URL('file-list.json', args.output);
-    await fsa.write(urlToString(fileListPath), JSON.stringify(todo));
+    await fsa.write(urlToString(fileListPath), JSON.stringify(tilesToProcess));
     logger.info(
       {
         duration: performance.now() - startTime,
         layersFound: allLayers.features.length,
         layersNeeded: captureDates.features.length,
-        itemsToCreate: todo.length,
+        itemsToCreate: tilesToProcess.length,
       },
       'MapSheetCoverage:Done',
     );
