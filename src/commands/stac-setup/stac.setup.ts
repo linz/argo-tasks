@@ -130,6 +130,7 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   ) {
     return `${slug}_${metadata.gsd}m`;
   }
+
   if (
     metadata.geospatialCategory === GeospatialDataCategories.Dem ||
     metadata.geospatialCategory === GeospatialDataCategories.Dsm ||
