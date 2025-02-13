@@ -8,17 +8,18 @@ stac-setup <options>
 
 ### Options
 
-| Usage                          | Description                                | Options                          |
-| ------------------------------ | ------------------------------------------ | -------------------------------- |
-| --config <str>                 | Location of role configuration file        | optional                         |
-| --start-year <str>             | Start year of survey capture               | optional                         |
-| --end-year <str>               | End year of survey capture                 | optional                         |
-| --gsd <value>                  | GSD of dataset, e.g. 0.3                   |                                  |
-| --region <str>                 | Region of dataset                          |                                  |
-| --geographic-description <str> | Geographic description of dataset          |                                  |
-| --geospatial-category <str>    | Geospatial category of dataset             |                                  |
-| --odr-url <str>                | Open Data Registry URL of existing dataset | optional                         |
-| --output <value>               | Where to store output files                | default: file:///tmp/stac-setup/ |
+| Usage                          | Description                                 | Options                          |
+| ------------------------------ | ------------------------------------------- | -------------------------------- |
+| --config <str>                 | Location of role configuration file         | optional                         |
+| --start-year <str>             | Start year of survey capture                | optional                         |
+| --end-year <str>               | End year of survey capture                  | optional                         |
+| --gsd <value>                  | GSD of dataset, e.g. 0.3                    |                                  |
+| --region <str>                 | Region of dataset                           |                                  |
+| --geographic-description <str> | Geographic description of dataset           |                                  |
+| --survey-id <str>              | Associated survey id, eg SN8066 or SNC20505 | optional                         |
+| --geospatial-category <str>    | Geospatial category of dataset              |                                  |
+| --odr-url <str>                | Open Data Registry URL of existing dataset  | optional                         |
+| --output <value>               | Where to store output files                 | default: file:///tmp/stac-setup/ |
 
 ### Flags
 
