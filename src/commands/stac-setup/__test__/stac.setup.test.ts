@@ -20,18 +20,23 @@ describe('stac-setup', () => {
     mem.files.clear();
   });
 
+  const BaseArgs = {
+    verbose: false,
+    config: undefined,
+    surveyId: undefined,
+  };
+
   it('should retrieve setup from collection', async () => {
     const baseArgs = {
+      ...BaseArgs,
       odrUrl: 'memory://collection.json',
       output: new URL('memory://tmp/stac-setup/'),
-      verbose: false,
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
-      config: undefined,
     } as const;
     await fsa.write('memory://collection.json', JSON.stringify(structuredClone(SampleCollection)));
     await commandStacSetup.handler(baseArgs);
@@ -47,16 +52,15 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from args', async () => {
     const baseArgs = {
+      ...BaseArgs,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
-      verbose: false,
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
-      config: undefined,
     } as const;
     await commandStacSetup.handler(baseArgs);
 
@@ -71,16 +75,15 @@ describe('stac-setup', () => {
 
   it('should not include the date in the slug', async () => {
     const baseArgs = {
+      ...BaseArgs,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
-      verbose: false,
       startYear: '',
       endYear: '',
       gsd: '10',
       region: 'new-zealand',
       geographicDescription: '',
       geospatialCategory: 'dem',
-      config: undefined,
     } as const;
     await commandStacSetup.handler(baseArgs);
 
@@ -93,9 +96,9 @@ describe('stac-setup', () => {
 
   it('should generate a slug with a survey id', async () => {
     const baseArgs = {
+      ...BaseArgs,
       odrUrl: '',
       output: new URL('memory://tmp/stac-setup/'),
-      verbose: false,
       startYear: '1982',
       endYear: '1983',
       gsd: '0.375',
@@ -103,7 +106,6 @@ describe('stac-setup', () => {
       surveyId: 'SN8066',
       geographicDescription: 'Chatham Islands',
       geospatialCategory: 'scanned-aerial-photos',
-      config: undefined,
     } as const;
     await commandStacSetup.handler(baseArgs);
 
@@ -112,7 +114,7 @@ describe('stac-setup', () => {
   });
 });
 
-describe('GenerateSlugImagery', () => {
+describe('slugFromMetadata', () => {
   it('Should match - urban with geographic description', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'urban-aerial-photos',
@@ -143,9 +145,7 @@ describe('GenerateSlugImagery', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023_0.3m');
   });
-});
 
-describe('GenerateSlugGeospatialDataCategories', () => {
   it('Should match - dem (no optional metadata)', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'dem',
@@ -191,9 +191,7 @@ describe('GenerateSlugGeospatialDataCategories', () => {
       slugFromMetadata(metadata);
     }, Error("Slug can't be generated from collection as no matching category: not-a-valid-category."));
   });
-});
 
-describe('GenerateSlugDemIgnoringDate', () => {
   it('Should not include the date in the slug', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'dem',
@@ -204,18 +202,35 @@ describe('GenerateSlugDemIgnoringDate', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'new-zealand');
   });
+
+  it('should support geographicDescription with historical imagery', () => {
+    assert.equal(
+      slugFromMetadata({
+        geospatialCategory: 'scanned-aerial-photos',
+        surveyId: 'SN8066',
+        region: 'auckland',
+        geographicDescription: 'West-Coast',
+        gsd: '0.35',
+        date: '1982',
+      }),
+      'west-coast_sn8066_1982_0.35m',
+    );
+  });
 });
 
 describe('formatDate', () => {
   it('Should return date as single year', async () => {
-    const startYear = '2023';
-    const endYear = '2023';
-    assert.equal(formatDate(startYear, endYear), '2023');
+    assert.equal(formatDate('2023', '2023'), '2023');
   });
   it('Should return date as two years', async () => {
-    const startYear = '2023';
-    const endYear = '2024';
-    assert.equal(formatDate(startYear, endYear), '2023-2024');
+    assert.equal(formatDate('2023', '2024'), '2023-2024');
+  });
+  it('Should only return a data if both are set', () => {
+    assert.equal(formatDate(undefined, '2023'), '');
+    assert.equal(formatDate('', '2023'), '');
+
+    assert.equal(formatDate('2023', undefined), '');
+    assert.equal(formatDate('2023', ''), '');
   });
 });
 

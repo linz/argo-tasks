@@ -59,7 +59,7 @@ export const commandStacSetup = command({
     }),
 
     surveyId: option({
-      type: string,
+      type: optional(string),
       long: 'survey-id',
       description: 'Associated survey id, eg SN8066 or SNC20505',
     }),
@@ -104,7 +104,7 @@ export const commandStacSetup = command({
       logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
     } else {
       const metadata: SlugMetadata = {
-        geospatialCategory: args.geospatialCategory,
+        geospatialCategory: args.geospatialCategory as GeospatialDataCategory,
         region: args.region,
         surveyId: args.surveyId,
         geographicDescription: args.geographicDescription,
@@ -170,7 +170,9 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
  * @returns the formatted slug dates
  */
 export function formatDate(startYear?: string, endYear?: string): string {
-  if (startYear == null && endYear == null) return '';
+  if (startYear == null || endYear == null) return '';
+  if (startYear.length === 0 || endYear.length === 0) return '';
+
   if (startYear === endYear) return startYear;
   return `${startYear}-${endYear}`;
 }
