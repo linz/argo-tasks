@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.12.0](https://github.com/linz/argo-tasks/compare/v4.11.0...v4.12.0) (2025-02-18)
+
+
+### Features
+
+* add createFileList function TDE-1382 ([#1196](https://github.com/linz/argo-tasks/issues/1196)) ([3289d30](https://github.com/linz/argo-tasks/commit/3289d3076202efa1cc79fc639afc35d5efcbf52c))
+* generate paths for new national hillshade products TDE-1378 ([#1193](https://github.com/linz/argo-tasks/issues/1193)) ([f2f8b68](https://github.com/linz/argo-tasks/commit/f2f8b688349ffe408ebd74d01ab3ac8d5b33da4c))
+* **stac-setup:** support historical survey names LI-3977 ([#1198](https://github.com/linz/argo-tasks/issues/1198)) ([8890bbf](https://github.com/linz/argo-tasks/commit/8890bbfdbefb25dd86e13f5ab68690d413c6b793))
+* **stac-setup:** support start dates ([#1199](https://github.com/linz/argo-tasks/issues/1199)) ([d7932c2](https://github.com/linz/argo-tasks/commit/d7932c297f6379c55e33e80fbf2c94e626b938e0))
+
 ## [4.11.0](https://github.com/linz/argo-tasks/compare/v4.10.0...v4.11.0) (2025-02-04)
 
 
