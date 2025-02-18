@@ -22,8 +22,18 @@ describe('stac-setup', () => {
 
   const BaseArgs = {
     verbose: false,
+    startDate: undefined,
+    endDate: undefined,
+    endYear: undefined,
+    startYear: undefined,
     config: undefined,
     surveyId: undefined,
+    odrUrl: '',
+    output: new URL('memory://tmp/stac-setup/'),
+    gsd: '1',
+    region: 'gisborne',
+    geographicDescription: 'Wairoa',
+    geospatialCategory: 'dem',
   };
 
   it('should retrieve setup from collection', async () => {
@@ -111,6 +121,26 @@ describe('stac-setup', () => {
 
     const slug = await fsa.read('memory://tmp/stac-setup/linz-slug');
     assert.equal(String(slug), 'chatham-islands_sn8066_1982-1983_0.375m');
+  });
+
+  it('should error if startDate and startYear are both supplied', async () => {
+    const baseArgs = {
+      ...BaseArgs,
+      startYear: '1982',
+      startDate: '1982-01-01',
+    } as const;
+    const ret = await commandStacSetup.handler(baseArgs).catch((e) => String(e));
+    assert.equal(ret, 'Error: --start-date and --start-year are mutually exclusive');
+  });
+
+  it('should error if endDate and endYear are both supplied', async () => {
+    const baseArgs = {
+      ...BaseArgs,
+      endYear: '1982',
+      endDate: '1982-01-01',
+    } as const;
+    const ret = await commandStacSetup.handler(baseArgs).catch((e) => String(e));
+    assert.equal(ret, 'Error: --end-date and --end-year are mutually exclusive');
   });
 });
 
@@ -231,6 +261,11 @@ describe('formatDate', () => {
 
     assert.equal(formatDate('2023', undefined), '');
     assert.equal(formatDate('2023', ''), '');
+  });
+
+  it('should format full dates without timezone conversion', () => {
+    assert.equal(formatDate('2023-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z'), '2023-2024');
+    assert.equal(formatDate('2023-01-01', '2024-01-01'), '2023-2024');
   });
 });
 
