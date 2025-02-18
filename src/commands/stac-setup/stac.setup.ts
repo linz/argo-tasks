@@ -28,16 +28,28 @@ export const commandStacSetup = command({
     config,
     verbose,
 
+    startDate: option({
+      type: optional(string),
+      long: 'start-date',
+      description: 'End date of survey capture (YYYY-MM-DD), eg 2023-01-01',
+    }),
+
     startYear: option({
       type: optional(string),
       long: 'start-year',
-      description: 'Start year of survey capture',
+      description: 'Start year of survey capture, deprecated use --start-date',
+    }),
+
+    endDate: option({
+      type: optional(string),
+      long: 'end-date',
+      description: 'End date of survey capture (YYYY-MM-DD), eg 2024-05-23',
     }),
 
     endYear: option({
       type: optional(string),
       long: 'end-year',
-      description: 'End year of survey capture',
+      description: 'End year of survey capture, deprecated use --end-date',
     }),
 
     gsd: option({
@@ -103,12 +115,15 @@ export const commandStacSetup = command({
       await writeSetupFiles(slug, collectionId, args.output);
       logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
     } else {
+      if (args.startDate && args.startYear) throw new Error('--start-date and --start-year are mutually exclusive');
+      if (args.endDate && args.endYear) throw new Error('--end-date and --end-year are mutually exclusive');
+
       const metadata: SlugMetadata = {
         geospatialCategory: args.geospatialCategory as GeospatialDataCategory,
         region: args.region,
         surveyId: args.surveyId,
         geographicDescription: args.geographicDescription,
-        date: formatDate(args.startYear, args.endYear),
+        date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
       };
       const slug = slugFromMetadata(metadata);
@@ -162,19 +177,22 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
 }
 
 /**
- * Format a STAC collection as a "startYear-endYear" or "startYear" in Pacific/Auckland time
- * only if both "startYear" and "endYear" are defined.
+ * Format a STAC collection as a "startDate-endDate" or "startDate" in Pacific/Auckland time
+ * only if both "startDate" and "endDate" are defined.
  *
- * @param startYear start capture date
- * @param endYear end capture date
+ * @param startDate start capture date in YYYY-MM-DD
+ * @param endDate end capture date in YYYY-MM-DD
+ *
  * @returns the formatted slug dates
  */
-export function formatDate(startYear?: string, endYear?: string): string {
-  if (startYear == null || endYear == null) return '';
-  if (startYear.length === 0 || endYear.length === 0) return '';
+export function formatDate(startDate?: string, endDate?: string): string {
+  const startPart = startDate?.slice(0, 4);
+  const endPart = endDate?.slice(0, 4);
+  if (startPart == null || endPart == null) return '';
+  if (startPart.length === 0 || endPart.length === 0) return '';
 
-  if (startYear === endYear) return startYear;
-  return `${startYear}-${endYear}`;
+  if (startPart === endPart) return startPart;
+  return `${startPart}-${endPart}`;
 }
 
 /**
