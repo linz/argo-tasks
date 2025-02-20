@@ -18,7 +18,7 @@ export function slugify(input: string): string {
     const formattedCharacters = sortedUniqueCharacters.map((character) => {
       return JSON.stringify(character).replaceAll('\\\\', '\\');
     });
-    throw Error(`Unhandled characters: ${formattedCharacters.join(', ')}`, {
+    throw Error(`Unhandled characters in input [${input}]: ${formattedCharacters.join(', ')}`, {
       cause: { characters: sortedUniqueCharacters },
     });
   }

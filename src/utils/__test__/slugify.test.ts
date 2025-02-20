@@ -66,7 +66,7 @@ describe('slugify', () => {
       },
       {
         name: 'Error',
-        message: 'Unhandled characters: "\\n", ";", "\\", "—", "“", "”"',
+        message: 'Unhandled characters in input [“a\\b//c—;\n”]: "\\n", ";", "\\", "—", "“", "”"',
         cause: { characters: ['\n', ';', '\\', '—', '“', '”'] },
       },
     );
