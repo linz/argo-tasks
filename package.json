@@ -51,7 +51,7 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^2.1.1",
     "cmd-ts": "^0.13.0",
-    "flatgeobuf": "^3.23.1",
+    "flatgeobuf": "^3.36.0",
     "p-limit": "^5.0.0",
     "pino": "^8.17.0",
     "prettier": "^3.3.3",
