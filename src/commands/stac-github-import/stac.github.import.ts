@@ -5,7 +5,6 @@ import * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.js';
 import { logger } from '../../log.js';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { GithubApi } from '../../utils/github.js';
 import { config, registerCli, verbose } from '../common.js';
 import { prettyPrint } from '../pretty-print/pretty.print.js';
 
@@ -68,10 +67,10 @@ export const commandStacGithubImport = command({
   async handler(args) {
     registerCli(this, args);
 
-    const gh = new GithubApi(args.repoName);
+    //const gh = new GithubApi(args.repoName);
 
-    const botEmail = BotEmails[args.repoName];
-    if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
+    //const botEmail = BotEmails[args.repoName];
+    //if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
 
     const basemapsConfigLinkURL = new URL('config-url', args.source);
     // TODO When Basemaps supports Elevation config as part of the standardising workflow, remove this try catch block
@@ -87,29 +86,29 @@ export const commandStacGithubImport = command({
 
     // Load information from the template inside the repo
     logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
-    const catalogPath = fsa.joinAll('template', 'catalog.json');
-    const catalog = await gh.getContent(catalogPath);
-    if (catalog == null) throw new Error(`Failed to get catalog.json from ${args.repoName} repo.`);
-    const catalogJson = JSON.parse(catalog) as st.StacCatalog;
+    // const catalogPath = fsa.joinAll('template', 'catalog.json');
+    // const catalog = await gh.getContent(catalogPath);
+    // if (catalog == null) throw new Error(`Failed to get catalog.json from ${args.repoName} repo.`);
+    // const catalogJson = JSON.parse(catalog) as st.StacCatalog;
 
     // Catalog template should have a absolute link to itself
-    const selfLink = catalogJson.links.find((f) => f.rel === 'self');
-    if (selfLink == null) throw new Error('unable to find self link in catalog');
-    logger.info({ href: selfLink.href }, 'Stac:SetRoot');
+    // const selfLink = catalogJson.links.find((f) => f.rel === 'self');
+    // if (selfLink == null) throw new Error('unable to find self link in catalog');
+    // logger.info({ href: selfLink.href }, 'Stac:SetRoot');
     // Update the root link in the collection to the one defined in the repo template
 
     const sourceCollection = new URL('collection.json', args.source);
-    const targetCollection = new URL('collection.json', args.target);
-    const targetCollectionPath = fsa.joinAll('stac', targetCollection.pathname);
+    // const targetCollection = new URL('collection.json', args.target);
+    // const targetCollectionPath = fsa.joinAll('stac', targetCollection.pathname);
 
     const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
 
     const rootLink = collection.links.find((f) => f.rel === 'root');
     if (rootLink) {
-      rootLink.href = selfLink.href;
+      // rootLink.href = selfLink.href;
       rootLink.type = 'application/json';
     } else {
-      collection.links.unshift({ rel: 'root', href: selfLink.href, type: 'application/json' });
+      //collection.links.unshift({ rel: 'root', href: selfLink.href, type: 'application/json' });
     }
     sortLinks(collection.links);
 
@@ -122,22 +121,23 @@ export const commandStacGithubImport = command({
     const title = `feat: import ${collection.title}${titleTicketSuffix}`;
 
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_PRETTIER_FORMAT);
-    const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
-    const parametersFileContent = {
-      source: args.source,
-      target: args.target,
-      ticket: args.ticket,
-      copy_option: args.copyOption,
-      region: collection['linz:region'],
-      flatten: 'false',
-    };
-    const parametersFile = {
-      path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
-      content: JSON.stringify(parametersFileContent, null, 2),
-    };
+    await fsa.write('./collection_sorted.json', collectionFileContent);
+    logger.info({ collectionFileContent });
+    // const parametersFileContent = {
+    //   source: args.source,
+    //   target: args.target,
+    //   ticket: args.ticket,
+    //   copy_option: args.copyOption,
+    //   region: collection['linz:region'],
+    //   flatten: 'false',
+    // };
+    // const parametersFile = {
+    //   path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,
+    //   content: JSON.stringify(parametersFileContent, null, 2),
+    // };
     logger.info({ commit: title, branch }, 'Git:Commit');
     // create pull request
-    await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
+    //await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
   },
 });
 
