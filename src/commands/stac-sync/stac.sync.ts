@@ -2,12 +2,12 @@ import { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { command, positional, string, Type } from 'cmd-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { md } from '../../readme/markdown.js';
-import { annotateExample } from '../../readme/readme.example.js';
-import { hashBuffer, HashKey } from '../../utils/hash.js';
-import { config, registerCli, verbose } from '../common.js';
+import { CliInfo } from "../../cli.info.ts";
+import { logger } from "../../log.ts";
+import { md } from "../../readme/markdown.ts";
+import { annotateExample } from "../../readme/readme.example.ts";
+import { hashBuffer, HashKey } from "../../utils/hash.ts";
+import { config, registerCli, verbose } from "../common.ts";
 
 const S3Path: Type<string, URL> = {
   async from(str) {

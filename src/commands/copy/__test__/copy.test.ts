@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { worker } from '../copy-worker.js';
+import { worker } from "../copy-worker.ts";
 
 describe('copyFiles', () => {
   const memory = new FsMemory();

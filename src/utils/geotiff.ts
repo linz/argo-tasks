@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { RasterTypeKey, Tiff, TiffTagGeo } from '@cogeotiff/core';
 
-import { urlToString } from '../commands/common.js';
+import { urlToString } from "../commands/common.ts";
 
 /**
  * Attempt to parse a tiff world file

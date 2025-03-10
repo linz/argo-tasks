@@ -2,12 +2,12 @@ import { fsa } from '@chunkd/fs';
 import { command, oneOf, option, string, Type } from 'cmd-ts';
 import * as st from 'stac-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { GithubApi } from '../../utils/github.js';
-import { config, registerCli, verbose } from '../common.js';
-import { prettyPrint } from '../pretty-print/pretty.print.js';
+import { CliInfo } from "../../cli.info.ts";
+import { logger } from "../../log.ts";
+import { DEFAULT_PRETTIER_FORMAT } from "../../utils/config.ts";
+import { GithubApi } from "../../utils/github.ts";
+import { config, registerCli, verbose } from "../common.ts";
+import { prettyPrint } from "../pretty-print/pretty.print.ts";
 
 const Url: Type<string, URL> = {
   async from(str) {

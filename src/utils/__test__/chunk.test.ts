@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { getFiles, splitPaths } from '../chunk.js';
+import { getFiles, splitPaths } from "../chunk.ts";
 
 describe('splitPaths', () => {
   it('should split on ;', () => {

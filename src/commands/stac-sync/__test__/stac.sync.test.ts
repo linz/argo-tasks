@@ -4,8 +4,8 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { hashBuffer, HashKey } from '../../../utils/hash.js';
-import { synchroniseFiles } from '../stac.sync.js';
+import { hashBuffer, HashKey } from "../../../utils/hash.ts";
+import { synchroniseFiles } from "../stac.sync.ts";
 
 describe('stacSync', () => {
   const fs = new FsMemory();

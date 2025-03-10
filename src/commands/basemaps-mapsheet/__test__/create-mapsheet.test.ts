@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { ConfigImagery, ConfigProviderMemory, ConfigTileSet } from '@basemaps/config';
 import { FeatureCollection } from 'geojson';
 
-import { createMapSheet } from '../create-mapsheet.js';
+import { createMapSheet } from "../create-mapsheet.ts";
 
 describe('copyFiles', () => {
   const rest: FeatureCollection = {

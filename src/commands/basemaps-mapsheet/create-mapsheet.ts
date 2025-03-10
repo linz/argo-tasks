@@ -2,14 +2,14 @@ import { ConfigBundled, ConfigImagery, ConfigProviderMemory, ConfigTileSet } fro
 import { Bounds, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
-import * as fgb from 'flatgeobuf/lib/mjs/geojson.js';
+import * as fgb from "flatgeobuf/lib/mjs/geojson.ts";
 import { FeatureCollection, MultiPolygon } from 'geojson';
 import { promisify } from 'util';
 import { gunzip } from 'zlib';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { registerCli, verbose } from '../common.js';
+import { CliInfo } from "../../cli.info.ts";
+import { logger } from "../../log.ts";
+import { registerCli, verbose } from "../common.ts";
 
 const gunzipProm = promisify(gunzip);
 

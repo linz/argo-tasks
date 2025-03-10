@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { FinalizeHandler, MetadataBearer } from '@smithy/types';
 
-import { fqdn } from '../fs.register.js';
+import { fqdn } from "../fs.register.ts";
 
 describe('fqdnMiddleware', () => {
   const fakeNext: FinalizeHandler<object, MetadataBearer> = () => {

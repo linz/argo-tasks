@@ -5,13 +5,13 @@ import {
   ConfigTileSetRaster,
   ConfigTileSetVector,
   TileSetType,
-} from '@basemaps/config/build/config/tile.set.js';
+} from "@basemaps/config/build/config/tile.set.ts";
 import { fsa } from '@chunkd/fs';
 
-import { logger } from '../../log.js';
-import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.js';
-import { GithubApi } from '../../utils/github.js';
-import { prettyPrint } from '../pretty-print/pretty.print.js';
+import { logger } from "../../log.ts";
+import { DEFAULT_PRETTIER_FORMAT } from "../../utils/config.ts";
+import { GithubApi } from "../../utils/github.ts";
+import { prettyPrint } from "../pretty-print/pretty.print.ts";
 
 export enum Category {
   Urban = 'Urban Aerial Photos',

@@ -1,4 +1,4 @@
-import { TiffLocation } from '../commands/tileindex-validate/tileindex.validate.js';
+import { TiffLocation } from "../commands/tileindex-validate/tileindex.validate.ts";
 
 export type FileListEntry = {
   output: string;

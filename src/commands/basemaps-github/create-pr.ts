@@ -5,21 +5,17 @@ import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
 import { StacCollection } from 'stac-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { registerCli, verbose } from '../common.js';
-import { Category, MakeCogGithub } from './make.cog.github.js';
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { registerCli, verbose } from '../common.ts';
+import { Category, MakeCogGithub } from './make.cog.github.ts';
 
 export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
 export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);
 
 export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 
-export enum ConfigType {
-  Raster = 'raster',
-  Vector = 'vector',
-  Elevation = 'elevation',
-}
+export type ConfigType = 'raster' | 'vector' | 'elevation';
 
 export function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
   // Validate the target information

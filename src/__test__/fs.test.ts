@@ -8,7 +8,7 @@ import { FsMemory } from '@chunkd/source-memory';
 import { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 
-import { registerFileSystem } from '../fs.register.js';
+import { registerFileSystem } from "../fs.register.ts";
 
 export class HttpError extends Error {
   statusCode: number;

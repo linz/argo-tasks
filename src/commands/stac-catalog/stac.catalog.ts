@@ -3,10 +3,10 @@ import { command, option, positional, string } from 'cmd-ts';
 import { isAbsolute } from 'path';
 import * as st from 'stac-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { hashBuffer } from '../../utils/hash.js';
-import { config, registerCli, verbose } from '../common.js';
+import { CliInfo } from "../../cli.info.ts";
+import { logger } from "../../log.ts";
+import { hashBuffer } from "../../utils/hash.ts";
+import { config, registerCli, verbose } from "../common.ts";
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {

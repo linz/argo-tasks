@@ -5,8 +5,8 @@ import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 import { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
-import { createTiff } from '../../commands/common.js';
-import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.js';
+import { createTiff } from "../../commands/common.ts";
+import { findBoundingBox, parseTfw, PixelIsPoint } from "../geotiff.ts";
 
 describe('geotiff', () => {
   describe('parseTfw', () => {

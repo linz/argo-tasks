@@ -1,6 +1,6 @@
 import { SampleFormat, Size, Source, Tiff, TiffImage, TiffTag } from '@cogeotiff/core';
 
-import { MapSheet } from '../../../utils/mapsheet.js';
+import { MapSheet } from "../../../utils/mapsheet.ts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

@@ -4,16 +4,16 @@ import { Size, Tiff, TiffTag } from '@cogeotiff/core';
 import { BBox } from '@linzjs/geojson';
 import { boolean, command, flag, number, option, optional, restPositionals, string, Type } from 'cmd-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { isArgo } from '../../utils/argo.js';
-import { extractBandInformation } from '../../utils/band.js';
-import { FileFilter, getFiles } from '../../utils/chunk.js';
-import { createFileList } from '../../utils/filelist.js';
-import { findBoundingBox } from '../../utils/geotiff.js';
-import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.js';
-import { config, createTiff, forceOutput, registerCli, verbose } from '../common.js';
-import { CommandListArgs } from '../list/list.js';
+import { CliInfo } from "../../cli.info.ts";
+import { logger } from "../../log.ts";
+import { isArgo } from "../../utils/argo.ts";
+import { extractBandInformation } from "../../utils/band.ts";
+import { FileFilter, getFiles } from "../../utils/chunk.ts";
+import { createFileList } from "../../utils/filelist.ts";
+import { findBoundingBox } from "../../utils/geotiff.ts";
+import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize } from "../../utils/mapsheet.ts";
+import { config, createTiff, forceOutput, registerCli, verbose } from "../common.ts";
+import { CommandListArgs } from "../list/list.ts";
 
 export function isTiff(x: string): boolean {
   const search = x.toLowerCase();

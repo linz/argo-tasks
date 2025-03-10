@@ -1,15 +1,15 @@
 import assert from 'node:assert';
 import { afterEach, it } from 'node:test';
 
-import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
+import { TileSetType } from "@basemaps/config/build/config/tile.set.ts";
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { StacVersion } from 'stac-ts';
 
-import { anySlug } from '../../../utils/__test__/slugify.test.js';
-import { GithubApi } from '../../../utils/github.js';
-import { basemapsCreatePullRequest, ConfigType, LinzBasemapsSourceCollectionRel } from '../create-pr.js';
-import { Category } from '../make.cog.github.js';
+import { anySlug } from "../../../utils/__test__/slugify.test.ts";
+import { GithubApi } from "../../../utils/github.ts";
+import { basemapsCreatePullRequest, ConfigType, LinzBasemapsSourceCollectionRel } from "../create-pr.ts";
+import { Category } from "../make.cog.github.ts";
 
 const originalEnv = Object.assign({}, process.env);
 

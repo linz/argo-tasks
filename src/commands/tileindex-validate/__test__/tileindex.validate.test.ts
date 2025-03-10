@@ -7,11 +7,11 @@ import { FsMemory } from '@chunkd/source-memory';
 import { BBox } from '@linzjs/geojson';
 import { FeatureCollection } from 'geojson';
 
-import { logger } from '../../../log.js';
-import { MapSheetData } from '../../../utils/__test__/mapsheet.data.js';
-import { FileListEntry } from '../../../utils/filelist.js';
-import { GridSize, MapSheet } from '../../../utils/mapsheet.js';
-import { createTiff } from '../../common.js';
+import { logger } from "../../../log.ts";
+import { MapSheetData } from "../../../utils/__test__/mapsheet.data.ts";
+import { FileListEntry } from "../../../utils/filelist.ts";
+import { GridSize, MapSheet } from "../../../utils/mapsheet.ts";
+import { createTiff } from "../../common.ts";
 import {
   commandTileIndexValidate,
   extractTiffLocations,
@@ -22,8 +22,8 @@ import {
   TiffLoader,
   validate8BitsTiff,
   validatePreset,
-} from '../tileindex.validate.js';
-import { FakeCogTiff } from './tileindex.validate.data.js';
+} from "../tileindex.validate.ts";
+import { FakeCogTiff } from "./tileindex.validate.data.ts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

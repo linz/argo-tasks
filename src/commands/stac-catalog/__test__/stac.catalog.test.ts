@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { createLinks, makeRelative } from '../stac.catalog.js';
+import { createLinks, makeRelative } from "../stac.catalog.ts";
 
 describe('stacCatalog', () => {
   const fs = new FsMemory();

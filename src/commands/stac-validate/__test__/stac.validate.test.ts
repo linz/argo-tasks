@@ -13,7 +13,7 @@ import {
   validateAssets,
   validateLinks,
   validateStacChecksum,
-} from '../stac.validate.js';
+} from "../stac.validate.ts";
 
 describe('stacValidate', function () {
   it('listLocation', () => {

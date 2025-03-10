@@ -7,8 +7,8 @@ import { FsMemory } from '@chunkd/source-memory';
 import { featuresToMultiPolygon } from '@linzjs/geojson';
 import { StacCollection } from 'stac-ts';
 
-import { MapSheet } from '../../../utils/mapsheet.js';
-import { commandMapSheetCoverage, isLargeRegion } from '../mapsheet.coverage.js';
+import { MapSheet } from "../../../utils/mapsheet.ts";
+import { commandMapSheetCoverage, isLargeRegion } from "../mapsheet.coverage.ts";
 
 // convert a collection of map sheets into a multipolygon
 function mapSheetToGeoJson(...sheetCodes: string[]): GeoJSON.Feature {

@@ -4,10 +4,10 @@ import { boolean, flag, option, optional, string, Type } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { fileURLToPath, pathToFileURL } from 'url';
 
-import { CliInfo } from '../cli.info.js';
-import { registerFileSystem } from '../fs.register.js';
-import { logger, registerLogger } from '../log.js';
-import { isArgo } from '../utils/argo.js';
+import { CliInfo } from "../cli.info.ts";
+import { registerFileSystem } from "../fs.register.ts";
+import { logger, registerLogger } from "../log.ts";
+import { isArgo } from "../utils/argo.ts";
 
 export const config = option({
   long: 'config',
