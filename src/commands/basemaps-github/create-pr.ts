@@ -1,5 +1,5 @@
 import { standardizeLayerName } from '@basemaps/config';
-import { ConfigLayer } from '@basemaps/config/build/config/tile.set.js';
+import type { ConfigLayer } from '@basemaps/config/build/config/tile.set.js';
 import { Epsg, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
@@ -8,7 +8,7 @@ import type { StacCollection } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { registerCli, verbose } from '../common.ts';
-import { Category, MakeCogGithub } from './make.cog.github.ts';
+import { MakeCogGithub } from './make.cog.github.ts';
 
 export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
 export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);

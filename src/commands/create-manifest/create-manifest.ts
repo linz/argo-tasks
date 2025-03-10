@@ -4,11 +4,11 @@ import { createHash } from 'crypto';
 import path from 'path';
 import { gzipSync } from 'zlib';
 
-import { CliInfo } from "../../cli.info.ts";
-import { getActionLocation } from "../../utils/action.storage.ts";
-import { ActionCopy } from "../../utils/actions.ts";
-import { FileFilter, getFiles } from "../../utils/chunk.ts";
-import { config, registerCli, verbose } from "../common.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { getActionLocation } from '../../utils/action.storage.ts';
+import type { ActionCopy } from '../../utils/actions.ts';
+import { getFiles } from '../../utils/chunk.ts';
+import { config, registerCli, verbose } from '../common.ts';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',

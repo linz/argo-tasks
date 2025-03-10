@@ -1,12 +1,12 @@
-import { setTimeout } from "node:timers/promises.ts";
+import { setTimeout } from 'node:timers/promises';
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { fsa } from '@chunkd/fs';
 import { FsAwsS3 } from '@chunkd/source-aws';
 import { FsAwsS3V3, S3LikeV3 } from '@chunkd/source-aws-v3';
-import { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
+import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 
-import { logger } from "./log.ts";
+import { logger } from './log.ts';
 
 /** Check to see if hostname exists inside of a object */
 function hasHostName(x: unknown): x is { hostname: string } {

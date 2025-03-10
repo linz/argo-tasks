@@ -1,27 +1,26 @@
 import { DefaultColorRampOutput, DefaultTerrainRgbOutput, standardizeLayerName } from '@basemaps/config';
-import {
+import type {
   ConfigLayer,
   ConfigTileSet,
   ConfigTileSetRaster,
   ConfigTileSetVector,
   TileSetType,
-} from "@basemaps/config/build/config/tile.set.ts";
+} from '@basemaps/config/build/config/tile.set.js';
 import { fsa } from '@chunkd/fs';
 
-import { logger } from "../../log.ts";
-import { DEFAULT_PRETTIER_FORMAT } from "../../utils/config.ts";
-import { GithubApi } from "../../utils/github.ts";
-import { prettyPrint } from "../pretty-print/pretty.print.ts";
+import { logger } from '../../log.ts';
+import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { GithubApi } from '../../utils/github.ts';
+import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
-export enum Category {
-  Urban = 'Urban Aerial Photos',
-  Rural = 'Rural Aerial Photos',
-  Satellite = 'Satellite Imagery',
-  Elevation = 'Elevation',
-  Event = 'Event',
-  Scanned = 'Scanned Aerial Imagery',
-  Other = 'New Aerial Photos',
-}
+export type Category =
+  | 'Urban Aerial Photos'
+  | 'Rural Aerial Photos'
+  | 'Satellite Imagery'
+  | 'Elevation'
+  | 'Event'
+  | 'Scanned Aerial Imagery'
+  | 'New Aerial Photos';
 
 export interface CategorySetting {
   minZoom?: number;
@@ -29,13 +28,13 @@ export interface CategorySetting {
 }
 
 export const DefaultCategorySetting: Record<Category, CategorySetting> = {
-  [Category.Urban]: { minZoom: 14 },
-  [Category.Rural]: { minZoom: 13 },
-  [Category.Satellite]: { minZoom: 5 },
-  [Category.Elevation]: { minZoom: 9 },
-  [Category.Scanned]: { minZoom: 0, maxZoom: 32 },
-  [Category.Other]: {},
-  [Category.Event]: {},
+  'Urban Aerial Photos': { minZoom: 14 },
+  ['Rural Aerial Photos']: { minZoom: 13 },
+  ['Satellite Imagery']: { minZoom: 5 },
+  ['Elevation']: { minZoom: 9 },
+  ['Scanned Aerial Imagery']: { minZoom: 0, maxZoom: 32 },
+  ['New Aerial Photos']: {},
+  ['Event']: {},
 };
 
 const botEmail = 'basemaps@linz.govt.nz';
@@ -245,16 +244,16 @@ export class MakeCogGithub {
     this.setDefaultConfig(layer, category);
 
     // Set layer zoom level and add to latest order
-    if (category === Category.Rural) {
+    if (category === 'Rural Aerial Photos') {
       for (let i = 0; i < tileSet.layers.length; i++) {
         // Add new layer above the first Urban
-        if (tileSet.layers[i]?.category === Category.Urban) {
+        if (tileSet.layers[i]?.category === 'Urban Aerial Photos') {
           // Find first valid Urban and insert new record above that.
           tileSet.layers.splice(i, 0, layer);
           break;
         }
       }
-    } else if (category === Category.Other) {
+    } else if (category === 'New Aerial Photos') {
       // Add new layer at the bottom
       tileSet.layers.push(layer);
     } else {
@@ -296,19 +295,19 @@ export class MakeCogGithub {
   async prepareElevationTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetRaster): Promise<ConfigTileSetRaster> {
     if (tileSet == null) {
       // Prepare individual elevation tileset config
-      const targetLayer = { ...layer, Category: Category.Elevation, minZoom: 0, maxZoom: 32 };
+      const targetLayer = { ...layer, Category: 'Elevation', minZoom: 0, maxZoom: 32 };
       return {
         type: TileSetType.Raster,
         id: `ts_${layer.name}`,
         name: layer.name,
         title: layer.title,
-        category: Category.Elevation,
+        category: 'Elevation',
         layers: [targetLayer],
         outputs: [DefaultTerrainRgbOutput, DefaultColorRampOutput],
       };
     }
 
-    this.setDefaultConfig(layer, Category.Elevation);
+    this.setDefaultConfig(layer, 'Elevation');
     // Remove elevation layer.category if already exists
     if (layer.category) delete layer.category;
 

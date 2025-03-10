@@ -6,7 +6,8 @@ import type { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { GeospatialDataCategories, StacCollectionLinz } from '../../utils/metadata.ts';
+import type { StacCollectionLinz } from '../../utils/metadata.ts';
+import { GeospatialDataCategories } from '../../utils/metadata.ts';
 import { config, createTiff, registerCli, verbose } from '../common.ts';
 
 export interface PathMetadata {
