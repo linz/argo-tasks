@@ -1,12 +1,12 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional, string } from 'cmd-ts';
 import { isAbsolute } from 'path';
-import * as st from 'stac-ts';
+import type * as st from 'stac-ts';
 
-import { CliInfo } from "../../cli.info.ts";
-import { logger } from "../../log.ts";
-import { hashBuffer } from "../../utils/hash.ts";
-import { config, registerCli, verbose } from "../common.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { hashBuffer } from '../../utils/hash.ts';
+import { config, registerCli, verbose } from '../common.ts';
 
 /** is a path a URL */
 export function isUrl(path: string): boolean {

@@ -1,11 +1,11 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, restPositionals, string } from 'cmd-ts';
-import * as stac from 'stac-ts';
+import type * as stac from 'stac-ts';
 import { createGunzip } from 'zlib';
 
-import { CliInfo } from "../../cli.info.ts";
-import { logger } from "../../log.ts";
-import { config, registerCli, verbose } from "../common.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { config, registerCli, verbose } from '../common.ts';
 
 function getTargetPath(source: string, path: string): string {
   if (path.startsWith('./')) return fsa.join(source, path.slice(2));

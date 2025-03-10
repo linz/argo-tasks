@@ -1,13 +1,13 @@
 import { fsa } from '@chunkd/fs';
 import { command, oneOf, option, string, Type } from 'cmd-ts';
-import * as st from 'stac-ts';
+import type * as st from 'stac-ts';
 
-import { CliInfo } from "../../cli.info.ts";
-import { logger } from "../../log.ts";
-import { DEFAULT_PRETTIER_FORMAT } from "../../utils/config.ts";
-import { GithubApi } from "../../utils/github.ts";
-import { config, registerCli, verbose } from "../common.ts";
-import { prettyPrint } from "../pretty-print/pretty.print.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { GithubApi } from '../../utils/github.ts';
+import { config, registerCli, verbose } from '../common.ts';
+import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
 const Url: Type<string, URL> = {
   async from(str) {
