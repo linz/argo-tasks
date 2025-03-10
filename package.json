@@ -1,7 +1,7 @@
 {
   "name": "@linzjs/argo-tasks",
   "private": true,
-  "version": "4.12.0",
+  "version": "4.11.0",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "repository": "git@github.com:linz/argo-tasks.git",
@@ -22,17 +22,17 @@
     "build": "tsc",
     "docs": "node build/src/readme/readme.generate.js",
     "lint": "npx eslint . --ignore-path .gitignore",
-    "test": "node --test build/"
+    "test": "node --test"
   },
   "publishConfig": {
     "access": "restricted"
   },
   "type": "module",
   "engines": {
-    "node": "^20.13.1"
+    "node": "^23.9.0"
   },
   "files": [
-    "build/src/**"
+    "src/"
   ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.440.0",
