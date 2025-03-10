@@ -1,5 +1,6 @@
 import { fsa } from '@chunkd/fs';
-import Ajv, { DefinedError, ValidateFunction } from 'ajv';
+import type { DefinedError, ValidateFunction } from 'ajv';
+import Ajv from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';

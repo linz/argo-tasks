@@ -1,15 +1,14 @@
 import assert from 'node:assert';
 import { afterEach, it } from 'node:test';
 
-import { TileSetType } from '@basemaps/config/build/config/tile.set.ts';
+import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import type { StacVersion } from 'stac-ts';
 
 import { anySlug } from '../../../utils/__test__/slugify.test.ts';
 import { GithubApi } from '../../../utils/github.ts';
-import { basemapsCreatePullRequest, ConfigType, LinzBasemapsSourceCollectionRel } from '../create-pr.ts';
-import { Category } from '../make.cog.github.ts';
+import { basemapsCreatePullRequest, LinzBasemapsSourceCollectionRel } from '../create-pr.ts';
 
 const originalEnv = Object.assign({}, process.env);
 
@@ -62,8 +61,8 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
     target: targetUrlsString,
     repository: 'any-owner/any-repository',
     verbose: false,
-    category: Category.Satellite,
-    configType: ConfigType.Raster,
+    category: 'Satellite Imagery',
+    configType: 'raster',
     individual: false,
     vector: false,
     ticket: 'any ticket',

@@ -1,8 +1,8 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { createTiff } from "../../commands/common.ts";
-import { extractBandInformation } from "../band.ts";
+import { createTiff } from '../../commands/common.ts';
+import { extractBandInformation } from '../band.ts';
 
 describe('extractBandInformation', () => {
   it('should extract basic band information (8-bit)', async () => {

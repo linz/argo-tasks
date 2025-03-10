@@ -3,11 +3,11 @@ import { command, option, optional, positional, string } from 'cmd-ts';
 import { basename } from 'path';
 import prettier from 'prettier';
 
-import { CliInfo } from "../../cli.info.ts";
-import { logger } from "../../log.ts";
-import { getFiles } from "../../utils/chunk.ts";
-import { DEFAULT_PRETTIER_FORMAT } from "../../utils/config.ts";
-import { config, registerCli, verbose } from "../common.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { getFiles } from '../../utils/chunk.ts';
+import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { config, registerCli, verbose } from '../common.ts';
 
 function isJson(x: string): boolean {
   const search = x.toLowerCase();

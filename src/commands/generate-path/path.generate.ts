@@ -1,6 +1,6 @@
 import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { Tiff } from '@cogeotiff/core';
+import type { Tiff } from '@cogeotiff/core';
 import { command, option, positional, string } from 'cmd-ts';
 import type { StacCollection, StacItem } from 'stac-ts';
 

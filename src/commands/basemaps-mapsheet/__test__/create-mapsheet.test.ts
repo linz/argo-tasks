@@ -1,10 +1,11 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { ConfigImagery, ConfigProviderMemory, ConfigTileSet } from '@basemaps/config';
-import { FeatureCollection } from 'geojson';
+import type { ConfigImagery, ConfigTileSet } from '@basemaps/config';
+import { ConfigProviderMemory } from '@basemaps/config';
+import type { FeatureCollection } from 'geojson';
 
-import { createMapSheet } from "../create-mapsheet.ts";
+import { createMapSheet } from '../create-mapsheet.ts';
 
 describe('copyFiles', () => {
   const rest: FeatureCollection = {

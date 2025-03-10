@@ -1,9 +1,10 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { SampleCollection } from "../../generate-path/__test__/sample.ts";
-import { FakeCogTiff } from "../../tileindex-validate/__test__/tileindex.validate.data.ts";
-import { extractEpsg, extractGsd, generatePath, PathMetadata } from "../path.generate.ts";
+import { SampleCollection } from '../../generate-path/__test__/sample.ts';
+import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.ts';
+import type { PathMetadata } from '../path.generate.ts';
+import { extractEpsg, extractGsd, generatePath } from '../path.generate.ts';
 
 describe('GeneratePathImagery', () => {
   it('Should match - urban aerial from slug', () => {

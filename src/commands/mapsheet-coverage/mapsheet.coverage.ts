@@ -1,7 +1,7 @@
 import { basename } from 'node:path/posix';
 import { gzipSync } from 'node:zlib';
 
-import { ConfigTileSetRaster } from '@basemaps/config';
+import type { ConfigTileSetRaster } from '@basemaps/config';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { Area, truncate } from '@linzjs/geojson';

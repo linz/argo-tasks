@@ -1,4 +1,5 @@
-import pLimit, { LimitFunction } from 'p-limit';
+import type { LimitFunction } from 'p-limit';
+import pLimit from 'p-limit';
 
 export class ConcurrentQueue {
   Q: LimitFunction;

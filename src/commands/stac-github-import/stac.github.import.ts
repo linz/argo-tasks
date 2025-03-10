@@ -1,5 +1,6 @@
 import { fsa } from '@chunkd/fs';
-import { command, oneOf, option, string, Type } from 'cmd-ts';
+import type { Type } from 'cmd-ts';
+import { command, oneOf, option, string } from 'cmd-ts';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';

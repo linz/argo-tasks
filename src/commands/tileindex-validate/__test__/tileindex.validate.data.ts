@@ -1,6 +1,7 @@
-import { SampleFormat, Size, Source, Tiff, TiffImage, TiffTag } from '@cogeotiff/core';
+import type { Size, Source, TiffImage } from '@cogeotiff/core';
+import { SampleFormat, Tiff, TiffTag } from '@cogeotiff/core';
 
-import { MapSheet } from "../../../utils/mapsheet.ts";
+import { MapSheet } from '../../../utils/mapsheet.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

@@ -1,6 +1,7 @@
 import { standardizeLayerName } from '@basemaps/config';
 import type { ConfigLayer } from '@basemaps/config/build/config/tile.set.js';
-import { Epsg, EpsgCode } from '@basemaps/geo';
+import type { EpsgCode } from '@basemaps/geo';
+import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
@@ -8,14 +9,15 @@ import type { StacCollection } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { registerCli, verbose } from '../common.ts';
-import { MakeCogGithub } from './make.cog.github.ts';
+import { Categories, MakeCogGithub } from './make.cog.github.ts';
 
 export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
 export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);
 
 export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 
-export type ConfigType = 'raster' | 'vector' | 'elevation';
+export const ConfigTypes = ['raster', 'elevation', 'vector'] as const;
+export type ConfigType = (typeof ConfigTypes)[number];
 
 export function assertValidBucket(bucket: string, validBuckets: Set<string>): void {
   // Validate the target information
@@ -198,9 +200,9 @@ export const CommandCreatePRArgs = {
     description: 'New layers locations as array of strings import into basemaps-config',
   }),
   category: option({
-    type: optional(oneOf(Object.values(Category))),
+    type: optional(oneOf(Object.values(Categories))),
     long: 'category',
-    description: [...Object.values(Category)].join(', '),
+    description: [...Object.values(Categories)].join(', '),
   }),
   repository: option({
     type: string,
@@ -210,10 +212,10 @@ export const CommandCreatePRArgs = {
     defaultValueIsSerializable: true,
   }),
   configType: option({
-    type: optional(oneOf(Object.values(ConfigType))),
+    type: optional(oneOf(ConfigTypes)),
     long: 'config-type',
-    description: `Basemaps config file type, includes ${[...Object.values(ConfigType)].join(', ')}`,
-    defaultValue: () => ConfigType.Raster,
+    description: `Basemaps config file type, includes ${ConfigTypes.join(', ')}`,
+    defaultValue: () => 'raster' as const,
   }),
   individual: flag({
     type: boolean,
@@ -242,7 +244,7 @@ export const basemapsCreatePullRequest = command({
   async handler(args) {
     registerCli(this, args);
     const target = args.target;
-    const category = args.category ?? Category.Other;
+    const category = args.category ?? Categories.Other;
     let targets: string[];
     try {
       targets = JSON.parse(target) as string[];
@@ -252,15 +254,15 @@ export const basemapsCreatePullRequest = command({
 
     const layer: ConfigLayer = { name: '', title: '' };
     let region;
-    const configType = args.vector ? ConfigType.Vector : args.configType;
-    if (configType === ConfigType.Vector) {
+    const configType = args.vector ? 'vector' : args.configType;
+    if (configType === 'vector') {
       for (const target of targets) {
         const info = await parseVectorTargetInfo(target);
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;
       }
-    } else if (configType === ConfigType.Elevation) {
+    } else if (configType === 'elevation') {
       for (const target of targets) {
         const info = await parseElevationTargetInfo(target, args.individual);
         layer.name = info.name;
@@ -283,11 +285,11 @@ export const basemapsCreatePullRequest = command({
     if (layer.name === '' || layer.title === '') throw new Error('Failed to find the imagery name or title.');
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
-    if (configType === ConfigType.Vector) {
+    if (configType === 'vector') {
       await git.updateVectorTileSet(layer.name, layer, args.individual);
-    } else if (configType === ConfigType.Raster) {
+    } else if (configType === 'raster') {
       await git.updateRasterTileSet(layer.name, layer, category, args.individual, region);
-    } else if (configType === ConfigType.Elevation) {
+    } else if (configType === 'elevation') {
       await git.updateElevationTileSet(layer.name, layer, args.individual, region);
     } else throw new Error(`Invalid Config File target: ${configType}`);
   },

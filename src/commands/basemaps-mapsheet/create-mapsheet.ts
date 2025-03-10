@@ -1,4 +1,5 @@
-import type { ConfigBundled, ConfigImagery, ConfigProviderMemory, ConfigTileSet } from '@basemaps/config';
+import type { ConfigBundled, ConfigImagery, ConfigTileSet } from '@basemaps/config';
+import { ConfigProviderMemory } from '@basemaps/config';
 import { Bounds, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';

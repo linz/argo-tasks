@@ -1,17 +1,21 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { Size, Tiff, TiffTag } from '@cogeotiff/core';
+import type { Size, Tiff } from '@cogeotiff/core';
+import { TiffTag } from '@cogeotiff/core';
 import type { BBox } from '@linzjs/geojson';
-import { boolean, command, flag, number, option, optional, restPositionals, string, Type } from 'cmd-ts';
+import type { Type } from 'cmd-ts';
+import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
 import { extractBandInformation } from '../../utils/band.ts';
-import { FileFilter, getFiles } from '../../utils/chunk.ts';
+import type { FileFilter } from '../../utils/chunk.ts';
+import { getFiles } from '../../utils/chunk.ts';
 import { createFileList } from '../../utils/filelist.ts';
 import { findBoundingBox } from '../../utils/geotiff.ts';
-import { GridSize, GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
+import type { GridSize } from '../../utils/mapsheet.ts';
+import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
 import { config, createTiff, forceOutput, registerCli, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 

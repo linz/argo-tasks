@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { Readable } from 'node:stream';
 import { describe, it } from 'node:test';
 
-import { hashBuffer, hashStream } from "../hash.ts";
+import { hashBuffer, hashStream } from '../hash.ts';
 
 describe('hashBuffer', () => {
   it('should return the expecting digest', () => {

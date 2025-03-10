@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { slugify } from "../slugify.ts";
+import { slugify } from '../slugify.ts';
 
 const slugChars = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
 

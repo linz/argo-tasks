@@ -3,11 +3,11 @@ import { command, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
-import { CliInfo } from "../../cli.info.ts";
-import { logger } from "../../log.ts";
-import { GeospatialDataCategory, StacCollectionLinz } from "../../utils/metadata.ts";
-import { slugify } from "../../utils/slugify.ts";
-import { config, MeterAsString, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from "../common.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
+import { slugify } from '../../utils/slugify.ts';
+import { config, MeterAsString, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;

@@ -4,7 +4,7 @@ import { before, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { commandGroup, groupItems } from "../group.ts";
+import { commandGroup, groupItems } from '../group.ts';
 
 describe('groupItems', () => {
   it('should group items', () => {

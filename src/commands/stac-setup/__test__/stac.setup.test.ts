@@ -4,10 +4,11 @@ import { afterEach, before, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { GeospatialDataCategory } from "../../../utils/metadata.ts";
-import { MeterAsString } from "../../common.ts";
-import { commandStacSetup, formatDate, slugFromMetadata, SlugMetadata } from "../stac.setup.ts";
-import { SampleCollection } from "./sample.ts";
+import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
+import { MeterAsString } from '../../common.ts';
+import type { SlugMetadata } from '../stac.setup.ts';
+import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
+import { SampleCollection } from './sample.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();

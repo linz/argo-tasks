@@ -1,8 +1,9 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { TiffLocation } from "../../commands/tileindex-validate/tileindex.validate.ts";
-import { createFileList, FileListEntry } from "../filelist.ts";
+import type { TiffLocation } from '../../commands/tileindex-validate/tileindex.validate.ts';
+import type { FileListEntry } from '../filelist.ts';
+import { createFileList } from '../filelist.ts';
 
 describe('createFileList', () => {
   const locationTestOne: TiffLocation = { bands: [], bbox: [0, 0, 0, 0], tileNames: [], source: 'input1' };

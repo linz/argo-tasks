@@ -1,10 +1,10 @@
 import { fsa } from '@chunkd/fs';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 
-import { CliInfo } from "../../cli.info.ts";
-import { logger } from "../../log.ts";
-import { getFiles } from "../../utils/chunk.ts";
-import { config, registerCli, verbose } from "../common.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { getFiles } from '../../utils/chunk.ts';
+import { config, registerCli, verbose } from '../common.ts';
 
 export const CommandListArgs = {
   config,

@@ -4,14 +4,15 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import { BBox } from '@linzjs/geojson';
-import { FeatureCollection } from 'geojson';
+import type { BBox } from '@linzjs/geojson';
+import type { FeatureCollection } from 'geojson';
 
-import { logger } from "../../../log.ts";
-import { MapSheetData } from "../../../utils/__test__/mapsheet.data.ts";
-import { FileListEntry } from "../../../utils/filelist.ts";
-import { GridSize, MapSheet } from "../../../utils/mapsheet.ts";
-import { createTiff } from "../../common.ts";
+import { logger } from '../../../log.ts';
+import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
+import type { FileListEntry } from '../../../utils/filelist.ts';
+import type { GridSize } from '../../../utils/mapsheet.ts';
+import { MapSheet } from '../../../utils/mapsheet.ts';
+import { createTiff } from '../../common.ts';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
@@ -22,8 +23,8 @@ import {
   TiffLoader,
   validate8BitsTiff,
   validatePreset,
-} from "../tileindex.validate.ts";
-import { FakeCogTiff } from "./tileindex.validate.data.ts";
+} from '../tileindex.validate.ts';
+import { FakeCogTiff } from './tileindex.validate.data.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

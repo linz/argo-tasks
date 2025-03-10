@@ -1,6 +1,6 @@
 import type { StacCollection } from 'stac-ts';
 
-import { StacCollectionLinz } from '../../../utils/metadata.ts';
+import type { StacCollectionLinz } from '../../../utils/metadata.ts';
 
 export const SampleCollection: StacCollection & StacCollectionLinz = {
   type: 'Collection',

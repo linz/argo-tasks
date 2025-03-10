@@ -3,8 +3,8 @@ process.env['AWS_NODEJS_CONNECTION_REUSE_ENABLED'] = '1';
 
 import { run } from 'cmd-ts';
 
-import { cmd } from "./commands/index.ts";
-import { logger } from "./log.ts";
+import { cmd } from './commands/index.ts';
+import { logger } from './log.ts';
 
 const startTime = performance.now();
 run(cmd, process.argv.slice(2))

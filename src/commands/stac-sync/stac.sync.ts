@@ -1,13 +1,14 @@
-import { FileInfo } from '@chunkd/core';
+import type { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
-import { command, positional, string, Type } from 'cmd-ts';
+import type { Type } from 'cmd-ts';
+import { command, positional, string } from 'cmd-ts';
 
-import { CliInfo } from "../../cli.info.ts";
-import { logger } from "../../log.ts";
-import { md } from "../../readme/markdown.ts";
-import { annotateExample } from "../../readme/readme.example.ts";
-import { hashBuffer, HashKey } from "../../utils/hash.ts";
-import { config, registerCli, verbose } from "../common.ts";
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { md } from '../../readme/markdown.ts';
+import { annotateExample } from '../../readme/readme.example.ts';
+import { hashBuffer, HashKey } from '../../utils/hash.ts';
+import { config, registerCli, verbose } from '../common.ts';
 
 const S3Path: Type<string, URL> = {
   async from(str) {

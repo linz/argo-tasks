@@ -1,7 +1,8 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { parseTargetUrl, targetInfo } from "../create-pr.ts";
+import type { targetInfo } from '../create-pr.ts';
+import { parseTargetUrl } from '../create-pr.ts';
 
 describe('parseTargetUrl', () => {
   it('Should parse the correct target vector Urls', async () => {

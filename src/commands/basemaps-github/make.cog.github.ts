@@ -4,8 +4,8 @@ import type {
   ConfigTileSet,
   ConfigTileSetRaster,
   ConfigTileSetVector,
-  TileSetType,
 } from '@basemaps/config/build/config/tile.set.js';
+import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
 import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.ts';
@@ -13,14 +13,25 @@ import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
-export type Category =
-  | 'Urban Aerial Photos'
-  | 'Rural Aerial Photos'
-  | 'Satellite Imagery'
-  | 'Elevation'
-  | 'Event'
-  | 'Scanned Aerial Imagery'
-  | 'New Aerial Photos';
+export const Categories = {
+  Urban: 'Urban Aerial Photos',
+  Rural: 'Rural Aerial Photos',
+  Satellite: 'Satellite Imagery',
+  Elevation: 'Elevation',
+  Event: 'Event',
+  Scanned: 'Scanned Aerial Imagery',
+  Other: 'New Aerial Photos',
+} as const;
+
+export type Category = (typeof Categories)[keyof typeof Categories];
+
+// | 'Urban Aerial Photos'
+// | 'Rural Aerial Photos'
+// | 'Satellite Imagery'
+// | 'Elevation'
+// | 'Event'
+// | 'Scanned Aerial Imagery'
+// | 'New Aerial Photos';
 
 export interface CategorySetting {
   minZoom?: number;

@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 
 import assert from 'assert';
 
-import { getPacificAucklandYearMonthDay } from "../date.ts";
+import { getPacificAucklandYearMonthDay } from '../date.ts';
 
 describe('getPacificAucklandYearMonthDay', () => {
   it('should format as yyyy-mm-dd', () => {
