@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "docs": "node build/src/readme/readme.generate.js",
+    "docs": "node src/readme/readme.generate.ts",
     "lint": "npx eslint . --ignore-path .gitignore",
     "test": "node --test"
   },
