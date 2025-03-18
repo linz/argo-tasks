@@ -8,14 +8,23 @@ export interface FileSizeInfo {
   size?: number;
 }
 
-export async function* asyncFilter<T extends { path: string; size?: number }>(
+export async function* asyncFilter<T extends { path: string; size?: number; lastModified?: string }>(
   source: AsyncGenerator<T>,
-  opts?: { include?: string; exclude?: string },
+  opts?: { include?: string; exclude?: string; since?: Date; until?: Date },
 ): AsyncGenerator<T> {
   const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
   const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
+
+  const sinceTime = opts?.since?.toISOString();
+  const untilTime = opts?.until?.toISOString();
   for await (const f of source) {
     const testPath = f.path.toLowerCase();
+
+    if (f.lastModified) {
+      if (sinceTime && sinceTime > f.lastModified) continue;
+      if (untilTime && untilTime < f.lastModified) continue;
+    }
+
     if (exclude && exclude.test(testPath)) continue;
     if (include === true) yield f;
     else if (include.test(testPath)) yield f;
@@ -102,6 +111,15 @@ export type FileFilter = {
    * @default 1
    */
   sizeMin?: number;
+
+  /**
+   * Filter files with a modified time since this time.
+   */
+  since?: Date;
+  /**
+   * Filter files with a modified time until this time
+   */
+  until?: Date;
 };
 export async function getFiles(paths: string[], args: FileFilter = {}): Promise<string[][]> {
   const limit = args.limit ?? -1; // no limit by default

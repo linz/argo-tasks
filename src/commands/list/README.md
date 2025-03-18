@@ -14,15 +14,18 @@ list <options> [...location]
 
 ### Options
 
-| Usage              | Description                                             | Options  |
-| ------------------ | ------------------------------------------------------- | -------- |
-| --config <str>     | Location of role configuration file                     | optional |
-| --include <str>    | Include files eg ".\*.tiff?$"                           | optional |
-| --exclude <str>    | Exclude files eg ".\*.prj$"                             | optional |
-| --group-size <str> | Group files into this size per group, eg "5Gi" or "3TB" | optional |
-| --group <number>   | Group files into this number per group                  | optional |
-| --limit <number>   | Limit the file count to this amount, -1 is no limit     | optional |
-| --output <str>     | Output location for the listing                         | optional |
+| Usage                       | Description                                                           | Options  |
+| --------------------------- | --------------------------------------------------------------------- | -------- |
+| --config <str>              | Location of role configuration file                                   | optional |
+| --include <str>             | Include files eg ".\*.tiff?$"                                         | optional |
+| --exclude <str>             | Exclude files eg ".\*.prj$"                                           | optional |
+| --since <value>             | Include files since a timestamp or relative (eg "42m" for 42 minutes) | optional |
+| --until <value>             | Include files until a timestamp or relative (eg "42m" for 42 minutes) | optional |
+| --max-items-listed <number> | Maximum allowed items to be listed, -1 for unlimited                  | optional |
+| --group-size <str>          | Group files into this size per group, eg "5Gi" or "3TB"               | optional |
+| --group <number>            | Group files into this number per group                                | optional |
+| --limit <number>            | Limit the file count to this amount, -1 is no limit                   | optional |
+| --output <str>              | Output location for the listing                                       | optional |
 
 ### Flags
 
