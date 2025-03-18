@@ -1,5 +1,3 @@
-import assert from 'node:assert';
-
 import type { Type } from 'cmd-ts';
 
 /**
