@@ -9,6 +9,7 @@ import type { StacCollection } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { registerCli, verbose } from '../common.ts';
+import type { Category } from './make.cog.github.ts';
 import { Categories, MakeCogGithub } from './make.cog.github.ts';
 
 export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
@@ -244,7 +245,7 @@ export const basemapsCreatePullRequest = command({
   async handler(args) {
     registerCli(this, args);
     const target = args.target;
-    const category = args.category ?? Categories.Other;
+    const category: Category = args.category ?? 'New Aerial Photos';
     let targets: string[];
     try {
       targets = JSON.parse(target) as string[];

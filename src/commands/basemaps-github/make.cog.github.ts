@@ -13,25 +13,17 @@ import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
-export const Categories = {
-  Urban: 'Urban Aerial Photos',
-  Rural: 'Rural Aerial Photos',
-  Satellite: 'Satellite Imagery',
-  Elevation: 'Elevation',
-  Event: 'Event',
-  Scanned: 'Scanned Aerial Imagery',
-  Other: 'New Aerial Photos',
-} as const;
+export const Categories = [
+  'Urban Aerial Photos',
+  'Rural Aerial Photos',
+  'Satellite Imagery',
+  'Elevation',
+  'Event',
+  'Scanned Aerial Imagery',
+  'New Aerial Photos',
+] as const;
 
-export type Category = (typeof Categories)[keyof typeof Categories];
-
-// | 'Urban Aerial Photos'
-// | 'Rural Aerial Photos'
-// | 'Satellite Imagery'
-// | 'Elevation'
-// | 'Event'
-// | 'Scanned Aerial Imagery'
-// | 'New Aerial Photos';
+export type Category = (typeof Categories)[number];
 
 export interface CategorySetting {
   minZoom?: number;
@@ -40,12 +32,12 @@ export interface CategorySetting {
 
 export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   'Urban Aerial Photos': { minZoom: 14 },
-  ['Rural Aerial Photos']: { minZoom: 13 },
-  ['Satellite Imagery']: { minZoom: 5 },
-  ['Elevation']: { minZoom: 9 },
-  ['Scanned Aerial Imagery']: { minZoom: 0, maxZoom: 32 },
-  ['New Aerial Photos']: {},
-  ['Event']: {},
+  'Rural Aerial Photos': { minZoom: 13 },
+  'Satellite Imagery': { minZoom: 5 },
+  Elevation: { minZoom: 9 },
+  'Scanned Aerial Imagery': { minZoom: 0, maxZoom: 32 },
+  'New Aerial Photos': {},
+  Event: {},
 };
 
 const botEmail = 'basemaps@linz.govt.nz';
@@ -306,7 +298,7 @@ export class MakeCogGithub {
   async prepareElevationTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetRaster): Promise<ConfigTileSetRaster> {
     if (tileSet == null) {
       // Prepare individual elevation tileset config
-      const targetLayer = { ...layer, Category: 'Elevation', minZoom: 0, maxZoom: 32 };
+      const targetLayer: ConfigLayer = { ...layer, category: 'Elevation', minZoom: 0, maxZoom: 32 };
       return {
         type: TileSetType.Raster,
         id: `ts_${layer.name}`,
@@ -315,7 +307,7 @@ export class MakeCogGithub {
         category: 'Elevation',
         layers: [targetLayer],
         outputs: [DefaultTerrainRgbOutput, DefaultColorRampOutput],
-      };
+      } as ConfigTileSetRaster;
     }
 
     this.setDefaultConfig(layer, 'Elevation');
