@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.13.0](https://github.com/linz/argo-tasks/compare/v4.12.1...v4.13.0) (2025-03-24)
+
+
+### Features
+
+* node 23 direct typescript ([#1201](https://github.com/linz/argo-tasks/issues/1201)) ([6ee1dec](https://github.com/linz/argo-tasks/commit/6ee1dec8c787f72634542855b508b7ab3e78ea21))
+
 ## [4.12.1](https://github.com/linz/argo-tasks/compare/v4.12.0...v4.12.1) (2025-03-24)
 
 
