@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.1](https://github.com/linz/argo-tasks/compare/v4.12.0...v4.12.1) (2025-03-24)
+
+
+### Bug Fixes
+
+* harmonize hillshade odr paths TDE-1447 ([#1202](https://github.com/linz/argo-tasks/issues/1202)) ([9effd49](https://github.com/linz/argo-tasks/commit/9effd492d97fad3b91c63b84f887da6a3e1d3c7c))
+
 ## [4.12.0](https://github.com/linz/argo-tasks/compare/v4.11.0...v4.12.0) (2025-02-18)
 
 
