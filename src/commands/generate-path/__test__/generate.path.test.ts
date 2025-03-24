@@ -34,7 +34,6 @@ describe('GeneratePathHillshade', () => {
       's3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade-igor_8m/2193/',
     );
   });
-
   it('Should match - hillshade 8m default', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
@@ -46,7 +45,7 @@ describe('GeneratePathHillshade', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade_8m/2193/');
   });
-  it('Should match - hillshade combined igor', () => {
+  it('Should match - hillshade 1m igor', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dem-hillshade-igor',
@@ -55,9 +54,9 @@ describe('GeneratePathHillshade', () => {
       gsd: 1,
       epsg: 2193,
     };
-    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade-igor/2193/');
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade-igor_1m/2193/');
   });
-  it('Should match - hillshade combined default', () => {
+  it('Should match - hillshade 1m default', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dem-hillshade',
@@ -66,7 +65,7 @@ describe('GeneratePathHillshade', () => {
       gsd: 1,
       epsg: 2193,
     };
-    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade/2193/');
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade_1m/2193/');
   });
 });
 
