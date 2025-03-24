@@ -1,10 +1,11 @@
+import { writeFileSync } from 'node:fs';
+
 import { fsa } from '@chunkd/fs';
-import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.js';
-import { writeFileSync } from 'fs';
+import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.ts';
 import * as prettier from 'prettier';
 
-import { AllCommands } from '../commands/index.js';
-import { commandHasExample, ExampleSymbol } from './readme.example.js';
+import { AllCommands } from '../commands/index.ts';
+import { commandHasExample, ExampleSymbol } from './readme.example.ts';
 const AnsiRemove = /\u001b\[.*?m/g;
 
 function hasHelp(f: unknown): f is ProvidesHelp {

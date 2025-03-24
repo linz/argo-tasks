@@ -3,7 +3,7 @@ import { before, beforeEach, describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
-import * as st from 'stac-ts';
+import type * as st from 'stac-ts';
 
 import {
   getStacSchemaUrl,
@@ -13,7 +13,7 @@ import {
   validateAssets,
   validateLinks,
   validateStacChecksum,
-} from '../stac.validate.js';
+} from '../stac.validate.ts';
 
 describe('stacValidate', function () {
   it('listLocation', () => {

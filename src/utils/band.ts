@@ -1,4 +1,5 @@
-import { SampleFormat, Tiff, TiffImage, TiffTag } from '@cogeotiff/core';
+import type { Tiff, TiffImage } from '@cogeotiff/core';
+import { SampleFormat, TiffTag } from '@cogeotiff/core';
 
 function getDataType(i: SampleFormat): string {
   switch (i) {

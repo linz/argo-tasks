@@ -1,10 +1,10 @@
 import { fsa } from '@chunkd/fs';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { isArgo } from '../../utils/argo.js';
-import { config, forceOutput, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { isArgo } from '../../utils/argo.ts';
+import { config, forceOutput, registerCli, verbose } from '../common.ts';
 
 /** Chunk an array into a group size
  * @example

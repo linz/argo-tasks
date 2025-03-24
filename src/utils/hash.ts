@@ -1,5 +1,6 @@
-import { BinaryLike, createHash } from 'crypto';
-import { Readable } from 'stream';
+import type { BinaryLike } from 'crypto';
+import { createHash } from 'crypto';
+import type { Readable } from 'stream';
 
 /** Key concatenated to 'x-amz-meta-' */
 export const HashKey = 'multihash';

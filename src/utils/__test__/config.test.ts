@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import prettier from 'prettier';
 
-import { DEFAULT_PRETTIER_FORMAT } from '../config.js';
+import { DEFAULT_PRETTIER_FORMAT } from '../config.ts';
 
 describe('DefaultPrettierFormat', () => {
   it('should be the same prettier format with @linzjs/style', async () => {

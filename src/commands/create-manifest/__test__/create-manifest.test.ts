@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { createManifest, validatePaths } from '../create-manifest.js';
+import { createManifest, validatePaths } from '../create-manifest.ts';
 
 describe('createManifest', () => {
   beforeEach(() => {

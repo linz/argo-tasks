@@ -1,14 +1,15 @@
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { CompositeError } from '@chunkd/core';
-import { FileSystemAbstraction, fsa } from '@chunkd/fs';
-import { FsAwsS3 } from '@chunkd/source-aws';
-import { S3LikeV3 } from '@chunkd/source-aws-v3';
+import type { FileSystemAbstraction } from '@chunkd/fs';
+import { fsa } from '@chunkd/fs';
+import type { FsAwsS3 } from '@chunkd/source-aws';
+import type { S3LikeV3 } from '@chunkd/source-aws-v3';
 import { FsMemory } from '@chunkd/source-memory';
-import { InitializeMiddleware, MetadataBearer } from '@smithy/types';
+import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 
-import { registerFileSystem } from '../fs.register.js';
+import { registerFileSystem } from '../fs.register.ts';
 
 export class HttpError extends Error {
   statusCode: number;

@@ -1,8 +1,9 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { MapSheet, MapTileIndex, SheetRanges } from '../mapsheet.js';
-import { MapSheetData } from './mapsheet.data.js';
+import type { MapTileIndex } from '../mapsheet.ts';
+import { MapSheet, SheetRanges } from '../mapsheet.ts';
+import { MapSheetData } from './mapsheet.data.ts';
 
 describe('MapSheets', () => {
   it('should extract MapTileIndex from 1:500 tile filename', () => {

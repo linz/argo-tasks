@@ -1,13 +1,13 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
-import { StacCollection } from 'stac-ts';
+import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.js';
-import { slugify } from '../../utils/slugify.js';
-import { config, MeterAsString, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
+import { slugify } from '../../utils/slugify.ts';
+import { config, MeterAsString, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;

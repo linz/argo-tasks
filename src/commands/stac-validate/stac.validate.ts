@@ -1,17 +1,18 @@
 import { fsa } from '@chunkd/fs';
-import Ajv, { DefinedError, ValidateFunction } from 'ajv';
+import type { DefinedError, ValidateFunction } from 'ajv';
+import Ajv from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
 import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
-import * as st from 'stac-ts';
+import type * as st from 'stac-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { ConcurrentQueue } from '../../utils/concurrent.queue.js';
-import { hashStream, Sha256Prefix } from '../../utils/hash.js';
-import { config, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
+import { hashStream, Sha256Prefix } from '../../utils/hash.ts';
+import { config, registerCli, verbose } from '../common.ts';
 
 export const commandStacValidate = command({
   name: 'stac-validate',

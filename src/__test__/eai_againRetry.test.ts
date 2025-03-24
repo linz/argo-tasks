@@ -1,9 +1,9 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { BuildHandler, MetadataBearer } from '@smithy/types';
+import type { BuildHandler, MetadataBearer } from '@smithy/types';
 
-import { eaiAgainBuilder } from '../fs.register.js';
+import { eaiAgainBuilder } from '../fs.register.ts';
 
 let callCount = 0;
 

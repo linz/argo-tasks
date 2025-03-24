@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 
-import { parseSize } from '../commands/common.js';
-import { logger } from '../log.js';
+import { parseSize } from '../commands/common.ts';
+import { logger } from '../log.ts';
 
 export interface FileSizeInfo {
   path: string;

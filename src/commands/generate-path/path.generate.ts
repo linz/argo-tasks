@@ -1,13 +1,14 @@
 import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { Tiff } from '@cogeotiff/core';
+import type { Tiff } from '@cogeotiff/core';
 import { command, option, positional, string } from 'cmd-ts';
-import { StacCollection, StacItem } from 'stac-ts';
+import type { StacCollection, StacItem } from 'stac-ts';
 
-import { CliInfo } from '../../cli.info.js';
-import { logger } from '../../log.js';
-import { GeospatialDataCategories, StacCollectionLinz } from '../../utils/metadata.js';
-import { config, createTiff, registerCli, verbose } from '../common.js';
+import { CliInfo } from '../../cli.info.ts';
+import { logger } from '../../log.ts';
+import type { StacCollectionLinz } from '../../utils/metadata.ts';
+import { GeospatialDataCategories } from '../../utils/metadata.ts';
+import { config, createTiff, registerCli, verbose } from '../common.ts';
 
 export interface PathMetadata {
   targetBucketName: string;

@@ -1,4 +1,4 @@
-import prettier from 'prettier';
+import type prettier from 'prettier';
 
 export const DEFAULT_PRETTIER_FORMAT: prettier.Options = {
   semi: true,

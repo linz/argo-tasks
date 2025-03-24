@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 
-import { asyncFilter } from '../chunk.js';
+import { asyncFilter } from '../chunk.ts';
 
 describe('AsyncFilter', () => {
   function makeGenerator(list: string[]): () => AsyncGenerator<{ path: string }> {
