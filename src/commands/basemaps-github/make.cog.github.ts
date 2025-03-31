@@ -134,17 +134,26 @@ export class MakeCogGithub {
     const branch = `feat/bot-config-elevation-${this.imagery}${this.ticketBranchSuffix}`;
     const title = `config(elevation): Add elevation ${this.imagery} to ${filename} config file.`;
 
+    let type;
+    if (filename.includes('_dsm_')) {
+      type = 'dsm';
+    } else if (filename.includes('_dem_')) {
+      type = 'dem';
+    } else {
+      throw new Error(`Invalid elevation type for ${filename}, must be dem or dsm.`);
+    }
+
     // Clone the basemaps-config repo and checkout branch
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     if (individual) {
       if (region == null) region = 'individual';
       const tileSet = await this.prepareElevationTileSetConfig(layer);
-      const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', `${layer.name}.json`);
+      const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', type, `${layer.name}.json`);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
     } else {
       // Prepare new elevation tileset config
-      const tileSetPath = fsa.joinAll('config', 'tileset', `elevation.json`);
+      const tileSetPath = fsa.joinAll('config', 'tileset', type === 'dem' ? 'elevation.json' : 'elevation.dsm.json');
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Failed to get config elevation from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
