@@ -10,7 +10,6 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 [Commands and their usage](./COMMANDS.md)
 
-
 ### `lds-fetch-layer`
 
 Fetch a layer from the LDS and download it as GeoPackage.
@@ -208,8 +207,6 @@ stac github-import --source=SOURCE_S3_URL --target=TARGET_S3_URL [--repo-name=OW
 ```bash
 stac github-import --source=s3://linz-workflows-scratch/2024-03/13-is-niwe-hawkes-bay-all-blocks-xfcxl/flat/ --target=s3://nz-imagery/hawkes-bay/hawkes-bay_2023-2024_0.25m/rgb/2193/ --repo-name=linz/imagery-test --ticket=AIP-56 --copy-option=--force
 ```
-
-
 
 ### `stac validate`
 
