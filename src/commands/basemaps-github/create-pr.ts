@@ -287,11 +287,11 @@ export const basemapsCreatePullRequest = command({
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
     if (configType === 'vector') {
-      await git.updateVectorTileSet(layer.name, layer, args.individual);
+      await git.updateVectorTileSet(layer, args.individual);
     } else if (configType === 'raster') {
-      await git.updateRasterTileSet(layer.name, layer, category, args.individual, region);
+      await git.updateRasterTileSet(layer, category, args.individual, region);
     } else if (configType === 'elevation') {
-      await git.updateElevationTileSet(layer.name, layer, args.individual, region);
+      await git.updateElevationTileSet(layer, args.individual, region);
     } else throw new Error(`Invalid Config File target: ${configType}`);
   },
 });
