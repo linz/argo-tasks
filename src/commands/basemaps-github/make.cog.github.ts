@@ -81,7 +81,6 @@ export class MakeCogGithub {
    * Prepare and create pull request for the aerial tileset config
    */
   async updateRasterTileSet(
-    filename: string,
     layer: ConfigLayer,
     category: Category,
     individual: boolean,
@@ -89,7 +88,7 @@ export class MakeCogGithub {
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-raster-${this.imagery}${this.ticketBranchSuffix}`;
-    const title = `config(raster): Add imagery ${this.imagery} to ${filename}${this.ticketCommitSuffix}`;
+    const title = `config(raster): Add imagery ${this.imagery} to ${layer.name} ${this.ticketCommitSuffix}`;
 
     // Clone the basemaps-config repo and checkout branch
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
@@ -124,23 +123,18 @@ export class MakeCogGithub {
   /**
    * Prepare and create pull request for the elevation tileset config
    */
-  async updateElevationTileSet(
-    filename: string,
-    layer: ConfigLayer,
-    individual: boolean,
-    region: string | undefined,
-  ): Promise<void> {
+  async updateElevationTileSet(layer: ConfigLayer, individual: boolean, region: string | undefined): Promise<void> {
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-elevation-${this.imagery}${this.ticketBranchSuffix}`;
-    const title = `config(elevation): Add elevation ${this.imagery} to ${filename} config file.`;
+    const title = `config(elevation): Add elevation ${this.imagery} to ${layer.name} config file.`;
 
     let type;
-    if (filename.includes('_dsm_')) {
+    if (layer.name.includes('_dsm_')) {
       type = 'dsm';
-    } else if (filename.includes('_dem_')) {
+    } else if (layer.name.includes('_dem_')) {
       type = 'dem';
     } else {
-      throw new Error(`Invalid elevation type for ${filename}, must be dem or dsm.`);
+      throw new Error(`Invalid elevation type for ${layer.name}, must be dem or dsm.`);
     }
 
     // Clone the basemaps-config repo and checkout branch
@@ -166,7 +160,8 @@ export class MakeCogGithub {
   /**
    * Prepare and create pull request for the aerial tileset config
    */
-  async updateVectorTileSet(filename: string, layer: ConfigLayer, individual: boolean): Promise<void> {
+  async updateVectorTileSet(layer: ConfigLayer, individual: boolean): Promise<void> {
+    const filename = layer.name;
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
