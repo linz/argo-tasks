@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.13.0](https://github.com/linz/argo-tasks/compare/v4.12.1...v4.13.0) (2025-04-03)
+
+
+### Features
+
+* **basemaps:** Create pull request for the DSM import into elevation.dsm.json config. BM-1245 ([#1205](https://github.com/linz/argo-tasks/issues/1205)) ([0af0884](https://github.com/linz/argo-tasks/commit/0af0884849e235640c3a43321582938cd5838cda))
+* node 23 direct typescript ([#1201](https://github.com/linz/argo-tasks/issues/1201)) ([6ee1dec](https://github.com/linz/argo-tasks/commit/6ee1dec8c787f72634542855b508b7ab3e78ea21))
+
 ## [4.12.1](https://github.com/linz/argo-tasks/compare/v4.12.0...v4.12.1) (2025-03-24)
 
 
