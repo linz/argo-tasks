@@ -1,0 +1,68 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "id": "BD35",
+  "links": [
+    {
+      "href": "./BD35.json",
+      "rel": "self",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./src/commands/identify-updated-items/__test__/data/dem_8m/BD35.json",
+      "rel": "derived_from",
+      "type": "application/geo+json",
+      "file:checksum": "matches_8m_but_target_has_no_1m"
+    },
+    {
+      "href": "./collection.json",
+      "rel": "collection",
+      "type": "application/json"
+    },
+    {
+      "href": "./collection.json",
+      "rel": "parent",
+      "type": "application/json"
+    }
+  ],
+  "assets": {
+    "visual": {
+      "href": "./BD35.tiff",
+      "file:checksum": "122024ee0af30494fbe632626da05ed77e80b0beb452442b2956ee87db5fda5a363c",
+      "created": "2025-03-19T00:33:50Z",
+      "updated": "2025-03-19T00:33:50Z",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized"
+    }
+  },
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/processing/v1.2.0/schema.json"
+  ],
+  "properties": {
+    "created": "2025-03-19T00:33:50Z",
+    "updated": "2025-03-19T00:33:50Z",
+    "processing:datetime": "2025-03-19T00:33:50Z",
+    "processing:software": {
+      "gdal": "GDAL 3.9.0, released 2024/05/07",
+      "linz/topo-imagery": "https://github.com/linz/topo-imagery/commit/4ecb1f840a4354b8c0b654af7be4248c9bc25963"
+    },
+    "processing:version": "v7.3.0",
+    "start_datetime": "2011-12-31T11:00:00Z",
+    "end_datetime": "2024-05-16T12:00:00Z",
+    "datetime": null
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [175.5818974, -37.5768383],
+        [175.5931877, -37.9009854],
+        [175.8658556, -37.8946579],
+        [175.8533819, -37.5705838],
+        [175.5818974, -37.5768383]
+      ]
+    ]
+  },
+  "bbox": [175.5818974, -37.9009854, 175.8658556, -37.5705838],
+  "collection": "01JPNX47SVTBRZY1VFHHFJQABB"
+}

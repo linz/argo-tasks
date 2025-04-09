@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { getFiles, splitPaths } from '../chunk.ts';
+import { combinePaths, getFiles, splitPaths } from '../chunk.ts';
 
 describe('splitPaths', () => {
   it('should split on ;', () => {
@@ -38,5 +38,26 @@ describe('getFiles', () => {
     await fsa.write('gf://a/a.txt', Buffer.from(''));
     assert.deepEqual(await getFiles(['gf://a/']), []);
     assert.deepEqual(await getFiles(['gf://a/'], { sizeMin: 0 }), [['gf://a/a.txt']]);
+  });
+});
+
+describe('combinePaths', () => {
+  it('local test files should work with two relative paths', () => {
+    const base = './a/b/collection.json';
+    const addon = './tile.json';
+    const combined = combinePaths(base, addon);
+    assert.deepEqual(combined, './a/b/tile.json');
+  });
+  it('absolute addon paths should win', () => {
+    const base = 'https://example.com/a/b/c.txt';
+    const addon = '/b/c/d.txt';
+    const combined = combinePaths(base, addon);
+    assert.deepEqual(combined, 'https://example.com/b/c/d.txt');
+  });
+  it('should combine s3 paths', () => {
+    const base = 's3://bucket/folder/collection.json';
+    const addon = './path/to/tile.json';
+    const combined = combinePaths(base, addon);
+    assert.deepEqual(combined, 's3://bucket/folder/path/to/tile.json');
   });
 });

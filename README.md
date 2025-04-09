@@ -10,7 +10,6 @@ LINZ uses [Argo workflows](https://argoproj.github.io/workflows/) for running bu
 
 [Commands and their usage](./COMMANDS.md)
 
-
 ### `lds-fetch-layer`
 
 Fetch a layer from the LDS and download it as GeoPackage.
@@ -209,8 +208,6 @@ stac github-import --source=SOURCE_S3_URL --target=TARGET_S3_URL [--repo-name=OW
 stac github-import --source=s3://linz-workflows-scratch/2024-03/13-is-niwe-hawkes-bay-all-blocks-xfcxl/flat/ --target=s3://nz-imagery/hawkes-bay/hawkes-bay_2023-2024_0.25m/rgb/2193/ --repo-name=linz/imagery-test --ticket=AIP-56 --copy-option=--force
 ```
 
-
-
 ### `stac validate`
 
 Validate STAC file(s) from an S3 location
@@ -298,6 +295,21 @@ bm-create-pr --target
 
 Add --individual flag to import layer into standalone individual config file, otherwise import into aerial map.
 Add --vector flag to import new layer into vector map.
+
+### `identify-updated-items`
+
+Get a list of STAC items from source datasets that have changed or been added to the source compared to the optional target collection, based on existing hashes in linked STAC documents. Note: If a target collection has been provided, its items links must be resolvable. If no target is specified, all items will be considered updated/new.
+
+Outputs a `file-list.json` file for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for generating hillshades (or retiling with GDAL).
+
+- `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
+
+`--target-collection`
+Target collection.json file that needs to be updated. If not provided, all items will be considered updated/new.
+
+```bash
+identify-updated-items --target-collection s3://nz-elevation/new-zealand/new-zealand/dem-hillshade/2193/collection.jsons3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade_8m/2193/collection.json s3://nz-elevation/new-zealand/new-zealand/dem-hillshade_1m/2193/collection.json
+```
 
 ## Versioning and Release
 

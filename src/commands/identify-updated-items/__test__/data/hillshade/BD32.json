@@ -1,0 +1,74 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "id": "BD32",
+  "links": [
+    {
+      "href": "./BD32.json",
+      "rel": "self",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./src/commands/identify-updated-items/__test__/data/dem_8m/BD32.json",
+      "rel": "derived_from",
+      "type": "application/geo+json",
+      "file:checksum": "matches_8m_but_not_1m"
+    },
+    {
+      "href": "./src/commands/identify-updated-items/__test__/data/dem_1m/BD32.json",
+      "rel": "derived_from",
+      "type": "application/geo+json",
+      "file:checksum": "does_not_match_123"
+    },
+    {
+      "href": "./collection.json",
+      "rel": "collection",
+      "type": "application/json"
+    },
+    {
+      "href": "./collection.json",
+      "rel": "parent",
+      "type": "application/json"
+    }
+  ],
+  "assets": {
+    "visual": {
+      "href": "./BD32.tiff",
+      "file:checksum": "1220286e5dc9a39120673e6ad0642ad179aedc1b38d526a6a03ee07df3b4f621fdb3",
+      "created": "2025-03-19T00:33:50Z",
+      "updated": "2025-03-19T00:33:50Z",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized"
+    }
+  },
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/processing/v1.2.0/schema.json"
+  ],
+  "properties": {
+    "created": "2025-03-19T00:33:50Z",
+    "updated": "2025-03-19T00:33:50Z",
+    "processing:datetime": "2025-03-19T00:33:50Z",
+    "processing:software": {
+      "gdal": "GDAL 3.9.0, released 2024/05/07",
+      "linz/topo-imagery": "https://github.com/linz/topo-imagery/commit/4ecb1f840a4354b8c0b654af7be4248c9bc25963"
+    },
+    "processing:version": "v7.3.0",
+    "start_datetime": "2011-12-31T11:00:00Z",
+    "end_datetime": "2021-03-25T11:00:00Z",
+    "datetime": null
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [174.7669986, -37.5918571],
+        [174.7747311, -37.9161797],
+        [175.0476169, -37.9117469],
+        [175.0386974, -37.5874754],
+        [174.7669986, -37.5918571]
+      ]
+    ]
+  },
+  "bbox": [174.7669986, -37.9161797, 175.0476169, -37.5874754],
+  "collection": "01JPNX47SVTBRZY1VFHHFJQABB"
+}
