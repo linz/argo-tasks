@@ -213,7 +213,11 @@ export const commandTileIndexValidate = command({
       defaultValueIsSerializable: true,
       defaultValue: () => false,
     }),
-    location: restPositionals({ type: string, displayName: 'location', description: 'Location of the source files' }),
+    location: restPositionals({
+      type: string,
+      displayName: 'location',
+      description: 'Location of the source files. Accepts multiple source paths.',
+    }),
   },
   async handler(args) {
     const startTime = performance.now();
