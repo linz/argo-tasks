@@ -24,7 +24,7 @@ interface LinzStacCollection extends StacCollection {
 export const commandIdentifyUpdatedItems = command({
   name: 'identify-updated-items',
   description:
-    'Get a list of STAC items from source datasets that have changed or been added to the source compared to the optional target collection, based on existing hashes in linked STAC documents. Note: If a target collection has been provided, its items links must be resolvable. If no target is specified, all items will be considered updated/new',
+    'Compares the "derived_from" link checksums stored in the Items from the "target-collection" dataset against the current checksum of the Items of the "source-collection" dataset. Returns a list of the source Items that have changed or been added. Note: If a target collection has been provided, its Items links must be resolvable. If no target is specified, all source Items will be added to the list.',
   version: CliInfo.version,
   args: {
     verbose,
@@ -32,12 +32,13 @@ export const commandIdentifyUpdatedItems = command({
       type: optional(string),
       long: 'target-collection',
       description:
-        'Target collection.json file that needs to be updated. If not provided, all items will be considered updated/new.',
+        'Target collection.json file of the dataset that derives from the source dataset. If not provided, all Items of the source dataset will be returned in the list.',
     }),
     sourceCollections: restPositionals({
       type: string,
       displayName: 'source-collections',
-      description: 'Location of the source collection.json files. Split by ";"',
+      description:
+        'Location of the source collection.json files that are used to create the target dataset. Split by ";"',
     }),
   },
   async handler(args) {
