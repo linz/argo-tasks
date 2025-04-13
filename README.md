@@ -308,7 +308,7 @@ Outputs a `file-list.json` file for [topo-imagery](https://github.com/linz/topo-
 Target collection.json file that needs to be updated. If not provided, all items will be considered updated/new.
 
 ```bash
-identify-updated-items --target-collection s3://nz-elevation/new-zealand/new-zealand/dem-hillshade/2193/collection.jsons3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade_8m/2193/collection.json s3://nz-elevation/new-zealand/new-zealand/dem-hillshade_1m/2193/collection.json
+identify-updated-items --target-collection s3://nz-elevation/new-zealand/new-zealand/dem-hillshade/2193/collection.json s3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade_8m/2193/collection.json s3://nz-elevation/new-zealand/new-zealand/dem-hillshade_1m/2193/collection.json
 ```
 
 ## Versioning and Release
