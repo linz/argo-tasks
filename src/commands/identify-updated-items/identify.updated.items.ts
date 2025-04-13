@@ -159,7 +159,6 @@ export const commandIdentifyUpdatedItems = command({
         existingItems: Object.keys(existingItemsAtTarget).length,
         desiredItems: Object.keys(desiredItemsAtTarget).length,
         itemsToProcess: Object.keys(itemsToProcess).length,
-        itemsToProcessList: Object.keys(itemsToProcess).join(','),
         duration: performance.now() - startTime,
       },
       'identifyUpdatedItems:Done',
