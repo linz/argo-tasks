@@ -1,0 +1,86 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "id": "01JE4ZZWAG19KPKRHYJJP02HC9",
+  "title": "New Zealand LiDAR 1m DEM",
+  "description": "Digital Elevation Model within the New Zealand region captured in 2008-2024.",
+  "license": "CC-BY-4.0",
+  "links": [
+    {
+      "rel": "root",
+      "href": "https://nz-elevation.s3.ap-southeast-2.amazonaws.com/catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./collection.json",
+      "type": "application/json"
+    },
+    {
+      "href": "./BD31.json",
+      "rel": "item",
+      "type": "application/geo+json",
+      "file:checksum": "matches_1m"
+    },
+    {
+      "href": "./BD32.json",
+      "rel": "item",
+      "type": "application/geo+json",
+      "file:checksum": "does_not_match_456"
+    },
+    {
+      "href": "./BD33.json",
+      "rel": "item",
+      "type": "application/geo+json",
+      "file:checksum": "does_not_exist_in_target_1m_and_8m"
+    },
+    {
+      "href": "./BD35.json",
+      "rel": "item",
+      "type": "application/geo+json",
+      "file:checksum": "does_not_exist_in_target_1m"
+    }
+  ],
+  "providers": [
+    {
+      "name": "Toitū Te Whenua Land Information New Zealand",
+      "roles": ["host", "licensor", "processor", "producer"]
+    }
+  ],
+  "linz:lifecycle": "ongoing",
+  "linz:geospatial_category": "dem",
+  "linz:region": "new-zealand",
+  "linz:security_classification": "unclassified",
+  "linz:slug": "new-zealand",
+  "created": "2024-12-03T00:51:13Z",
+  "updated": "2025-03-24T18:19:52Z",
+  "extent": {
+    "spatial": {
+      "bbox": [[166.9691106, -47.239115, 178.8574378, -34.0291036]]
+    },
+    "temporal": {
+      "interval": [["2008-04-30T12:00:00Z", "2024-06-27T12:00:00Z"]]
+    }
+  },
+  "assets": {
+    "capture_dates": {
+      "href": "./capture-dates.geojson",
+      "title": "Capture dates",
+      "description": "Boundaries of individual surveys or flight runs that make up the overall collection with the data collection dates, data source links and other associated metadata, such as producers and licensors, where available. Excludes nodata areas in the source data. Geometries are simplified.",
+      "type": "application/geo+json",
+      "roles": ["metadata"],
+      "file:checksum": "1220bfb4b38290bc13b06c5733e57173a185536926e78d16ec46ada06dd7b85b5f66",
+      "file:size": 4421432
+    },
+    "capture_area": {
+      "href": "./capture-area.geojson",
+      "title": "Capture area",
+      "description": "Boundary of the total capture area for this collection. Excludes nodata areas in the source data. Geometries are simplified.",
+      "type": "application/geo+json",
+      "roles": ["metadata"],
+      "file:checksum": "12200dc743bd9d65ba8da97952a101af2888b9b8c03557debf2725cec2d4cfb7718d",
+      "file:size": 3760436
+    }
+  },
+  "stac_extensions": ["https://stac-extensions.github.io/file/v2.0.0/schema.json"]
+}

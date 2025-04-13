@@ -7,6 +7,7 @@ import { commandCopy } from './copy/copy.ts';
 import { commandCreateManifest } from './create-manifest/create-manifest.ts';
 import { commandGeneratePath } from './generate-path/path.generate.ts';
 import { commandGroup } from './group/group.ts';
+import { commandIdentifyUpdatedItems } from './identify-updated-items/identify.updated.items.ts';
 import { commandLdsFetch } from './lds-fetch-layer/lds.fetch.layer.ts';
 import { commandList } from './list/list.ts';
 import { commandMapSheetCoverage } from './mapsheet-coverage/mapsheet.coverage.ts';
@@ -21,6 +22,7 @@ import { commandTileIndexValidate } from './tileindex-validate/tileindex.validat
 export const AllCommands = {
   copy: commandCopy,
   'create-manifest': commandCreateManifest,
+  'identify-updated-items': commandIdentifyUpdatedItems,
   group: commandGroup,
   flatten: commandCreateManifest,
   'lds-fetch-layer': commandLdsFetch,
