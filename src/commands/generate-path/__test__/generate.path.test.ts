@@ -21,7 +21,7 @@ describe('GeneratePathImagery', () => {
 });
 
 describe('GeneratePathHillshade', () => {
-  it('Should match - hillshade 8m igor', () => {
+  it('Should match - DEM hillshade 8m igor', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dem-hillshade-igor',
@@ -35,7 +35,7 @@ describe('GeneratePathHillshade', () => {
       's3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade-igor_8m/2193/',
     );
   });
-  it('Should match - hillshade 8m default', () => {
+  it('Should match - DEM hillshade 8m default', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dem-hillshade',
@@ -46,7 +46,7 @@ describe('GeneratePathHillshade', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand-contour/dem-hillshade_8m/2193/');
   });
-  it('Should match - hillshade 1m igor', () => {
+  it('Should match - DEM hillshade 1m igor', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dem-hillshade-igor',
@@ -57,7 +57,7 @@ describe('GeneratePathHillshade', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade-igor_1m/2193/');
   });
-  it('Should match - hillshade 1m default', () => {
+  it('Should match - DEM hillshade 1m default', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-elevation',
       geospatialCategory: 'dem-hillshade',
@@ -67,6 +67,28 @@ describe('GeneratePathHillshade', () => {
       epsg: 2193,
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dem-hillshade_1m/2193/');
+  });
+  it('Should match - DSM hillshade 1m igor', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      geospatialCategory: 'dsm-hillshade-igor',
+      region: 'new-zealand',
+      slug: 'new-zealand',
+      gsd: 1,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dsm-hillshade-igor_1m/2193/');
+  });
+  it('Should match - DSM hillshade 1m default', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-elevation',
+      geospatialCategory: 'dsm-hillshade',
+      region: 'new-zealand',
+      slug: 'new-zealand',
+      gsd: 1,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-elevation/new-zealand/new-zealand/dsm-hillshade_1m/2193/');
   });
 });
 

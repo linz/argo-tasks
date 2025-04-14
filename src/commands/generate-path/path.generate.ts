@@ -95,7 +95,9 @@ export function generatePath(metadata: PathMetadata): string {
     metadata.geospatialCategory === GeospatialDataCategories.Dem ||
     metadata.geospatialCategory === GeospatialDataCategories.Dsm ||
     metadata.geospatialCategory === GeospatialDataCategories.DemHillshade ||
-    metadata.geospatialCategory === GeospatialDataCategories.DemHillshadeIgor
+    metadata.geospatialCategory === GeospatialDataCategories.DemHillshadeIgor ||
+    metadata.geospatialCategory === GeospatialDataCategories.DsmHillshade ||
+    metadata.geospatialCategory === GeospatialDataCategories.DsmHillshadeIgor
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/${metadata.geospatialCategory}_${metadata.gsd}m/${metadata.epsg}/`;
   }
