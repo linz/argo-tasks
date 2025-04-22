@@ -158,6 +158,8 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
     case 'dsm':
     case 'dem-hillshade':
     case 'dem-hillshade-igor':
+    case 'dsm-hillshade':
+    case 'dsm-hillshade-igor':
       return formatParts(slugify(geographicDescription), metadata.date);
 
     case 'scanned-aerial-photos':
