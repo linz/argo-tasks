@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.13.0](https://github.com/linz/argo-tasks/compare/v4.12.1...v4.13.0) (2025-04-22)
+
+
+### Features
+
+* **basemaps:** Create pull request for the DSM import into elevation.dsm.json config. BM-1245 ([#1205](https://github.com/linz/argo-tasks/issues/1205)) ([0af0884](https://github.com/linz/argo-tasks/commit/0af0884849e235640c3a43321582938cd5838cda))
+* node 23 direct typescript ([#1201](https://github.com/linz/argo-tasks/issues/1201)) ([6ee1dec](https://github.com/linz/argo-tasks/commit/6ee1dec8c787f72634542855b508b7ab3e78ea21))
+* support national DSM hillshades TDE-1455 ([#1210](https://github.com/linz/argo-tasks/issues/1210)) ([f3863e1](https://github.com/linz/argo-tasks/commit/f3863e1501974305c509b3dfd5403e3768c2766d))
+* use `derived_from` checksum to see if tile needs re-creating TDE-1449 ([#1207](https://github.com/linz/argo-tasks/issues/1207)) ([10ee86b](https://github.com/linz/argo-tasks/commit/10ee86b2439916f795a94c63566f74bb4203eb92))
+
 ## [4.12.1](https://github.com/linz/argo-tasks/compare/v4.12.0...v4.12.1) (2025-03-24)
 
 
