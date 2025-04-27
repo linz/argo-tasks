@@ -22,7 +22,7 @@
     "build": "tsc",
     "docs": "node src/readme/readme.generate.ts",
     "lint": "npx eslint . --ignore-path .gitignore",
-    "test": "node --test"
+    "test": "node --test 'src/**/*.test.ts'"
   },
   "publishConfig": {
     "access": "restricted"
