@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.13.1](https://github.com/linz/argo-tasks/compare/v4.13.0...v4.13.1) (2025-04-27)
+
+
+### Bug Fixes
+
+* update from .js to .ts files TDE-1474 ([#1211](https://github.com/linz/argo-tasks/issues/1211)) ([e5d875c](https://github.com/linz/argo-tasks/commit/e5d875cb9d35ae087444ca083942689a7956a157))
+
 ## [4.13.0](https://github.com/linz/argo-tasks/compare/v4.12.1...v4.13.0) (2025-04-22)
 
 
