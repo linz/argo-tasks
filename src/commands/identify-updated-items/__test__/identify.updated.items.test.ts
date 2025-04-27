@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 
-import type { FileListEntry } from '../../../utils/filelist.js';
+import type { FileListEntry } from '../../../utils/filelist.ts';
 import { commandIdentifyUpdatedItems } from '../identify.updated.items.ts';
 
 /**

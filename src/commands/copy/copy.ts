@@ -54,7 +54,7 @@ export const commandCopy = command({
   async handler(args) {
     registerCli(this, args);
 
-    const workerUrl = new URL('./copy-worker.js', import.meta.url);
+    const workerUrl = new URL('./copy-worker.ts', import.meta.url);
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
 
     const stats = { copied: 0, copiedBytes: 0, retries: 0, skipped: 0, skippedBytes: 0 };
