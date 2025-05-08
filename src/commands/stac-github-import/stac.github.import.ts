@@ -22,6 +22,7 @@ const imageryRepo = 'linz/imagery';
  * Valid repositories, mapped to the email address used for the PR author
  */
 export const BotEmails: Record<string, string> = {
+  'linz/coastal': 'hydrosurvey@linz.govt.nz',
   'linz/elevation': 'elevation@linz.govt.nz',
   [imageryRepo]: 'imagery@linz.govt.nz',
 };
@@ -75,15 +76,9 @@ export const commandStacGithubImport = command({
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
 
     const basemapsConfigLinkURL = new URL('config-url', args.source);
-    // TODO When Basemaps supports Elevation config as part of the standardising workflow, remove this try catch block
-    // https://toitutewhenua.atlassian.net/browse/BM-985
     const prBody: string[] = [];
-    try {
-      const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
-      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
-    } catch (e) {
-      if (args.repoName === imageryRepo) throw e;
-    }
+    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
+    prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
     prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
