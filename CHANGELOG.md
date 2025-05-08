@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.14.0](https://github.com/linz/argo-tasks/compare/v4.13.1...v4.14.0) (2025-05-08)
+
+
+### Features
+
+* add linz/coastal repo TDE-1456 ([#1215](https://github.com/linz/argo-tasks/issues/1215)) ([7896196](https://github.com/linz/argo-tasks/commit/789619648ed8255ff9fc878a69c95384a132fa72))
+
 ## [4.13.1](https://github.com/linz/argo-tasks/compare/v4.13.0...v4.13.1) (2025-04-27)
 
 
