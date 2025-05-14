@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { getArchiveBucketName } from '../archive.setup.ts';
+import { getArchiveBucketName, getArchiveLocation } from '../archive.setup.ts';
 import { isSafePath } from '../archive.setup.ts';
 
 describe('getArchiveBucketName', () => {
@@ -45,6 +45,13 @@ describe('getArchiveBucketName', () => {
       const path = new URL('s3://upload/');
       const result = isSafePath(path, 1);
       assert.equal(result, false);
+    });
+  });
+
+  describe('getArchiveLocation', () => {
+    it('should return the archive location given a source bucket and archive bucket name', () => {
+      const archiveLocation = getArchiveLocation('s3://upload/folder1/folder2/', 'archive-bucket');
+      assert.equal(archiveLocation, 's3://archive-bucket/folder1/folder2/');
     });
   });
 });

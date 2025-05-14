@@ -7,7 +7,7 @@ import { config, registerCli, S3Path, tryParseUrl, UrlFolder, urlToString, verbo
 
 export const archiveSetup = command({
   name: 'archive-setup',
-  description: 'Verify the source needed to be archived and output the bucket name to be used for the archive',
+  description: 'Verify the if the source path car be archived and output the archive location to use',
   version: CliInfo.version,
   args: {
     config,
@@ -15,7 +15,7 @@ export const archiveSetup = command({
     output: option({
       type: optional(UrlFolder),
       long: 'output',
-      description: 'Where the archive bucket name will be output',
+      description: 'Where the archive location will be output',
       defaultValueIsSerializable: true,
       defaultValue: () => tryParseUrl('/tmp/archive-setup/'),
     }),
@@ -32,14 +32,18 @@ export const archiveSetup = command({
       throw new Error(`The path ${args.path.toString()} is not safe for archiving. Please check the path.`);
     }
 
-    const archiveBucketNamePath = new URL('archive-bucket-name', args.output);
-    await fsa.write(urlToString(archiveBucketNamePath), archiveBucketName);
+    const archiveLocationOutputPath = new URL('archive-location', args.output);
+    await fsa.write(
+      urlToString(archiveLocationOutputPath),
+      getArchiveLocation(args.path.toString(), archiveBucketName),
+    );
     logger.info({ duration: performance.now() - startTime, archiveBucket: archiveBucketName }, 'ArchiveSetup:Done');
   },
 });
 
 /**
  * Get the archive bucket name for a given source bucket name.
+ *
  * @param sourceBucket - The name of the source bucket.
  * @returns The name of the archive bucket.
  * @throws Error if the source bucket is not supported for archiving.
@@ -72,4 +76,16 @@ export function isSafePath(path: URL, minDepth = 2): boolean {
   const directories = key.split('/').filter(Boolean); // skip empty parts
 
   return directories.length >= minDepth;
+}
+
+/** Get the archive location for a given source path and archive bucket name.
+ *
+ * @param sourcePath - The path where the files to archive are.
+ * @param archiveBucketName - The name of the bucket to use to archive the files.
+ * @returns the path where the archived files should be stored.
+ */
+export function getArchiveLocation(sourcePath: string, archiveBucketName: string): string {
+  const archiveLocation = new URL(sourcePath);
+  archiveLocation.hostname = archiveBucketName;
+  return archiveLocation.toString();
 }
