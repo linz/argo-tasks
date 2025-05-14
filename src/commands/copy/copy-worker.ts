@@ -1,7 +1,7 @@
 import { cpus } from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
-import zlib from 'node:zlib';
+import { createZstdCompress } from 'node:zlib';
 
 import type { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
@@ -17,7 +17,7 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 
 const numberOfConcurrentItems = Math.max(cpus().length - 2, 1);
 const Q = new ConcurrentQueue(numberOfConcurrentItems); // saturate all CPUs and leave 2 cores free for the system
-export const MIN_SIZE_FOR_COMPRESSION = 500; // testing with random ASCII data shows that compression is not worth it below this size
+export const minSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
 
 logger.debug({ numberOfCPUs: cpus().length, numberOfConcurrentItems }, 'Queue:ConcurrentItems');
 
@@ -105,7 +105,7 @@ export const worker = new WorkerRpc<CopyContract>({
         if (source.metadata == null) {
           source.metadata = {};
         }
-        const shouldCompress = args.compress && source.size > MIN_SIZE_FOR_COMPRESSION;
+        const shouldCompress = args.compress && source.size > minSizeForCompression;
         const targetName = manifestEntry.target + (shouldCompress ? '.zst' : '');
         const target = await fsa.head(targetName);
 
@@ -168,7 +168,7 @@ export const worker = new WorkerRpc<CopyContract>({
         let sourceStream = rawSourceStream;
         if (shouldCompress) {
           logger.trace(manifestEntry, 'File:Compress:start');
-          const zstd = zlib.createZstdCompress();
+          const zstd = createZstdCompress();
           sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstd).pipe(hashCompressed);
         } else {
           logger.trace(manifestEntry, 'File:Copy:start');
