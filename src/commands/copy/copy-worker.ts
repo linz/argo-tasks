@@ -17,7 +17,7 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 
 const numberOfConcurrentItems = Math.max(cpus().length - 2, 1);
 const Q = new ConcurrentQueue(numberOfConcurrentItems); // saturate all CPUs and leave 2 cores free for the system
-export const minSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
+export const MinSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
 
 logger.debug({ numberOfCPUs: cpus().length, numberOfConcurrentItems }, 'Queue:ConcurrentItems');
 
@@ -105,7 +105,7 @@ export const worker = new WorkerRpc<CopyContract>({
         if (source.metadata == null) {
           source.metadata = {};
         }
-        const shouldCompress = args.compress && source.size > minSizeForCompression;
+        const shouldCompress = args.compress && source.size > MinSizeForCompression;
         const targetName = manifestEntry.target + (shouldCompress ? '.zst' : '');
         const target = await fsa.head(targetName);
 
