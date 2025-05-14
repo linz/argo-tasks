@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { getArchiveBucketName } from '../archive.setup.ts';
+import { isSafePath } from '../archive.setup.ts';
 
 describe('getArchiveBucketName', () => {
   it('should return the correct archive bucket name for a valid source bucket', () => {
@@ -19,5 +20,31 @@ describe('getArchiveBucketName', () => {
         message: 'Source bucket unsupported-bucket is not supported for archiving',
       },
     );
+  });
+
+  describe('isSafePath', () => {
+    it('should return true for a path with sufficient depth', () => {
+      const path = new URL('s3://upload/folder1/folder2/file.txt');
+      const result = isSafePath(path, 2);
+      assert.equal(result, true);
+    });
+
+    it('should return false for a path with insufficient depth', () => {
+      const path = new URL('s3://upload/folder1/file.txt');
+      const result = isSafePath(path, 3);
+      assert.equal(result, false);
+    });
+
+    it('should return true for a path with exactly the minimum depth', () => {
+      const path = new URL('s3://upload/folder1/folder2/');
+      const result = isSafePath(path, 2);
+      assert.equal(result, true);
+    });
+
+    it('should return false for a path with no directories', () => {
+      const path = new URL('s3://upload/');
+      const result = isSafePath(path, 1);
+      assert.equal(result, false);
+    });
   });
 });

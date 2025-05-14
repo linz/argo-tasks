@@ -7,7 +7,7 @@ import { config, registerCli, S3Path, tryParseUrl, UrlFolder, urlToString, verbo
 
 export const archiveSetup = command({
   name: 'archive-setup',
-  description: 'VerifyOy the source needed to be archived and output the bucket name to be used for the archive',
+  description: 'Verify the source needed to be archived and output the bucket name to be used for the archive',
   version: CliInfo.version,
   args: {
     config,
@@ -28,6 +28,9 @@ export const archiveSetup = command({
     logger.info('ArchiveSetup:Start');
 
     const archiveBucketName = getArchiveBucketName(args.path.hostname);
+    if (!isSafePath(args.path)) {
+      throw new Error(`The path ${args.path.toString()} is not safe for archiving. Please check the path.`);
+    }
 
     const archiveBucketNamePath = new URL('archive-bucket-name', args.output);
     await fsa.write(urlToString(archiveBucketNamePath), archiveBucketName);
@@ -39,6 +42,8 @@ export const archiveSetup = command({
  * Get the archive bucket name for a given source bucket name.
  * @param sourceBucket - The name of the source bucket.
  * @returns The name of the archive bucket.
+ * @throws Error if the source bucket is not supported for archiving.
+ *
  */
 export function getArchiveBucketName(sourceBucket: string): string {
   const bucketMapping = {
@@ -52,4 +57,19 @@ export function getArchiveBucketName(sourceBucket: string): string {
   }
 
   return bucketMapping[sourceBucket as keyof typeof bucketMapping];
+}
+
+/**
+ * Check if a path is safe for archiving as the source files will be deleted.
+ * Example: `s3://uploads/provider_a/dataset_1/supply_1/` - we would not like to archive the whole `provider_a` folder, or deleting everything in the bucket...
+ *
+ * @param path - The path to check.
+ * @param minDepth - The minimum depth required. Default is 2.
+ * @returns True if the path is safe for archiving, false otherwise.
+ */
+export function isSafePath(path: URL, minDepth = 2): boolean {
+  const key = path.pathname.replace(/^\/+/, '');
+  const directories = key.split('/').filter(Boolean); // skip empty parts
+
+  return directories.length >= minDepth;
 }
