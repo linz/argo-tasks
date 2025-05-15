@@ -1,6 +1,6 @@
 # archive-setup
 
-Verify the source needed to be archived and output the bucket name to be used for the archive
+Verify the if the source path car be archived and output the archive location to use
 
 ## Usage
 
@@ -14,10 +14,10 @@ archive-setup <options> <path>
 
 ### Options
 
-| Usage            | Description                                  | Options                             |
-| ---------------- | -------------------------------------------- | ----------------------------------- |
-| --config <str>   | Location of role configuration file          | optional                            |
-| --output <value> | Where the archive bucket name will be output | default: file:///tmp/archive-setup/ |
+| Usage            | Description                               | Options                             |
+| ---------------- | ----------------------------------------- | ----------------------------------- |
+| --config <str>   | Location of role configuration file       | optional                            |
+| --output <value> | Where the archive location will be output | default: file:///tmp/archive-setup/ |
 
 ### Flags
 
