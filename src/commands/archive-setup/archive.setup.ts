@@ -32,12 +32,12 @@ export const archiveSetup = command({
       throw new Error(`The path ${args.path.toString()} is not safe for archiving. Please check the path.`);
     }
 
+    const archiveLocation = getArchiveLocation(args.path.toString(), archiveBucketName);
     const archiveLocationOutputPath = new URL('archive-location', args.output);
-    await fsa.write(
-      urlToString(archiveLocationOutputPath),
-      getArchiveLocation(args.path.toString(), archiveBucketName),
-    );
-    logger.info({ duration: performance.now() - startTime, archiveBucket: archiveBucketName }, 'ArchiveSetup:Done');
+
+    await fsa.write(urlToString(archiveLocationOutputPath), archiveLocation);
+
+    logger.info({ duration: performance.now() - startTime, archiveLocation }, 'ArchiveSetup:Done');
   },
 });
 
