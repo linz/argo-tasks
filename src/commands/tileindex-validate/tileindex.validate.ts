@@ -341,7 +341,7 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
         logger.error({ path: v.source, bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
       }
 
-      throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source}`);
+      throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source.href}`);
     }
   }
   return firstBands;
