@@ -1,6 +1,6 @@
 # archive-setup
 
-Verify the if the source path car be archived and output the archive location to use
+Verify if the source path can be archived and output the archive location to use
 
 ## Usage
 

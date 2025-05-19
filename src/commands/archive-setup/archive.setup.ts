@@ -7,7 +7,7 @@ import { config, registerCli, S3Path, tryParseUrl, UrlFolder, urlToString, verbo
 
 export const archiveSetup = command({
   name: 'archive-setup',
-  description: 'Verify the if the source path car be archived and output the archive location to use',
+  description: 'Verify if the source path can be archived and output the archive location to use',
   version: CliInfo.version,
   args: {
     config,
