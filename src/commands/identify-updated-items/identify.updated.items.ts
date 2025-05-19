@@ -8,7 +8,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { combinePaths, splitPaths } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
-import { createFileList } from '../../utils/filelist.ts';
+import type { FileListEntry } from '../../utils/filelist.ts';
 import { registerCli, verbose } from '../common.ts';
 
 interface LinzItemLink extends StacLink {
@@ -142,15 +142,9 @@ export const commandIdentifyUpdatedItems = command({
       }
       logger.trace({ itemId }, `identifyUpdatedItems:Skipping ${itemId} because sources match`);
     }
-    const tilesToProcess = createFileList(
-      new Map(
-        Object.entries(itemsToProcess).map(([key, value]) => [
-          key,
-          value.map((item) => item.href.replace(/\.json$/, '.tiff')),
-        ]),
-      ),
-      true,
-    );
+    const tilesToProcess: FileListEntry[] = Object.entries(itemsToProcess).map(([key, value]) => {
+      return { output: key, input: value.map((item) => item.href.replace(/\.json$/, '.tiff')), includeDerived: true };
+    });
 
     const fileListPath = '/tmp/identify-updated-items/file-list.json';
     await fsa.write(fileListPath, JSON.stringify(tilesToProcess));

@@ -6,11 +6,22 @@ import type { FileListEntry } from '../filelist.ts';
 import { createFileList } from '../filelist.ts';
 
 describe('createFileList', () => {
-  const locationTestOne: TiffLocation = { bands: [], bbox: [0, 0, 0, 0], tileNames: [], source: 'input1' };
-  const locationTestTwo: TiffLocation = { bands: [], bbox: [0, 0, 0, 0], tileNames: [], source: 'input2' };
-  const entries = new Map<string, TiffLocation[] | string[]>([
+  const complexUrl = `memory://username@input2:3030/🦄🌈.tiff?query=foo#@1234`;
+  const locationTestOne: TiffLocation = {
+    bands: [],
+    bbox: [0, 0, 0, 0],
+    tileNames: [],
+    source: new URL('memory://input1'),
+  };
+  const locationTestTwo: TiffLocation = {
+    bands: [],
+    bbox: [0, 0, 0, 0],
+    tileNames: [],
+    source: new URL(complexUrl),
+  };
+  const entries = new Map<string, TiffLocation[]>([
     ['output1', [locationTestOne, locationTestTwo]],
-    ['output2', ['input3', 'input4']],
+    ['output2', [locationTestTwo]],
   ]);
 
   it('should create a file list from TiffLocation and string inputs with derived inputs set based on input flag', () => {
@@ -20,12 +31,12 @@ describe('createFileList', () => {
       assert.deepEqual(result, [
         {
           output: 'output1',
-          input: ['input1', 'input2'],
+          input: ['memory://input1', complexUrl],
           includeDerived: includeDerived,
         },
         {
           output: 'output2',
-          input: ['input3', 'input4'],
+          input: [complexUrl],
           includeDerived: includeDerived,
         },
       ]);
@@ -33,7 +44,7 @@ describe('createFileList', () => {
   });
 
   it('should handle empty entries map', () => {
-    const entries = new Map<string, TiffLocation[] | string[]>();
+    const entries = new Map<string, TiffLocation[]>();
     const includeDerived = false;
 
     const result: FileListEntry[] = createFileList(entries, includeDerived);

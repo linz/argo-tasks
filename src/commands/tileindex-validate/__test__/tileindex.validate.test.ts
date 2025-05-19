@@ -12,7 +12,7 @@ import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
 import type { FileListEntry } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { MapSheet } from '../../../utils/mapsheet.ts';
-import { createTiff } from '../../common.ts';
+import { createTiff, urlToString } from '../../common.ts';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
@@ -110,11 +110,11 @@ describe('tiffLocation', () => {
     const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
     const duplicates = groupByTileName(location);
     assert.deepEqual(
-      duplicates.get('AS21_1000_0101')?.map((c) => c.source),
+      duplicates.get('AS21_1000_0101')?.map((c) => urlToString(c.source)),
       ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
     );
     assert.deepEqual(
-      duplicates.get('AY29_1000_0101')?.map((c) => c.source),
+      duplicates.get('AY29_1000_0101')?.map((c) => urlToString(c.source)),
       ['s3://path/AY29_1000_0101.tiff', 's3://path/AY29_1000_0101.tiff'],
     );
   });
@@ -140,11 +140,12 @@ describe('tiffLocation', () => {
   });
 });
 
-describe('validate', () => {
+describe.only('validate', () => {
   const memory = new FsMemory();
 
   before(() => {
     fsa.register('/tmp', memory);
+    fsa.register('memory://', memory);
   });
   beforeEach(() => memory.files.clear());
 
@@ -172,6 +173,42 @@ describe('validate', () => {
       const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
       assert.strictEqual(outputFileList[0]?.includeDerived, includeDerived);
     }
+  });
+
+  it('should read from utf8 sources', async (t) => {
+    const fakeTiff = FakeCogTiff.fromTileName('BQ32_1000_0101');
+    // Destroy the "geo" part of geotiff so TFW loading is also checked fro URL handling
+    Object.defineProperty(fakeTiff.images[0], 'isGeoLocated', { value: false });
+
+    const sourceUrl = `memory://some-bucket/🦄 🌈/`;
+    fakeTiff.source.url = new URL(`BQ32_1000_0101.tiff`, sourceUrl);
+
+    const expectedBounds = MapSheet.getMapTileIndex('BQ32_1000_0101');
+    assert.ok(expectedBounds);
+
+    await fsa.write(
+      `${sourceUrl}BQ32_1000_0101.tfw`,
+      `1\n0\n0\n-1\n${expectedBounds?.origin.x + 0.5}\n${expectedBounds?.origin.y - 0.5}`,
+    );
+
+    const stub = t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+    await commandTileIndexValidate.handler({
+      ...baseArguments,
+      location: [sourceUrl],
+      retile: false,
+      validate: true,
+      scale: 1000,
+      forceOutput: true,
+    });
+
+    const fileList: unknown[] = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+
+    assert.deepEqual(fileList[0], {
+      output: 'BQ32_1000_0101',
+      input: [`memory://some-bucket/🦄 🌈/BQ32_1000_0101.tiff`],
+      includeDerived: false,
+    });
+    assert.equal(stub.mock.callCount(), 1);
   });
 
   it('should fail if duplicate tiles are detected', async (t) => {
@@ -354,7 +391,7 @@ describe('is8BitsTiff', () => {
   });
 });
 
-describe.only('validatePreset', () => {
+describe('validatePreset', () => {
   it('should validate multiple tiffs', async (t) => {
     const test16bTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
     const test8bTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
