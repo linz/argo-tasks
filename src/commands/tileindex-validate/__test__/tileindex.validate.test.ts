@@ -140,7 +140,7 @@ describe('tiffLocation', () => {
   });
 });
 
-describe.only('validate', () => {
+describe('validate', () => {
   const memory = new FsMemory();
 
   before(() => {
