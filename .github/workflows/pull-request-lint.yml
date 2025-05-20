@@ -1,0 +1,18 @@
+name: Pull Request lint
+
+on:
+  pull_request:
+    types: ['opened', 'edited', 'reopened', 'synchronize']
+
+jobs:
+  pull-request-lint:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: linz/action-pull-request-lint@v1
+        with:
+          conventional: 'warn' # require conventional pull request title (default: "error" options: "error", "warn", "off")
+          jira: 'warn' # Require JIRA ticket references (default: "warn", options: "error", "warn", "off")
