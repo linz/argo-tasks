@@ -13,5 +13,5 @@ jobs:
     steps:
       - uses: linz/action-pull-request-lint@v1
         with:
-          conventional: 'warn' # require conventional pull request title (default: "error" options: "error", "warn", "off")
+          conventional: 'error' # require conventional pull request title (default: "error" options: "error", "warn", "off")
           jira: 'warn' # Require JIRA ticket references (default: "warn", options: "error", "warn", "off")
