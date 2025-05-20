@@ -126,7 +126,7 @@ export function tryParseUrl(loc: string): URL {
  */
 export function urlToString(u: URL): string {
   if (u.protocol === 'file:') return fileURLToPath(u);
-  return u.href;
+  return decodeURI(u.href);
 }
 
 /**

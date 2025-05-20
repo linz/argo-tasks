@@ -14,7 +14,7 @@ import type { StacCollection, StacItem } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
-import { createFileList } from '../../utils/filelist.ts';
+import type { FileListEntry } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
 import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.ts';
@@ -282,7 +282,10 @@ export const commandMapSheetCoverage = command({
     }
 
     // List of tiles to be created, and files from which to create
-    const tilesToProcess = createFileList(mapSheets, true);
+    const tilesToProcess: FileListEntry[] = [];
+    for (const [sheetName, inputs] of mapSheets) {
+      tilesToProcess.push({ output: sheetName, input: inputs, includeDerived: true });
+    }
 
     const fileListPath = new URL('file-list.json', args.output);
     await fsa.write(urlToString(fileListPath), JSON.stringify(tilesToProcess));
