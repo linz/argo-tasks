@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.14.1](https://github.com/linz/argo-tasks/compare/v4.14.0...v4.14.1) (2025-05-20)
+
+
+### Bug Fixes
+
+* allow reading from complex 🦄🌈 URLs TDE-1504 ([#1221](https://github.com/linz/argo-tasks/issues/1221)) ([1396443](https://github.com/linz/argo-tasks/commit/1396443d5c21c22d0e507b0accaf45ad3283f8c0))
+
 ## [4.14.0](https://github.com/linz/argo-tasks/compare/v4.13.1...v4.14.0) (2025-05-08)
 
 
