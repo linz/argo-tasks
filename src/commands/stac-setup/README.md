@@ -17,7 +17,7 @@ stac-setup <options>
 | --end-year <str>               | End year of survey capture, deprecated use --end-date     | optional                         |
 | --gsd <value>                  | GSD of dataset, e.g. 0.3                                  |                                  |
 | --region <str>                 | Region of dataset                                         |                                  |
-| --geographic-description <str> | Geographic description of dataset                         |                                  |
+| --geographic-description <str> | Geographic description of dataset                         | optional                         |
 | --survey-id <str>              | Associated survey id, eg SN8066 or SNC20505               | optional                         |
 | --geospatial-category <str>    | Geospatial category of dataset                            |                                  |
 | --odr-url <str>                | Open Data Registry URL of existing dataset                | optional                         |
