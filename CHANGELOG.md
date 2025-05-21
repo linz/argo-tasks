@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.14.2](https://github.com/linz/argo-tasks/compare/v4.14.1...v4.14.2) (2025-05-21)
+
+
+### Bug Fixes
+
+* stac-setup `--geographic-description` should be optional TDE-1510 ([#1224](https://github.com/linz/argo-tasks/issues/1224)) ([f98d3b6](https://github.com/linz/argo-tasks/commit/f98d3b6eb0a773ecd5ee204d38c4ffd4951fd9f6))
+
 ## [4.14.1](https://github.com/linz/argo-tasks/compare/v4.14.0...v4.14.1) (2025-05-20)
 
 
