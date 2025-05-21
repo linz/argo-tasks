@@ -1,6 +1,7 @@
 import { subcommands } from 'cmd-ts';
 
 import { CliInfo } from '../cli.info.ts';
+import { archiveSetup } from './archive-setup/archive.setup.ts';
 import { basemapsCreatePullRequest } from './basemaps-github/create-pr.ts';
 import { basemapsCreateMapSheet } from './basemaps-mapsheet/create-mapsheet.ts';
 import { commandCopy } from './copy/copy.ts';
@@ -20,6 +21,7 @@ import { commandStacValidate } from './stac-validate/stac.validate.ts';
 import { commandTileIndexValidate } from './tileindex-validate/tileindex.validate.ts';
 
 export const AllCommands = {
+  'archive-setup': archiveSetup,
   copy: commandCopy,
   'create-manifest': commandCreateManifest,
   'identify-updated-items': commandIdentifyUpdatedItems,

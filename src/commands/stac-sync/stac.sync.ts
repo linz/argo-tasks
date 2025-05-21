@@ -1,6 +1,5 @@
 import type { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
-import type { Type } from 'cmd-ts';
 import { command, positional, string } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -8,14 +7,7 @@ import { logger } from '../../log.ts';
 import { md } from '../../readme/markdown.ts';
 import { annotateExample } from '../../readme/readme.example.ts';
 import { hashBuffer, HashKey } from '../../utils/hash.ts';
-import { config, registerCli, verbose } from '../common.ts';
-
-const S3Path: Type<string, URL> = {
-  async from(str) {
-    if (!str.startsWith('s3://')) throw new Error('Path is not S3');
-    return new URL(str);
-  },
-};
+import { config, registerCli, S3Path, verbose } from '../common.ts';
 
 export const commandStacSync = command({
   name: 'stac-sync',
