@@ -65,7 +65,7 @@ export const commandStacSetup = command({
     }),
 
     geographicDescription: option({
-      type: string,
+      type: optional(string),
       long: 'geographic-description',
       description: 'Geographic description of dataset',
     }),
