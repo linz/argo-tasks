@@ -5,7 +5,6 @@ import { boolean, flag, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 import { fileURLToPath, pathToFileURL } from 'url';
 
-import { CliInfo } from '../cli.info.ts';
 import { registerFileSystem } from '../fs.register.ts';
 import { logger, registerLogger } from '../log.ts';
 import { isArgo } from '../utils/argo.ts';
@@ -34,7 +33,7 @@ export function registerCli(cli: { name: string }, args: { verbose?: boolean; co
   registerLogger(args);
   registerFileSystem(args);
 
-  logger.info({ package: CliInfo, cli: cli.name, args, isArgo: isArgo() }, 'Cli:Start');
+  logger.info({ cli: cli.name, args, isArgo: isArgo() }, 'Cli:Start');
 }
 
 /** Trim any extra special characters from the cli parser */
