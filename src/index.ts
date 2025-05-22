@@ -8,7 +8,7 @@ import { cmd } from './commands/index.ts';
 import { logger } from './log.ts';
 
 const startTime = performance.now();
-logger.info({ package: CliInfo }, 'Cli:Info');
+logger.info({ package: CliInfo, args: process.argv.slice(2) }, 'Cli:Info');
 run(cmd, process.argv.slice(2))
   .then(() => {
     logger.debug({ duration: performance.now() - startTime }, 'Command:Done');
