@@ -4,8 +4,8 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { MinSizeForCompression } from '../copy-worker.ts';
-import { worker } from '../copy-worker.ts';
+import type { CopyStats } from '../copy-rpc.ts';
+import { MinSizeForCompression, worker } from '../copy-worker.ts';
 
 describe('copyFiles', () => {
   const memory = new FsMemory();
@@ -517,5 +517,46 @@ describe('copyFiles', () => {
 
     assert.strictEqual(jsonSource, null);
     assert.equal(jsonTarget?.metadata?.['unique'], 'fileB'); // fileB ==> has not been updated
+  });
+
+  it('should increment stats for compressed and uncompressed files', async () => {
+    await Promise.all([
+      fsa.write(
+        'memory://source/foo/bar/topographic.png',
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
+        {
+          contentType: 'image/png',
+        },
+      ),
+      fsa.write(
+        'memory://source/topographic.json',
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
+        {
+          contentType: 'application/octet-stream',
+        },
+      ),
+    ]);
+    const stats: CopyStats = await worker.routes.copy({
+      id: '1',
+      manifest: [
+        {
+          source: 'memory://source/foo/bar/topographic.png',
+          target: 'memory://target/foo/bar/topographic.png',
+        },
+        {
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
+        },
+      ],
+      start: 0,
+      size: 2,
+      force: false,
+      noClobber: true,
+      fixContentType: false,
+      compress: true,
+      deleteSource: false,
+    });
+    assert.equal(stats.compressed, '1');
+    assert.equal(stats.copied, '2');
   });
 });
