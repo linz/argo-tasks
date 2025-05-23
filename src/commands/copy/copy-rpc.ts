@@ -32,7 +32,7 @@ export interface CopyStats {
   copied: number;
   /** Number of bytes copied */
   copiedBytes: number;
-  /** Number of files copied + compressed */
+  /** Number of files compressed */
   compressed: number;
   /** Number of bytes compressed (input) */
   inputBytes: number;

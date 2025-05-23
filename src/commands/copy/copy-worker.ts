@@ -237,6 +237,7 @@ export const worker = new WorkerRpc<CopyContract>({
       logger.fatal({ err }, 'File:Copy:Failed');
       throw err;
     });
+    stats.copied += stats.compressed;
     return stats;
   },
 });
