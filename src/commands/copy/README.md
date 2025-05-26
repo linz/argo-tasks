@@ -14,10 +14,10 @@ copy <options> [...location]
 
 ### Options
 
-| Usage                  | Description                         | Options  |
-| ---------------------- | ----------------------------------- | -------- |
-| --config <str>         | Location of role configuration file | optional |
-| --concurrency <number> | a number                            | optional |
+| Usage                  | Description                                                  | Options  |
+| ---------------------- | ------------------------------------------------------------ | -------- |
+| --config <str>         | Location of role configuration file                          | optional |
+| --concurrency <number> | Concurrent number of worker threads to use for copying files | optional |
 
 ### Flags
 

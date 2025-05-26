@@ -63,7 +63,12 @@ export const commandCopy = command({
       description: 'Delete source files after successful copy or compress action',
       defaultValueIsSerializable: true,
     }),
-    concurrency: option({ type: number, long: 'concurrency', defaultValue: () => 4 }),
+    concurrency: option({
+      type: number,
+      defaultValue: () => 4,
+      long: 'concurrency',
+      description: 'Concurrent number of worker threads to use for copying files',
+    }),
     manifest: restPositionals({ type: string, displayName: 'location', description: 'Manifest of file to copy' }),
   },
   async handler(args) {
