@@ -341,7 +341,6 @@ describe('copyFiles', () => {
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json.zst');
 
-    assert.equal(jsonTarget?.contentEncoding, 'zstd');
     assert.equal(
       jsonTarget?.metadata?.['multihash'],
       '12207533e5dd314c9314c3fbb5c97b92f9a3772c957a9b5f15844a96e417db7a46c7',
@@ -404,7 +403,6 @@ describe('copyFiles', () => {
         Buffer.from(JSON.stringify({ test: true, fakeCompressedData: 'c'.repeat(10) })),
         {
           contentType: 'application/octet-stream',
-          contentEncoding: 'zstd',
           metadata: {
             unique: 'fakeCompressed',
             multihash: fakeMultihash,

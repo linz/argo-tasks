@@ -33,10 +33,7 @@ export const FixableContentType = new Set(['binary/octet-stream', 'application/o
  * @returns New fixed file metadata if fixed otherwise source file metadata
  */
 export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
-  // Content-type is independent of content-encoding, so we should set both if possible. https://www.rfc-editor.org/rfc/rfc2616#section-14.11
   if (path.endsWith('.zst')) {
-    // add appropriate encoding if file uses zstandard file extension
-    meta = { ...meta, contentEncoding: 'zstd' };
     path = path.slice(0, -4); // remove .zst for the following content type checks
   }
 
