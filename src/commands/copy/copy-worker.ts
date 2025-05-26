@@ -78,8 +78,8 @@ export const worker = new WorkerRpc<CopyContract>({
       copied: 0,
       copiedBytes: 0,
       compressed: 0,
-      inputBytes: 0,
-      outputBytes: 0,
+      compressedInputBytes: 0,
+      compressedOutputBytes: 0,
       deleted: 0,
       deletedBytes: 0,
       retries: 0,
@@ -199,8 +199,8 @@ export const worker = new WorkerRpc<CopyContract>({
 
         if (shouldCompress) {
           stats.compressed++;
-          stats.inputBytes += source.size;
-          stats.outputBytes += expectedSize;
+          stats.compressedInputBytes += source.size;
+          stats.compressedOutputBytes += expectedSize;
           logger.debug(
             {
               ...manifestEntry,
@@ -238,6 +238,7 @@ export const worker = new WorkerRpc<CopyContract>({
       throw err;
     });
     stats.copied += stats.compressed;
+    stats.copiedBytes += stats.compressedOutputBytes;
     return stats;
   },
 });

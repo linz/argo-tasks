@@ -35,9 +35,9 @@ export interface CopyStats {
   /** Number of files compressed */
   compressed: number;
   /** Number of bytes compressed (input) */
-  inputBytes: number;
+  compressedInputBytes: number;
   /** Number of bytes compressed (output) */
-  outputBytes: number;
+  compressedOutputBytes: number;
   /** Number of source files deleted */
   deleted: number;
   /** Number of bytes deleted */

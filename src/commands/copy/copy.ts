@@ -79,8 +79,8 @@ export const commandCopy = command({
       skipped: 0,
       skippedBytes: 0,
       compressed: 0,
-      inputBytes: 0,
-      outputBytes: 0,
+      compressedInputBytes: 0,
+      compressedOutputBytes: 0,
       deleted: 0,
       deletedBytes: 0,
     };
@@ -124,8 +124,8 @@ export const commandCopy = command({
       stats.copied += result.copied;
       stats.copiedBytes += result.copiedBytes;
       stats.compressed += result.compressed;
-      stats.inputBytes += result.inputBytes;
-      stats.outputBytes += result.outputBytes;
+      stats.compressedInputBytes += result.compressedInputBytes;
+      stats.compressedOutputBytes += result.compressedOutputBytes;
       stats.deleted += result.deleted;
       stats.deletedBytes += result.deletedBytes;
       stats.retries += result.retries;
