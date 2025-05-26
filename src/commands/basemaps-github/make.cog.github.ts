@@ -9,10 +9,10 @@ import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
 import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.ts';
+import { combinePaths } from '../../utils/chunk.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
-import { combinePaths } from '../../utils/chunk';
 
 export const Categories = [
   'Urban Aerial Photos',
@@ -161,13 +161,13 @@ export class MakeCogGithub {
   /**
    * Prepare and create pull request for the aerial tileset config
    */
-  async updateVectorTileSet(layer: ConfigLayer, individual: boolean): Promise<void> {
+  async updateVectorTileSet(layer: ConfigLayer, individual: boolean, target: string): Promise<void> {
     const filename = layer.name;
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
     const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
-    const reportPath = combinePaths(layer[layer.epsg], 'report.md');
-    const report = await fsa.read(reportPath);
+    const reportPath = combinePaths(target, 'report.md');
+    const report = (await fsa.read(reportPath))?.toString();
 
     // Prepare new vector tileset config
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
@@ -197,7 +197,7 @@ export class MakeCogGithub {
     title: string,
     tileSetPath: string,
     newTileSet: ConfigTileSet | undefined,
-    body?: string
+    body?: string,
   ): Promise<void> {
     // skip pull request tileset prepare failure.
     if (newTileSet == null) throw new Error(`Failed to prepare new tileSet for ${tileSetPath}.`);
