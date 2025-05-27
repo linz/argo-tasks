@@ -53,8 +53,12 @@ export function getArchiveBucketName(sourceBucket: string): string {
   const bucketMapping = {
     'linz-topographic-upload': 'linz-topographic-archive',
     'linz-hydrographic-upload': 'linz-hydrographic-archive',
-    'hydro-data-bucket': 'linz-hydrographic-archive',
   };
+
+  // special case for hydro-data-bucket-* as it ends with an AWS account id which we should not share publicly
+  if (sourceBucket.startsWith('hydro-data-bucket-')) {
+    return 'linz-hydrographic-archive';
+  }
 
   if (!(sourceBucket in bucketMapping)) {
     throw new Error(`Source bucket ${sourceBucket} is not supported for archiving`);

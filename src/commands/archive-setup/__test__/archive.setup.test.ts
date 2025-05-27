@@ -22,6 +22,12 @@ describe('getArchiveBucketName', () => {
     );
   });
 
+  it('should return the archive bucket for the hydro-data-bucket-[account-id]', () => {
+    const expectedBucketName = 'linz-hydrographic-archive';
+    const result = getArchiveBucketName('hydro-data-bucket-123456789012');
+    assert.equal(result, expectedBucketName);
+  });
+
   describe('isSafePath', () => {
     it('should return true for a path with sufficient depth', () => {
       const path = new URL('s3://upload/folder1/folder2/file.txt');
