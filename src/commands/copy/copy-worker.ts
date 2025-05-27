@@ -30,7 +30,7 @@ export const FixableContentType = new Set(['binary/octet-stream', 'application/o
  */
 export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
   if (path.toLowerCase().endsWith('.zst')) {
-    return { ...meta, contentType: 'application/octet-stream' };
+    return { ...meta, contentType: 'application/zstd' };
   }
 
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
