@@ -1,4 +1,3 @@
-import { cpus } from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
 import { createZstdCompress } from 'node:zlib';
@@ -15,12 +14,9 @@ import { registerCli } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 
-const numberOfConcurrentItems = Math.max(cpus().length - 2, 1);
-const Q = new ConcurrentQueue(numberOfConcurrentItems); // saturate all CPUs and leave 2 cores free for the system
+const Q = new ConcurrentQueue(10);
+
 export const MinSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
-
-logger.debug({ numberOfCPUs: cpus().length, numberOfConcurrentItems }, 'Queue:ConcurrentItems');
-
 export const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
 
 /**
