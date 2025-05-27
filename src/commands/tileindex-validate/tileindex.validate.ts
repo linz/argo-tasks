@@ -341,7 +341,7 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
         logger.error({ path: v.source, bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
       }
 
-      throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source}`);
+      throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source.href}`);
     }
   }
   return firstBands;
@@ -361,7 +361,7 @@ export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation
 
 export interface TiffLocation {
   /** Location to the image */
-  source: string;
+  source: URL;
   /** bbox, [minX, minY, maxX, maxY] */
   bbox: BBox;
   /** EPSG code of the tiff if found */
@@ -439,7 +439,7 @@ export async function extractTiffLocations(
         // }
         return {
           bbox: targetBbox,
-          source: tiff.source.url.href,
+          source: tiff.source.url,
           tileNames: covering,
           epsg: tiff.images[0]?.epsg,
           bands: await extractBandInformation(tiff),

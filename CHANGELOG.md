@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.14.2](https://github.com/linz/argo-tasks/compare/v4.14.1...v4.14.2) (2025-05-21)
+
+
+### Bug Fixes
+
+* stac-setup `--geographic-description` should be optional TDE-1510 ([#1224](https://github.com/linz/argo-tasks/issues/1224)) ([f98d3b6](https://github.com/linz/argo-tasks/commit/f98d3b6eb0a773ecd5ee204d38c4ffd4951fd9f6))
+
+## [4.14.1](https://github.com/linz/argo-tasks/compare/v4.14.0...v4.14.1) (2025-05-20)
+
+
+### Bug Fixes
+
+* allow reading from complex 🦄🌈 URLs TDE-1504 ([#1221](https://github.com/linz/argo-tasks/issues/1221)) ([1396443](https://github.com/linz/argo-tasks/commit/1396443d5c21c22d0e507b0accaf45ad3283f8c0))
+
+## [4.14.0](https://github.com/linz/argo-tasks/compare/v4.13.1...v4.14.0) (2025-05-08)
+
+
+### Features
+
+* add linz/coastal repo TDE-1456 ([#1215](https://github.com/linz/argo-tasks/issues/1215)) ([7896196](https://github.com/linz/argo-tasks/commit/789619648ed8255ff9fc878a69c95384a132fa72))
+
 ## [4.13.1](https://github.com/linz/argo-tasks/compare/v4.13.0...v4.13.1) (2025-04-27)
 
 
