@@ -32,7 +32,7 @@ export const archiveSetup = command({
       throw new Error(`The path ${args.path.toString()} is not safe for archiving. Please check the path.`);
     }
 
-    const archiveLocation = getArchiveLocation(args.path.toString(), archiveBucketName);
+    const archiveLocation = getArchiveLocation(args.path, archiveBucketName);
     const archiveLocationOutputPath = new URL('archive-location', args.output);
 
     await fsa.write(urlToString(archiveLocationOutputPath), archiveLocation);
@@ -87,8 +87,8 @@ export function isSafePath(path: URL, minDepth = 2): boolean {
  * @param archiveBucketName - The name of the bucket to use to archive the files.
  * @returns the path where the archived files should be stored.
  */
-export function getArchiveLocation(sourcePath: string, archiveBucketName: string): string {
-  const archiveLocation = new URL(sourcePath);
+export function getArchiveLocation(sourcePath: URL, archiveBucketName: string): string {
+  const archiveLocation = new URL(sourcePath.toString());
   archiveLocation.hostname = archiveBucketName;
   return archiveLocation.toString();
 }

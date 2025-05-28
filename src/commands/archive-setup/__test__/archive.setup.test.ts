@@ -56,7 +56,7 @@ describe('getArchiveBucketName', () => {
 
   describe('getArchiveLocation', () => {
     it('should return the archive location given a source bucket and archive bucket name', () => {
-      const archiveLocation = getArchiveLocation('s3://upload/folder1/folder2/', 'archive-bucket');
+      const archiveLocation = getArchiveLocation(new URL('s3://upload/folder1/folder2/'), 'archive-bucket');
       assert.equal(archiveLocation, 's3://archive-bucket/folder1/folder2/');
     });
   });
