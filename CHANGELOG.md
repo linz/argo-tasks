@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.15.0](https://github.com/linz/argo-tasks/compare/v4.14.2...v4.15.0) (2025-05-28)
+
+
+### Features
+
+* archive-setup command returning archive location based on source path TDE-1500 ([#1218](https://github.com/linz/argo-tasks/issues/1218)) ([018dc2a](https://github.com/linz/argo-tasks/commit/018dc2ac5faf21237cf0e95dd5c8293e3dd3b707))
+* compress and delete source files TDE-1482 ([#1216](https://github.com/linz/argo-tasks/issues/1216)) ([487fb30](https://github.com/linz/argo-tasks/commit/487fb30db7d5910c0ea59c4147e0e5ea86cad33e))
+
+
+### Bug Fixes
+
+* package information is not logged when command has not started TDE-1511 ([#1226](https://github.com/linz/argo-tasks/issues/1226)) ([b62240c](https://github.com/linz/argo-tasks/commit/b62240cec1c342b10c7bbccebd39b6e521842a15))
+
 ## [4.14.2](https://github.com/linz/argo-tasks/compare/v4.14.1...v4.14.2) (2025-05-21)
 
 
