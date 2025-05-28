@@ -76,8 +76,7 @@ export function getArchiveBucketName(sourceBucket: string): string {
  * @returns True if the path is safe for archiving, false otherwise.
  */
 export function isSafePath(path: URL, minDepth = 2): boolean {
-  const key = path.pathname.replace(/^\/+/, '');
-  const directories = key.split('/').filter(Boolean); // skip empty parts
+  const directories = path.pathname.split('/').filter(Boolean); // skip empty parts
 
   return directories.length >= minDepth;
 }
