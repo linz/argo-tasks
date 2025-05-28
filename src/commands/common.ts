@@ -178,3 +178,13 @@ export const MeterAsString: Type<string, string> = {
     return Promise.resolve(meters);
   },
 };
+
+/**
+ * Parse a input parameter as a URL which represents a S3 path.
+ */
+export const S3Path: Type<string, URL> = {
+  async from(str) {
+    if (!str.startsWith('s3://')) throw new Error('Path is not S3');
+    return new URL(str);
+  },
+};
