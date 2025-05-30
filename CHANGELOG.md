@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.16.0](https://github.com/linz/argo-tasks/compare/v4.15.0...v4.16.0) (2025-05-30)
+
+
+### Features
+
+* generate path for scanned-aerial-photos TDE-1522 ([#1231](https://github.com/linz/argo-tasks/issues/1231)) ([72d7373](https://github.com/linz/argo-tasks/commit/72d7373606cf4fd89413172e794027a55252c345))
+
 ## [4.15.0](https://github.com/linz/argo-tasks/compare/v4.14.2...v4.15.0) (2025-05-28)
 
 
