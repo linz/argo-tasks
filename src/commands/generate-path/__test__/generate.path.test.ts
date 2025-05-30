@@ -18,6 +18,17 @@ describe('GeneratePathImagery', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgb/2193/');
   });
+  it('Should match - scanned aerial photos from slug', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      geospatialCategory: 'scanned-aerial-photos',
+      region: 'waikato',
+      slug: 'waikato_sn11978_1992-1995_0.4m',
+      gsd: 0.4,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-imagery/waikato/waikato_sn11978_1992-1995_0.4m/rgb/2193/');
+  });
 });
 
 describe('GeneratePathHillshade', () => {
@@ -127,19 +138,6 @@ describe('GeneratePathGeospatialDataCategories', () => {
     assert.throws(() => {
       generatePath(metadata);
     }, Error("Path can't be generated from collection as no matching category for not-a-valid-category."));
-  });
-  it('Should error - does not support historical aerial photos', () => {
-    const metadata: PathMetadata = {
-      targetBucketName: 'nz-imagery',
-      geospatialCategory: 'scanned-aerial-photos',
-      region: 'wellington',
-      slug: 'napier_2017-2018_0.05m',
-      gsd: 0.5,
-      epsg: 2193,
-    };
-    assert.throws(() => {
-      generatePath(metadata);
-    }, Error('Historic Imagery scanned-aerial-photos is out of scope for automated path generation.'));
   });
 });
 
