@@ -65,6 +65,8 @@ export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
   // Get filename for vector target
   if (target.endsWith('.tar.co')) {
     const filename = splits.at(-1);
+    if (filename == null) throw new Error(`Invalid cotar filename for vector map ${filename}.`);
+    const name = filename.replace('.tar.co', ''); // Layer name for vector map is same as the cotar filename
     return { bucket, epsg, name, filename };
   } else {
     return { bucket, epsg, name };
@@ -143,7 +145,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   }
   if (title == null) throw new Error(`Failed to get title from collection.json.`);
 
-  return { name: name, epsg: epsg.code, title };
+  return { name, epsg: epsg.code, title };
 }
 
 /**
