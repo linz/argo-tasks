@@ -78,15 +78,11 @@ export const commandGeneratePath = command({
  * @returns
  */
 export function generatePath(metadata: PathMetadata): string {
-  if (metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos) {
-    // nb: Historic Imagery is out of scope as survey number is not yet recorded in collection metadata
-    throw new Error(`Historic Imagery ${metadata.geospatialCategory} is out of scope for automated path generation.`);
-  }
-
   if (
     metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.RuralAerialPhotos ||
-    metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery
+    metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
+    metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
