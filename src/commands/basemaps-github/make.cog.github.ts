@@ -174,7 +174,7 @@ export class MakeCogGithub {
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
     } else {
-      const tileSetPath = fsa.joinAll('config', 'tileset', `topographic.json`);
+      const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Failed to get config topographic from config repo.`);
       // update the existing tileset
