@@ -287,7 +287,7 @@ export const basemapsCreatePullRequest = command({
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
     if (configType === 'vector') {
-      await git.updateVectorTileSet(layer, args.individual);
+      await git.updateVectorTileSet(layer, args.individual, args.target);
     } else if (configType === 'raster') {
       await git.updateRasterTileSet(layer, category, args.individual, region);
     } else if (configType === 'elevation') {
