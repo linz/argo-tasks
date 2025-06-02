@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.16.1](https://github.com/linz/argo-tasks/compare/v4.16.0...v4.16.1) (2025-06-02)
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the topographic pull request creation to support topgraphic-v2. BM-1203 ([#1230](https://github.com/linz/argo-tasks/issues/1230)) ([772c115](https://github.com/linz/argo-tasks/commit/772c1154c4a97f918959787e99947e87ccf95ee4))
+
 ## [4.16.0](https://github.com/linz/argo-tasks/compare/v4.15.0...v4.16.0) (2025-05-30)
 
 
