@@ -131,7 +131,6 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   if (filename == null || !filename.endsWith('.tar.co')) {
     throw new Error(`Invalid cotar filename for vector map ${filename}.`);
   }
-  if (epsg !== Epsg.Google) throw new Error(`Unsupported epsg code ${epsg.code} for vector map.`);
   // Try to get the title
   const collectionPath = target.replace(filename, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
