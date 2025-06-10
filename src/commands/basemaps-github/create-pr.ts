@@ -131,6 +131,7 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   if (filename == null || !filename.endsWith('.tar.co')) {
     throw new Error(`Invalid cotar filename for vector map ${filename}.`);
   }
+
   // Try to get the title
   const collectionPath = target.replace(filename, 'collection.json');
   const collection = await fsa.readJson<StacCollection>(collectionPath);
