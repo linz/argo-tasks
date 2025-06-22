@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.17.0](https://github.com/linz/argo-tasks/compare/v4.16.0...v4.17.0) (2025-06-10)
+
+
+### Features
+
+* **basemaps:** Add support for NZTM vector tiles in PR creation ([#1234](https://github.com/linz/argo-tasks/issues/1234)) ([297ce8c](https://github.com/linz/argo-tasks/commit/297ce8c838ad5eb29f33812a69ae7f4c42a2c4c7))
+
+
+### Bug Fixes
+
+* **basemaps:** Fix the topographic pull request creation to support topgraphic-v2. BM-1203 ([#1230](https://github.com/linz/argo-tasks/issues/1230)) ([772c115](https://github.com/linz/argo-tasks/commit/772c1154c4a97f918959787e99947e87ccf95ee4))
+
 ## [4.16.0](https://github.com/linz/argo-tasks/compare/v4.15.0...v4.16.0) (2025-05-30)
 
 
