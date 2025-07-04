@@ -2,7 +2,6 @@ import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
 import { createZstdCompress } from 'node:zlib';
 
-import type { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 
@@ -11,56 +10,11 @@ import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
 import { registerCli } from '../common.ts';
-import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
+import { fixFileMetadata, MinSizeForCompression } from './file-metadata.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
+import { tryHead } from '../../utils/file.head.ts';
 
 const Q = new ConcurrentQueue(10);
-
-export const MinSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
-export const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
-
-/**
- * Sets contentEncoding metadata for compressed files.
- * Also, if the file has been written with a unknown binary contentType attempt to fix it with common content types
- *
- *
- * @param path File path to fix the metadata of
- * @param meta File metadata
- * @returns New fixed file metadata if fixed otherwise source file metadata
- */
-export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
-  if (path.toLowerCase().endsWith('.zst')) {
-    return { ...meta, contentType: 'application/zstd' };
-  }
-
-  if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
-
-  // Assume our tiffs are cloud optimized
-  if (isTiff(path)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
-
-  // overwrite with application/json
-  if (path.endsWith('.json')) return { ...meta, contentType: 'application/json' };
-
-  return meta;
-}
-
-/**
- * S3 Writes do not always show up instantly as we have read the location earlier in the function
- *
- * try reading the path {retryCount} times before aborting, with a delay of 250ms between requests
- *
- * @param filePath File to head
- * @param retryCount number of times to retry
- * @returns file size if it exists or null
- */
-async function tryHead(filePath: string, retryCount = 3): Promise<FileInfo | null> {
-  for (let i = 0; i < retryCount; i++) {
-    const ret = await fsa.head(filePath);
-    if (ret?.size) return ret;
-    await new Promise((r) => setTimeout(r, 250));
-  }
-  return null;
-}
 
 /** Current log id */
 let currentId: string | null = null;
