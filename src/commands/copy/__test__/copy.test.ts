@@ -8,6 +8,19 @@ import { MinSizeForCompression } from '../copy-helpers.ts';
 import type { CopyStats } from '../copy-rpc.ts';
 import { worker } from '../copy-worker.ts';
 
+const defaultCopyArgs = {
+  id: '1',
+  manifest: [],
+  start: 0,
+  size: 10,
+  force: false,
+  noClobber: false,
+  fixContentType: false,
+  compress: false,
+  decompress: false,
+  deleteSource: false,
+};
+
 describe('copyFiles', () => {
   const memory = new FsMemory();
   fsa.register('memory://', memory);
@@ -26,7 +39,7 @@ describe('copyFiles', () => {
     ]);
 
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
@@ -37,13 +50,8 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.png',
         },
       ],
-      start: 0,
-      size: 2,
-      force: false,
       noClobber: true,
       fixContentType: true,
-      compress: false,
-      deleteSource: false,
     });
 
     const [jsonSource, jsonTarget] = await Promise.all([
@@ -79,7 +87,7 @@ describe('copyFiles', () => {
       }),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
@@ -90,13 +98,8 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.tiff',
         },
       ],
-      start: 0,
-      size: 2,
-      force: false,
       noClobber: true,
       fixContentType: true,
-      compress: false,
-      deleteSource: false,
     });
     const [jsonSource, jsonTarget] = await Promise.all([
       fsa.head('memory://source/topographic.json'),
@@ -125,7 +128,7 @@ describe('copyFiles', () => {
       }),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
@@ -136,13 +139,7 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.tiff',
         },
       ],
-      start: 0,
-      size: 2,
-      force: false,
       noClobber: true,
-      fixContentType: false,
-      compress: false,
-      deleteSource: false,
     });
     const [jsonSource, jsonTarget] = await Promise.all([
       fsa.head('memory://source/topographic.json'),
@@ -177,20 +174,14 @@ describe('copyFiles', () => {
     ]);
     assert.rejects(
       worker.routes.copy({
-        id: '1',
+        ...defaultCopyArgs,
         manifest: [
           {
             source: 'memory://source/topographic.json',
             target: 'memory://target/topographic.json',
           },
         ],
-        start: 0,
-        size: 1,
-        force: false,
         noClobber: true,
-        fixContentType: false,
-        compress: false,
-        deleteSource: false,
       }),
       new Error(
         'Target already exists with different hash. Use --force to overwrite. target: memory://target/topographic.json source: memory://source/topographic.json',
@@ -216,20 +207,15 @@ describe('copyFiles', () => {
       }),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 1,
       force: true,
       noClobber: true,
-      fixContentType: false,
-      compress: false,
-      deleteSource: false,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json');
 
@@ -254,20 +240,15 @@ describe('copyFiles', () => {
       }),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 1,
       force: true,
       noClobber: true,
-      fixContentType: false,
-      compress: false,
-      deleteSource: false,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json');
     assert.equal(jsonTarget?.metadata?.['unique'], 'fileA');
@@ -287,20 +268,15 @@ describe('copyFiles', () => {
       }),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 1,
       force: true,
       noClobber: true,
-      fixContentType: false,
-      compress: false,
-      deleteSource: false,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json');
 
@@ -325,20 +301,15 @@ describe('copyFiles', () => {
       ),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 1,
-      force: false,
       noClobber: true,
-      fixContentType: false,
       compress: true,
-      deleteSource: false,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json.zst');
 
@@ -362,20 +333,15 @@ describe('copyFiles', () => {
       ),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 1,
-      force: false,
       noClobber: true,
-      fixContentType: false,
       compress: true,
-      deleteSource: false,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json');
 
@@ -412,20 +378,15 @@ describe('copyFiles', () => {
       ),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 1,
-      force: false,
       noClobber: true,
-      fixContentType: false,
       compress: true,
-      deleteSource: false,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json.zst');
 
@@ -440,7 +401,7 @@ describe('copyFiles', () => {
     ]);
 
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
@@ -451,12 +412,8 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.png',
         },
       ],
-      start: 0,
-      size: 2,
-      force: false,
       noClobber: true,
       fixContentType: true,
-      compress: false,
       deleteSource: true,
     });
 
@@ -494,19 +451,14 @@ describe('copyFiles', () => {
       ),
     ]);
     await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/topographic.json',
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 1,
-      force: false,
       noClobber: true,
-      fixContentType: false,
-      compress: false,
       deleteSource: true,
     });
     const [jsonSource, jsonTarget] = await Promise.all([
@@ -518,7 +470,7 @@ describe('copyFiles', () => {
     assert.equal(jsonTarget?.metadata?.['unique'], 'fileB'); // fileB ==> has not been updated
   });
 
-  it('should increment stats for compressed and uncompressed files', async () => {
+  it('should increment stats for compressed and uncompressed files and totals', async () => {
     await Promise.all([
       fsa.write(
         'memory://source/foo/bar/topographic.png',
@@ -536,7 +488,7 @@ describe('copyFiles', () => {
       ),
     ]);
     const stats: CopyStats = await worker.routes.copy({
-      id: '1',
+      ...defaultCopyArgs,
       manifest: [
         {
           source: 'memory://source/foo/bar/topographic.png',
@@ -547,15 +499,118 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.json',
         },
       ],
-      start: 0,
-      size: 2,
-      force: false,
       noClobber: true,
-      fixContentType: false,
       compress: true,
-      deleteSource: false,
     });
+    assert.equal(stats.decompressed, '0');
     assert.equal(stats.compressed, '1');
-    assert.equal(stats.copied, '2');
+    assert.equal(stats.copied, '1');
+    assert.equal(stats.totalProcessed, '2');
+    assert.equal(stats.totalRead, '2');
+    assert.equal(stats.totalWritten, '2');
+  });
+  it('should decompress files and increment stats for decompressed and uncompressed files and totals', async () => {
+    await Promise.all([
+      fsa.write(
+        'memory://temp/topographic.png',
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
+        {
+          contentType: 'image/png',
+        },
+      ),
+      fsa.write(
+        'memory://temp/topographic.tif',
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression * 2) })),
+        {},
+      ),
+      fsa.write(
+        'memory://source/topographic.json',
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
+        {
+          contentType: 'application/octet-stream',
+        },
+      ),
+    ]);
+    await worker.routes.copy({
+      ...defaultCopyArgs,
+      manifest: [
+        {
+          source: 'memory://temp/topographic.png',
+          target: 'memory://source/topographic.png',
+        },
+        {
+          source: 'memory://temp/topographic.tif',
+          target: 'memory://source/topographic.tif',
+        },
+      ],
+      noClobber: true,
+      compress: true,
+    });
+    const stats = await worker.routes.copy({
+      ...defaultCopyArgs,
+      manifest: [
+        {
+          source: 'memory://source/topographic.png.zst',
+          target: 'memory://target/topographic.png.zst',
+        },
+        {
+          source: 'memory://source/topographic.tif.zst',
+          target: 'memory://target/topographic.tif.zst',
+        },
+        {
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
+        },
+      ],
+      noClobber: true,
+      decompress: true,
+    });
+    const tiffTarget = await fsa.head('memory://target/topographic.tif');
+    assert.equal(tiffTarget?.contentType, 'image/tiff; application=geotiff; profile=cloud-optimized');
+
+    assert.equal(stats.compressed, '0');
+    assert.equal(stats.decompressed, '2');
+    assert.equal(stats.copied, '1');
+    assert.equal(stats.totalProcessed, '3');
+    assert.equal(stats.totalRead, '3');
+    assert.equal(stats.totalWritten, '3');
+  });
+  it('should increment stats for skipped files and totals', async () => {
+    await Promise.all([
+      fsa.write(
+        'memory://source/topographic.json',
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
+        {
+          contentType: 'application/octet-stream',
+          metadata: {
+            multihash: fakeMultihash,
+          },
+        },
+      ),
+      fsa.write(
+        'memory://target/topographic.json',
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
+        {
+          contentType: 'application/octet-stream',
+          metadata: {
+            multihash: fakeMultihash,
+          },
+        },
+      ),
+    ]);
+    const stats: CopyStats = await worker.routes.copy({
+      ...defaultCopyArgs,
+      manifest: [
+        {
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
+        },
+      ],
+      noClobber: true,
+    });
+    assert.equal(stats.skipped, '1');
+    assert.equal(stats.totalProcessed, '1');
+    assert.equal(stats.totalRead, '0');
+    assert.equal(stats.totalWritten, '0');
   });
 });

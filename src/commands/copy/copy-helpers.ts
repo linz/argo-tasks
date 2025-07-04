@@ -26,17 +26,40 @@ const FixableContentType = new Set(['binary/octet-stream', 'application/octet-st
 export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize: number, outputSize?: number) => void> =
   {
     [FileOperation.Compress]: (stats, sourceSize, outputSize = 0): void => {
-      stats.copied++;
-      stats.copiedBytes += sourceSize;
+      stats.totalProcessed++;
+      stats.totalProcessedBytes += sourceSize;
+      stats.totalRead++;
+      stats.totalReadBytes += sourceSize;
+      stats.totalWritten++;
+      stats.totalWrittenBytes += outputSize;
       stats.compressed++;
       stats.compressedInputBytes += sourceSize;
       stats.compressedOutputBytes += outputSize;
     },
+    [FileOperation.Decompress]: (stats, sourceSize, outputSize = 0): void => {
+      stats.totalProcessed++;
+      stats.totalProcessedBytes += sourceSize;
+      stats.totalRead++;
+      stats.totalReadBytes += sourceSize;
+      stats.totalWritten++;
+      stats.totalWrittenBytes += outputSize;
+      stats.decompressed++;
+      stats.decompressedInputBytes += sourceSize;
+      stats.decompressedOutputBytes += outputSize;
+    },
     [FileOperation.Copy]: (stats, sourceSize): void => {
+      stats.totalProcessed++;
+      stats.totalProcessedBytes += sourceSize;
+      stats.totalRead++;
+      stats.totalReadBytes += sourceSize;
+      stats.totalWritten++;
+      stats.totalWrittenBytes += sourceSize;
       stats.copied++;
       stats.copiedBytes += sourceSize;
     },
     [FileOperation.Skip]: (stats, sourceSize): void => {
+      stats.totalProcessed++;
+      stats.totalProcessedBytes += sourceSize;
       stats.skipped++;
       stats.skippedBytes += sourceSize;
     },
@@ -56,8 +79,11 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
  * @returns New fixed file metadata if fixed otherwise source file metadata
  */
 export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
-  if (path.toLowerCase().endsWith('.zst')) {
+  if (path.toLowerCase().endsWith(CompressedFileExtension)) {
     return { ...meta, contentType: 'application/zstd' };
+  } else if (meta.contentType === 'application/zstd') {
+    // if content type is `zstd` but extension isn't, set to a "fixable" content type
+    meta = { ...meta, contentType: 'binary/octet-stream' };
   }
 
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
@@ -85,12 +111,25 @@ export async function determineTargetFileOperation(
   initialTargetName: string,
   args: CopyContractArgs,
 ): Promise<TargetFileOperation> {
-  const shouldCompress = shouldCompressFile(args.compress, source.size);
-  const finalTargetName = initialTargetName + (shouldCompress ? CompressedFileExtension : '');
+  const shouldCompress = shouldCompressFile(args.compress, source.size, MinSizeForCompression);
+  const shouldDecompress = shouldDecompressFile(args.decompress, source.path, CompressedFileExtension);
+
+  let finalTargetName = initialTargetName;
+  if (shouldDecompress) {
+    // If we decompress, we remove the .zst extension from the target name
+    finalTargetName = initialTargetName.slice(0, initialTargetName.length - CompressedFileExtension.length);
+  } else if (shouldCompress) {
+    // If we compress, we append the .zst extension to the target name
+    finalTargetName += CompressedFileExtension;
+  }
 
   const head = await tryHead(finalTargetName);
   const target = { ...head, path: head?.path ?? finalTargetName, size: head?.size ?? 0 } as FileInfo;
-  const defaultOperation = shouldCompress ? FileOperation.Compress : FileOperation.Copy;
+  const defaultOperation = shouldDecompress
+    ? FileOperation.Decompress
+    : shouldCompress
+      ? FileOperation.Compress
+      : FileOperation.Copy;
   const myTargetAction: TargetFileOperation = {
     target: target,
     fileOperation: FileOperation.Skip,
@@ -151,4 +190,20 @@ export async function verifyTargetFile(target: string, expectedSize: number, exp
  */
 function shouldCompressFile(compress: boolean, size: number = 0, minSize: number = MinSizeForCompression): boolean {
   return compress && size > minSize;
+}
+
+/**
+ * Checks if a file should be decompressed based on file name extension and decompression flag.
+ *
+ * @param decompress
+ * @param filename
+ * @param decompressExtension The file extension that indicates the file is compressed (default is `.zst`).
+ * @returns {boolean} True if the file should be decompressed, false otherwise.
+ */
+function shouldDecompressFile(
+  decompress: boolean,
+  filename: string = '',
+  decompressExtension: string = CompressedFileExtension,
+): boolean {
+  return decompress && filename.endsWith(decompressExtension);
 }

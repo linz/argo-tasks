@@ -56,6 +56,14 @@ export const commandCopy = command({
         'Compress copied files using zstandard (appends `.zst` to target file name when compressed). Note: Will not compress very small files',
       defaultValueIsSerializable: true,
     }),
+    decompress: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'decompress',
+      description:
+        'Decompress copied files using zstandard (removes `.zst` from target file name when decompressed). Note: Will only decompress .zst files',
+      defaultValueIsSerializable: true,
+    }),
     deleteSource: flag({
       type: boolean,
       defaultValue: () => false,
@@ -80,7 +88,6 @@ export const commandCopy = command({
     const stats: CopyStats = {
       copied: 0,
       copiedBytes: 0,
-      retries: 0,
       skipped: 0,
       skippedBytes: 0,
       compressed: 0,
@@ -88,6 +95,15 @@ export const commandCopy = command({
       compressedOutputBytes: 0,
       deleted: 0,
       deletedBytes: 0,
+      decompressed: 0,
+      decompressedInputBytes: 0,
+      decompressedOutputBytes: 0,
+      totalRead: 0,
+      totalReadBytes: 0,
+      totalWritten: 0,
+      totalWrittenBytes: 0,
+      totalProcessed: 0,
+      totalProcessedBytes: 0,
     };
 
     let force = args.force;
@@ -118,6 +134,7 @@ export const commandCopy = command({
             noClobber,
             fixContentType: args.fixContentType,
             compress: args.compress,
+            decompress: args.decompress,
             deleteSource: args.deleteSource,
           }),
         );
@@ -133,9 +150,17 @@ export const commandCopy = command({
       stats.compressedOutputBytes += result.compressedOutputBytes;
       stats.deleted += result.deleted;
       stats.deletedBytes += result.deletedBytes;
-      stats.retries += result.retries;
       stats.skipped += result.skipped;
       stats.skippedBytes += result.skippedBytes;
+      stats.decompressed += result.decompressed;
+      stats.decompressedInputBytes += result.decompressedInputBytes;
+      stats.decompressedOutputBytes += result.decompressedOutputBytes;
+      stats.totalRead += result.totalRead;
+      stats.totalReadBytes += result.totalReadBytes;
+      stats.totalWritten += result.totalWritten;
+      stats.totalWrittenBytes += result.totalWrittenBytes;
+      stats.totalProcessed += result.totalProcessed;
+      stats.totalProcessedBytes += result.totalProcessedBytes;
     }
 
     await pool.close();

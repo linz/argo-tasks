@@ -1,6 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
-import { createZstdCompress } from 'node:zlib';
+import { createZstdCompress, createZstdDecompress } from 'node:zlib';
 
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
@@ -28,9 +28,17 @@ export const worker = new WorkerRpc<CopyContract>({
       compressedOutputBytes: 0,
       deleted: 0,
       deletedBytes: 0,
-      retries: 0,
       skipped: 0,
       skippedBytes: 0,
+      decompressed: 0,
+      decompressedInputBytes: 0,
+      decompressedOutputBytes: 0,
+      totalRead: 0,
+      totalReadBytes: 0,
+      totalWritten: 0,
+      totalWrittenBytes: 0,
+      totalProcessed: 0,
+      totalProcessedBytes: 0,
     };
 
     if (currentId == null) {
@@ -74,24 +82,32 @@ export const worker = new WorkerRpc<CopyContract>({
           let sourceStream = rawSourceStream;
 
           const shouldCompress = fileOperation === FileOperation.Compress;
+          const shouldDecompress = fileOperation === FileOperation.Decompress;
+          const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
+
           if (fileOperation === FileOperation.Copy) {
             sourceStream = rawSourceStream.pipe(hashOriginal);
           } else if (shouldCompress) {
             const zstd = createZstdCompress();
             sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstd).pipe(hashCompressed);
+          } else if (shouldDecompress) {
+            const zstd = createZstdDecompress();
+            sourceStream = rawSourceStream.pipe(hashCompressed).pipe(zstd).pipe(hashOriginal);
           } else {
             throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
           }
 
+          const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.path, source) : source;
+
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Write');
-          await fsa.write(
-            target.path,
-            sourceStream,
-            args.fixContentType || shouldCompress ? fixFileMetadata(target.path, source) : source,
-          );
+          await fsa.write(target.path, sourceStream, fileMetadata);
 
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Verify');
-          const expectedSize = shouldCompress ? hashCompressed.size : source.size;
+          const expectedSize = shouldDecompress
+            ? hashOriginal.size
+            : shouldCompress
+              ? hashCompressed.size
+              : source.size;
           const expectedHash = hashOriginal.multihash;
           targetVerified = await verifyTargetFile(target.path, expectedSize, expectedHash);
           if (!targetVerified) {

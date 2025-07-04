@@ -33,6 +33,11 @@ export interface CopyContractArgs {
    * When compressing data, this will append `.zst` to the target file name. */
   compress: boolean;
 
+  /** Decompress .zst files while copying.
+   * Will copy the file if the file name does not end in `.zst`.
+   * When decompressing data, this will remove `.zst` from the target file name. */
+  decompress: boolean;
+
   /** Delete source files after copying or compressing */
   deleteSource: boolean;
 }
@@ -40,40 +45,76 @@ export interface CopyContractArgs {
 export interface CopyStats {
   /** Number of files copied */
   copied: number;
+
   /** Number of bytes copied */
   copiedBytes: number;
+
   /** Number of files compressed */
   compressed: number;
+
   /** Number of bytes compressed (input) */
   compressedInputBytes: number;
+
   /** Number of bytes compressed (output) */
   compressedOutputBytes: number;
+
+  /** Number of files decompressed */
+  decompressed: number;
+
+  /** Number of bytes decompressed (input) */
+  decompressedInputBytes: number;
+
+  /** Number of bytes decompressed (output) */
+  decompressedOutputBytes: number;
+
   /** Number of source files deleted */
   deleted: number;
+
   /** Number of bytes deleted */
   deletedBytes: number;
-  /** Number of times a file was retried */
-  retries: number;
-  /** Number of files that have been skipped, generally because the target file already exists */
+
+  /** Number of files that have been skipped, generally because the target file already exists with identical hash */
   skipped: number;
+
   /** Number of bytes that has been skipped. */
   skippedBytes: number;
+
+  /** Total number of files that have been read: Copied, Compressed, Decompressed */
+  totalRead: number;
+
+  /** Total number of bytes that have been read: Copied, Compressed, Decompressed */
+  totalReadBytes: number;
+
+  /** Total number of files that have been written: Copied, Compressed, Decompressed */
+  totalWritten: number;
+
+  /** Total number of bytes that have been written: Copied, Compressed, Decompressed */
+  totalWrittenBytes: number;
+
+  /**
+   * Total number of files that have been processed: Copied, Compressed, Decompressed, Skipped.
+   * Note: Excluding Deleted as this should match the total or be 0.
+   */
+  totalProcessed: number;
+
+  /**
+   * Total number of input bytes that have been read: Copied, Compressed, Decompressed, Skipped.
+   * Note: Exluding Deleted as this should match the total or be 0
+   * Also excluding bytes written, as this will match totalWrittenBytes (skip does not write any bytes).
+   */
+  totalProcessedBytes: number;
 }
 
 export const FileOperation = {
   Copy: 'copy',
   Skip: 'skip',
   Compress: 'compress',
+  Decompress: 'decompress',
   Delete: 'delete', // pseudo-operation for deleting source files after other operations
 } as const;
 export type FileOperation = (typeof FileOperation)[keyof typeof FileOperation];
 
 export interface TargetFileOperation {
-  /**
-   *  --no-clobber        Skip overwriting existing target files. Error if existing target is different from source.
-   *  --force             Overwrite all files.
-   *  --force-no-clobber  Overwrite only changed files, skip unchanged files.
-   */
   target: FileInfo;
   fileOperation: FileOperation;
   shouldDeleteSourceOnSuccess: boolean;
