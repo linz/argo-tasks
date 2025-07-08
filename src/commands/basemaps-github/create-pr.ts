@@ -237,6 +237,11 @@ export const CommandCreatePRArgs = {
     long: 'ticket',
     description: 'Associated JIRA ticket e.g. AIP-74',
   }),
+  content: option({
+    type: optional(string),
+    long: 'content',
+    description: 'Pull Request content',
+  }),
 };
 
 export const basemapsCreatePullRequest = command({
@@ -289,11 +294,11 @@ export const basemapsCreatePullRequest = command({
 
     const git = new MakeCogGithub(layer.name, args.repository, args.ticket);
     if (configType === 'vector') {
-      await git.updateVectorTileSet(layer, args.individual);
+      await git.updateVectorTileSet(layer, args.individual, args.content);
     } else if (configType === 'raster') {
-      await git.updateRasterTileSet(layer, category, args.individual, region);
+      await git.updateRasterTileSet(layer, category, args.individual, region, args.content);
     } else if (configType === 'elevation') {
-      await git.updateElevationTileSet(layer, args.individual, region);
+      await git.updateElevationTileSet(layer, args.individual, region, args.content);
     } else throw new Error(`Invalid Config File target: ${configType}`);
   },
 });

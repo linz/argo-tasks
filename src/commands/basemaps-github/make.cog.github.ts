@@ -85,6 +85,7 @@ export class MakeCogGithub {
     category: Category,
     individual: boolean,
     region: string | undefined,
+    body?: string,
   ): Promise<void> {
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-raster-${this.imagery}${this.ticketBranchSuffix}`;
@@ -107,7 +108,7 @@ export class MakeCogGithub {
       };
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, tileSet);
     } else {
       // Prepare new aerial tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', `aerial.json`);
@@ -116,14 +117,19 @@ export class MakeCogGithub {
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
     }
   }
 
   /**
    * Prepare and create pull request for the elevation tileset config
    */
-  async updateElevationTileSet(layer: ConfigLayer, individual: boolean, region: string | undefined): Promise<void> {
+  async updateElevationTileSet(
+    layer: ConfigLayer,
+    individual: boolean,
+    region: string | undefined,
+    body?: string,
+  ): Promise<void> {
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-elevation-${this.imagery}${this.ticketBranchSuffix}`;
     const title = `config(elevation): Add elevation ${this.imagery} to ${layer.name} config file.`;
@@ -144,7 +150,7 @@ export class MakeCogGithub {
       const tileSet = await this.prepareElevationTileSetConfig(layer);
       const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', type, `${layer.name}.json`);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, tileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, tileSet);
     } else {
       // Prepare new elevation tileset config
       const tileSetPath = fsa.joinAll('config', 'tileset', type === 'dem' ? 'elevation.json' : 'elevation.dsm.json');
@@ -153,14 +159,14 @@ export class MakeCogGithub {
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
       const newTileSet = await this.prepareElevationTileSetConfig(layer, tileSet);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
     }
   }
 
   /**
    * Prepare and create pull request for the aerial tileset config
    */
-  async updateVectorTileSet(layer: ConfigLayer, individual: boolean): Promise<void> {
+  async updateVectorTileSet(layer: ConfigLayer, individual: boolean, body?: string): Promise<void> {
     const filename = layer.name;
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
@@ -172,7 +178,7 @@ export class MakeCogGithub {
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
       const newTileSet = await this.prepareVectorTileSetConfig(layer, undefined);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
     } else {
       const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
@@ -181,7 +187,7 @@ export class MakeCogGithub {
       const existingTileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
       const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
     }
   }
 
@@ -192,6 +198,7 @@ export class MakeCogGithub {
     gh: GithubApi,
     branch: string,
     title: string,
+    body: string | undefined,
     tileSetPath: string,
     newTileSet: ConfigTileSet | undefined,
   ): Promise<void> {
@@ -202,7 +209,7 @@ export class MakeCogGithub {
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await gh.createPullRequest(branch, title, botEmail, [file]);
+    await gh.createPullRequest(branch, title, botEmail, [file], body);
   }
 
   /**
