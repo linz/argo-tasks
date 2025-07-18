@@ -4,8 +4,9 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
+import { MIN_SIZE_FOR_COMPRESSION } from '../copy-file-metadata.ts';
 import type { CopyStats } from '../copy-rpc.ts';
-import { MinSizeForCompression, worker } from '../copy-worker.ts';
+import { worker } from '../copy-worker.ts';
 
 describe('copyFiles', () => {
   const memory = new FsMemory();
@@ -314,7 +315,7 @@ describe('copyFiles', () => {
     await Promise.all([
       fsa.write(
         'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MIN_SIZE_FOR_COMPRESSION) })),
         {
           contentType: 'application/octet-stream',
           metadata: {
@@ -351,7 +352,7 @@ describe('copyFiles', () => {
     await Promise.all([
       fsa.write(
         'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MIN_SIZE_FOR_COMPRESSION / 2) })),
         {
           contentType: 'application/octet-stream',
           metadata: {
@@ -389,7 +390,7 @@ describe('copyFiles', () => {
     await Promise.all([
       fsa.write(
         'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MIN_SIZE_FOR_COMPRESSION) })),
         {
           contentType: 'application/octet-stream',
           metadata: {
@@ -521,14 +522,14 @@ describe('copyFiles', () => {
     await Promise.all([
       fsa.write(
         'memory://source/foo/bar/topographic.png',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MIN_SIZE_FOR_COMPRESSION) })),
         {
           contentType: 'image/png',
         },
       ),
       fsa.write(
         'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
+        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MIN_SIZE_FOR_COMPRESSION / 2) })),
         {
           contentType: 'application/octet-stream',
         },

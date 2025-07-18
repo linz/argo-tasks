@@ -1,12 +1,11 @@
 import type { FileInfo } from '@chunkd/core';
+
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 
-export const MinSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
+export const MIN_SIZE_FOR_COMPRESSION = 500; // testing with random ASCII data shows that compression is not worth it below this size
+export const COMPRESSED_FILE_EXTENSION = '.zst';
 
-const FixableContentType = new Set([
-  'binary/octet-stream',
-  'application/octet-stream',
-]);
+const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
 
 /**
  * Sets contentEncoding metadata for compressed files.

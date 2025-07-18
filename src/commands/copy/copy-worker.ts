@@ -8,11 +8,11 @@ import { WorkerRpc } from '@wtrpc/core';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
-import { HashKey, hashStream } from '../../utils/hash.ts';
 import { registerCli } from '../common.ts';
-import { fixFileMetadata, MinSizeForCompression } from './file-metadata.ts';
+import { fixFileMetadata } from './copy-file-metadata.ts';
+import { determineTargetFileOperation, verifyTargetFile } from './copy-helpers.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
-import { tryHead } from '../../utils/file.head.ts';
+import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
 
@@ -33,145 +33,117 @@ export const worker = new WorkerRpc<CopyContract>({
       skipped: 0,
       skippedBytes: 0,
     };
-    const end = Math.min(args.start + args.size, args.manifest.length);
+    const statsUpdaters = {
+      [FileOperation.Compress]: ({ sourceSize, outputSize }: { sourceSize: number; outputSize: number }): void => {
+        stats.copied++;
+        stats.copiedBytes += sourceSize;
+        stats.compressed++;
+        stats.compressedInputBytes += sourceSize;
+        stats.compressedOutputBytes += outputSize;
+      },
+      [FileOperation.Copy]: ({ sourceSize }: { sourceSize: number }): void => {
+        stats.copied++;
+        stats.copiedBytes += sourceSize;
+      },
+      [FileOperation.Skip]: ({ sourceSize }: { sourceSize: number }): void => {
+        stats.skipped++;
+        stats.skippedBytes += sourceSize;
+      },
+      [FileOperation.Delete]: ({ sourceSize }: { sourceSize: number }): void => {
+        stats.deleted++;
+        stats.deletedBytes += sourceSize;
+      },
+    };
 
     if (currentId == null) {
       logger.setBindings({ correlationId: args.id, threadId });
       currentId = args.id;
     }
 
+    const end = Math.min(args.start + args.size, args.manifest.length);
     for (let i = args.start; i < end; i++) {
       const manifestEntry = args.manifest[i];
       if (manifestEntry == null) continue;
 
       Q.push(async () => {
+        const startTime = performance.now();
         const source = await fsa.head(manifestEntry.source);
 
-        if (source == null) return;
-        if (source.size == null) return;
-        if (source.metadata == null) {
-          source.metadata = {};
+        if (source == null || source.size == null || source.size === 0) {
+          logger.info({ path: manifestEntry.source }, 'File:Copy:SkippedEmpty');
+          statsUpdaters[FileOperation.Skip]({ sourceSize: 0 });
+          return;
         }
-        const shouldCompress = args.compress && source.size > MinSizeForCompression;
-        const targetName = manifestEntry.target + (shouldCompress ? '.zst' : '');
-        const target = await fsa.head(targetName);
-
-        if (source.metadata[HashKey] == null) {
-          logger.trace({ path: manifestEntry.source, size: source.size }, 'File:Copy:HashingSource');
-          const startTime = performance.now();
-          source.metadata[HashKey] = await hashStream(fsa.stream(manifestEntry.source));
+        const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
+          source,
+          manifestEntry.target,
+          args,
+        );
+        let targetVerified = false;
+        if (fileOperation !== FileOperation.Skip) {
           logger.info(
             {
               path: manifestEntry.source,
               size: source.size,
-              multihash: source.metadata[HashKey],
-              duration: performance.now() - startTime,
+              fileOperation,
+              shouldDeleteSourceOnSuccess,
             },
-            'File:Copy:HashingSource',
+            'File:Copy:Start:' + fileOperation,
           );
-        }
-        if (target != null) {
-          // if the target file does not have a `multihash` stored as metadata, the system won't hash the file (as it's done for the source) to verify it against the source `multihash` to make sure the copy is not skipped. This is intentional in order to actually copy the file to be able to store the `multihash` in the AWS s3 metadata.
-          if (
-            args.noClobber &&
-            (shouldCompress || source?.size === target.size) &&
-            source.metadata[HashKey] === target.metadata?.[HashKey] &&
-            target.metadata?.[HashKey] != null
-          ) {
-            logger.info({ path: targetName, size: target.size }, 'File:Copy:Skipped');
-            stats.skipped++;
-            stats.skippedBytes += source.size;
-            if (args.deleteSource) {
-              const startTimeDelete = performance.now();
-              logger.info({ path: manifestEntry.source }, 'File:DeleteSource');
-              await fsa.delete(manifestEntry.source);
-              stats.deleted++;
-              stats.deletedBytes += source.size;
-              logger.debug(
-                { ...manifestEntry, size: source.size, duration: performance.now() - startTimeDelete },
-                'File:DeleteSource:Done',
-              );
-            }
-            return;
+          const hashOriginal = new HashTransform('sha256');
+          const hashCompressed = new HashTransform('sha256');
+
+          const rawSourceStream = fsa.stream(manifestEntry.source);
+          let sourceStream = rawSourceStream;
+
+          const shouldCompress = fileOperation === FileOperation.Compress;
+          if (fileOperation === FileOperation.Copy) {
+            sourceStream = rawSourceStream.pipe(hashOriginal);
+          } else if (shouldCompress) {
+            const zstd = createZstdCompress();
+            sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstd).pipe(hashCompressed);
+          } else {
+            throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
           }
-          // if the target file already exists and the user did not specify --force, raise an error
-          if (!args.force) {
-            logger.error({ target: target.path, source: source.path }, 'File:Overwrite');
-            throw new Error(
-              'Target already exists with different hash. Use --force to overwrite. target: ' +
-                targetName +
-                ' source: ' +
-                manifestEntry.source,
-            );
-          }
-        }
-        // we got through all the checks, so we can copy the file and compress it if needed
-        const hashOriginal = new HashTransform('sha256');
-        const hashCompressed = new HashTransform('sha256');
 
-        const startTime = performance.now();
-
-        const rawSourceStream = fsa.stream(manifestEntry.source);
-        let sourceStream = rawSourceStream;
-        if (shouldCompress) {
-          logger.trace(manifestEntry, 'File:Compress:start');
-          const zstd = createZstdCompress();
-          sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstd).pipe(hashCompressed);
-        } else {
-          logger.trace(manifestEntry, 'File:Copy:start');
-          sourceStream = rawSourceStream.pipe(hashOriginal);
-        }
-
-        await fsa.write(
-          targetName,
-          sourceStream,
-          args.fixContentType || shouldCompress ? fixFileMetadata(targetName, source) : source,
-        );
-
-        const targetReadBack = await tryHead(targetName);
-        const targetSize = targetReadBack?.size;
-        const targetHash = targetReadBack?.metadata?.[HashKey];
-
-        const expectedSize = shouldCompress ? hashCompressed.size : source.size;
-        if (targetSize !== expectedSize || targetHash !== source.metadata[HashKey]) {
-          logger.fatal(
-            { ...manifestEntry, sourceHash: source.metadata[HashKey], targetHash: targetHash },
-            'Copy:Failed',
+          logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Write');
+          await fsa.write(
+            target.path,
+            sourceStream,
+            args.fixContentType || shouldCompress ? fixFileMetadata(target.path, source) : source,
           );
-          // Cleanup the failed copy so it can be retried
-          if (targetSize != null) await fsa.delete(targetName);
-          throw new Error(`Failed to copy source:${manifestEntry.source} target:${targetName}`);
-        }
-        logger.debug({ ...manifestEntry, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
 
-        if (shouldCompress) {
-          stats.compressed++;
-          stats.compressedInputBytes += source.size;
-          stats.compressedOutputBytes += expectedSize;
+          logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Verify');
+          const expectedSize = shouldCompress ? hashCompressed.size : source.size;
+          const expectedHash = hashOriginal.multihash;
+          targetVerified = await verifyTargetFile(target.path, expectedSize, expectedHash);
+          if (!targetVerified) {
+            // Cleanup the failed copy so it can be retried
+            await fsa.delete(target.path);
+            throw new Error(`Failed to copy source:${manifestEntry.source} target:${target.path}`);
+          }
+
+          statsUpdaters[fileOperation]({ sourceSize: source.size, outputSize: expectedSize });
           logger.debug(
             {
               ...manifestEntry,
+              fileOperation,
               size: source.size,
               compressedSize: expectedSize,
               ratio: ((expectedSize / source.size) * 100).toFixed(1) + '%',
               duration: performance.now() - startTime,
             },
-            'File:Compress:Done',
-          );
-        } else {
-          stats.copied++;
-          stats.copiedBytes += source.size;
-          logger.debug(
-            { ...manifestEntry, size: source.size, duration: performance.now() - startTime },
             'File:Copy:Done',
           );
+        } else {
+          logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Skipped');
+          statsUpdaters[fileOperation]({ sourceSize: source.size });
         }
-        if (args.deleteSource) {
+        if (fileOperation === FileOperation.Skip || (targetVerified && shouldDeleteSourceOnSuccess)) {
           const startTimeDelete = performance.now();
-          logger.info({ path: manifestEntry.source }, 'File:DeleteSource');
+          logger.info({ path: manifestEntry.source }, 'File:DeleteSource:Start');
           await fsa.delete(manifestEntry.source);
-          stats.deleted++;
-          stats.deletedBytes += source.size;
+          statsUpdaters[FileOperation.Delete]({ sourceSize: source.size });
           logger.debug(
             { ...manifestEntry, size: source.size, duration: performance.now() - startTimeDelete },
             'File:DeleteSource:Done',
@@ -184,8 +156,6 @@ export const worker = new WorkerRpc<CopyContract>({
       logger.fatal({ err }, 'File:Copy:Failed');
       throw err;
     });
-    stats.copied += stats.compressed;
-    stats.copiedBytes += stats.compressedOutputBytes;
     return stats;
   },
 });
