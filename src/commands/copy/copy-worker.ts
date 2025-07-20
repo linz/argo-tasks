@@ -152,13 +152,32 @@ export const worker = new WorkerRpc<CopyContract>({
           }
         }
         // we got through all the checks, so we can copy the file and compress it if needed
+        const startTime = performance.now();
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:Setup',
+        );
         const hashOriginal = new HashTransform('sha256');
         const hashCompressed = new HashTransform('sha256');
 
-        const startTime = performance.now();
-
         const rawSourceStream = fsa.stream(manifestEntry.source);
         let sourceStream = rawSourceStream;
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:SourceStream',
+        );
         if (shouldCompress) {
           logger.trace(manifestEntry, 'File:Compress:start');
           const zstd = createZstdCompress();
@@ -167,17 +186,46 @@ export const worker = new WorkerRpc<CopyContract>({
           logger.trace(manifestEntry, 'File:Copy:start');
           sourceStream = rawSourceStream.pipe(hashOriginal);
         }
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:WriteStream',
+        );
 
         await fsa.write(
           targetName,
           sourceStream,
           args.fixContentType || shouldCompress ? fixFileMetadata(targetName, source) : source,
         );
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:ReadBack',
+        );
 
         const targetReadBack = await tryHead(targetName);
         const targetSize = targetReadBack?.size;
         const targetHash = targetReadBack?.metadata?.[HashKey];
-
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:Verify',
+        );
         const expectedSize = shouldCompress ? hashCompressed.size : source.size;
         if (targetSize !== expectedSize || targetHash !== source.metadata[HashKey]) {
           logger.fatal(
@@ -189,6 +237,16 @@ export const worker = new WorkerRpc<CopyContract>({
           throw new Error(`Failed to copy source:${manifestEntry.source} target:${targetName}`);
         }
         logger.debug({ ...manifestEntry, size: targetSize, duration: performance.now() - startTime }, 'File:Copy');
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:Stats',
+        );
 
         if (shouldCompress) {
           stats.compressed++;
@@ -212,6 +270,16 @@ export const worker = new WorkerRpc<CopyContract>({
             'File:Copy:Done',
           );
         }
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:DeleteSource',
+        );
         if (args.deleteSource) {
           const startTimeDelete = performance.now();
           logger.info({ path: manifestEntry.source }, 'File:DeleteSource');
@@ -223,6 +291,16 @@ export const worker = new WorkerRpc<CopyContract>({
             'File:DeleteSource:Done',
           );
         }
+        logger.info(
+          {
+            path: manifestEntry.source,
+            size: source.size,
+            multihash: source.metadata[HashKey],
+            duration_step: performance.now() - startTime,
+            fileOperation: shouldCompress ? 'compress' : 'copy',
+          },
+          'File:Copy:Completed',
+        );
       });
     }
     await Q.join().catch((err: unknown) => {
