@@ -1,4 +1,4 @@
-import { FileInfo } from '@chunkd/core';
+import type { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
 
 /**
