@@ -64,7 +64,6 @@ export const FileOperation = {
   Copy: 'copy',
   Skip: 'skip',
   Compress: 'compress',
-  // Decompress: 'decompress',
   Delete: 'delete', // pseudo-operation for deleting source files after other operations
 } as const;
 type FileOperation = (typeof FileOperation)[keyof typeof FileOperation];
