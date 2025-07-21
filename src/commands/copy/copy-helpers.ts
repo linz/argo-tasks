@@ -43,8 +43,6 @@ export async function determineTargetFileOperation(
   args: CopyContractArgs,
 ): Promise<TargetFileOperation> {
   const shouldCompress = args.compress && source.size !== undefined && source.size > MinSizeForCompression;
-  // const shouldDecompress = args.decompress && target.endsWith('.zst'); // TODO: Implement decompression logic
-  // const finalTargetName = shouldDecompress ? initialTargetName.slice(0, -COMPRESSED_FILE_EXTENSION.length) : initialTargetName + (shouldCompress ? COMPRESSED_FILE_EXTENSION : '');
   const finalTargetName = initialTargetName + (shouldCompress ? CompressedFileExtension : '');
 
   const target = (await fsa.head(finalTargetName)) || { path: finalTargetName, size: 0 };
