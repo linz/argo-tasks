@@ -9,8 +9,7 @@ import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
 import { registerCli } from '../common.ts';
-import { fixFileMetadata } from './copy-file-metadata.ts';
-import { determineTargetFileOperation, verifyTargetFile } from './copy-helpers.ts';
+import { determineTargetFileOperation, fixFileMetadata, verifyTargetFile } from './copy-helpers.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
@@ -139,7 +138,7 @@ export const worker = new WorkerRpc<CopyContract>({
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Skipped');
           statsUpdaters[fileOperation]({ sourceSize: source.size });
         }
-        if (fileOperation === FileOperation.Skip || (targetVerified && shouldDeleteSourceOnSuccess)) {
+        if (shouldDeleteSourceOnSuccess && (targetVerified || fileOperation === FileOperation.Skip)) {
           const startTimeDelete = performance.now();
           logger.info({ path: manifestEntry.source }, 'File:DeleteSource:Start');
           await fsa.delete(manifestEntry.source);

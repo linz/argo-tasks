@@ -4,19 +4,48 @@ import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
-import { COMPRESSED_FILE_EXTENSION, MIN_SIZE_FOR_COMPRESSION } from './copy-file-metadata.ts';
+import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
+export const MinSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
+export const CompressedFileExtension = '.zst';
+
+const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
+
+/**
+ * Sets contentEncoding metadata for compressed files.
+ * Also, if the file has been written with a unknown binary contentType attempt to fix it with common content types
+ *
+ *
+ * @param path File path to fix the metadata of
+ * @param meta File metadata
+ * @returns New fixed file metadata if fixed otherwise source file metadata
+ */
+export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
+  if (path.toLowerCase().endsWith('.zst')) {
+    return { ...meta, contentType: 'application/zstd' };
+  }
+
+  if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
+
+  // Assume our tiffs are cloud optimized
+  if (isTiff(path)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+
+  // overwrite with application/json
+  if (path.endsWith('.json')) return { ...meta, contentType: 'application/json' };
+
+  return meta;
+}
 export async function determineTargetFileOperation(
   source: FileInfo,
   initialTargetName: string,
   args: CopyContractArgs,
 ): Promise<TargetFileOperation> {
-  const shouldCompress = args.compress && source.size !== undefined && source.size > MIN_SIZE_FOR_COMPRESSION;
+  const shouldCompress = args.compress && source.size !== undefined && source.size > MinSizeForCompression;
   // const shouldDecompress = args.decompress && target.endsWith('.zst'); // TODO: Implement decompression logic
   // const finalTargetName = shouldDecompress ? initialTargetName.slice(0, -COMPRESSED_FILE_EXTENSION.length) : initialTargetName + (shouldCompress ? COMPRESSED_FILE_EXTENSION : '');
-  const finalTargetName = initialTargetName + (shouldCompress ? COMPRESSED_FILE_EXTENSION : '');
+  const finalTargetName = initialTargetName + (shouldCompress ? CompressedFileExtension : '');
 
   const target = (await fsa.head(finalTargetName)) || { path: finalTargetName, size: 0 };
   const defaultOperation = shouldCompress ? FileOperation.Compress : FileOperation.Copy;
