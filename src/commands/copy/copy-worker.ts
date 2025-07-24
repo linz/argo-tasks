@@ -9,7 +9,7 @@ import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
 import { registerCli } from '../common.ts';
-import { determineTargetFileOperation, fixFileMetadata, verifyTargetFile } from './copy-helpers.ts';
+import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
@@ -32,27 +32,6 @@ export const worker = new WorkerRpc<CopyContract>({
       skipped: 0,
       skippedBytes: 0,
     };
-    const statsUpdaters = {
-      [FileOperation.Compress]: ({ sourceSize, outputSize }: { sourceSize: number; outputSize: number }): void => {
-        stats.copied++;
-        stats.copiedBytes += sourceSize;
-        stats.compressed++;
-        stats.compressedInputBytes += sourceSize;
-        stats.compressedOutputBytes += outputSize;
-      },
-      [FileOperation.Copy]: ({ sourceSize }: { sourceSize: number }): void => {
-        stats.copied++;
-        stats.copiedBytes += sourceSize;
-      },
-      [FileOperation.Skip]: ({ sourceSize }: { sourceSize: number }): void => {
-        stats.skipped++;
-        stats.skippedBytes += sourceSize;
-      },
-      [FileOperation.Delete]: ({ sourceSize }: { sourceSize: number }): void => {
-        stats.deleted++;
-        stats.deletedBytes += sourceSize;
-      },
-    };
 
     if (currentId == null) {
       logger.setBindings({ correlationId: args.id, threadId });
@@ -67,10 +46,9 @@ export const worker = new WorkerRpc<CopyContract>({
       Q.push(async () => {
         const startTime = performance.now();
         const source = await fsa.head(manifestEntry.source);
-
-        if (source == null || source.size == null || source.size === 0) {
+        if (source?.size == null || source.size === 0) {
           logger.info({ path: manifestEntry.source }, 'File:Copy:SkippedEmpty');
-          statsUpdaters[FileOperation.Skip]({ sourceSize: 0 });
+          statsUpdaters[FileOperation.Skip](stats, source?.size ?? 0);
           return;
         }
         const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
@@ -122,7 +100,7 @@ export const worker = new WorkerRpc<CopyContract>({
             throw new Error(`Failed to copy source:${manifestEntry.source} target:${target.path}`);
           }
 
-          statsUpdaters[fileOperation]({ sourceSize: source.size, outputSize: expectedSize });
+          statsUpdaters[fileOperation](stats, source.size, expectedSize);
           logger.debug(
             {
               ...manifestEntry,
@@ -136,13 +114,13 @@ export const worker = new WorkerRpc<CopyContract>({
           );
         } else {
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Skipped');
-          statsUpdaters[fileOperation]({ sourceSize: source.size });
+          statsUpdaters[fileOperation](stats, source.size);
         }
         if (shouldDeleteSourceOnSuccess && (targetVerified || fileOperation === FileOperation.Skip)) {
           const startTimeDelete = performance.now();
           logger.info({ path: manifestEntry.source }, 'File:DeleteSource:Start');
           await fsa.delete(manifestEntry.source);
-          statsUpdaters[FileOperation.Delete]({ sourceSize: source.size });
+          statsUpdaters[FileOperation.Delete](stats, source.size);
           logger.debug(
             { ...manifestEntry, size: source.size, duration: performance.now() - startTimeDelete },
             'File:DeleteSource:Done',

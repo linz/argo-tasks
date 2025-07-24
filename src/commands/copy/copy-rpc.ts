@@ -66,13 +66,13 @@ export const FileOperation = {
   Compress: 'compress',
   Delete: 'delete', // pseudo-operation for deleting source files after other operations
 } as const;
-type FileOperation = (typeof FileOperation)[keyof typeof FileOperation];
+export type FileOperation = (typeof FileOperation)[keyof typeof FileOperation];
 
 export interface TargetFileOperation {
-  /*
-  --no-clobber        Skip overwriting existing target files. Error if existing target is different from source.
-  --force             Overwrite all files.
-  --force-no-clobber  Overwrite only changed files, skip unchanged files.
+  /**
+   *  --no-clobber        Skip overwriting existing target files. Error if existing target is different from source.
+   *  --force             Overwrite all files.
+   *  --force-no-clobber  Overwrite only changed files, skip unchanged files.
    */
   target: FileInfo;
   fileOperation: FileOperation;

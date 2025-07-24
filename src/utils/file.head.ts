@@ -14,7 +14,7 @@ export async function tryHead(filePath: string, retryCount = 3): Promise<FileInf
   for (let i = 0; i < retryCount; i++) {
     const ret = await fsa.head(filePath);
     if (ret?.size) return ret;
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 50 + i * 100));
   }
   return null;
 }
