@@ -64,6 +64,7 @@ describe('identify-updated-items', () => {
     };
     await commandIdentifyUpdatedItems.handler(args);
     const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/identify-updated-items/file-list.json');
+    console.dir(outputFileList, { depth: null }); //debug
     assert.deepEqual(outputFileList, [
       {
         output: 'BD31',
