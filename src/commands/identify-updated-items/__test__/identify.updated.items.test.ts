@@ -109,6 +109,7 @@ describe('identify-updated-items', () => {
   it('should only add modified items to file-list.json', async () => {
     await commandIdentifyUpdatedItems.handler(baseArgs);
     const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/identify-updated-items/file-list.json');
+    console.dir(outputFileList, { depth: null }); //debug
     assert.deepEqual(outputFileList, [
       {
         output: 'BD32',
