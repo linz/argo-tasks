@@ -4,8 +4,9 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
+import { MinSizeForCompression } from '../copy-helpers.ts';
 import type { CopyStats } from '../copy-rpc.ts';
-import { MinSizeForCompression, worker } from '../copy-worker.ts';
+import { worker } from '../copy-worker.ts';
 
 describe('copyFiles', () => {
   const memory = new FsMemory();
