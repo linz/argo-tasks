@@ -143,7 +143,12 @@ export const commandIdentifyUpdatedItems = command({
       logger.trace({ itemId }, `identifyUpdatedItems:Skipping ${itemId} because sources match`);
     }
     const tilesToProcess: FileListEntry[] = Object.entries(itemsToProcess).map(([key, value]) => {
-      return { output: key, input: value.map((item) => item.href.replace(/\.json$/, '.tiff')), includeDerived: true };
+      const tiffInputs = value.map((item) => item.href.replace(/\.json$/, '.tiff'));
+      return {
+        output: key,
+        input: sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls),
+        includeDerived: true,
+      };
     });
 
     const fileListPath = '/tmp/identify-updated-items/file-list.json';
@@ -159,3 +164,18 @@ export const commandIdentifyUpdatedItems = command({
     );
   },
 });
+
+/**
+ * Sorts the input file paths by their order in the source collections.
+ *
+ * @param inputs The input file paths to sort.
+ * @param sourceCollections The source collections to use for sorting.
+ * @returns The sorted input file paths.
+ */
+function sortInputsBySourceOrder(inputs: string[], sourceCollections: string[]): string[] {
+  return inputs.sort((a, b) => {
+    const indexA = sourceCollections.findIndex((src) => a.includes(src.replace('/collection.json', '')));
+    const indexB = sourceCollections.findIndex((src) => b.includes(src.replace('/collection.json', '')));
+    return indexA - indexB;
+  });
+}
