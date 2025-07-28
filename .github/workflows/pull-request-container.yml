@@ -8,11 +8,12 @@ jobs:
   containers:
     name: Create containers
     runs-on: ubuntu-latest
-    environment:
-      name: nonprod
 
     if: |
       github.event.label.name == 'container'
+
+    environment:
+      name: nonprod
 
     env:
       AWS_CI_ROLE: ${{ secrets.AWS_CI_ROLE }}
