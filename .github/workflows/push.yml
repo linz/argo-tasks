@@ -35,6 +35,8 @@ jobs:
 
   deploy-nonprod-containers:
     runs-on: ubuntu-latest
+    environment:
+      name: nonprod
     concurrency: deploy-dev-${{ github.ref }}
     needs: ['build']
 
@@ -48,9 +50,6 @@ jobs:
 
     env:
       AWS_CI_ROLE: ${{ secrets.AWS_CI_ROLE }}
-
-    environment:
-      name: nonprod
 
     steps:
       - uses: linz/action-typescript@dee99184c4305aea6c380a52db9b2d7abaaa3e78 # v3
