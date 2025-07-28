@@ -12,7 +12,7 @@
     "organization": true
   },
   "devDependencies": {
-    "@chunkd/source-memory": "^10.1.0",
+    "@chunkd/source-memory": "^11.0.2",
     "@linzjs/style": "^5.4.0",
     "@types/node": "^22.15.17",
     "@types/prettier": "^3.0.0",
@@ -40,7 +40,7 @@
     "@aws-sdk/lib-storage": "^3.440.0",
     "@basemaps/config": "^7.7.0",
     "@basemaps/geo": "^7.5.0",
-    "@chunkd/fs": "^10.0.9",
+    "@chunkd/fs": "^11.2.0",
     "@chunkd/source-aws-v3": "^10.1.3",
     "@cogeotiff/core": "^9.0.3",
     "@linzjs/geojson": "^7.10.0",
