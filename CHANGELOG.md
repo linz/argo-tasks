@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.18.0](https://github.com/linz/argo-tasks/compare/v4.17.0...v4.18.0) (2025-07-28)
+
+
+### Features
+
+* **basemaps:** Pass ODR pull request url into basemap-config PR. BM-1324 ([#1235](https://github.com/linz/argo-tasks/issues/1235)) ([9a710ed](https://github.com/linz/argo-tasks/commit/9a710edc2660519645a9fe77c9e0e91a7c1f47c0))
+* stop using GITHUB_TOKEN for release-please TDE-1584  ([#1243](https://github.com/linz/argo-tasks/issues/1243)) ([c8d13b1](https://github.com/linz/argo-tasks/commit/c8d13b1a1354c22c6b5ffbc33d497c05b655c0b3))
+
+
+### Bug Fixes
+
+* identify-updated-items should return ordered input based on collection order TDE-1588 ([#1241](https://github.com/linz/argo-tasks/issues/1241)) ([c3e1ce5](https://github.com/linz/argo-tasks/commit/c3e1ce537fc76d264f5c701b6fe591b3bd67f20c))
+
 ## [4.17.0](https://github.com/linz/argo-tasks/compare/v4.16.0...v4.17.0) (2025-06-10)
 
 
