@@ -66,6 +66,7 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
     individual: false,
     vector: false,
     ticket: 'any ticket',
+    content: 'any-content',
   });
   assert.equal(result, undefined);
   assert.equal(createPullRequestMock.mock.callCount(), 1);

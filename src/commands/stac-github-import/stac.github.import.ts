@@ -133,7 +133,12 @@ export const commandStacGithubImport = command({
     };
     logger.info({ commit: title, branch }, 'Git:Commit');
     // create pull request
-    await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
+    const pr = await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
+    if (pr != null) {
+      const prUrl = new URL(`https://github.com/${args.repoName}/pull/${pr}`);
+      logger.info({ prUrl: prUrl.href }, 'Git:PullRequestCreated');
+      await fsa.write('/tmp/pull-request/url', prUrl.href);
+    }
   },
 });
 
