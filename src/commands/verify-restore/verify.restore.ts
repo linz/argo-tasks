@@ -88,7 +88,6 @@ export const commandVerifyRestore = command({
           if (!(await isRestoreCompleted(headObjectOutput))) {
             logger.info({ path: file }, 'VerifyRestore:NotRestored');
             await fsa.write(args.output, Buffer.from('false'));
-            throw new Error('Restore not completed');
           }
           logger.info({ file }, 'VerifyRestore:Restored');
         }),
