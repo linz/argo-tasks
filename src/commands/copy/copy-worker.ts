@@ -85,16 +85,20 @@ export const worker = new WorkerRpc<CopyContract>({
           const shouldDecompress = fileOperation === FileOperation.Decompress;
           const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
 
-          if (fileOperation === FileOperation.Copy) {
-            sourceStream = rawSourceStream.pipe(hashOriginal);
-          } else if (shouldCompress) {
-            const zstd = createZstdCompress();
-            sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstd).pipe(hashCompressed);
-          } else if (shouldDecompress) {
-            const zstd = createZstdDecompress();
-            sourceStream = rawSourceStream.pipe(hashCompressed).pipe(zstd).pipe(hashOriginal);
-          } else {
-            throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
+          switch (fileOperation) {
+            case FileOperation.Copy:
+              sourceStream = rawSourceStream.pipe(hashOriginal);
+              break;
+            case FileOperation.Compress:
+              const zstdCompress = createZstdCompress();
+              sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstdCompress).pipe(hashCompressed);
+              break;
+            case FileOperation.Decompress:
+              const zstdDecompress = createZstdDecompress();
+              sourceStream = rawSourceStream.pipe(hashCompressed).pipe(zstdDecompress).pipe(hashOriginal);
+              break;
+            default:
+              throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
           }
 
           const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.path, source) : source;
