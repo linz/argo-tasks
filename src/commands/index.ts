@@ -19,6 +19,7 @@ import { commandStacSetup } from './stac-setup/stac.setup.ts';
 import { commandStacSync } from './stac-sync/stac.sync.ts';
 import { commandStacValidate } from './stac-validate/stac.validate.ts';
 import { commandTileIndexValidate } from './tileindex-validate/tileindex.validate.ts';
+import { commandVerifyRestore } from './verify-restore/verify.restore.ts';
 
 export const AllCommands = {
   'archive-setup': archiveSetup,
@@ -56,6 +57,7 @@ export const AllCommands = {
   }),
   'pretty-print': commandPrettyPrint,
   'generate-path': commandGeneratePath,
+  'verify-restore': commandVerifyRestore,
 };
 
 export const cmd = subcommands({
