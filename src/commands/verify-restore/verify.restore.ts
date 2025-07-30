@@ -63,7 +63,6 @@ export const commandVerifyRestore = command({
     try {
       logger.info({ path: args.report.toString() }, 'VerifyRestore:LoadReport');
       const report: ManifestReport = await fsa.readJson(args.report.toString());
-      console.log(report);
       resultKeys = await fetchResultKeysFromReport(report);
     } catch (error) {
       logger.error({ error, path: args.report.toString() }, 'VerifyRestore:FailedToLoadReport');
@@ -73,6 +72,7 @@ export const commandVerifyRestore = command({
     Each report manifest links to multiple CSV files or "sub manifests"
       that contains the list of files that were triggered for restoration.
     */
+    let anyNotRestored = false;
     for (const key of resultKeys) {
       logger.info({ key }, 'VerifyRestore:ProcessingCSVResult');
       const resultPath = new URL(key, args.report);
@@ -85,18 +85,31 @@ export const commandVerifyRestore = command({
         limit(async () => {
           logger.info({ path: file }, 'VerifyRestore:CheckingFile');
           const headObjectOutput = await headObject(file);
-          if (!(await isRestoreCompleted(headObjectOutput))) {
+          let restoreCompleted = false;
+          try {
+            restoreCompleted = await isRestoreCompleted(headObjectOutput);
+          } catch (error: unknown) {
+            logger.error({ path: file, error }, 'VerifyRestore:FailedToCheckRestoreStatus');
+            throw new Error(`Failed to check restore status for s3://${file.Bucket}/${file.Key}: ${String(error)}`);
+          }
+          if (!restoreCompleted) {
+            anyNotRestored = true;
             logger.info({ path: file }, 'VerifyRestore:NotRestored');
-            await fsa.write(args.output, Buffer.from('false'));
+            return;
           }
           logger.info({ file }, 'VerifyRestore:Restored');
         }),
       );
       await Promise.all(restoreChecks);
     }
-    await fsa.write(args.output, Buffer.from('true'));
-    if (args.markDone) {
-      await markReportDone(args.report);
+
+    if (anyNotRestored) {
+      await fsa.write(args.output, Buffer.from('false'));
+    } else {
+      await fsa.write(args.output, Buffer.from('true'));
+      if (args.markDone) {
+        await markReportDone(args.report);
+      }
     }
 
     logger.info('VerifyRestore:Done');
@@ -183,6 +196,7 @@ async function headObject(path: { Bucket: string; Key: string }): Promise<HeadOb
     logger.info({ path, headObjectOutput }, 'VerifyRestore:HeadObject');
     return headObjectOutput;
   } catch (error) {
+    logger.error({ path, error }, 'VerifyRestore:FailedToHeadObject');
     throw new Error(`Failed to headObject() for s3://${path.Bucket}/${path.Key}: ${String(error)}`);
   }
 }
@@ -196,6 +210,7 @@ async function headObject(path: { Bucket: string; Key: string }): Promise<HeadOb
  */
 export async function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): Promise<boolean> {
   if (headObjectOutput?.Restore === undefined) {
+    logger.error({ headObjectOutput }, 'VerifyRestore:RestoreStatusUndefined');
     throw new Error('Restore status is undefined.');
   }
   return headObjectOutput?.Restore === 'ongoing-request="false"';
