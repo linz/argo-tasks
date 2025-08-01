@@ -86,24 +86,13 @@ export const commandCopy = command({
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
 
     const stats: CopyStats = {
-      copied: 0,
-      copiedBytes: 0,
-      skipped: 0,
-      skippedBytes: 0,
-      compressed: 0,
-      compressedInputBytes: 0,
-      compressedOutputBytes: 0,
-      deleted: 0,
-      deletedBytes: 0,
-      decompressed: 0,
-      decompressedInputBytes: 0,
-      decompressedOutputBytes: 0,
-      totalRead: 0,
-      totalReadBytes: 0,
-      totalWritten: 0,
-      totalWrittenBytes: 0,
-      totalProcessed: 0,
-      totalProcessedBytes: 0,
+      copied: { count: 0, bytes: 0 },
+      compressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      decompressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      deleted: { count: 0, bytes: 0 },
+      skipped: { count: 0, bytes: 0 },
+      processed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      grandTotal: { count: 0, bytesIn: 0, bytesOut: 0 },
     };
 
     let force = args.force;
@@ -143,24 +132,24 @@ export const commandCopy = command({
 
     const results = await Promise.all(manifestChunks);
     for (const result of results) {
-      stats.copied += result.copied;
-      stats.copiedBytes += result.copiedBytes;
-      stats.compressed += result.compressed;
-      stats.compressedInputBytes += result.compressedInputBytes;
-      stats.compressedOutputBytes += result.compressedOutputBytes;
-      stats.deleted += result.deleted;
-      stats.deletedBytes += result.deletedBytes;
-      stats.skipped += result.skipped;
-      stats.skippedBytes += result.skippedBytes;
-      stats.decompressed += result.decompressed;
-      stats.decompressedInputBytes += result.decompressedInputBytes;
-      stats.decompressedOutputBytes += result.decompressedOutputBytes;
-      stats.totalRead += result.totalRead;
-      stats.totalReadBytes += result.totalReadBytes;
-      stats.totalWritten += result.totalWritten;
-      stats.totalWrittenBytes += result.totalWrittenBytes;
-      stats.totalProcessed += result.totalProcessed;
-      stats.totalProcessedBytes += result.totalProcessedBytes;
+      stats.copied.count += result.copied.count;
+      stats.copied.bytes += result.copied.bytes;
+      stats.compressed.count += result.compressed.count;
+      stats.compressed.bytesIn += result.compressed.bytesIn;
+      stats.compressed.bytesOut += result.compressed.bytesOut;
+      stats.decompressed.count += result.decompressed.count;
+      stats.decompressed.bytesIn += result.decompressed.bytesIn;
+      stats.decompressed.bytesOut += result.decompressed.bytesOut;
+      stats.processed.count += result.processed.count;
+      stats.processed.bytesIn += result.processed.bytesIn;
+      stats.processed.bytesOut += result.processed.bytesOut;
+      stats.deleted.count += result.deleted.count;
+      stats.deleted.bytes += result.deleted.bytes;
+      stats.skipped.count += result.skipped.count;
+      stats.skipped.bytes += result.skipped.bytes;
+      stats.grandTotal.count += result.grandTotal.count;
+      stats.grandTotal.bytesIn += result.grandTotal.bytesIn;
+      stats.grandTotal.bytesOut += result.grandTotal.bytesOut;
     }
 
     await pool.close();

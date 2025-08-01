@@ -21,24 +21,13 @@ let currentId: string | null = null;
 export const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = {
-      copied: 0,
-      copiedBytes: 0,
-      compressed: 0,
-      compressedInputBytes: 0,
-      compressedOutputBytes: 0,
-      deleted: 0,
-      deletedBytes: 0,
-      skipped: 0,
-      skippedBytes: 0,
-      decompressed: 0,
-      decompressedInputBytes: 0,
-      decompressedOutputBytes: 0,
-      totalRead: 0,
-      totalReadBytes: 0,
-      totalWritten: 0,
-      totalWrittenBytes: 0,
-      totalProcessed: 0,
-      totalProcessedBytes: 0,
+      copied: { count: 0, bytes: 0 },
+      compressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      decompressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      deleted: { count: 0, bytes: 0 },
+      skipped: { count: 0, bytes: 0 },
+      processed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      grandTotal: { count: 0, bytesIn: 0, bytesOut: 0 },
     };
 
     if (currentId == null) {

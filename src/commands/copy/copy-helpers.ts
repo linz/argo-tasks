@@ -26,46 +26,53 @@ const FixableContentType = new Set(['binary/octet-stream', 'application/octet-st
 export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize: number, outputSize?: number) => void> =
   {
     [FileOperation.Compress]: (stats, sourceSize, outputSize = 0): void => {
-      stats.totalProcessed++;
-      stats.totalProcessedBytes += sourceSize;
-      stats.totalRead++;
-      stats.totalReadBytes += sourceSize;
-      stats.totalWritten++;
-      stats.totalWrittenBytes += outputSize;
-      stats.compressed++;
-      stats.compressedInputBytes += sourceSize;
-      stats.compressedOutputBytes += outputSize;
+      stats.compressed.count++;
+      stats.compressed.bytesIn += sourceSize;
+      stats.compressed.bytesOut += outputSize;
+
+      stats.processed.count++;
+      stats.processed.bytesIn += sourceSize;
+      stats.processed.bytesOut += outputSize;
+
+      stats.grandTotal.count++;
+      stats.grandTotal.bytesIn += sourceSize;
+      stats.grandTotal.bytesOut += outputSize;
     },
     [FileOperation.Decompress]: (stats, sourceSize, outputSize = 0): void => {
-      stats.totalProcessed++;
-      stats.totalProcessedBytes += sourceSize;
-      stats.totalRead++;
-      stats.totalReadBytes += sourceSize;
-      stats.totalWritten++;
-      stats.totalWrittenBytes += outputSize;
-      stats.decompressed++;
-      stats.decompressedInputBytes += sourceSize;
-      stats.decompressedOutputBytes += outputSize;
+      stats.decompressed.count++;
+      stats.decompressed.bytesIn += sourceSize;
+      stats.decompressed.bytesOut += outputSize;
+
+      stats.processed.count++;
+      stats.processed.bytesIn += sourceSize;
+      stats.processed.bytesOut += outputSize;
+
+      stats.grandTotal.count++;
+      stats.grandTotal.bytesIn += sourceSize;
+      stats.grandTotal.bytesOut += outputSize;
     },
     [FileOperation.Copy]: (stats, sourceSize): void => {
-      stats.totalProcessed++;
-      stats.totalProcessedBytes += sourceSize;
-      stats.totalRead++;
-      stats.totalReadBytes += sourceSize;
-      stats.totalWritten++;
-      stats.totalWrittenBytes += sourceSize;
-      stats.copied++;
-      stats.copiedBytes += sourceSize;
+      stats.copied.count++;
+      stats.copied.bytes += sourceSize;
+
+      stats.processed.count++;
+      stats.processed.bytesIn += sourceSize;
+      stats.processed.bytesOut += sourceSize;
+
+      stats.grandTotal.count++;
+      stats.grandTotal.bytesIn += sourceSize;
+      stats.grandTotal.bytesOut += sourceSize;
     },
     [FileOperation.Skip]: (stats, sourceSize): void => {
-      stats.totalProcessed++;
-      stats.totalProcessedBytes += sourceSize;
-      stats.skipped++;
-      stats.skippedBytes += sourceSize;
+      stats.skipped.count++;
+      stats.skipped.bytes += sourceSize;
+
+      stats.grandTotal.count++;
+      stats.grandTotal.bytesIn += sourceSize;
     },
     [FileOperation.Delete]: (stats, sourceSize): void => {
-      stats.deleted++;
-      stats.deletedBytes += sourceSize;
+      stats.deleted.count++;
+      stats.deleted.bytes += sourceSize;
     },
   };
 
@@ -189,7 +196,7 @@ export async function verifyTargetFile(target: string, expectedSize: number, exp
  * @returns {boolean} True if the file should be compressed, false otherwise.
  */
 function shouldCompressFile(compress: boolean, size: number = 0, minSize: number = MinSizeForCompression): boolean {
-  return compress && size > minSize;
+  return compress && size >= minSize;
 }
 
 /**

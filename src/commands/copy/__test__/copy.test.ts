@@ -50,8 +50,6 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.png',
         },
       ],
-      noClobber: true,
-      fixContentType: true,
     });
 
     const [jsonSource, jsonTarget] = await Promise.all([
@@ -77,7 +75,7 @@ describe('copyFiles', () => {
     assert.equal(String(memory.files.get('memory://target/topographic.png')?.buffer), 'test');
   });
 
-  it('should default to COG/json', async () => {
+  it('should default to COG/json when fixContentType = true', async () => {
     await Promise.all([
       fsa.write('memory://source/topographic.json', Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/octet-stream',
@@ -98,7 +96,6 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.tiff',
         },
       ],
-      noClobber: true,
       fixContentType: true,
     });
     const [jsonSource, jsonTarget] = await Promise.all([
@@ -139,7 +136,7 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.tiff',
         },
       ],
-      noClobber: true,
+      fixContentType: false,
     });
     const [jsonSource, jsonTarget] = await Promise.all([
       fsa.head('memory://source/topographic.json'),
@@ -182,6 +179,7 @@ describe('copyFiles', () => {
           },
         ],
         noClobber: true,
+        force: false,
       }),
       new Error(
         'Target already exists with different hash. Use --force to overwrite. target: memory://target/topographic.json source: memory://source/topographic.json',
@@ -289,16 +287,12 @@ describe('copyFiles', () => {
 
   it('should copy and compress files when compress flag is set and file is large enough', async () => {
     await Promise.all([
-      fsa.write(
-        'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            unique: 'fileA',
-          },
+      fsa.write('memory://source/topographic.json', Buffer.alloc(MinSizeForCompression, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          unique: 'fileA',
         },
-      ),
+      }),
     ]);
     await worker.routes.copy({
       ...defaultCopyArgs,
@@ -308,29 +302,24 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.json',
         },
       ],
-      noClobber: true,
       compress: true,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json.zst');
 
     assert.equal(
       jsonTarget?.metadata?.['multihash'],
-      '12207533e5dd314c9314c3fbb5c97b92f9a3772c957a9b5f15844a96e417db7a46c7',
+      '1220c38c2bf3055c516a98ac5d97f30e7c364e827bc0199e1c3415b794afbe55dcad',
     );
   });
 
   it('should copy and NOT compress files when compress flag is set and file is small', async () => {
     await Promise.all([
-      fsa.write(
-        'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            unique: 'fileA',
-          },
+      fsa.write('memory://source/topographic.json', Buffer.alloc(MinSizeForCompression - 1, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          unique: 'fileA',
         },
-      ),
+      }),
     ]);
     await worker.routes.copy({
       ...defaultCopyArgs,
@@ -340,7 +329,6 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.json',
         },
       ],
-      noClobber: true,
       compress: true,
     });
     const jsonTarget = await fsa.head('memory://target/topographic.json');
@@ -348,34 +336,26 @@ describe('copyFiles', () => {
     assert.strictEqual(jsonTarget?.contentEncoding, undefined);
     assert.equal(
       jsonTarget?.metadata?.['multihash'],
-      '1220f17f0cb80310eda2ae8a17f59e4cbb40a48f7d8d427dfe334d45447833604a2b',
+      '12200fc49e10ee7035ce7eefb2704762528e9b2a9038b4cff25794bab02402727952',
     );
   });
 
   it('should skip copy files when compress and same multihash even if target size mismatches source size', async () => {
     await Promise.all([
-      fsa.write(
-        'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            unique: 'fileA',
-            multihash: fakeMultihash,
-          },
+      fsa.write('memory://source/topographic.json', Buffer.alloc(MinSizeForCompression, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          unique: 'fileA',
+          multihash: fakeMultihash,
         },
-      ),
-      fsa.write(
-        'memory://target/topographic.json.zst',
-        Buffer.from(JSON.stringify({ test: true, fakeCompressedData: 'c'.repeat(10) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            unique: 'fakeCompressed',
-            multihash: fakeMultihash,
-          },
+      }),
+      fsa.write('memory://target/topographic.json.zst', Buffer.alloc(MinSizeForCompression / 10, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          unique: 'fakeCompressed',
+          multihash: fakeMultihash,
         },
-      ),
+      }),
     ]);
     await worker.routes.copy({
       ...defaultCopyArgs,
@@ -385,6 +365,7 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.json',
         },
       ],
+      force: false,
       noClobber: true,
       compress: true,
     });
@@ -412,8 +393,6 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.png',
         },
       ],
-      noClobber: true,
-      fixContentType: true,
       deleteSource: true,
     });
 
@@ -427,28 +406,20 @@ describe('copyFiles', () => {
 
   it('should delete source files after skipped copy when delete flag is set and copy was skipped due to same hash', async () => {
     await Promise.all([
-      fsa.write(
-        'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(10000) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            unique: 'fileA',
-            multihash: fakeMultihash,
-          },
+      fsa.write('memory://source/topographic.json', Buffer.alloc(MinSizeForCompression * 10, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          unique: 'fileA',
+          multihash: fakeMultihash,
         },
-      ),
-      fsa.write(
-        'memory://target/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(10000) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            unique: 'fileB',
-            multihash: fakeMultihash,
-          },
+      }),
+      fsa.write('memory://target/topographic.json', Buffer.alloc(MinSizeForCompression * 10, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          unique: 'fileB',
+          multihash: fakeMultihash,
         },
-      ),
+      }),
     ]);
     await worker.routes.copy({
       ...defaultCopyArgs,
@@ -458,6 +429,7 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.json',
         },
       ],
+      force: false,
       noClobber: true,
       deleteSource: true,
     });
@@ -472,20 +444,12 @@ describe('copyFiles', () => {
 
   it('should increment stats for compressed and uncompressed files and totals', async () => {
     await Promise.all([
-      fsa.write(
-        'memory://source/foo/bar/topographic.png',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
-        {
-          contentType: 'image/png',
-        },
-      ),
-      fsa.write(
-        'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
-        {
-          contentType: 'application/octet-stream',
-        },
-      ),
+      fsa.write('memory://source/foo/bar/topographic.png', Buffer.alloc(MinSizeForCompression, 'x'), {
+        contentType: 'image/png',
+      }),
+      fsa.write('memory://source/topographic.json', Buffer.alloc(MinSizeForCompression - 1, 'x'), {
+        contentType: 'application/octet-stream',
+      }),
     ]);
     const stats: CopyStats = await worker.routes.copy({
       ...defaultCopyArgs,
@@ -499,37 +463,23 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.json',
         },
       ],
-      noClobber: true,
       compress: true,
     });
-    assert.equal(stats.decompressed, '0');
-    assert.equal(stats.compressed, '1');
-    assert.equal(stats.copied, '1');
-    assert.equal(stats.totalProcessed, '2');
-    assert.equal(stats.totalRead, '2');
-    assert.equal(stats.totalWritten, '2');
+    assert.equal(stats.decompressed.count, '0');
+    assert.equal(stats.compressed.count, '1');
+    assert.equal(stats.copied.count, '1');
+    assert.equal(stats.processed.count, '2');
+    assert.equal(stats.grandTotal.count, '2');
   });
   it('should decompress files and increment stats for decompressed and uncompressed files and totals', async () => {
     await Promise.all([
-      fsa.write(
-        'memory://temp/topographic.png',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression) })),
-        {
-          contentType: 'image/png',
-        },
-      ),
-      fsa.write(
-        'memory://temp/topographic.tif',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression * 2) })),
-        {},
-      ),
-      fsa.write(
-        'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
-        {
-          contentType: 'application/octet-stream',
-        },
-      ),
+      fsa.write('memory://temp/topographic.png', Buffer.alloc(MinSizeForCompression, 'x'), {
+        contentType: 'image/png',
+      }),
+      fsa.write('memory://temp/topographic.tif', Buffer.alloc(MinSizeForCompression * 2, 'x'), {}),
+      fsa.write('memory://source/topographic.json', Buffer.alloc(MinSizeForCompression - 1, 'x'), {
+        contentType: 'application/octet-stream',
+      }),
     ]);
     await worker.routes.copy({
       ...defaultCopyArgs,
@@ -543,7 +493,6 @@ describe('copyFiles', () => {
           target: 'memory://source/topographic.tif',
         },
       ],
-      noClobber: true,
       compress: true,
     });
     const stats = await worker.routes.copy({
@@ -562,41 +511,31 @@ describe('copyFiles', () => {
           target: 'memory://target/topographic.json',
         },
       ],
-      noClobber: true,
       decompress: true,
     });
     const tiffTarget = await fsa.head('memory://target/topographic.tif');
     assert.equal(tiffTarget?.contentType, 'image/tiff; application=geotiff; profile=cloud-optimized');
 
-    assert.equal(stats.compressed, '0');
-    assert.equal(stats.decompressed, '2');
-    assert.equal(stats.copied, '1');
-    assert.equal(stats.totalProcessed, '3');
-    assert.equal(stats.totalRead, '3');
-    assert.equal(stats.totalWritten, '3');
+    assert.equal(stats.compressed.count, '0');
+    assert.equal(stats.decompressed.count, '2');
+    assert.equal(stats.copied.count, '1');
+    assert.equal(stats.processed.count, '3');
+    assert.equal(stats.grandTotal.count, '3');
   });
   it('should increment stats for skipped files and totals', async () => {
     await Promise.all([
-      fsa.write(
-        'memory://source/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            multihash: fakeMultihash,
-          },
+      fsa.write('memory://source/topographic.json', Buffer.alloc(MinSizeForCompression - 1, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          multihash: fakeMultihash,
         },
-      ),
-      fsa.write(
-        'memory://target/topographic.json',
-        Buffer.from(JSON.stringify({ test: true, data: 'x'.repeat(MinSizeForCompression / 2) })),
-        {
-          contentType: 'application/octet-stream',
-          metadata: {
-            multihash: fakeMultihash,
-          },
+      }),
+      fsa.write('memory://target/topographic.json', Buffer.alloc(MinSizeForCompression - 1, 'x'), {
+        contentType: 'application/octet-stream',
+        metadata: {
+          multihash: fakeMultihash,
         },
-      ),
+      }),
     ]);
     const stats: CopyStats = await worker.routes.copy({
       ...defaultCopyArgs,
@@ -608,9 +547,8 @@ describe('copyFiles', () => {
       ],
       noClobber: true,
     });
-    assert.equal(stats.skipped, '1');
-    assert.equal(stats.totalProcessed, '1');
-    assert.equal(stats.totalRead, '0');
-    assert.equal(stats.totalWritten, '0');
+    assert.equal(stats.skipped.count, '1');
+    assert.equal(stats.grandTotal.count, '1');
+    assert.equal(stats.processed.count, '0');
   });
 });
