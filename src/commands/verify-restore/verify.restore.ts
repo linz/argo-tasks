@@ -63,7 +63,7 @@ export const commandVerifyRestore = command({
     try {
       logger.info({ path: args.report.toString() }, 'VerifyRestore:LoadReport');
       const report: ManifestReport = await fsa.readJson(args.report.toString());
-      resultKeys = await fetchResultKeysFromReport(report);
+      resultKeys = fetchResultKeysFromReport(report);
     } catch (error) {
       logger.error({ error, path: args.report.toString() }, 'VerifyRestore:FailedToLoadReport');
       throw error;
@@ -78,16 +78,16 @@ export const commandVerifyRestore = command({
       const resultPath = new URL(key, args.report);
       const reportResult = await fsa.read(resultPath.toString());
       const resultEntries: ReportResult[] = parseReportResult(reportResult.toString());
-      const files = await fetchPendingRestoredObjectPaths(resultEntries);
+      const files = fetchPendingRestoredObjectPaths(resultEntries);
 
       const limit = pLimit(10);
       const restoreChecks = files.map((file) =>
         limit(async () => {
           logger.info({ path: file }, 'VerifyRestore:CheckingFile');
-          const headObjectOutput = await headObject(file);
+          const headObjectOutput = await headS3Object(file);
           let restoreCompleted = false;
           try {
-            restoreCompleted = await isRestoreCompleted(headObjectOutput);
+            restoreCompleted = isRestoreCompleted(headObjectOutput);
           } catch (error: unknown) {
             logger.error({ path: file, error }, 'VerifyRestore:FailedToCheckRestoreStatus');
             throw new Error(`Failed to check restore status for s3://${file.Bucket}/${file.Key}: ${String(error)}`);
@@ -123,7 +123,7 @@ export const commandVerifyRestore = command({
  * @param report - The manifest report containing results.
  * @returns An array of S3 paths for the restored files.
  */
-export async function fetchResultKeysFromReport(report: ManifestReport): Promise<string[]> {
+export function fetchResultKeysFromReport(report: ManifestReport): string[] {
   const { Results } = report;
   const notSucceeded = Results.filter((r) => r.TaskExecutionStatus?.toLowerCase() !== 'succeeded');
   if (notSucceeded.length) {
@@ -141,9 +141,7 @@ export async function fetchResultKeysFromReport(report: ManifestReport): Promise
  * @param resultEntries - The report results containing object paths and statuses.
  * @returns An array of objects containing the Bucket and Key of each restored object.
  */
-export async function fetchPendingRestoredObjectPaths(
-  resultEntries: ReportResult[],
-): Promise<{ Bucket: string; Key: string }[]> {
+export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): { Bucket: string; Key: string }[] {
   const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => row.ResultMessage !== 'Successful');
   if (notSuccessfulRequests.length) {
     throw new Error(
@@ -188,7 +186,7 @@ export function parseReportResult(result: string): ReportResult[] {
  * @throws Will throw an error if the headObject request fails.
  * @returns The head object output.
  */
-async function headObject(path: { Bucket: string; Key: string }): Promise<HeadObjectCommandOutput> {
+async function headS3Object(path: { Bucket: string; Key: string }): Promise<HeadObjectCommandOutput> {
   try {
     const headObjectOutput: HeadObjectCommandOutput = await (
       fsa.get(`s3://${path.Bucket}/${path.Key}`, 'r') as FsAwsS3V3
@@ -208,7 +206,7 @@ async function headObject(path: { Bucket: string; Key: string }): Promise<HeadOb
  * @throws Will throw an error if the restore status is undefined.
  * @returns A boolean indicating whether the restore is completed.
  */
-export async function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): Promise<boolean> {
+export function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): boolean {
   if (headObjectOutput?.Restore === undefined) {
     logger.error({ headObjectOutput }, 'VerifyRestore:RestoreStatusUndefined');
     throw new Error('Restore status is undefined.');

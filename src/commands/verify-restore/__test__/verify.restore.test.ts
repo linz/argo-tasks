@@ -18,7 +18,7 @@ describe('fetchResultKeysFromReport', () => {
         { TaskExecutionStatus: 'succeeded', Bucket: 'b2', Key: 'k2', MD5Checksum: 'm2' },
       ],
     };
-    const keys = await fetchResultKeysFromReport(report);
+    const keys = fetchResultKeysFromReport(report);
     assert.deepEqual(keys, ['s3://b/k', 's3://b2/k2']);
   });
 
@@ -30,7 +30,7 @@ describe('fetchResultKeysFromReport', () => {
         { TaskExecutionStatus: 'succeeded', Bucket: 'b2', Key: 'k2', MD5Checksum: 'm2' },
       ],
     };
-    assert.rejects(() => fetchResultKeysFromReport(report), { message: /not succeeded/ });
+    assert.throws(() => fetchResultKeysFromReport(report), { message: /not succeeded/ });
   });
 });
 
@@ -47,7 +47,7 @@ describe('fetchPendingRestoredObjectPaths', () => {
         ResultMessage: 'Successful',
       },
     ];
-    const files = await fetchPendingRestoredObjectPaths(entries);
+    const files = fetchPendingRestoredObjectPaths(entries);
     assert.deepEqual(files, [{ Bucket: 'b', Key: 'k' }]);
   });
 
@@ -81,7 +81,7 @@ describe('fetchPendingRestoredObjectPaths', () => {
         ResultMessage: 'Successful',
       },
     ];
-    assert.rejects(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful/ });
+    assert.throws(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful/ });
   });
 });
 
@@ -118,7 +118,7 @@ describe('isRestoreCompleted', () => {
       Restore: 'ongoing-request="false"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.strictEqual(await isRestoreCompleted(headObjectOutput), true);
+    assert.strictEqual(isRestoreCompleted(headObjectOutput), true);
   });
 
   it('returns false if Restore is ongoing-request="true"', async () => {
@@ -126,13 +126,13 @@ describe('isRestoreCompleted', () => {
       Restore: 'ongoing-request="true"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.strictEqual(await isRestoreCompleted(headObjectOutput), false);
+    assert.strictEqual(isRestoreCompleted(headObjectOutput), false);
   });
 
   it('throws if Restore is undefined', async () => {
     const headObjectOutput: HeadObjectCommandOutput = {
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    await assert.rejects(() => isRestoreCompleted(headObjectOutput), /undefined/);
+    assert.throws(() => isRestoreCompleted(headObjectOutput), /undefined/);
   });
 });
