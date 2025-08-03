@@ -211,7 +211,7 @@ export function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): b
     logger.error({ headObjectOutput }, 'VerifyRestore:RestoreStatusUndefined');
     throw new Error('Restore status is undefined.');
   }
-  return headObjectOutput?.Restore === 'ongoing-request="false"';
+  return headObjectOutput.Restore === 'ongoing-request="false"';
 }
 
 /**
