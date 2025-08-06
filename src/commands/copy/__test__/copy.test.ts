@@ -469,7 +469,7 @@ describe('copyFiles', () => {
     assert.equal(stats.compressed.count, '1');
     assert.equal(stats.copied.count, '1');
     assert.equal(stats.processed.count, '2');
-    assert.equal(stats.grandTotal.count, '2');
+    assert.equal(stats.total.count, '2');
   });
   it('should decompress files and increment stats for decompressed and uncompressed files and totals', async () => {
     await Promise.all([
@@ -520,7 +520,7 @@ describe('copyFiles', () => {
     assert.equal(stats.decompressed.count, '2');
     assert.equal(stats.copied.count, '1');
     assert.equal(stats.processed.count, '3');
-    assert.equal(stats.grandTotal.count, '3');
+    assert.equal(stats.total.count, '3');
   });
   it('should increment stats for skipped files and totals', async () => {
     await Promise.all([
@@ -548,7 +548,7 @@ describe('copyFiles', () => {
       noClobber: true,
     });
     assert.equal(stats.skipped.count, '1');
-    assert.equal(stats.grandTotal.count, '1');
+    assert.equal(stats.total.count, '1');
     assert.equal(stats.processed.count, '0');
   });
 });

@@ -5,13 +5,47 @@ import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
-import type { CopyContractArgs, CopyStats, TargetFileOperation } from './copy-rpc.ts';
+import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 export const MinSizeForCompression = 500; // testing with random ASCII data shows that compression is not worth it below this size
 export const CompressedFileExtension = '.zst';
 
 const FixableContentType = new Set(['binary/octet-stream', 'application/octet-stream']);
+
+/**
+ * Merges two CopyStats objects by summing their individual statistics.
+ *
+ * @param stats The first CopyStats object.
+ * @param other The second CopyStats object.
+ * @returns A new CopyStats object containing the merged statistics.
+ */
+export function mergeStats(stats: CopyStats, other: CopyStats): CopyStats {
+  return {
+    copied: mergeStatItem(stats.copied, other.copied),
+    compressed: mergeStatItem(stats.compressed, other.compressed),
+    decompressed: mergeStatItem(stats.decompressed, other.decompressed),
+    skipped: mergeStatItem(stats.skipped, other.skipped),
+    deleted: mergeStatItem(stats.deleted, other.deleted),
+    processed: mergeStatItem(stats.processed, other.processed),
+    total: mergeStatItem(stats.total, other.total),
+  };
+}
+
+/**
+ * Merges two statistics items by summing their counts and bytes.
+ *
+ * @param a The first statistics item
+ * @param b The second statistics item
+ * @returns A new object containing the summed statistics.
+ */
+function mergeStatItem(a: CopyStatItem, b: CopyStatItem): CopyStatItem {
+  return {
+    count: a.count + b.count,
+    bytesIn: a.bytesIn + b.bytesIn,
+    bytesOut: a.bytesOut + b.bytesOut,
+  };
+}
 
 /**
  * Updates the copy statistics based on the file operation performed.
@@ -34,9 +68,9 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
       stats.processed.bytesIn += sourceSize;
       stats.processed.bytesOut += outputSize;
 
-      stats.grandTotal.count++;
-      stats.grandTotal.bytesIn += sourceSize;
-      stats.grandTotal.bytesOut += outputSize;
+      stats.total.count++;
+      stats.total.bytesIn += sourceSize;
+      stats.total.bytesOut += outputSize;
     },
     [FileOperation.Decompress]: (stats, sourceSize, outputSize = 0): void => {
       stats.decompressed.count++;
@@ -47,38 +81,41 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
       stats.processed.bytesIn += sourceSize;
       stats.processed.bytesOut += outputSize;
 
-      stats.grandTotal.count++;
-      stats.grandTotal.bytesIn += sourceSize;
-      stats.grandTotal.bytesOut += outputSize;
+      stats.total.count++;
+      stats.total.bytesIn += sourceSize;
+      stats.total.bytesOut += outputSize;
     },
     [FileOperation.Copy]: (stats, sourceSize): void => {
       stats.copied.count++;
-      stats.copied.bytes += sourceSize;
+      stats.copied.bytesIn += sourceSize;
+      stats.copied.bytesOut += sourceSize;
 
       stats.processed.count++;
       stats.processed.bytesIn += sourceSize;
       stats.processed.bytesOut += sourceSize;
 
-      stats.grandTotal.count++;
-      stats.grandTotal.bytesIn += sourceSize;
-      stats.grandTotal.bytesOut += sourceSize;
+      stats.total.count++;
+      stats.total.bytesIn += sourceSize;
+      stats.total.bytesOut += sourceSize;
     },
     [FileOperation.Skip]: (stats, sourceSize): void => {
       stats.skipped.count++;
-      stats.skipped.bytes += sourceSize;
+      stats.skipped.bytesIn += sourceSize;
+      stats.skipped.bytesOut += 0; // Skipped files do not have an output size
 
-      stats.grandTotal.count++;
-      stats.grandTotal.bytesIn += sourceSize;
+      stats.total.count++;
+      stats.total.bytesIn += sourceSize;
     },
     [FileOperation.Delete]: (stats, sourceSize): void => {
       stats.deleted.count++;
-      stats.deleted.bytes += sourceSize;
+      stats.deleted.bytesIn += sourceSize;
+      stats.deleted.bytesOut += 0; // Deleted files do not have an output size
     },
   };
 
 /**
  * Sets contentEncoding metadata for compressed files.
- * Also, if the file has been written with a unknown binary contentType attempt to fix it with common content types
+ * Also, if the file has been written with an unknown binary contentType attempt to fix it with common content types
  *
  *
  * @param path File path to fix the metadata of

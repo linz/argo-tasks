@@ -49,39 +49,36 @@ export interface CopyContractArgs {
   /** Delete source files after copying or compressing */
   deleteSource: boolean;
 }
+export interface CopyStatItem {
+  count: number;
+  bytesIn: number;
+  bytesOut: number;
+}
 
 export interface CopyStats {
   /** Number of files copied */
-  copied: { count: number; bytes: number };
+  copied: CopyStatItem;
 
   /** Number of files compressed */
-  compressed: { count: number; bytesIn: number; bytesOut: number };
+  compressed: CopyStatItem;
 
   /** Number of files decompressed */
-  decompressed: { count: number; bytesIn: number; bytesOut: number };
+  decompressed: CopyStatItem;
 
   /** Number of source files deleted */
-  deleted: { count: number; bytes: number };
+  deleted: CopyStatItem;
 
-  /** Number of files that have been Skipped, generally because the target file already exists with identical hash */
-  skipped: { count: number; bytes: number };
+  /** Number of files skipped (generally because the target file already exists with identical hash) */
+  skipped: CopyStatItem;
 
-  /** Total number of files that have been Processed (Copied, Compressed or Decompressed) */
-  processed: {
-    count: number;
-    bytesIn: number;
-    bytesOut: number;
-  };
+  /** Number of files processed (Copied, Compressed or Decompressed - not skipped) */
+  processed: CopyStatItem;
 
   /**
-   * Grand Total number of files that have been Skipped or Processed (Copied, Compressed, Decompressed).
+   * Total number of files (Skipped, Copied, Compressed, Decompressed).
    * Note: Excluding Deleted as this should match the grand total or be 0.
    */
-  grandTotal: {
-    count: number;
-    bytesIn: number;
-    bytesOut: number;
-  };
+  total: CopyStatItem;
 }
 
 export const FileOperation = {
