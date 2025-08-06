@@ -8,7 +8,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger, logId } from '../../log.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import { config, registerCli, verbose } from '../common.ts';
-import { mergeStats } from './copy-helpers.js';
+import { mergeStats } from './copy-helpers.ts';
 import type { CopyContract, CopyStats } from './copy-rpc.ts';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
