@@ -8,6 +8,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger, logId } from '../../log.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import { config, registerCli, verbose } from '../common.ts';
+import { mergeStats } from './copy-helpers.ts';
 import type { CopyContract, CopyStats } from './copy-rpc.ts';
 
 const CopyValidator = z.object({ source: z.string(), target: z.string() });
@@ -56,6 +57,14 @@ export const commandCopy = command({
         'Compress copied files using zstandard (appends `.zst` to target file name when compressed). Note: Will not compress very small files',
       defaultValueIsSerializable: true,
     }),
+    decompress: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'decompress',
+      description:
+        'Decompress copied files using zstandard (removes `.zst` from target file name when decompressed). Note: Will only decompress .zst files',
+      defaultValueIsSerializable: true,
+    }),
     deleteSource: flag({
       type: boolean,
       defaultValue: () => false,
@@ -77,17 +86,14 @@ export const commandCopy = command({
     const workerUrl = new URL('./copy-worker.ts', import.meta.url);
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
 
-    const stats: CopyStats = {
-      copied: 0,
-      copiedBytes: 0,
-      retries: 0,
-      skipped: 0,
-      skippedBytes: 0,
-      compressed: 0,
-      compressedInputBytes: 0,
-      compressedOutputBytes: 0,
-      deleted: 0,
-      deletedBytes: 0,
+    let stats: CopyStats = {
+      copied: { count: 0, bytesIn: 0, bytesOut: 0 },
+      compressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      decompressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      deleted: { count: 0, bytesIn: 0, bytesOut: 0 },
+      skipped: { count: 0, bytesIn: 0, bytesOut: 0 },
+      processed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      total: { count: 0, bytesIn: 0, bytesOut: 0 },
     };
 
     let force = args.force;
@@ -118,6 +124,7 @@ export const commandCopy = command({
             noClobber,
             fixContentType: args.fixContentType,
             compress: args.compress,
+            decompress: args.decompress,
             deleteSource: args.deleteSource,
           }),
         );
@@ -126,16 +133,7 @@ export const commandCopy = command({
 
     const results = await Promise.all(manifestChunks);
     for (const result of results) {
-      stats.copied += result.copied;
-      stats.copiedBytes += result.copiedBytes;
-      stats.compressed += result.compressed;
-      stats.compressedInputBytes += result.compressedInputBytes;
-      stats.compressedOutputBytes += result.compressedOutputBytes;
-      stats.deleted += result.deleted;
-      stats.deletedBytes += result.deletedBytes;
-      stats.retries += result.retries;
-      stats.skipped += result.skipped;
-      stats.skippedBytes += result.skippedBytes;
+      stats = mergeStats(stats, result);
     }
 
     await pool.close();

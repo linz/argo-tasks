@@ -1,6 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
-import { createZstdCompress } from 'node:zlib';
+import { createZstdCompress, createZstdDecompress } from 'node:zlib';
 
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
@@ -21,16 +21,13 @@ let currentId: string | null = null;
 export const worker = new WorkerRpc<CopyContract>({
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = {
-      copied: 0,
-      copiedBytes: 0,
-      compressed: 0,
-      compressedInputBytes: 0,
-      compressedOutputBytes: 0,
-      deleted: 0,
-      deletedBytes: 0,
-      retries: 0,
-      skipped: 0,
-      skippedBytes: 0,
+      copied: { count: 0, bytesIn: 0, bytesOut: 0 },
+      compressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      decompressed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      deleted: { count: 0, bytesIn: 0, bytesOut: 0 },
+      skipped: { count: 0, bytesIn: 0, bytesOut: 0 },
+      processed: { count: 0, bytesIn: 0, bytesOut: 0 },
+      total: { count: 0, bytesIn: 0, bytesOut: 0 },
     };
 
     if (currentId == null) {
@@ -74,24 +71,36 @@ export const worker = new WorkerRpc<CopyContract>({
           let sourceStream = rawSourceStream;
 
           const shouldCompress = fileOperation === FileOperation.Compress;
-          if (fileOperation === FileOperation.Copy) {
-            sourceStream = rawSourceStream.pipe(hashOriginal);
-          } else if (shouldCompress) {
-            const zstd = createZstdCompress();
-            sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstd).pipe(hashCompressed);
-          } else {
-            throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
+          const shouldDecompress = fileOperation === FileOperation.Decompress;
+          const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
+
+          switch (fileOperation) {
+            case FileOperation.Copy:
+              sourceStream = rawSourceStream.pipe(hashOriginal);
+              break;
+            case FileOperation.Compress:
+              const zstdCompress = createZstdCompress();
+              sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstdCompress).pipe(hashCompressed);
+              break;
+            case FileOperation.Decompress:
+              const zstdDecompress = createZstdDecompress();
+              sourceStream = rawSourceStream.pipe(hashCompressed).pipe(zstdDecompress).pipe(hashOriginal);
+              break;
+            default:
+              throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
           }
 
+          const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.path, source) : source;
+
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Write');
-          await fsa.write(
-            target.path,
-            sourceStream,
-            args.fixContentType || shouldCompress ? fixFileMetadata(target.path, source) : source,
-          );
+          await fsa.write(target.path, sourceStream, fileMetadata);
 
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Verify');
-          const expectedSize = shouldCompress ? hashCompressed.size : source.size;
+          const expectedSize = shouldDecompress
+            ? hashOriginal.size
+            : shouldCompress
+              ? hashCompressed.size
+              : source.size;
           const expectedHash = hashOriginal.multihash;
           targetVerified = await verifyTargetFile(target.path, expectedSize, expectedHash);
           if (!targetVerified) {
