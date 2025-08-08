@@ -4,10 +4,10 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
+import type { CommandArguments } from '../../../__test__/type.util.ts';
 import { logger } from '../../../log.ts';
 import { commandList } from '../list.ts';
 
-type CommandArguments<C> = C extends { handler: (args: infer A) => unknown } ? A : never;
 type CommandListArgs = CommandArguments<typeof commandList>;
 
 describe('command.list', () => {
