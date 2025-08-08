@@ -38,13 +38,6 @@ export const commandGeneratePath = command({
       displayName: 'path',
       description: 'path to source data where collection.json file is located',
     }),
-
-    // output: option({
-    //   type: string,
-    //   long: 'output',
-    //   description: 'Output location for the listing',
-    //   defaultValue: () => '/tmp/generate-path/target',
-    // }),
   },
 
   async handler(args) {
