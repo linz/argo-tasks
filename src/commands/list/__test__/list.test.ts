@@ -45,7 +45,7 @@ describe('command.list', () => {
     assert.deepEqual(fileList, [[`m://some-bucket/test/🦄 🌈.txt`]]);
   });
 
-  it('should list folders from ; seperated lists', async () => {
+  it('should list folders from ; separated lists', async () => {
     await fsa.write(`m://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
     await fsa.write(`m://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(1));
 
@@ -60,7 +60,7 @@ describe('command.list', () => {
     assert.deepEqual(fileList, [['m://some-bucket/🦄/🦄 🌈.txt'], ['m://some-bucket/🌈/🦄 🌈.txt']]);
   });
 
-  it('should ignore empty files from ; seperated lists', async () => {
+  it('should ignore empty files from ; separated lists', async () => {
     await fsa.write(`m://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
     await fsa.write(`m://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(0));
 
