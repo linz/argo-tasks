@@ -1,9 +1,15 @@
 import assert from 'node:assert';
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 
+import { fsa } from '@chunkd/fs';
+import { FsMemory } from '@chunkd/source-memory';
+
+import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
+import type { CommandArguments } from '../../../__test__/type.util.ts';
 import { SampleCollection } from '../../generate-path/__test__/sample.ts';
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.ts';
 import type { PathMetadata } from '../path.generate.ts';
+import { commandGeneratePath } from '../path.generate.ts';
 import { extractEpsg, extractGsd, generatePath } from '../path.generate.ts';
 
 describe('GeneratePathImagery', () => {
@@ -206,5 +212,54 @@ describe('metadata from collection', () => {
       epsg: 2193,
     };
     assert.equal(generatePath(metadata), 's3://bucket/manawatu-whanganui/palmerston-north_2024_0.3m/rgb/2193/');
+  });
+});
+
+type CommandGeneratePathArgs = CommandArguments<typeof commandGeneratePath>;
+describe('command.generatePath', () => {
+  const mem = new FsMemory();
+  beforeEach(() => {
+    fsa.register('memory://', mem);
+    fsa.register('/tmp/generate-args', mem);
+    mem.files.clear();
+  });
+
+  const baseArgs: CommandGeneratePathArgs = {
+    config: undefined,
+    verbose: false,
+    targetBucketName: 'some-output-bucket',
+    source: '',
+  };
+
+  it('should generate a output', async () => {
+    await fsa.write(
+      'memory://bucket/source/test/collection.json',
+      Buffer.from(
+        JSON.stringify({
+          'linz:geospatial_category': 'urban-aerial-photos',
+          'linz:region': 'wellington',
+          'linz:slug': 'source-test',
+          links: [{ href: './BQ32.json', rel: 'item' }],
+        }),
+      ),
+    );
+    await fsa.write(
+      'memory://bucket/source/test/BQ32.json',
+      Buffer.from(
+        JSON.stringify({
+          assets: {
+            visual: {
+              href: './BQ32.tiff',
+            },
+          },
+        }),
+      ),
+    );
+    await fsa.write('memory://bucket/source/test/BQ32.tiff', RgbaNztm2000Tiff);
+
+    await commandGeneratePath.handler({ ...baseArgs, source: 'memory://bucket/source/test/' });
+
+    const output = await fsa.read('/tmp/generate-path/target');
+    assert.deepEqual(output.toString('utf-8'), 's3://some-output-bucket/wellington/source-test/rgb/2193/');
   });
 });
