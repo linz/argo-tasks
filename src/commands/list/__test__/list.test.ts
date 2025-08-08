@@ -14,7 +14,7 @@ describe('command.list', () => {
   const mem = new FsMemory();
 
   beforeEach(() => {
-    fsa.register('m://', mem);
+    fsa.register('memory://', mem);
     mem.files.clear();
     logger.level = 'silent';
   });
@@ -32,46 +32,46 @@ describe('command.list', () => {
   };
 
   it('should list a folder', async () => {
-    await fsa.write(`m://some-bucket/test/🦄 🌈.txt`, Buffer.alloc(1));
+    await fsa.write(`memory://some-bucket/test/🦄 🌈.txt`, Buffer.alloc(1));
     await commandList.handler({
       ...baseArgs,
-      location: ['m://some-bucket/test/'],
-      output: 'm://🦄 🌈/output.json',
+      location: ['memory://some-bucket/test/'],
+      output: 'memory://🦄 🌈/output.json',
     });
 
     const allFiles = [...mem.files.keys()];
-    assert.deepEqual(allFiles, ['m://some-bucket/test/🦄 🌈.txt', 'm://🦄 🌈/output.json']);
-    const fileList = JSON.parse((await mem.read('m://🦄 🌈/output.json')).toString('utf-8')) as string[][];
-    assert.deepEqual(fileList, [[`m://some-bucket/test/🦄 🌈.txt`]]);
+    assert.deepEqual(allFiles, ['memory://some-bucket/test/🦄 🌈.txt', 'memory://🦄 🌈/output.json']);
+    const fileList = JSON.parse((await mem.read('memory://🦄 🌈/output.json')).toString('utf-8')) as string[][];
+    assert.deepEqual(fileList, [[`memory://some-bucket/test/🦄 🌈.txt`]]);
   });
 
   it('should list folders from ; separated lists', async () => {
-    await fsa.write(`m://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
-    await fsa.write(`m://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(1));
+    await fsa.write(`memory://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
+    await fsa.write(`memory://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(1));
 
     await commandList.handler({
       ...baseArgs,
-      location: ['m://some-bucket/🦄/;m://some-bucket/🌈/'],
-      output: 'm://🦄 🌈/output.json',
+      location: ['memory://some-bucket/🦄/;memory://some-bucket/🌈/'],
+      output: 'memory://🦄 🌈/output.json',
       group: 1,
     });
 
-    const fileList = JSON.parse((await mem.read('m://🦄 🌈/output.json')).toString('utf-8')) as string[][];
-    assert.deepEqual(fileList, [['m://some-bucket/🦄/🦄 🌈.txt'], ['m://some-bucket/🌈/🦄 🌈.txt']]);
+    const fileList = JSON.parse((await mem.read('memory://🦄 🌈/output.json')).toString('utf-8')) as string[][];
+    assert.deepEqual(fileList, [['memory://some-bucket/🦄/🦄 🌈.txt'], ['memory://some-bucket/🌈/🦄 🌈.txt']]);
   });
 
   it('should ignore empty files from ; separated lists', async () => {
-    await fsa.write(`m://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
-    await fsa.write(`m://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(0));
+    await fsa.write(`memory://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
+    await fsa.write(`memory://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(0));
 
     await commandList.handler({
       ...baseArgs,
-      location: ['m://some-bucket/🦄/;m://some-bucket/🌈/'],
-      output: 'm://🦄 🌈/output.json',
+      location: ['memory://some-bucket/🦄/;memory://some-bucket/🌈/'],
+      output: 'memory://🦄 🌈/output.json',
       group: 1,
     });
 
-    const fileList = JSON.parse((await mem.read('m://🦄 🌈/output.json')).toString('utf-8')) as string[][];
-    assert.deepEqual(fileList, [['m://some-bucket/🦄/🦄 🌈.txt']]);
+    const fileList = JSON.parse((await mem.read('memory://🦄 🌈/output.json')).toString('utf-8')) as string[][];
+    assert.deepEqual(fileList, [['memory://some-bucket/🦄/🦄 🌈.txt']]);
   });
 });

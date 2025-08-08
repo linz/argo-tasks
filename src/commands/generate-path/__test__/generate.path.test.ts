@@ -219,7 +219,7 @@ type CommandGeneratePathArgs = CommandArguments<typeof commandGeneratePath>;
 describe('command.generatePath', () => {
   const mem = new FsMemory();
   beforeEach(() => {
-    fsa.register('m://', mem);
+    fsa.register('memory://', mem);
     fsa.register('/tmp/generate-args', mem);
     mem.files.clear();
   });
@@ -233,7 +233,7 @@ describe('command.generatePath', () => {
 
   it('should generate a output', async () => {
     await fsa.write(
-      'm://bucket/source/test/collection.json',
+      'memory://bucket/source/test/collection.json',
       Buffer.from(
         JSON.stringify({
           'linz:geospatial_category': 'urban-aerial-photos',
@@ -244,7 +244,7 @@ describe('command.generatePath', () => {
       ),
     );
     await fsa.write(
-      'm://bucket/source/test/BQ32.json',
+      'memory://bucket/source/test/BQ32.json',
       Buffer.from(
         JSON.stringify({
           assets: {
@@ -255,9 +255,9 @@ describe('command.generatePath', () => {
         }),
       ),
     );
-    await fsa.write('m://bucket/source/test/BQ32.tiff', RgbaNztm2000Tiff);
+    await fsa.write('memory://bucket/source/test/BQ32.tiff', RgbaNztm2000Tiff);
 
-    await commandGeneratePath.handler({ ...baseArgs, source: 'm://bucket/source/test/' });
+    await commandGeneratePath.handler({ ...baseArgs, source: 'memory://bucket/source/test/' });
 
     const output = await fsa.read('/tmp/generate-path/target');
     assert.deepEqual(output.toString('utf-8'), 's3://some-output-bucket/wellington/source-test/rgb/2193/');
