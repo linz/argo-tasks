@@ -172,8 +172,8 @@ export function parseReportResult(result: string): ReportResult[] {
       Key: parts[1] ?? '',
       VersionId: parts[2] ?? '',
       TaskStatus: parts[3] ?? '',
-      ErrorCode: parts[4] ?? '',
-      HTTPStatusCode: parts[5] ?? '',
+      HTTPStatusCode: parts[4] ?? '',
+      ErrorCode: parts[5] ?? '',
       ResultMessage: parts[6] ?? '',
     };
   });
@@ -188,9 +188,10 @@ export function parseReportResult(result: string): ReportResult[] {
  */
 async function headS3Object(path: { Bucket: string; Key: string }): Promise<HeadObjectCommandOutput> {
   try {
+    const objectKey = decodeFormUrlEncoded(path.Key);
     const headObjectOutput: HeadObjectCommandOutput = await (
-      fsa.get(`s3://${path.Bucket}/${path.Key}`, 'r') as FsAwsS3V3
-    ).client.send(new HeadObjectCommand({ Bucket: path.Bucket, Key: path.Key }));
+      fsa.get(`s3://${path.Bucket}/${objectKey}`, 'r') as FsAwsS3V3
+    ).client.send(new HeadObjectCommand({ Bucket: path.Bucket, Key: objectKey }));
     logger.info({ path, headObjectOutput }, 'VerifyRestore:HeadObject');
     return headObjectOutput;
   } catch (error) {
@@ -225,4 +226,13 @@ async function markReportDone(reportPath: URL): Promise<void> {
   await fsa.write(donePath.toString(), await fsa.read(reportPath.toString()));
   await fsa.delete(reportPath.toString());
   logger.info({ reportPath, donePath }, 'VerifyRestore:MarkedReportDone');
+}
+/**
+ * Decodes a URL-encoded string.
+ *
+ * @param key - The URL-encoded string to decode.
+ * @returns The decoded string.
+ */
+export function decodeFormUrlEncoded(key: string): string {
+  return decodeURIComponent(key.replace(/\+/g, ' '));
 }
