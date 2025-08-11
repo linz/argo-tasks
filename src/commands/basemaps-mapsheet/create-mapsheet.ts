@@ -23,9 +23,9 @@ export function isGzip(b: Buffer): boolean {
  *
  * If the file ends with .gz or is a GZIP like {@link isGzip} file it will automatically be decompressed.
  */
-async function readConfig(config: string): Promise<ConfigBundled> {
+async function readConfig(config: URL): Promise<ConfigBundled> {
   const obj = await fsa.read(config);
-  if (config.endsWith('.gz') || isGzip(obj)) {
+  if (config.href.endsWith('.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
     return JSON.parse(data.toString()) as ConfigBundled;
   }
@@ -73,9 +73,9 @@ export const basemapsCreateMapSheet = command({
   args: CommandCreateMapSheetArgs,
   async handler(args) {
     registerCli(this, args);
-    const path = args.path;
-    const config = args.bmConfig;
-    const outputPath = args.output;
+    const path = new URL(args.path);
+    const config = new URL(args.bmConfig);
+    const outputPath = new URL(args.output);
 
     const include = args.include ? new RegExp(args.include.toLowerCase(), 'i') : undefined;
     const exclude = args.exclude ? new RegExp(args.exclude.toLowerCase(), 'i') : undefined;
@@ -86,8 +86,8 @@ export const basemapsCreateMapSheet = command({
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
-    const rest = fgb.deserialize(buf) as FeatureCollection;
-    const featuresWritePromise = fsa.write('features.json', JSON.stringify(rest));
+    const rest = fgb.deserialize(buf);
+    const featuresWritePromise = fsa.write(fsa.toUrl('features.json'), JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
@@ -139,7 +139,8 @@ export async function createMapSheet(
       if (img.bounds == null || Bounds.fromJson(img.bounds).intersects(bounds)) {
         for (const file of img.files) {
           if (bounds.intersects(Bounds.fromJson(file))) {
-            current.files.push(fsa.join(img.uri, getTiffName(file.name)));
+            // current.files.push(fsa.join(img.uri, getTiffName(file.name)));
+            current.files.push(new URL(getTiffName(file.name), img.uri).href);
           }
         }
       }

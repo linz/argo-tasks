@@ -8,7 +8,7 @@ import { WorkerRpc } from '@wtrpc/core';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
-import { registerCli } from '../common.ts';
+import { registerCli, tryParseUrl } from '../common.ts';
 import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -42,7 +42,8 @@ export const worker = new WorkerRpc<CopyContract>({
 
       Q.push(async () => {
         const startTime = performance.now();
-        const source = await fsa.head(manifestEntry.source);
+        const sourceURL = tryParseUrl(manifestEntry.source);
+        const source = await fsa.head(sourceURL);
         if (source?.size == null || source.size === 0) {
           logger.info({ path: manifestEntry.source }, 'File:Copy:SkippedEmpty');
           statsUpdaters[FileOperation.Skip](stats, source?.size ?? 0);
@@ -67,7 +68,7 @@ export const worker = new WorkerRpc<CopyContract>({
           const hashOriginal = new HashTransform('sha256');
           const hashCompressed = new HashTransform('sha256');
 
-          const rawSourceStream = fsa.stream(manifestEntry.source);
+          const rawSourceStream = fsa.readStream(sourceURL);
           let sourceStream = rawSourceStream;
 
           const shouldCompress = fileOperation === FileOperation.Compress;
@@ -90,10 +91,11 @@ export const worker = new WorkerRpc<CopyContract>({
               throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
           }
 
-          const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.path, source) : source;
+          const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
 
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Write');
-          await fsa.write(target.path, sourceStream, fileMetadata);
+
+          await fsa.write(target.url, sourceStream, fileMetadata);
 
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Verify');
           const expectedSize = shouldDecompress
@@ -102,11 +104,11 @@ export const worker = new WorkerRpc<CopyContract>({
               ? hashCompressed.size
               : source.size;
           const expectedHash = hashOriginal.multihash;
-          targetVerified = await verifyTargetFile(target.path, expectedSize, expectedHash);
+          targetVerified = await verifyTargetFile(target.url, expectedSize, expectedHash);
           if (!targetVerified) {
             // Cleanup the failed copy so it can be retried
-            await fsa.delete(target.path);
-            throw new Error(`Failed to copy source:${manifestEntry.source} target:${target.path}`);
+            await fsa.delete(target.url);
+            throw new Error(`Failed to copy source:${manifestEntry.source} target:${target.url.href}`);
           }
 
           statsUpdaters[fileOperation](stats, source.size, expectedSize);
@@ -128,7 +130,7 @@ export const worker = new WorkerRpc<CopyContract>({
         if (shouldDeleteSourceOnSuccess && (targetVerified || fileOperation === FileOperation.Skip)) {
           const startTimeDelete = performance.now();
           logger.info({ path: manifestEntry.source }, 'File:DeleteSource:Start');
-          await fsa.delete(manifestEntry.source);
+          await fsa.delete(sourceURL);
           statsUpdaters[FileOperation.Delete](stats, source.size);
           logger.debug(
             { ...manifestEntry, size: source.size, duration: performance.now() - startTimeDelete },

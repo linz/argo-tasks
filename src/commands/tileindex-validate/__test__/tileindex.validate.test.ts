@@ -3,7 +3,7 @@ import { before, beforeEach, describe, it } from 'node:test';
 
 import { Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { FsMemory } from '@chunkd/fs';
 import type { BBox } from '@linzjs/geojson';
 import type { FeatureCollection } from 'geojson';
 
@@ -170,7 +170,7 @@ describe('validate', () => {
         forceOutput: true,
         includeDerived: includeDerived,
       });
-      const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+      const outputFileList: [FileListEntry] = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
       assert.strictEqual(outputFileList[0]?.includeDerived, includeDerived);
     }
   });
@@ -187,7 +187,7 @@ describe('validate', () => {
     assert.ok(expectedBounds);
 
     await fsa.write(
-      `${sourceUrl}BQ32_1000_0101.tfw`,
+      fsa.toUrl(`${sourceUrl}BQ32_1000_0101.tfw`),
       `1\n0\n0\n-1\n${expectedBounds?.origin.x + 0.5}\n${expectedBounds?.origin.y - 0.5}`,
     );
 
@@ -201,7 +201,7 @@ describe('validate', () => {
       forceOutput: true,
     });
 
-    const fileList: unknown[] = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+    const fileList: unknown[] = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
 
     assert.deepEqual(fileList[0], {
       output: 'BQ32_1000_0101',
@@ -234,7 +234,7 @@ describe('validate', () => {
     assert.equal(stub.mock.callCount(), 1);
     assert.deepEqual(stub.mock.calls[0]?.arguments[0], ['s3://test']);
 
-    const outputFileList: FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson');
+    const outputFileList: FeatureCollection = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/output.geojson'));
     assert.equal(outputFileList.features.length, 1);
     const firstFeature = outputFileList.features[0];
     assert.equal(firstFeature?.properties?.['tileName'], 'AS21_1000_0101');
@@ -245,7 +245,7 @@ describe('validate', () => {
   });
 
   it('should fail with 0 byte tiffs', async () => {
-    await fsa.write('/tmp/empty/foo.tiff', Buffer.from(''));
+    await fsa.write(fsa.toUrl('/tmp/empty/foo.tiff'), Buffer.from(''));
     const ret = await commandTileIndexValidate
       .handler({
         ...baseArguments,
@@ -273,7 +273,7 @@ describe('validate', () => {
       scale: 1000,
       forceOutput: true,
     });
-    const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+    const outputFileList = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
     assert.deepEqual(outputFileList, [
       {
         output: 'AS21_1000_0101',

@@ -17,7 +17,7 @@ import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
 import type { FileListEntry } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
-import { config, registerCli, tryParseUrl, Url, UrlFolder, urlToString, verbose } from '../common.ts';
+import { config, registerCli, tryParseUrl, Url, UrlFolder, verbose } from '../common.ts';
 
 /** Datasets to skip */
 const Skip = new Set([
@@ -132,7 +132,7 @@ export const commandMapSheetCoverage = command({
       return;
     }
 
-    const config = await fsa.readJson<ConfigTileSetRaster>(urlToString(args.location));
+    const config = await fsa.readJson<ConfigTileSetRaster>(args.location);
 
     // All the layers' capture areas with some additional metadata
     const allLayers = { type: 'FeatureCollection', features: [] as GeoJSON.Feature[] };
@@ -158,7 +158,7 @@ export const commandMapSheetCoverage = command({
       logger.debug({ layer: layer.name, href: layerSource }, 'Layer:Load');
 
       const targetCollection = new URL('collection.json', layerSource);
-      const collection = await fsa.readJson<StacCollection>(targetCollection.href);
+      const collection = await fsa.readJson<StacCollection>(targetCollection);
 
       // Capture area is the area where this layer has data for
       const captureAreaLink = collection.assets?.['capture_area'];
@@ -167,7 +167,7 @@ export const commandMapSheetCoverage = command({
       }
       const targetCaptureAreaUrl = new URL(captureAreaLink.href, targetCollection.href);
 
-      const captureArea = forceMultiPolygon(await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl.href));
+      const captureArea = forceMultiPolygon(await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl));
 
       // As these times are mostly made up, convert them into NZ time to prevent
       // flown years being a year off when the interval is 2023-12-31T12:00:00.000Z (or Jan 1st NZT)
@@ -222,7 +222,7 @@ export const commandMapSheetCoverage = command({
       if (diff.length === 0) {
         logger.warn({ layer: layer.name, location: targetCaptureAreaUrl.href }, 'FullyCovered');
         const outputPath = new URL(`remove-${layer.name}.geojson`, args.output);
-        await fsa.write(urlToString(outputPath), JSON.stringify(captureArea));
+        await fsa.write(outputPath, JSON.stringify(captureArea));
         continue;
       }
 
@@ -258,20 +258,20 @@ export const commandMapSheetCoverage = command({
     // All the source layers as a single file
     logger.info('Write:SourceFeatures');
     const sourceFeaturePath = new URL('layers-source.geojson.gz', args.output);
-    await fsa.write(urlToString(sourceFeaturePath), gzipSync(JSON.stringify(allLayers)));
+    await fsa.write(sourceFeaturePath, gzipSync(JSON.stringify(allLayers)));
 
     // A single output feature for total capture area
     logger.info('Write:CombinedUnion');
     const combinedPath = new URL('layers-combined.geojson.gz', args.output);
     await fsa.write(
-      urlToString(combinedPath),
+      combinedPath,
       gzipSync(JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: layersCombined } })),
     );
 
     // Which areas of each layers are needed for the output, this should be uncompressed to make it easier to be consumed and viewed
     logger.info('Write:RequiredLayers');
     const captureDatesPath = new URL('capture-dates.geojson', args.output);
-    await fsa.write(urlToString(captureDatesPath), JSON.stringify(captureDates));
+    await fsa.write(captureDatesPath, JSON.stringify(captureDates));
 
     if (args.compare) {
       const sheetsToSkip = await compareCreation(args.compare, mapSheets);
@@ -288,7 +288,7 @@ export const commandMapSheetCoverage = command({
     }
 
     const fileListPath = new URL('file-list.json', args.output);
-    await fsa.write(urlToString(fileListPath), JSON.stringify(tilesToProcess));
+    await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
     logger.info(
       {
         duration: performance.now() - startTime,
@@ -314,7 +314,7 @@ async function compareCreation(
   // Joining STAC document locations as file paths can be tricky, use the built in URL lib to handle the joins
   const compareUrl = tryParseUrl(compareLocation);
 
-  const collectionJson = await fsa.readJson<StacCollection>(compareLocation);
+  const collectionJson = await fsa.readJson<StacCollection>(compareUrl);
 
   // List of mapsheets that are the same as the compare location
   const sheetsToSkip: string[] = [];
@@ -327,7 +327,7 @@ async function compareCreation(
       logger.info({ sheetCode: sheetCode, sourceFiles: sourceFiles.length }, 'MapSheetCoverage:Compare:New');
       continue;
     }
-    const itemJson = await fsa.readJson<StacItem>(urlToString(new URL(itemLink.href, compareUrl)));
+    const itemJson = await fsa.readJson<StacItem>(new URL(itemLink.href, compareUrl));
 
     const derivedFrom = itemJson.links.filter((f) => f.rel === 'derived_from');
     // Difference in the number of files needed to create this mapsheet, so it needs to be recreated
@@ -360,7 +360,7 @@ async function compareCreation(
         }
 
         // TODO: to improve performance further we could use the source collection.json as it contains all the item checksums
-        const sourceItemHash = await hashQueue(() => hashStream(fsa.stream(item.href)));
+        const sourceItemHash = await hashQueue(() => hashStream(fsa.readStream(fsa.toUrl(item.href))));
         logger.trace(
           { source: item.href, hash: sourceItemHash, isOk: sourceItemHash === item['file:checksum'] },
           'MapSheetCoverage:Compare:checksum',

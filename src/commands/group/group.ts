@@ -61,9 +61,12 @@ export const commandGroup = command({
 
     const inputs: unknown[] = [];
     for (const input of args.inputs) inputs.push(...loadInput(input));
-    if (args.fromFile && (await fsa.exists(args.fromFile))) {
-      const input = await fsa.readJson<string[]>(args.fromFile);
-      if (Array.isArray(input)) inputs.push(...input);
+    if (args.fromFile) {
+      const fileURL = new URL(args.fromFile);
+      if (await fsa.exists(fileURL)) {
+        const input = await fsa.readJson<string[]>(fileURL);
+        if (Array.isArray(input)) inputs.push(...input);
+      }
     }
 
     if (inputs.length === 0) {
@@ -86,13 +89,13 @@ export const commandGroup = command({
           },
           'Group:Output:File',
         );
-        await fsa.write(`/tmp/group/output/${groupId}.json`, JSON.stringify(grouped[i], null, 2));
+        await fsa.write(fsa.toUrl(`/tmp/group/output/${groupId}.json`), JSON.stringify(grouped[i], null, 2));
         items.push(groupId);
       }
 
       // output.json contains ["001","002","003","004","005","006","007"...]
       logger.debug({ target: '/tmp/group/output.json', groups: items }, 'Group:Output');
-      await fsa.write('/tmp/group/output.json', JSON.stringify(items));
+      await fsa.write(fsa.toUrl('/tmp/group/output.json'), JSON.stringify(items));
     }
   },
 });

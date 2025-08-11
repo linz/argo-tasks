@@ -5,6 +5,7 @@ import { FsFile } from '@chunkd/source-file';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
+import { tryParseUrl } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -119,11 +120,12 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
  * Also, if the file has been written with an unknown binary contentType attempt to fix it with common content types
  *
  *
- * @param path File path to fix the metadata of
+ * @param url URL of file to fix the metadata of
  * @param meta File metadata
  * @returns New fixed file metadata if fixed otherwise source file metadata
  */
-export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
+export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
+  const path = url.href;
   if (path.toLowerCase().endsWith(CompressedFileExtension)) {
     return { ...meta, contentType: 'application/zstd' };
   } else if (meta.contentType === 'application/zstd') {
@@ -157,7 +159,7 @@ export async function determineTargetFileOperation(
   args: CopyContractArgs,
 ): Promise<TargetFileOperation> {
   const shouldCompress = shouldCompressFile(args.compress, source.size, MinSizeForCompression);
-  const shouldDecompress = shouldDecompressFile(args.decompress, source.path, CompressedFileExtension);
+  const shouldDecompress = shouldDecompressFile(args.decompress, source.url.href, CompressedFileExtension);
 
   let finalTargetName = initialTargetName;
   if (shouldDecompress) {
@@ -168,8 +170,8 @@ export async function determineTargetFileOperation(
     finalTargetName += CompressedFileExtension;
   }
 
-  const head = await tryHead(finalTargetName);
-  const target = { ...head, path: head?.path ?? finalTargetName, size: head?.size ?? 0 } as FileInfo;
+  const head = await tryHead(tryParseUrl(finalTargetName));
+  const target = { ...head, url: head?.url ?? tryParseUrl(finalTargetName), size: head?.size ?? 0 } as FileInfo;
   const defaultOperation = shouldDecompress
     ? FileOperation.Decompress
     : shouldCompress
@@ -182,7 +184,7 @@ export async function determineTargetFileOperation(
   };
 
   source.metadata ??= {};
-  source.metadata[HashKey] ??= await hashStream(fsa.stream(source.path));
+  source.metadata[HashKey] ??= await hashStream(fsa.readStream(source.url));
   const hashMisMatch = source.metadata[HashKey] !== target?.metadata?.[HashKey];
 
   if (target.size === 0) {
@@ -195,12 +197,12 @@ export async function determineTargetFileOperation(
   } else if (args.noClobber && hashMisMatch) {
     // With noClobber (and not force), we do not overwrite existing files (only copy new files).
     // Error if the target file already exists and has a different hash.
-    logger.error({ target: target.path, source: source.path }, 'File:Overwrite');
+    logger.error({ target: target.url.href, source: source.url.href }, 'File:Overwrite');
     throw new Error(
       'Target already exists with different hash. Use --force to overwrite. target: ' +
-        target.path +
+        target.url.toString() +
         ' source: ' +
-        source.path,
+        source.url.toString(),
     );
   }
   return myTargetAction;
@@ -214,7 +216,7 @@ export async function determineTargetFileOperation(
  * @param expectedHash The expected hash of the target file.
  * @returns {boolean} True if the target file matches the expected size and hash, otherwise logs an error and returns false.
  */
-export async function verifyTargetFile(target: string, expectedSize: number, expectedHash: string): Promise<boolean> {
+export async function verifyTargetFile(target: URL, expectedSize: number, expectedHash: string): Promise<boolean> {
   const targetReadBack = await tryHead(target);
   const targetSize = targetReadBack?.size;
   const targetFs = fsa.get(target, 'rw');

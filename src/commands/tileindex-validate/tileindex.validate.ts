@@ -40,7 +40,7 @@ export const TiffLoader = {
     logger.info({ count: tiffLocations.length }, 'Tiff:Load:Start');
     if (tiffLocations.length === 0) throw new Error('No Files found');
     // Ensure credentials are loaded before concurrently loading tiffs
-    if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
+    if (tiffLocations[0]) await fsa.head(fsa.toUrl(tiffLocations[0]));
 
     const promises = await Promise.allSettled(
       tiffLocations.map((loc: string) => {
@@ -257,7 +257,7 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await fsa.write('/tmp/tile-index-validate/input.geojson', {
+      await fsa.write(fsa.toUrl('/tmp/tile-index-validate/input.geojson'), {
         type: 'FeatureCollection',
         features: tiffLocations.map((loc) => {
           const epsg = args.sourceEpsg ?? loc.epsg;
@@ -273,7 +273,7 @@ export const commandTileIndexValidate = command({
       });
       logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:InputGeoJson');
 
-      await fsa.write('/tmp/tile-index-validate/output.geojson', {
+      await fsa.write(fsa.toUrl('/tmp/tile-index-validate/output.geojson'), {
         type: 'FeatureCollection',
         features: [...outputTiles.keys()].map((key) => {
           const mapTileIndex = MapSheet.getMapTileIndex(key);
@@ -286,7 +286,10 @@ export const commandTileIndexValidate = command({
       });
       logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:OutputGeojson');
 
-      await fsa.write('/tmp/tile-index-validate/file-list.json', createFileList(outputTiles, args.includeDerived));
+      await fsa.write(
+        fsa.toUrl('/tmp/tile-index-validate/file-list.json'),
+        createFileList(outputTiles, args.includeDerived),
+      );
       logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputTiles.size }, 'Write:FileList');
     }
 

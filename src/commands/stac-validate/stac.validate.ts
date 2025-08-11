@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { fsa } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
 import Ajv from 'ajv';
@@ -127,7 +129,7 @@ export const commandStacValidate = command({
       const stacSchemas: string[] = [];
       let stacJson;
       try {
-        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(new URL(path));
       } catch (err) {
         logger.error({ path, err }, 'readStacJsonFile:Error');
         failures.push(path);
@@ -281,11 +283,11 @@ async function loadSchema(url: string): Promise<object> {
   const cachePath = `./json-schema-cache/${cacheId}.json`;
 
   try {
-    return await fsa.readJson<object>(cachePath);
+    return await fsa.readJson<object>(fsa.toUrl(cachePath));
   } catch (e) {
-    return fsa.read(url).then(async (obj) => {
+    return fsa.read(fsa.toUrl(url)).then(async (obj) => {
       logger.info({ url, cachePath }, 'Fetch:CacheMiss');
-      await fsa.write(cachePath, obj);
+      await fsa.write(fsa.toUrl(cachePath), obj);
       return JSON.parse(String(obj)) as object;
     });
   }
@@ -294,42 +296,42 @@ async function loadSchema(url: string): Promise<object> {
 /**
  * Validate if the checksum found in the stacObject (`file:checksum`) corresponds to its actual file checksum.
  * @param stacObject a STAC Link or Asset
- * @param path path to the STAC location
+ * @param stacPath path to the STAC location
  * @param allowMissing allow missing checksum to be valid
  * @returns weither the checksum is valid or not
  */
 export async function validateStacChecksum(
   stacObject: st.StacLink | st.StacAsset,
-  path: string,
+  stacPath: string,
   allowMissing: boolean,
 ): Promise<boolean> {
   let source = stacObject.href;
-  if (source.startsWith('./')) source = fsa.join(dirname(path), source.replace('./', ''));
+  if (source.startsWith('./')) source = path.join(dirname(stacPath), source.replace('./', ''));
   const checksum: string = stacObject['file:checksum'] as string;
 
   if (checksum == null) {
     if (allowMissing) return true;
-    logger.error({ source, checksum, type: stacObject.rel, parent: path }, 'Validate:Checksum:Missing');
+    logger.error({ source, checksum, type: stacObject.rel, parent: stacPath }, 'Validate:Checksum:Missing');
     return false;
   }
 
   if (!checksum.startsWith(Sha256Prefix)) {
-    logger.error({ source, checksum, type: stacObject.rel, parent: path }, 'Validate:Checksum:Unknown');
+    logger.error({ source, checksum, type: stacObject.rel, parent: stacPath }, 'Validate:Checksum:Unknown');
     return false;
   }
   logger.debug({ source, checksum }, 'Validate:Checksum');
   const startTime = performance.now();
-  const hash = await hashStream(fsa.stream(source));
+  const hash = await hashStream(fsa.readStream(fsa.toUrl(source)));
   const duration = performance.now() - startTime;
 
   if (hash !== checksum) {
     logger.error(
-      { source, checksum, found: hash, type: stacObject.rel, parent: path, duration },
+      { source, checksum, found: hash, type: stacObject.rel, parent: stacPath, duration },
       'Checksum:Validation:Failed',
     );
     return false;
   }
-  logger.debug({ source, checksum, type: stacObject.rel, parent: path, duration }, 'Checksum:Validation:Ok');
+  logger.debug({ source, checksum, type: stacObject.rel, parent: stacPath, duration }, 'Checksum:Validation:Ok');
   return true;
 }
 

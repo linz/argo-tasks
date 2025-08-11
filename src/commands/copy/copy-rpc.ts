@@ -1,4 +1,4 @@
-import type { FileInfo } from '@chunkd/core';
+import type { FileInfo } from '@chunkd/fs';
 
 export type CopyContract = {
   copy(args: CopyContractArgs): Promise<CopyStats>;

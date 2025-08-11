@@ -45,7 +45,6 @@ export const commandIdentifyUpdatedItems = command({
     const startTime = performance.now();
     registerCli(this, args);
     logger.info('identifyUpdatedItems:Start');
-
     if (args.targetCollection && !args.targetCollection.endsWith('collection.json')) {
       logger.error('--target-collection must point to an existing STAC collection.json or not be set');
       throw new Error('--target-collection must point to an existing STAC collection.json or not be set');
@@ -64,10 +63,10 @@ export const commandIdentifyUpdatedItems = command({
     const Q = new ConcurrentQueue(10);
 
     if (args.targetCollection) {
-      const targetCollection = await fsa.readJson<LinzStacCollection>(args.targetCollection);
+      const targetCollection = await fsa.readJson<LinzStacCollection>(fsa.toUrl(args.targetCollection));
       for (const collectionLink of targetCollection.links) {
         if (collectionLink.rel !== 'item') continue;
-        const itemUrl = combinePaths(args.targetCollection, collectionLink.href);
+        const itemUrl = new URL(collectionLink.href, args.targetCollection);
         Q.push(async () => {
           const itemStac = await fsa.readJson<LinzStacItem>(itemUrl);
           itemStac.links.forEach((itemLink) => {
@@ -87,7 +86,7 @@ export const commandIdentifyUpdatedItems = command({
 
     await Promise.all(
       sourceCollectionUrls.map(async (sourceCollectionUrl) => {
-        const sourceCollection = await fsa.readJson<LinzStacCollection>(sourceCollectionUrl);
+        const sourceCollection = await fsa.readJson<LinzStacCollection>(fsa.toUrl(sourceCollectionUrl));
         sourceCollection.links.forEach((sourceItem) => {
           if (sourceItem.rel !== 'item') return;
           const myItemId = basename(sourceItem.href, '.json');
@@ -151,7 +150,7 @@ export const commandIdentifyUpdatedItems = command({
       };
     });
 
-    const fileListPath = '/tmp/identify-updated-items/file-list.json';
+    const fileListPath = new URL('/tmp/identify-updated-items/file-list.json');
     await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
     logger.info(
       {

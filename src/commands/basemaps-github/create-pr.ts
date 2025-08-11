@@ -43,12 +43,13 @@ export interface targetInfo {
  *
  * TODO: This should get from metadata instead of the parse string once we got the attributes in metadata
  *
- * @param target Target url to parse the information from
+ * @param url Target url to parse the information from
  * @param offset Adding index offset to exclude the `/vector/` or `/elevation/` in s3 path. 0 for raster, 1 for vector and elevation.
  */
-export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
+export function parseTargetUrl(url: URL, offset: 0 | 1): targetInfo {
   // Parse target bucket, epsg and imagery name from the target url
-  const url = new URL(target);
+  // const url = new URL(target);
+  const target = url.href;
   const bucket = url.hostname;
   const splits = url.pathname.split('/');
   const epsg = Epsg.tryGet(Number(splits[1 + offset]));
@@ -79,7 +80,7 @@ export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
  * s3://linz-basemaps-staging/3857/west-coast_rural_2015-16_0-3m/01ED83TT0ZHKXTPFXEGFJHP2M5/
  */
 async function parseRasterTargetInfo(
-  target: string,
+  target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
@@ -87,11 +88,14 @@ async function parseRasterTargetInfo(
 
   assertValidBucket(bucket, ValidTargetBuckets);
 
-  const collectionPath = fsa.join(target, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  // const collectionPath = fsa.join(target, 'collection.json');
+  const base = target.href.endsWith('/') ? target : new URL(target.href + '/');
+  const collectionURL = new URL('collection.json', base);
+
+  const collection = await fsa.readJson<StacCollection>(collectionURL);
+  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionPath}`);
+  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionURL.toString()}`);
 
   // Validate the source location
   const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
@@ -122,7 +126,7 @@ async function parseRasterTargetInfo(
  * s3://linz-basemaps-staging/vector/3857/53382-nz-roads-addressing/01HSF04SG9M1P3V667A4NZ1MN8/53382-nz-roads-addressing.tar.co
  * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
  */
-async function parseVectorTargetInfo(target: string): Promise<{ name: string; title: string; epsg: EpsgCode }> {
+async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title: string; epsg: EpsgCode }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name, filename } = parseTargetUrl(target, 1);
 
@@ -133,9 +137,9 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   }
 
   // Try to get the title
-  const collectionPath = target.replace(filename, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const collectionURL = new URL('collection.json', target); // This replaces any filename with collection.json. Todo: verify this works as intended
+  const collection = await fsa.readJson<StacCollection>(collectionURL);
+  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
   const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');
   let title = collection.title;
   // Get title from lds:title for individual vector layer
@@ -153,17 +157,19 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
  * s3://linz-basemaps/elevation/3857/kapiti-coast_2021_dem_1m/01HZ5W74E8B1DF2B0MDSKSTSTV/
  */
 async function parseElevationTargetInfo(
-  target: string,
+  target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined; source: string }> {
   logger.info({ target }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
+  // const collectionURL = fsa.join(target, 'collection.json');
+  const base = target.href.endsWith('/') ? target : new URL(target.href + '/');
+  const collectionURL = new URL('collection.json', base);
 
-  const collectionPath = fsa.join(target, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const collection = await fsa.readJson<StacCollection>(collectionURL);
+  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
   const title = collection.title;
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
 
@@ -265,14 +271,14 @@ export const basemapsCreatePullRequest = command({
     const configType = args.vector ? 'vector' : args.configType;
     if (configType === 'vector') {
       for (const target of targets) {
-        const info = await parseVectorTargetInfo(target);
+        const info = await parseVectorTargetInfo(fsa.toUrl(target));
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;
       }
     } else if (configType === 'elevation') {
       for (const target of targets) {
-        const info = await parseElevationTargetInfo(target, args.individual);
+        const info = await parseElevationTargetInfo(fsa.toUrl(target), args.individual);
         layer.name = info.name;
         layer.title = info.title;
         layer[2193] = info.source;
@@ -281,7 +287,7 @@ export const basemapsCreatePullRequest = command({
       }
     } else {
       for (const target of targets) {
-        const info = await parseRasterTargetInfo(target, args.individual);
+        const info = await parseRasterTargetInfo(fsa.toUrl(target), args.individual);
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;

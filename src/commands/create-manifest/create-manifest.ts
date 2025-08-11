@@ -1,7 +1,8 @@
+import path from 'node:path';
+
 import { fsa } from '@chunkd/fs';
 import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
-import path from 'path';
 import { gzipSync } from 'zlib';
 
 import type { CommandArguments } from '../../__test__/type.util.ts';
@@ -46,7 +47,7 @@ export const commandCreateManifest = command({
   async handler(args) {
     registerCli(this, args);
 
-    const outputCopy: string[] = [];
+    const outputCopy: URL[] = [];
 
     const targetPath: string = args.target;
     const actionLocation = getActionLocation();
@@ -58,16 +59,17 @@ export const commandCreateManifest = command({
 
         // Store the list of files to move in a bucket rather than the ARGO parameters
         if (actionLocation) {
-          const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
+          // const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
+          const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation);
           const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
           await fsa.write(targetLocation, JSON.stringify(targetAction));
           outputCopy.push(targetLocation);
         } else {
-          outputCopy.push(gzipSync(outBuf).toString('base64url'));
+          outputCopy.push(new URL(gzipSync(outBuf).toString('base64url')));
         }
       }
     }
-    await fsa.write(args.output, JSON.stringify(outputCopy));
+    await fsa.write(fsa.toUrl(args.output), JSON.stringify(outputCopy));
   },
 });
 
@@ -98,7 +100,8 @@ export async function createManifest(
       const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
       let target = targetPath;
       if (baseFile) {
-        target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
+        // target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
+        target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetPath).href;
       }
       validatePaths(filePath, target);
       current.push({ source: filePath, target });

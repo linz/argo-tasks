@@ -62,7 +62,7 @@ export const commandVerifyRestore = command({
     let resultKeys: string[] = [];
     try {
       logger.info({ path: args.report.toString() }, 'VerifyRestore:LoadReport');
-      const report: ManifestReport = await fsa.readJson(args.report.toString());
+      const report: ManifestReport = await fsa.readJson(args.report);
       resultKeys = fetchResultKeysFromReport(report);
     } catch (error) {
       logger.error({ error, path: args.report.toString() }, 'VerifyRestore:FailedToLoadReport');
@@ -76,7 +76,7 @@ export const commandVerifyRestore = command({
     for (const key of resultKeys) {
       logger.info({ key }, 'VerifyRestore:ProcessingCSVResult');
       const resultPath = new URL(key, args.report);
-      const reportResult = await fsa.read(resultPath.toString());
+      const reportResult = await fsa.read(resultPath);
       const resultEntries: ReportResult[] = parseReportResult(reportResult.toString());
       const files = fetchPendingRestoredObjectPaths(resultEntries);
 
@@ -104,9 +104,9 @@ export const commandVerifyRestore = command({
     }
 
     if (anyNotRestored) {
-      await fsa.write(args.output, Buffer.from('false'));
+      await fsa.write(fsa.toUrl(args.output), Buffer.from('false'));
     } else {
-      await fsa.write(args.output, Buffer.from('true'));
+      await fsa.write(fsa.toUrl(args.output), Buffer.from('true'));
       if (args.markDone) {
         await markReportDone(args.report);
       }
@@ -229,8 +229,8 @@ export function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): b
  */
 async function markReportDone(reportPath: URL): Promise<void> {
   const donePath = new URL(`${reportPath.toString()}.done`);
-  await fsa.write(donePath.toString(), await fsa.read(reportPath.toString()));
-  await fsa.delete(reportPath.toString());
+  await fsa.write(donePath, await fsa.read(reportPath));
+  await fsa.delete(reportPath);
   logger.info({ reportPath, donePath }, 'VerifyRestore:MarkedReportDone');
 }
 /**

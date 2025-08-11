@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional, string } from 'cmd-ts';
-import { isAbsolute } from 'path';
+import path, { isAbsolute } from 'path';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -60,7 +60,7 @@ export const commandStacCatalog = command({
   async handler(args) {
     registerCli(this, args);
     logger.info('StacCatalogCreation:Start');
-    const catalog = await fsa.readJson<st.StacCatalog>(args.template);
+    const catalog = await fsa.readJson<st.StacCatalog>(new URL(args.template));
     if (catalog.stac_extensions == null) catalog.stac_extensions = [];
     // Add the file extension for "file:checksum" the links
     if (!catalog.stac_extensions.includes(StacFileExtensionUrl)) {
@@ -71,7 +71,7 @@ export const commandStacCatalog = command({
 
     catalog.links = await createLinks(args.path, catalog.links);
 
-    await fsa.write(args.output, JSON.stringify(catalog, null, 2));
+    await fsa.write(fsa.toUrl(args.output), JSON.stringify(catalog, null, 2));
     logger.info(
       { catalogId: catalog.id, collections: catalog.links.length - templateLinkCount },
       'StacCatalogCreation:Done',
@@ -80,17 +80,18 @@ export const commandStacCatalog = command({
 });
 
 export async function createLinks(basePath: string, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
-  const collections = await fsa.toArray(fsa.list(basePath));
+  const collections = await fsa.toArray(fsa.list(fsa.toUrl(basePath)));
 
   for (const coll of collections) {
-    if (coll.endsWith('/collection.json')) {
-      const relPath = makeRelative(basePath, coll);
+    if (coll.href.endsWith('/collection.json')) {
+      const relPath = makeRelative(basePath, coll.href);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
       const checksum = hashBuffer(buf);
       const collLink: st.StacLink = {
         rel: 'child',
-        href: fsa.join('./', relPath),
+        // href: fsa.join('./', relPath),
+        href: path.join('./', relPath),
         title: collection.title,
         'file:checksum': checksum,
         'file:size': buf.length,
