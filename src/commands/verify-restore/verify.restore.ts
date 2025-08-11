@@ -142,7 +142,7 @@ export function fetchResultKeysFromReport(report: ManifestReport): string[] {
  * @returns An array of objects containing the Bucket and Key of each restored object.
  */
 export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): { Bucket: string; Key: string }[] {
-  const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => row.ResultMessage !== 'Successful');
+  const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => row.ResultMessage.trim() !== 'Successful');
   if (notSuccessfulRequests.length) {
     throw new Error(
       `Some restore requests are not successful: ${notSuccessfulRequests.map((row) => row.Key).join(', ')}`,
@@ -157,7 +157,11 @@ export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): 
 
 /**
  * Parses the CSV report result string into an array of ReportResult.
- * "ReportSchema": "Bucket, Key, VersionId, TaskStatus, ErrorCode, HTTPStatusCode, ResultMessage"
+ *
+ * FIXME: The ReportSchema provided by AWS
+ * ("ReportSchema": "Bucket, Key, VersionId, TaskStatus, ErrorCode, HTTPStatusCode, ResultMessage")
+ * is wrong and the actual CSV format is:
+ * "ReportSchema": "Bucket, Key, VersionId, TaskStatus, HTTPStatusCode, ErrorCode, ResultMessage"
  *
  * @param result - The CSV result string containing restored object paths and statuses.
  * @returns An array of ReportResult.
