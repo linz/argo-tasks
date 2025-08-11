@@ -84,6 +84,21 @@ describe('fetchPendingRestoredObjectPaths', () => {
     ];
     assert.throws(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful/ });
   });
+
+  it('treats ResultMessage with trailing \\r as successful', () => {
+    const entries = [
+      {
+        Bucket: 'b',
+        Key: 'k',
+        VersionId: '',
+        TaskStatus: '',
+        ErrorCode: '',
+        HTTPStatusCode: '',
+        ResultMessage: 'Successful\r',
+      },
+    ];
+    assert.deepStrictEqual(fetchPendingRestoredObjectPaths(entries), [{ Bucket: 'b', Key: 'k' }]);
+  });
 });
 
 describe('parseReportResult', () => {
