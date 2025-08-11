@@ -54,7 +54,11 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));
     files.sort();
-    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
+    // assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
+    assert.deepStrictEqual(files, [
+      fsa.toUrl('memory://tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory://tmp/stac-setup/linz-slug'),
+    ]);
     const slug = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/linz-slug'));
     assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
     const collectionId = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/collection-id'));
@@ -77,7 +81,10 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));
     files.sort();
-    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
+    assert.deepStrictEqual(files, [
+      fsa.toUrl('memory://tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory://tmp/stac-setup/linz-slug'),
+    ]);
     const slug = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/linz-slug'));
     assert.strictEqual(slug.toString(), 'wairoa_2013-2014');
     const collectionId = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/collection-id'));
@@ -100,7 +107,10 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));
     files.sort();
-    assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
+    assert.deepStrictEqual(files, [
+      fsa.toUrl('memory://tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory://tmp/stac-setup/linz-slug'),
+    ]);
     const slug = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/linz-slug'));
     assert.strictEqual(slug.toString(), 'new-zealand');
   });

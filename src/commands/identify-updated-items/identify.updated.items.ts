@@ -150,7 +150,7 @@ export const commandIdentifyUpdatedItems = command({
       };
     });
 
-    const fileListPath = new URL('/tmp/identify-updated-items/file-list.json');
+    const fileListPath = fsa.toUrl('/tmp/identify-updated-items/file-list.json');
     await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
     logger.info(
       {

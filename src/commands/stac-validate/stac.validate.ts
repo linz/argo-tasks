@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import { fsa } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
 import Ajv from 'ajv';
@@ -305,8 +303,7 @@ export async function validateStacChecksum(
   stacPath: string,
   allowMissing: boolean,
 ): Promise<boolean> {
-  let source = stacObject.href;
-  if (source.startsWith('./')) source = path.join(dirname(stacPath), source.replace('./', ''));
+  const source = new URL(stacObject.href, stacPath);
   const checksum: string = stacObject['file:checksum'] as string;
 
   if (checksum == null) {
@@ -321,7 +318,7 @@ export async function validateStacChecksum(
   }
   logger.debug({ source, checksum }, 'Validate:Checksum');
   const startTime = performance.now();
-  const hash = await hashStream(fsa.readStream(fsa.toUrl(source)));
+  const hash = await hashStream(fsa.readStream(source));
   const duration = performance.now() - startTime;
 
   if (hash !== checksum) {

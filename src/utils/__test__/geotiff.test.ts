@@ -67,7 +67,7 @@ describe('geotiff', () => {
     );
     fsa.register('memory://', source);
 
-    const tiff = await createTiff(new URL('memory://BX20_500_023098.tif'));
+    const tiff = await createTiff('memory://BX20_500_023098.tif');
     const bbox = await findBoundingBox(tiff);
 
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);

@@ -140,7 +140,7 @@ export async function createMapSheet(
         for (const file of img.files) {
           if (bounds.intersects(Bounds.fromJson(file))) {
             // current.files.push(fsa.join(img.uri, getTiffName(file.name)));
-            current.files.push(new URL(getTiffName(file.name), img.uri).href);
+            current.files.push(new URL(getTiffName(file.name), img.uri.endsWith('/') ? img.uri : `${img.uri}/`).href);
           }
         }
       }
