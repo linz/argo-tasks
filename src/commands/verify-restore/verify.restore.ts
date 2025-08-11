@@ -191,19 +191,20 @@ export function parseReportResult(result: string): ReportResult[] {
  * @returns The head object output.
  */
 async function headS3Object(path: { Bucket: string; Key: string }): Promise<HeadObjectCommandOutput> {
+  const objectKey = decodeFormUrlEncoded(path.Key);
+  const objectPath = `s3://${path.Bucket}/${objectKey}`;
+  logger.info({ path: objectPath }, 'VerifyRestore:HeadObject:Start');
   try {
-    const objectKey = decodeFormUrlEncoded(path.Key);
-    const headObjectOutput: HeadObjectCommandOutput = await (
-      fsa.get(`s3://${path.Bucket}/${objectKey}`, 'r') as FsAwsS3V3
-    ).client.send(new HeadObjectCommand({ Bucket: path.Bucket, Key: objectKey }));
-    logger.info({ path, headObjectOutput }, 'VerifyRestore:HeadObject');
+    const headObjectOutput: HeadObjectCommandOutput = await (fsa.get(objectPath, 'r') as FsAwsS3V3).client.send(
+      new HeadObjectCommand({ Bucket: path.Bucket, Key: objectKey }),
+    );
+    logger.info({ path: objectPath, headObjectOutput }, 'VerifyRestore:HeadObject:Done');
     return headObjectOutput;
   } catch (error) {
-    logger.error({ path, error }, 'VerifyRestore:FailedToHeadObject');
-    throw new Error(`Failed to headObject() for s3://${path.Bucket}/${path.Key}: ${String(error)}`);
+    logger.error({ path: objectPath, error }, 'VerifyRestore:HeadObject:Failed');
+    throw new Error(`Failed to headObject() for ${objectPath}: ${String(error)}`);
   }
 }
-
 /**
  * Checks if the restore is completed by examining the Restore field in the headObject output.
  * If the Restore field is 'ongoing-request="false"', it means the restore is completed.
@@ -216,6 +217,7 @@ export function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): b
     logger.error({ headObjectOutput }, 'VerifyRestore:RestoreStatusUndefined');
     throw new Error('Restore status is undefined.');
   }
+  logger.info({ restoreStatus: headObjectOutput.Restore }, 'VerifyRestore:RestoreStatus');
   return headObjectOutput.Restore === 'ongoing-request="false"';
 }
 
