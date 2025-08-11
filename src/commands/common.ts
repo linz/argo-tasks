@@ -98,7 +98,9 @@ export function createTiff(loc: string): Promise<Tiff> {
     url: fsa.toUrl(loc),
     fetch: (offset, length): Promise<ArrayBuffer> => {
       /** Limit fetches concurrency see {@link TiffQueue} **/
-      return TiffQueue(() => source.fetch(offset, length));
+      const maxReadLength = source?.source?.data?.maxByteLength ? source.source.data.maxByteLength - offset : 0;
+      const readLength = length === undefined || length > maxReadLength ? maxReadLength : length;
+      return TiffQueue(() => source.fetch(offset, readLength));
     },
   });
   return tiff.init();

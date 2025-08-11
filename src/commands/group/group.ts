@@ -62,7 +62,7 @@ export const commandGroup = command({
     const inputs: unknown[] = [];
     for (const input of args.inputs) inputs.push(...loadInput(input));
     if (args.fromFile) {
-      const fileURL = new URL(args.fromFile);
+      const fileURL = fsa.toUrl(args.fromFile);
       if (await fsa.exists(fileURL)) {
         const input = await fsa.readJson<string[]>(fileURL);
         if (Array.isArray(input)) inputs.push(...input);

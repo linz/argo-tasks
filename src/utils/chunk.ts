@@ -1,3 +1,5 @@
+import { basename } from 'node:path/posix';
+
 import { fsa } from '@chunkd/fs';
 
 import { parseSize } from '../commands/common.ts';
@@ -15,7 +17,7 @@ export async function* asyncFilter<T extends { url: URL; size?: number }>(
   const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
   const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
   for await (const f of source) {
-    const testPath = f.url.href.toLowerCase();
+    const testPath = basename(f.url.href.toLowerCase());
     if (exclude && exclude.test(testPath)) continue;
     if (include === true) yield f;
     else if (include.test(testPath)) yield f;

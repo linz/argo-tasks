@@ -137,7 +137,7 @@ async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title
   }
 
   // Try to get the title
-  const collectionURL = new URL('collection.json', target); // This replaces any filename with collection.json. Todo: verify this works as intended
+  const collectionURL = new URL('collection.json', target); // Todo: This replaces any filename with collection.json. Todo: verify this works as intended
   const collection = await fsa.readJson<StacCollection>(collectionURL);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
   const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');

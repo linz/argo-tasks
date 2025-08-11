@@ -380,7 +380,9 @@ describe('copyFiles', () => {
       fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true })), {
         contentType: 'application/json',
       }),
-      fsa.write(fsa.toUrl('memory://source/foo/bar/topographic.png'), Buffer.from('test'), { contentType: 'image/png' }),
+      fsa.write(fsa.toUrl('memory://source/foo/bar/topographic.png'), Buffer.from('test'), {
+        contentType: 'image/png',
+      }),
     ]);
 
     await worker.routes.copy({

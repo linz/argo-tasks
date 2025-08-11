@@ -132,7 +132,7 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
   const tiffLink = item.assets['visual']?.href;
   if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemPath.toString()}`);
 
-  const tiffPath = new URL(tiffLink, source);
+  const tiffPath = new URL(tiffLink, source).href;
   const tiff = await createTiff(tiffPath);
   if (tiff == null) throw new Error(`Failed to get tiff from ${tiffPath.toString()}.`);
   return tiff;
