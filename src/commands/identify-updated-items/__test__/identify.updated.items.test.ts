@@ -63,7 +63,7 @@ describe('identify-updated-items', () => {
       targetCollection: undefined,
     };
     await commandIdentifyUpdatedItems.handler(args);
-    const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/identify-updated-items/file-list.json');
+    const outputFileList: [FileListEntry] = await fsa.readJson(fsa.toUrl('/tmp/identify-updated-items/file-list.json'));
     assert.deepEqual(outputFileList, [
       {
         output: 'BD31',
@@ -107,7 +107,7 @@ describe('identify-updated-items', () => {
 
   it('should only add modified items to file-list.json', async () => {
     await commandIdentifyUpdatedItems.handler(baseArgs);
-    const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/identify-updated-items/file-list.json');
+    const outputFileList: [FileListEntry] = await fsa.readJson(fsa.toUrl('/tmp/identify-updated-items/file-list.json'));
     assert.deepEqual(outputFileList, [
       {
         output: 'BD32',

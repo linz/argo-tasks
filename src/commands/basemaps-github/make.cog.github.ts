@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { DefaultColorRampOutput, DefaultTerrainRgbOutput, standardizeLayerName } from '@basemaps/config';
 import type {
   ConfigLayer,
@@ -6,8 +8,8 @@ import type {
   ConfigTileSetVector,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
-import { fsa } from '@chunkd/fs';
 
+// import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';
@@ -106,12 +108,14 @@ export class MakeCogGithub {
         category,
         layers: [targetLayer],
       };
-      const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
+
+      const tileSetPath = path.join('config', 'tileset', region, 'imagery', `${layer.name}.json`);
+      // const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, tileSet);
     } else {
       // Prepare new aerial tileset config
-      const tileSetPath = fsa.joinAll('config', 'tileset', `aerial.json`);
+      const tileSetPath = path.join('config', 'tileset', `aerial.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Unable get the aerial.json from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
@@ -148,12 +152,12 @@ export class MakeCogGithub {
     if (individual) {
       if (region == null) region = 'individual';
       const tileSet = await this.prepareElevationTileSetConfig(layer);
-      const tileSetPath = fsa.joinAll('config', 'tileset', region, 'elevation', type, `${layer.name}.json`);
+      const tileSetPath = path.join('config', 'tileset', region, 'elevation', type, `${layer.name}.json`);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, tileSet);
     } else {
       // Prepare new elevation tileset config
-      const tileSetPath = fsa.joinAll('config', 'tileset', type === 'dem' ? 'elevation.json' : 'elevation.dsm.json');
+      const tileSetPath = path.join('config', 'tileset', type === 'dem' ? 'elevation.json' : 'elevation.dsm.json');
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Failed to get config elevation from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
@@ -175,12 +179,12 @@ export class MakeCogGithub {
     // Prepare new vector tileset config
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     if (individual) {
-      const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
+      const tileSetPath = path.join('config', 'tileset', `${filename}.json`);
       const newTileSet = await this.prepareVectorTileSetConfig(layer, undefined);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
     } else {
-      const tileSetPath = fsa.joinAll('config', 'tileset', `${filename}.json`);
+      const tileSetPath = path.join('config', 'tileset', `${filename}.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Failed to get config topographic from config repo.`);
       // update the existing tileset

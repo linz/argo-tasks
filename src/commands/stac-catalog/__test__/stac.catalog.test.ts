@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import { createLinks, makeRelative } from '../stac.catalog.ts';
 
@@ -14,8 +13,8 @@ describe('stacCatalog', () => {
   });
 
   it('listLocation', async () => {
-    await fs.write('m://base/directory1/collection.json', JSON.stringify({ title: 'CollectionA' }));
-    await fs.write('m://base/directory2/collection.json', JSON.stringify({ title: 'CollectionB' }));
+    await fsa.write(fsa.toUrl('m://base/directory1/collection.json'), JSON.stringify({ title: 'CollectionA' }));
+    await fsa.write(fsa.toUrl('m://base/directory2/collection.json'), JSON.stringify({ title: 'CollectionB' }));
 
     const links = await createLinks('m://base/', [
       { rel: 'self', href: './catalog.json' },

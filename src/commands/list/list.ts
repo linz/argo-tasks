@@ -38,6 +38,6 @@ export const commandList = command({
       process.exit(1);
     }
     const outputFiles = await getFiles(args.location, args);
-    if (args.output) await fsa.write(args.output, JSON.stringify(outputFiles));
+    if (args.output) await fsa.write(fsa.toUrl(args.output), JSON.stringify(outputFiles));
   },
 });

@@ -92,13 +92,13 @@ export const TiffQueue = pLimit(25);
  * @returns Initialized tiff
  */
 export function createTiff(loc: string): Promise<Tiff> {
-  const source = fsa.source(loc);
+  const source = fsa.source(fsa.toUrl(loc));
 
   const tiff = new Tiff({
-    url: tryParseUrl(loc),
+    url: fsa.toUrl(loc),
     fetch: (offset, length): Promise<ArrayBuffer> => {
       /** Limit fetches concurrency see {@link TiffQueue} **/
-      return TiffQueue(() => source.fetchBytes(offset, length));
+      return TiffQueue(() => source.fetch(offset, length));
     },
   });
   return tiff.init();
@@ -129,7 +129,7 @@ export function urlToString(u: URL): string {
 }
 
 /**
- * Parse a input parameter as a URL.
+ * Parse an input parameter as a URL.
  *
  * If it looks like a file path, it will be converted using `pathToFileURL`.
  **/
@@ -144,7 +144,7 @@ export const Url: Type<string, URL> = {
 };
 
 /**
- * Parse a input parameter as a URL which represents a folder.
+ * Parse an input parameter as a URL which represents a folder.
  *
  * If it looks like a file path, it will be converted using `pathToFileURL`.
  * Any search parameters or hash will be removed, and a trailing slash added
@@ -161,7 +161,7 @@ export const UrlFolder: Type<string, URL> = {
 };
 
 /**
- * Remove a trailing 'm' from a input value and validate the input is a number.
+ * Remove a trailing 'm' from an input value and validate the input is a number.
  *
  * @param str input value
  * @returns value without trailing 'm' (if it exists)
@@ -180,7 +180,7 @@ export const MeterAsString: Type<string, string> = {
 };
 
 /**
- * Parse a input parameter as a URL which represents a S3 path.
+ * Parse an input parameter as a URL which represents a S3 path.
  */
 export const S3Path: Type<string, URL> = {
   async from(str) {

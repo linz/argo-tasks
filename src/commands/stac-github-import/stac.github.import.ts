@@ -1,6 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import type { Type } from 'cmd-ts';
 import { command, oneOf, option, string } from 'cmd-ts';
+import path from 'path';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -77,13 +78,13 @@ export const commandStacGithubImport = command({
 
     const basemapsConfigLinkURL = new URL('config-url', args.source);
     const prBody: string[] = [];
-    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
+    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL);
     prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
     prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
-    logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
-    const catalogPath = fsa.joinAll('template', 'catalog.json');
+    logger.info({ template: path.join('template', 'catalog.json') }, 'Stac:ReadTemplate');
+    const catalogPath = path.join('template', 'catalog.json');
     const catalog = await gh.getContent(catalogPath);
     if (catalog == null) throw new Error(`Failed to get catalog.json from ${args.repoName} repo.`);
     const catalogJson = JSON.parse(catalog) as st.StacCatalog;
@@ -96,9 +97,9 @@ export const commandStacGithubImport = command({
 
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
-    const targetCollectionPath = fsa.joinAll('stac', targetCollection.pathname);
+    const targetCollectionPath = path.join('stac', targetCollection.pathname);
 
-    const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
+    const collection = await fsa.readJson<st.StacCollection>(sourceCollection);
 
     const rootLink = collection.links.find((f) => f.rel === 'root');
     if (rootLink) {
@@ -137,7 +138,7 @@ export const commandStacGithubImport = command({
     if (pr != null) {
       const prUrl = new URL(`https://github.com/${args.repoName}/pull/${pr}`);
       logger.info({ prUrl: prUrl.href }, 'Git:PullRequestCreated');
-      await fsa.write('/tmp/pull-request/url', prUrl.href);
+      await fsa.write(fsa.toUrl('/tmp/pull-request/url'), prUrl.href);
     }
   },
 });

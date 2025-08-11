@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { tryParseUrl } from '../../commands/common.ts';
 import { slugify } from '../slugify.ts';
 
 const slugChars = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
@@ -23,6 +24,10 @@ describe('slugify', () => {
     assert.equal(slugify("Hawke's Bay"), 'hawkes-bay');
   });
   it('should replace slashes with hyphens', () => {
+    const x = 'Tikitapu/Blue Lake';
+    const y = tryParseUrl(x);
+    const u = new URL(y);
+    console.log('url', u);
     assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
   });
   it('should replace commas with hyphens', () => {

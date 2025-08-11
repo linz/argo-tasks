@@ -80,7 +80,7 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
 
   // Attempt to read a TFW next to the tiff
   const sourcePath = urlToString(tiff.source.url);
-  const tfwPath = sourcePath.slice(0, sourcePath.lastIndexOf('.')) + '.tfw';
+  const tfwPath = new URL(sourcePath.slice(0, sourcePath.lastIndexOf('.')) + '.tfw');
   const tfwData = await fsa.read(tfwPath);
   const tfw = parseTfw(String(tfwData));
 

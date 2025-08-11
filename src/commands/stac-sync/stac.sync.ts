@@ -42,13 +42,13 @@ annotateExample(commandStacSync, 'Sync STAC to s3', md.code('bash', 'stac sync /
  */
 export async function synchroniseFiles(sourcePath: string, destinationPath: URL): Promise<number> {
   let count = 0;
-  const sourceFilesInfo = await fsa.toArray(fsa.details(sourcePath));
+  const sourceFilesInfo = await fsa.toArray(fsa.details(fsa.toUrl(sourcePath)));
 
   await Promise.all(
     sourceFilesInfo.map(async (fileInfo) => {
-      if (!fileInfo.path.endsWith('.json')) return;
+      if (!fileInfo.url.href.endsWith('.json')) return;
 
-      const key = new URL(fileInfo.path.slice(sourcePath.length), destinationPath);
+      const key = new URL(fileInfo.url.href.slice(sourcePath.length), destinationPath);
       (await uploadFileToS3(fileInfo, key)) && count++;
     }),
   );
@@ -63,14 +63,14 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
  * @returns whether the file was uploaded
  */
 export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
-  const destinationHead = await fsa.head(path.href);
-  const sourceData = await fsa.read(sourceFileInfo.path);
+  const destinationHead = await fsa.head(path);
+  const sourceData = await fsa.read(sourceFileInfo.url);
   const sourceHash = hashBuffer(sourceData);
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;
   }
 
-  await fsa.write(path.href, sourceData, {
+  await fsa.write(path, sourceData, {
     metadata: { [HashKey]: sourceHash },
     contentType: guessStacContentType(path.href),
   });
