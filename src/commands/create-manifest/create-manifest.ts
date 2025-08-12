@@ -5,6 +5,7 @@ import { command, flag, number, option, optional, restPositionals, string } from
 import { createHash } from 'crypto';
 import { gzipSync } from 'zlib';
 
+import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
@@ -123,3 +124,5 @@ export function validatePaths(source: string, target: string): void {
   }
   throw new Error(`Path Mismatch - source: ${source}, target: ${target}`);
 }
+
+export type CommandCreateManifestArgs = CommandArguments<typeof commandCreateManifest>;

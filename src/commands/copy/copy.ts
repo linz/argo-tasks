@@ -4,6 +4,7 @@ import { boolean, command, flag, number, option, restPositionals, string } from 
 import { performance } from 'perf_hooks';
 import * as z from 'zod';
 
+import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger, logId } from '../../log.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
@@ -140,3 +141,5 @@ export const commandCopy = command({
     logger.info({ copyStats: stats, duration: performance.now() - startTime }, 'File:Copy:Done');
   },
 });
+
+export type CommandCopyArgs = CommandArguments<typeof commandCopy>;

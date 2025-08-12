@@ -1,5 +1,6 @@
 import type { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
+import { FsFile } from '@chunkd/source-file';
 
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
@@ -218,7 +219,15 @@ export async function determineTargetFileOperation(
 export async function verifyTargetFile(target: URL, expectedSize: number, expectedHash: string): Promise<boolean> {
   const targetReadBack = await tryHead(target);
   const targetSize = targetReadBack?.size;
-  const targetHash = targetReadBack?.metadata?.[HashKey];
+  const targetFs = fsa.get(target, 'rw');
+
+  let targetHash = targetReadBack?.metadata?.[HashKey];
+
+  // TODO: Local file system does not support metadata so assume hash is correct
+  if (FsFile.is(targetFs)) {
+    targetHash = '0';
+    expectedHash = '0';
+  }
 
   const targetVerified = targetSize === expectedSize && targetHash === expectedHash;
   if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
