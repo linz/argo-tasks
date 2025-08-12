@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.18.1](https://github.com/linz/argo-tasks/compare/v4.18.0...v4.18.1) (2025-08-12)
+
+
+### Bug Fixes
+
+* `ResultMessage` should be trimmed TDE-1554 ([#1248](https://github.com/linz/argo-tasks/issues/1248)) ([04d20b7](https://github.com/linz/argo-tasks/commit/04d20b78784d3449dce6de389c023ac9245143d0))
+* decode url passed from CSV report TDE-1603 ([#1246](https://github.com/linz/argo-tasks/issues/1246)) ([caa9ff3](https://github.com/linz/argo-tasks/commit/caa9ff3f0c96ec97ed3e9503d50ec68bfbf60da2))
+
 ## [4.18.0](https://github.com/linz/argo-tasks/compare/v4.17.0...v4.18.0) (2025-08-07)
 
 
