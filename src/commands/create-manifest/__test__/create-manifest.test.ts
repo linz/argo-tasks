@@ -1,17 +1,24 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
+import { gunzipSync } from 'node:zlib';
 
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/fs';
 
+import type { CommandArguments } from '../../../__test__/type.util.ts';
+import type { SourceTarget } from '../create-manifest.ts';
+import { commandCreateManifest } from '../create-manifest.ts';
 import { createManifest, validatePaths } from '../create-manifest.ts';
 
+type CommandCreateManifestArgs = CommandArguments<typeof commandCreateManifest>;
+
 describe('createManifest', () => {
+  const memory = new FsMemory();
   beforeEach(() => {
+    fsa.register('memory://', memory);
     memory.files.clear();
   });
-  const memory = new FsMemory();
-  fsa.register('memory://', memory);
+
   it('should copy to the target location', async () => {
     await Promise.all([
       fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
@@ -99,5 +106,47 @@ describe('createManifest', () => {
         validatePaths('memory://source/test.tiff', 'memory://target/sub/');
       }, Error);
     });
+  });
+
+  const baseArgs: CommandCreateManifestArgs = {
+    config: undefined,
+    verbose: false,
+    flatten: false,
+    transform: undefined,
+    include: undefined,
+    exclude: undefined,
+    groupSize: undefined,
+    group: undefined,
+    limit: undefined,
+    output: '',
+    target: '',
+    source: [],
+  };
+
+  it('should generate a output', async () => {
+    await fsa.write(`memory://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
+    await fsa.write(`memory://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(0));
+
+    await commandCreateManifest.handler({
+      ...baseArgs,
+      source: ['memory://some-bucket/'],
+      target: 'memory://target/🦄 🌈/',
+      output: 'memory://output/🦄 🌈.json',
+    });
+
+    // output is a JSON array of base64'd GZIPED json
+    // [ "H4sIAA...", "H4sIAA...."]
+    const output = JSON.parse((await fsa.read('memory://output/🦄 🌈.json')).toString('utf-8')) as string[];
+    assert.ok(Array.isArray(output));
+    const firstBytes = JSON.parse(
+      gunzipSync(Buffer.from(output[0] as string, 'base64url')).toString('utf-8'),
+    ) as SourceTarget[][];
+
+    assert.deepEqual(firstBytes, [
+      {
+        source: 'memory://some-bucket/🦄/🦄 🌈.txt',
+        target: 'memory://target/🦄 🌈/🦄/🦄 🌈.txt',
+      },
+    ]);
   });
 });

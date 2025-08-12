@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
 
 import {
+  decodeFormUrlEncoded,
   fetchPendingRestoredObjectPaths,
   fetchResultKeysFromReport,
   isRestoreCompleted,
@@ -83,20 +84,35 @@ describe('fetchPendingRestoredObjectPaths', () => {
     ];
     assert.throws(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful/ });
   });
+
+  it('treats ResultMessage with trailing \\r as successful', () => {
+    const entries = [
+      {
+        Bucket: 'b',
+        Key: 'k',
+        VersionId: '',
+        TaskStatus: '',
+        ErrorCode: '',
+        HTTPStatusCode: '',
+        ResultMessage: 'Successful\r',
+      },
+    ];
+    assert.deepStrictEqual(fetchPendingRestoredObjectPaths(entries), [{ Bucket: 'b', Key: 'k' }]);
+  });
 });
 
 describe('parseReportResult', () => {
   it('parses CSV string into ReportResult[]', () => {
-    const csv = 'b,k,v,ts,ec,hs,Successful\nb2,k2,v2,ts2,ec2,hs2,Failed';
+    const csv = 'b,k,v,ts,hs,ec,Successful\nb2,k2,v2,ts2,hs2,ec2,Failed';
     const results = parseReportResult(csv);
-    assert.deepEqual(results, [
+    assert.deepStrictEqual(results, [
       {
         Bucket: 'b',
         Key: 'k',
         VersionId: 'v',
         TaskStatus: 'ts',
-        ErrorCode: 'ec',
         HTTPStatusCode: 'hs',
+        ErrorCode: 'ec',
         ResultMessage: 'Successful',
       },
       {
@@ -104,8 +120,8 @@ describe('parseReportResult', () => {
         Key: 'k2',
         VersionId: 'v2',
         TaskStatus: 'ts2',
-        ErrorCode: 'ec2',
         HTTPStatusCode: 'hs2',
+        ErrorCode: 'ec2',
         ResultMessage: 'Failed',
       },
     ]);
@@ -134,5 +150,30 @@ describe('isRestoreCompleted', () => {
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
     assert.throws(() => isRestoreCompleted(headObjectOutput), /undefined/);
+  });
+});
+
+describe('decodeFormUrlEncoded', () => {
+  it('should decode a standard URL-encoded string', () => {
+    assert.strictEqual(decodeFormUrlEncoded('hello%20world'), 'hello world');
+  });
+
+  it('should decode plus signs as spaces', () => {
+    assert.strictEqual(decodeFormUrlEncoded('hello+world'), 'hello world');
+  });
+
+  it('should decode mixed encoding', () => {
+    assert.strictEqual(decodeFormUrlEncoded('file%2Bname+with+spaces%21'), 'file+name with spaces!');
+  });
+
+  it('should return the same string if no encoding is present', () => {
+    assert.strictEqual(decodeFormUrlEncoded('plainstring'), 'plainstring');
+  });
+
+  it('should decode complex encoded strings', () => {
+    assert.strictEqual(
+      decodeFormUrlEncoded('%2Fpath%2Fto%2Bfile+with+spaces%2Band%2Bplus'),
+      '/path/to+file with spaces+and+plus',
+    );
   });
 });

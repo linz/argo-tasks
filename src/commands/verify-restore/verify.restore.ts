@@ -142,7 +142,7 @@ export function fetchResultKeysFromReport(report: ManifestReport): string[] {
  * @returns An array of objects containing the Bucket and Key of each restored object.
  */
 export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): { Bucket: string; Key: string }[] {
-  const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => row.ResultMessage !== 'Successful');
+  const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => row.ResultMessage.trim() !== 'Successful');
   if (notSuccessfulRequests.length) {
     throw new Error(
       `Some restore requests are not successful: ${notSuccessfulRequests.map((row) => row.Key).join(', ')}`,
@@ -157,7 +157,11 @@ export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): 
 
 /**
  * Parses the CSV report result string into an array of ReportResult.
- * "ReportSchema": "Bucket, Key, VersionId, TaskStatus, ErrorCode, HTTPStatusCode, ResultMessage"
+ *
+ * FIXME: The ReportSchema provided by AWS
+ * ("ReportSchema": "Bucket, Key, VersionId, TaskStatus, ErrorCode, HTTPStatusCode, ResultMessage")
+ * is wrong and the actual CSV format is:
+ * "ReportSchema": "Bucket, Key, VersionId, TaskStatus, HTTPStatusCode, ErrorCode, ResultMessage"
  *
  * @param result - The CSV result string containing restored object paths and statuses.
  * @returns An array of ReportResult.
@@ -172,8 +176,8 @@ export function parseReportResult(result: string): ReportResult[] {
       Key: parts[1] ?? '',
       VersionId: parts[2] ?? '',
       TaskStatus: parts[3] ?? '',
-      ErrorCode: parts[4] ?? '',
-      HTTPStatusCode: parts[5] ?? '',
+      HTTPStatusCode: parts[4] ?? '',
+      ErrorCode: parts[5] ?? '',
       ResultMessage: parts[6] ?? '',
     };
   });
@@ -187,10 +191,11 @@ export function parseReportResult(result: string): ReportResult[] {
  * @returns The head object output.
  */
 async function headS3Object(path: { Bucket: string; Key: string }): Promise<HeadObjectCommandOutput> {
-  try {
+  try {  // todo: CHECK IF THIS IS NEEDED WITH DECODE IF USING URLs
+    const objectKey = decodeFormUrlEncoded(path.Key);
     const headObjectOutput: HeadObjectCommandOutput = await (
-      fsa.get(fsa.toUrl(`s3://${path.Bucket}/${path.Key}`), 'r') as unknown as FsAwsS3V3
-    ).client.send(new HeadObjectCommand({ Bucket: path.Bucket, Key: path.Key }));
+      fsa.get(fsa.toUrl(`s3://${path.Bucket}/${objectKey}`), 'r') as unknown as FsAwsS3V3
+    ).client.send(new HeadObjectCommand({ Bucket: path.Bucket, Key: objectKey }));
     logger.info({ path, headObjectOutput }, 'VerifyRestore:HeadObject');
     return headObjectOutput;
   } catch (error) {
@@ -225,4 +230,13 @@ async function markReportDone(reportPath: URL): Promise<void> {
   await fsa.write(donePath, await fsa.read(reportPath));
   await fsa.delete(reportPath);
   logger.info({ reportPath, donePath }, 'VerifyRestore:MarkedReportDone');
+}
+/**
+ * Decodes a URL-encoded string.
+ *
+ * @param key - The URL-encoded string to decode.
+ * @returns The decoded string.
+ */
+export function decodeFormUrlEncoded(key: string): string {
+  return decodeURIComponent(key.replace(/\+/g, ' '));
 }
