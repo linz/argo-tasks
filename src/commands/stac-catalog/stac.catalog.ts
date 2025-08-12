@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional, string } from 'cmd-ts';
-import path, { isAbsolute } from 'path';
+import { isAbsolute } from 'path';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -91,7 +91,7 @@ export async function createLinks(basePath: string, templateLinks: st.StacLink[]
       const collLink: st.StacLink = {
         rel: 'child',
         // href: fsa.join('./', relPath),
-        href: path.join('./', relPath),
+        href: `./${relPath.replace(/^\/+/, '')}`,
         title: collection.title,
         'file:checksum': checksum,
         'file:size': buf.length,

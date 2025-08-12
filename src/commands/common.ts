@@ -93,16 +93,17 @@ export const TiffQueue = pLimit(25);
  */
 export function createTiff(loc: string): Promise<Tiff> {
   const source = fsa.source(fsa.toUrl(loc));
-
-  const tiff = new Tiff({
-    url: fsa.toUrl(loc),
-    fetch: (offset, length): Promise<ArrayBuffer> => {
-      /** Limit fetches concurrency see {@link TiffQueue} **/
-      const maxReadLength = source?.source?.data?.maxByteLength ? source.source.data.maxByteLength - offset : 0;
-      const readLength = length === undefined || length > maxReadLength ? maxReadLength : length;
-      return TiffQueue(() => source.fetch(offset, readLength));
-    },
-  });
+  const tiff = new Tiff(source);
+  // const tiff = new Tiff({
+  //   ...source,
+  // url: source.source.url,
+  // fetch: (offset, length): Promise<ArrayBuffer> => {
+  //   /** Limit fetches concurrency see {@link TiffQueue} **/
+  // const maxReadLength = source?.source?.data?.maxByteLength ? source.source.data.maxByteLength - offset : 0;
+  // const readLength = length === undefined || length > maxReadLength ? maxReadLength : length;
+  // return TiffQueue(() => source.fetch(offset, length));
+  // },
+  // });
   return tiff.init();
 }
 

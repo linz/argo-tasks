@@ -257,7 +257,7 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await fsa.write(fsa.toUrl('/tmp/tile-index-validate/input.geojson'), {
+      const inputGeoJson = {
         type: 'FeatureCollection',
         features: tiffLocations.map((loc) => {
           const epsg = args.sourceEpsg ?? loc.epsg;
@@ -270,10 +270,10 @@ export const commandTileIndexValidate = command({
             tileName: loc.tileNames.join(', '),
           });
         }),
-      });
+      };
+      await fsa.write(fsa.toUrl('/tmp/tile-index-validate/input.geojson'), JSON.stringify(inputGeoJson));
       logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:InputGeoJson');
-
-      await fsa.write(fsa.toUrl('/tmp/tile-index-validate/output.geojson'), {
+      const outputGeojson = {
         type: 'FeatureCollection',
         features: [...outputTiles.keys()].map((key) => {
           const mapTileIndex = MapSheet.getMapTileIndex(key);
@@ -283,13 +283,12 @@ export const commandTileIndexValidate = command({
             tileName: key,
           });
         }),
-      });
+      };
+      await fsa.write(fsa.toUrl('/tmp/tile-index-validate/output.geojson'), JSON.stringify(outputGeojson));
       logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:OutputGeojson');
 
-      await fsa.write(
-        fsa.toUrl('/tmp/tile-index-validate/file-list.json'),
-        createFileList(outputTiles, args.includeDerived),
-      );
+      const fileList = createFileList(outputTiles, args.includeDerived);
+      await fsa.write(fsa.toUrl('/tmp/tile-index-validate/file-list.json'), JSON.stringify(fileList));
       logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputTiles.size }, 'Write:FileList');
     }
 

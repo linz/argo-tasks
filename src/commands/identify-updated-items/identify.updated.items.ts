@@ -66,7 +66,7 @@ export const commandIdentifyUpdatedItems = command({
       const targetCollection = await fsa.readJson<LinzStacCollection>(fsa.toUrl(args.targetCollection));
       for (const collectionLink of targetCollection.links) {
         if (collectionLink.rel !== 'item') continue;
-        const itemUrl = new URL(collectionLink.href, args.targetCollection);
+        const itemUrl = new URL(collectionLink.href, fsa.toUrl(args.targetCollection));
         Q.push(async () => {
           const itemStac = await fsa.readJson<LinzStacItem>(itemUrl);
           itemStac.links.forEach((itemLink) => {

@@ -73,14 +73,13 @@ describe('mapsheet-coverage', () => {
   it('should run with a empty config', async () => {
     await fsa.write(fsa.toUrl('ms://config.json'), JSON.stringify({ layers: [] }));
     await commandMapSheetCoverage.handler(baseArgs);
-
     const files = await fsa.toArray(fsa.list(fsa.toUrl('ms://output/')));
     files.sort();
     assert.deepEqual(files, [
-      'ms://output/capture-dates.geojson',
-      'ms://output/file-list.json',
-      'ms://output/layers-combined.geojson.gz',
-      'ms://output/layers-source.geojson.gz',
+      fsa.toUrl('ms://output/capture-dates.geojson'),
+      fsa.toUrl('ms://output/file-list.json'),
+      fsa.toUrl('ms://output/layers-combined.geojson.gz'),
+      fsa.toUrl('ms://output/layers-source.geojson.gz'),
     ]);
 
     const fileList = await fsa.readJson(fsa.toUrl('ms://output/file-list.json'));
@@ -93,7 +92,7 @@ describe('mapsheet-coverage', () => {
       JSON.stringify({ layers: [{ 2193: 'ms://layers/a/', name: 'layer-a' }] }),
     );
     const out = await commandMapSheetCoverage.handler(baseArgs).catch((e) => e as Error);
-    assert.equal(String(out), 'CompositeError: Not found');
+    assert.equal(String(out), 'Error: Not found: ms://layers/a/collection.json');
   });
 
   it('should error if collection has no capture-area', async () => {
