@@ -1,6 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 
+import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
@@ -99,3 +100,5 @@ export const commandGroup = command({
     }
   },
 });
+
+export type CommandGroupArgs = CommandArguments<typeof commandGroup>;
