@@ -4,6 +4,7 @@ import { before, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/fs';
 
+import type { CommandGroupArgs } from '../group.ts';
 import { commandGroup, groupItems } from '../group.ts';
 
 describe('groupItems', () => {
@@ -33,23 +34,26 @@ describe('group', () => {
   });
 
   it('should load from a JSON array', async () => {
-    await commandGroup.handler({ inputs: [JSON.stringify([1, 2, 3, 4])], forceOutput: true, size: 50, ...values });
+    await commandGroup.handler({ ...values, inputs: [JSON.stringify([1, 2, 3, 4])], forceOutput: true, size: 50 });
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output.json')), ['000']);
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output/000.json')), [1, 2, 3, 4]);
   });
 
-  const values = {
+  const values: CommandGroupArgs = {
     config: undefined,
     verbose: false,
     fromFile: undefined,
+    forceOutput: false,
+    size: 0,
+    inputs: [],
   };
 
   it('should load from multiple JSON arrays', async () => {
     await commandGroup.handler({
+      ...values,
       inputs: [JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
       size: 3,
-      ...values,
     });
 
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output.json')), ['000', '001']);
@@ -59,10 +63,10 @@ describe('group', () => {
 
   it('should load from strings', async () => {
     await commandGroup.handler({
+      ...values,
       inputs: ['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])],
       forceOutput: true,
       size: 3,
-      ...values,
     });
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output.json')), ['000', '001']);
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output/000.json')), ['s3://foo/bar', 1, 2]);

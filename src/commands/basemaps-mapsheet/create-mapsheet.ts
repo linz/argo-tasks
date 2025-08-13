@@ -10,7 +10,7 @@ import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { registerCli, verbose } from '../common.ts';
+import { registerCli, Url, verbose } from '../common.ts';
 
 const gunzipProm = promisify(gunzip);
 
@@ -40,7 +40,7 @@ interface Output {
 export const CommandCreateMapSheetArgs = {
   verbose,
   path: option({
-    type: string,
+    type: Url,
     long: 'path',
     description: 'Path of flatgeobuf, this can be both a local path or s3 location',
   }),
