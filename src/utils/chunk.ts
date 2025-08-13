@@ -25,14 +25,14 @@ export async function* asyncFilter<T extends { url: URL; size?: number }>(
 }
 
 /** Chunk files into a max size (eg 1GB chunks) or max count (eg 100 files) or what ever comes first when both are defined */
-export function chunkFiles(values: FileSizeInfo[], count: number, size: number): string[][] {
-  if (count == null && size == null) return [values.map((c) => c.url.href)];
+export function chunkFiles(values: FileSizeInfo[], count: number, size: number): URL[][] {
+  if (count == null && size == null) return [values.map((c) => c.url)];
 
-  const output: string[][] = [];
-  let current: string[] = [];
+  const output: URL[][] = [];
+  let current: URL[] = [];
   let totalSize = 0;
   for (const v of values) {
-    current.push(v.url.href);
+    current.push(v.url);
     if (v.size) totalSize += v.size;
     if ((count > 0 && current.length >= count) || (size > 0 && totalSize >= size)) {
       output.push(current);

@@ -10,7 +10,7 @@ import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { registerCli, verbose } from '../common.ts';
+import { registerCli, Url, verbose } from '../common.ts';
 
 const gunzipProm = promisify(gunzip);
 
@@ -40,17 +40,17 @@ interface Output {
 export const CommandCreateMapSheetArgs = {
   verbose,
   path: option({
-    type: string,
+    type: Url,
     long: 'path',
     description: 'Path of flatgeobuf, this can be both a local path or s3 location',
   }),
   bmConfig: option({
-    type: string,
+    type: Url,
     long: 'bm-config',
     description: 'Path of basemaps config json, this can be both a local path or s3 location',
   }),
   output: option({
-    type: string,
+    type: Url,
     long: 'output',
     description: 'Output of the map sheet file',
   }),
@@ -73,9 +73,9 @@ export const basemapsCreateMapSheet = command({
   args: CommandCreateMapSheetArgs,
   async handler(args) {
     registerCli(this, args);
-    const path = new URL(args.path);
-    const config = new URL(args.bmConfig);
-    const outputPath = new URL(args.output);
+    const path = args.path;
+    const config = args.bmConfig;
+    const outputPath = args.output;
 
     const include = args.include ? new RegExp(args.include.toLowerCase(), 'i') : undefined;
     const exclude = args.exclude ? new RegExp(args.exclude.toLowerCase(), 'i') : undefined;

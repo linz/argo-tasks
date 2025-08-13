@@ -38,7 +38,7 @@ describe('command.list', () => {
       output: 'memory://host/🦄 🌈/output.json',
     });
 
-    const allFiles = [...mem.files.keys()];
+    const allFiles = [...mem.files.keys()].map((f) => decodeURI(f));
     assert.deepEqual(allFiles, ['memory://some-bucket/test/🦄 🌈.txt', 'memory://host/🦄 🌈/output.json']);
     const fileList = JSON.parse(
       (await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8'),
@@ -64,18 +64,15 @@ describe('command.list', () => {
   it('should ignore empty files from ; separated lists', async () => {
     await fsa.write(fsa.toUrl(`memory://some-bucket/🦄/🦄 🌈.txt`), Buffer.alloc(1));
     await fsa.write(fsa.toUrl(`memory://some-bucket/🌈/🦄 🌈.txt`), Buffer.alloc(0));
-
+    // const locallist= await fsa.list(fsa.toUrl('./'));
+    // console.log(locallist);
     await commandList.handler({
       ...baseArgs,
       location: ['memory://some-bucket/🦄/;memory://some-bucket/🌈/'],
-      output: 'memory://asd/🦄 🌈/output.json',
+      output: 'memory://host/🦄 🌈/output.json',
       group: 1,
     });
-    const mypath = 'memory://host/🦄 🌈/output.json';
-    const othernewthing = await fsa.read(fsa.toUrl(mypath));
-    const newthing = await mem.read(fsa.toUrl(mypath));
-    console.log(newthing, othernewthing);
-    const fileList = JSON.parse((newthing).toString('utf-8')) as string[][];
-    assert.deepEqual(fileList, [['memory://some-bucket/🦄/🦄 🌈.txt']]);
+    const outputJsonFileContent = JSON.parse((await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8')) as string[][];
+    assert.deepEqual(outputJsonFileContent, [['memory://some-bucket/🦄/🦄 🌈.txt']]);
   });
 });

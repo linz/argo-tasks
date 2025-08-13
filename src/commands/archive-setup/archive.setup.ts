@@ -3,7 +3,7 @@ import { command, option, optional, positional } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { config, registerCli, S3Path, tryParseUrl, UrlFolder, verbose } from '../common.ts';
+import { config, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
 
 export const archiveSetup = command({
   name: 'archive-setup',
@@ -17,7 +17,7 @@ export const archiveSetup = command({
       long: 'output',
       description: 'Where the archive location will be output',
       defaultValueIsSerializable: true,
-      defaultValue: () => tryParseUrl('/tmp/archive-setup/'),
+      defaultValue: () => fsa.toUrl('/tmp/archive-setup/'),
     }),
     path: positional({ type: S3Path, displayName: 'path', description: 'Path of the files to be archived' }),
   },

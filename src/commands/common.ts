@@ -91,45 +91,12 @@ export const TiffQueue = pLimit(25);
  * @param loc location to load the tiff from
  * @returns Initialized tiff
  */
-export function createTiff(loc: string): Promise<Tiff> {
-  const source = fsa.source(fsa.toUrl(loc));
+export function createTiff(loc: URL): Promise<Tiff> {
+  const source = fsa.source(loc);
   const tiff = new Tiff(source);
-  // const tiff = new Tiff({
-  //   ...source,
-  // url: source.source.url,
-  // fetch: (offset, length): Promise<ArrayBuffer> => {
-  //   /** Limit fetches concurrency see {@link TiffQueue} **/
-  // const maxReadLength = source?.source?.data?.maxByteLength ? source.source.data.maxByteLength - offset : 0;
-  // const readLength = length === undefined || length > maxReadLength ? maxReadLength : length;
-  // return TiffQueue(() => source.fetch(offset, length));
-  // },
-  // });
   return tiff.init();
 }
 
-/**
- * Attempt to parse a location as a string as a URL,
- *
- * Relative paths will be converted into file urls.
- */
-export function tryParseUrl(loc: string): URL {
-  try {
-    return new URL(loc);
-  } catch (e) {
-    return pathToFileURL(loc);
-  }
-}
-
-/**
- * When chunkd moves to URLs this can be removed
- *
- * But reading a file as a string with `file://....` does not work in node
- * it needs to be converted with `fileURLToPath`
- */
-export function urlToString(u: URL): string {
-  if (u.protocol === 'file:') return fileURLToPath(u);
-  return decodeURI(u.href);
-}
 
 /**
  * Parse an input parameter as a URL.
