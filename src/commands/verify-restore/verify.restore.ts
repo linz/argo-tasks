@@ -191,7 +191,8 @@ export function parseReportResult(result: string): ReportResult[] {
  * @returns The head object output.
  */
 async function headS3Object(path: { Bucket: string; Key: string }): Promise<HeadObjectCommandOutput> {
-  try {  // todo: CHECK IF THIS IS NEEDED WITH DECODE IF USING URLs
+  try {
+    // todo: CHECK IF THIS IS NEEDED WITH DECODE IF USING URLs
     const objectKey = decodeFormUrlEncoded(path.Key);
     const headObjectOutput: HeadObjectCommandOutput = await (
       fsa.get(fsa.toUrl(`s3://${path.Bucket}/${objectKey}`), 'r') as unknown as FsAwsS3V3

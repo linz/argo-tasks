@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 import { gunzipSync } from 'node:zlib';
 
-import { fsa , FsMemory} from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 import { parse } from 'cmd-ts';
 
 import type { CommandArguments } from '../../../__test__/type.util.ts';
@@ -151,7 +151,7 @@ describe('createManifest', () => {
 
     // output is a JSON array of base64'd GZIPED json
     // [ "H4sIAA...", "H4sIAA...."]
-    const output = JSON.parse((await fsa.read('memory://output/🦄 🌈.json')).toString('utf-8')) as string[];
+    const output = JSON.parse((await fsa.read(fsa.toUrl('memory://output/🦄 🌈.json'))).toString('utf-8')) as string[];
     assert.ok(Array.isArray(output));
     const firstBytes = JSON.parse(
       gunzipSync(Buffer.from(output[0] as string, 'base64url')).toString('utf-8'),
