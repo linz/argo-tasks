@@ -61,7 +61,7 @@ describe('createManifest.Copy.E2E', () => {
   };
 
   it('should create a manifest and copy some files', async () => {
-    const mkPath = (str: string): string => urlToString(new URL(str, sourceLocation));
+    const mkPath = (str: string): URL => new URL(str, sourceLocation);
     await fsa.write(mkPath(`source/🟥/🦄 🌈.txt`), Buffer.alloc(1));
     await fsa.write(mkPath(`source/🟥/🦄 🌈.json`), Buffer.alloc(2));
     await fsa.write(mkPath(`source/🟥/🟧/🌈.pdf`), Buffer.alloc(3));
