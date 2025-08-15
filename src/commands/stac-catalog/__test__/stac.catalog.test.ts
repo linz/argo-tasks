@@ -44,24 +44,18 @@ describe('stacCatalog', () => {
 
 describe('makeRelative', () => {
   it('should make relative urls', () => {
-    const myargs = ['s3://linz-imagery/', 's3://linz-imagery/catalog.json'].map((x) => new URL(x));
-    // assert.equal(makeRelative(...myargs), 'catalog.json');
-    assert.equal(makeRelative(myargs[0], myargs[1]), 'catalog.json');
+    assert.equal(makeRelative(new URL('s3://linz-imagery/'), new URL('s3://linz-imagery/catalog.json')), 'catalog.json');
   });
 
   it('should make relative from absolute paths', () => {
-    const myargs = [    '/home/blacha/', '/home/blacha/catalog.json'].map((x) => pathToFileURL(x));
-    assert.equal(makeRelative(myargs[0], myargs[1]), 'catalog.json');
-    // assert.equal(makeRelative(...myargs), 'catalog.json');
+    assert.equal(makeRelative(pathToFileURL('/home/blacha/'), pathToFileURL('/home/blacha/catalog.json')), 'catalog.json');
   });
 
   it('should make relative relative paths', () => {
-    const myargs = ['/home/blacha/', './catalog.json'].map((x) => pathToFileURL(x));
-    assert.equal(makeRelative(myargs[0], myargs[1]), 'catalog.json');
+    assert.equal(makeRelative(pathToFileURL(process.cwd()+'/'), pathToFileURL( './catalog.json')), 'catalog.json');
   });
 
   it('should not make relative on different paths', () => {
-    const myargs = ['/home/blacha/', '/home/test/catalog.json'].map((x) => pathToFileURL(x));
-    assert.throws(() => makeRelative(...myargs), Error);
+    assert.throws(() => makeRelative(pathToFileURL('/home/blacha/'), pathToFileURL('/home/test/catalog.json')), Error);
   });
 });
