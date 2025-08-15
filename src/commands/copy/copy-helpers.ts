@@ -6,6 +6,8 @@ import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
 import { replaceUrlExtension } from '../common.ts';
+import { isJson } from '../pretty-print/pretty.print.ts';
+import { guessStacContentType } from '../stac-sync/stac.sync.ts';
 // import { tryParseUrl } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
@@ -126,8 +128,7 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
  * @returns New fixed file metadata if fixed otherwise source file metadata
  */
 export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
-  const path = url.href;
-  if (path.toLowerCase().endsWith(CompressedFileExtension)) {
+  if (url.pathname.toLowerCase().endsWith(CompressedFileExtension)) {
     return { ...meta, contentType: 'application/zstd' };
   } else if (meta.contentType === 'application/zstd') {
     // if content type is `zstd` but extension isn't, set to a "fixable" content type
@@ -137,10 +138,10 @@ export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
 
   // Assume our tiffs are cloud optimized
-  if (isTiff(path)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+  if (isTiff(url)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
 
   // overwrite with application/json
-  if (path.endsWith('.json')) return { ...meta, contentType: 'application/json' };
+  if (isJson(url)) return { ...meta, contentType: guessStacContentType(url) };
 
   return meta;
 }

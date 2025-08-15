@@ -20,7 +20,7 @@ describe('fetchResultKeysFromReport', () => {
       ],
     };
     const keys = fetchResultKeysFromReport(report);
-    assert.deepEqual(keys, ['s3://b/k', 's3://b2/k2']);
+    assert.deepEqual(keys, [new URL('s3://b/k'), new URL('s3://b2/k2')]);
   });
 
   it('throws if any result is not succeeded', async () => {

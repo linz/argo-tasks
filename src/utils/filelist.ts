@@ -1,5 +1,5 @@
 // import { urlToString } from '../commands/common.ts';
-import { makeRelative } from '../commands/stac-catalog/stac.catalog.js';
+import { makeRelative } from '../commands/stac-catalog/stac.catalog.ts';
 import type { TiffLocation } from '../commands/tileindex-validate/tileindex.validate.ts';
 
 export interface FileListEntry {
@@ -17,9 +17,9 @@ type StringFileListEntry = {
 
 export class FileListEntry implements FileListEntry {
   constructor(
-      public output: string,
-      public input: URL[],
-      public includeDerived: boolean
+    public output: string,
+    public input: URL[],
+    public includeDerived: boolean,
   ) {}
 
   toString(relativeTo?: URL): StringFileListEntry {
