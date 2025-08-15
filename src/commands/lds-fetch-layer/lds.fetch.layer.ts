@@ -62,9 +62,6 @@ export const commandLdsFetch = command({
       const targetFile = new URL(targetFileGpkg, args.target);
       // const targetFile = new URL(lastItem.href.replace('.json', '.gpkg'), args.target);
       const targetPath = new URL(targetFileGpkg, collectionJsonUrl);
-      // const oldtargetPath = fsa.toUrl(
-      //   getTargetPath(`s3://linz-lds-cache/${layerId}/`, lastItem.href).replace('.json', '.gpkg'),
-      // ); // Todo: This used to error when path isn't relative -- is that a requirement?
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.readStream(targetPath).pipe(createGunzip()));
     }
