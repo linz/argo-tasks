@@ -134,7 +134,7 @@ describe('parseReportResult', () => {
 describe('isRestoreCompleted', () => {
   it('returns true if Restore is ongoing-request="false"', async () => {
     const headObjectOutput: HeadObjectCommandOutput = {
-      Restore: 'ongoing-request="false"',
+      Restore: 'ongoing-request="false, , expiry-date="Sat, 16 Aug 2025 00:00:00 GMT""',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
     const fileInfo: FileInfo<HeadObjectCommandOutput> = {
