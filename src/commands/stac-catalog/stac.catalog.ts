@@ -25,7 +25,8 @@ export function makeRelative(basePath: URL, filePath: URL): string {
   if (!filePath.href.startsWith(basePathFolder.href)) {
     throw new Error(`FilePaths are not relative base: ${basePathFolder.href} file: ${filePath.href}`);
   }
-  return filePath.href.replace(basePathFolder.href, '');
+  // todo: review how this function returns relative paths. A string starting with "./" is more logical but not all calling code may expect this.
+  return filePath.href.replace(basePathFolder.href, './');
 }
 
 const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/schema.json';
@@ -80,6 +81,7 @@ export async function createLinks(basePath: URL, templateLinks: st.StacLink[]): 
       const collLink: st.StacLink = {
         rel: 'child',
         // href: fsa.join('./', relPath),
+        // href: './' + relPath,
         href: relPath,
         title: collection.title,
         'file:checksum': checksum,

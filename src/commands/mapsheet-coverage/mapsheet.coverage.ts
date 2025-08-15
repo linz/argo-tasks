@@ -14,7 +14,7 @@ import type { StacCollection, StacItem } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
-import type { FileListEntry } from '../../utils/filelist.ts';
+import { FileListEntry } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
 import { config, registerCli, replaceUrlExtension, Url, UrlFolder, verbose } from '../common.ts';
@@ -127,7 +127,7 @@ export const commandMapSheetCoverage = command({
       return;
     }
 
-    if (args.compare && !args.compare.endsWith('collection.json')) {
+    if (args.compare && !args.compare.pathname.endsWith('collection.json')) {
       logger.error('--compare must compare with an existing STAC collection.json');
       return;
     }
@@ -284,11 +284,11 @@ export const commandMapSheetCoverage = command({
     // List of tiles to be created, and files from which to create
     const tilesToProcess: FileListEntry[] = [];
     for (const [sheetName, inputs] of mapSheets) {
-      tilesToProcess.push({ output: sheetName, input: inputs, includeDerived: true });
+      tilesToProcess.push(new FileListEntry(sheetName, inputs, true));
     }
 
     const fileListPath = new URL('file-list.json', args.output);
-    await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
+    await fsa.write(fileListPath, JSON.stringify(tilesToProcess)); // todo: verify that stringify works as expected
     logger.info(
       {
         duration: performance.now() - startTime,
@@ -327,7 +327,7 @@ async function compareCreation(
       logger.info({ sheetCode: sheetCode, sourceFiles: sourceFiles.length }, 'MapSheetCoverage:Compare:New');
       continue;
     }
-    const itemJson = await fsa.readJson<StacItem>(new URL(itemLink.href, compareUrl));
+    const itemJson = await fsa.readJson<StacItem>(new URL(itemLink.href, compareLocation));
 
     const derivedFrom = itemJson.links.filter((f) => f.rel === 'derived_from');
     // Difference in the number of files needed to create this mapsheet, so it needs to be recreated

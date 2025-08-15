@@ -8,7 +8,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
-import { config, MeterAsString, registerCli, tryParseUrl, UrlFolder, verbose } from '../common.ts';
+import { config, MeterAsString, registerCli, UrlFolder, verbose } from '../common.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
@@ -94,7 +94,7 @@ export const commandStacSetup = command({
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,
-      defaultValue: () => tryParseUrl('/tmp/stac-setup/'),
+      defaultValue: () => new URL('file:///tmp/stac-setup/'),
     }),
   },
 

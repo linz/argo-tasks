@@ -1,6 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, optional, positional, string } from 'cmd-ts';
-import { basename } from 'path';
+import { command, option, optional, positional } from 'cmd-ts';
 import prettier from 'prettier';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -9,7 +8,7 @@ import { getFiles } from '../../utils/chunk.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { config, registerCli, UrlFolder, UrlList, verbose } from '../common.ts';
 
-function isJson(x: URL): boolean {
+export function isJson(x: URL): boolean {
   const search = x.pathname.toLowerCase();
   return search.endsWith('.json');
 }

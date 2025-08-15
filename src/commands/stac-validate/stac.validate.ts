@@ -4,9 +4,10 @@ import Ajv from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals } from 'cmd-ts';
 import { createHash } from 'crypto';
-import { dirname, join } from 'path';
+// import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
 import type * as st from 'stac-ts';
+import { pathToFileURL } from 'url';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
@@ -143,7 +144,7 @@ export const commandStacValidate = command({
 
       stacSchemas.push(schema);
       if (stacJson.stac_extensions) {
-        for (const se of stacJson.stac_extensions) stacSchemas.push(se);
+        for (const se of stacJson.stac_extensions) stacSchemas.push(new URL(se));
       }
 
       let isOk = true;
@@ -273,13 +274,13 @@ export async function validateLinks(
  *
  * This is to prevent overloading the remote hosts as stac validation can trigger lots of schema requests
  *
- * @param url JSON schema to load
+ * @param urlString JSON schema to load (string due to ajv.loadSchema signature)
  * @returns object from the cache if it exists or directly from the uri
  */
-async function loadSchema(url: URL): Promise<object> {
-  const cacheId = createHash('sha256').update(url).digest('hex');
-  const cachePath = `./json-schema-cache/${cacheId}.json`;
-
+async function loadSchema(urlString: string): Promise<object> {
+  const url = new URL(urlString);
+  const cacheId = createHash('sha256').update(url.href).digest('hex');
+  const cachePath = pathToFileURL(`./json-schema-cache/${cacheId}.json`);
   try {
     return await fsa.readJson<object>(cachePath);
   } catch (e) {
@@ -382,18 +383,18 @@ const childrenRel = new Set(['child', 'item']);
  * @param path source location of the STAC document to determine relative paths
  * @returns list of locations of child item
  */
-export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: string): string[] {
+export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: URL): URL[] {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
-    return stacJson.links.filter((f) => childrenRel.has(f.rel)).map((f) => normaliseHref(f.href, path));
+    return stacJson.links.filter((f) => childrenRel.has(f.rel)).map((f) => new URL(f.href, path));
   }
   if (stacJson.type === 'Feature') return [];
-  throw new Error(`Unknown Stac Type: ${path}`);
+  throw new Error(`Unknown Stac Type [${stacJson['type']}]: ${path}`);
 }
-
-export function normaliseHref(href: string, path: string): string {
-  if (isURL(path)) return new URL(href, path).href;
-  return join(dirname(path), href);
-}
+//
+// export function normaliseHref(href: string, path: string): string {
+//   if (isURL(path)) return new URL(href, path).href;
+//   return join(dirname(path), href);
+// }
 
 export function isURL(path: string): boolean {
   try {
