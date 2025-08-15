@@ -44,24 +44,24 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
   return output;
 }
 
-/** Characters to split paths on @see splitPaths */
-const PathSplitCharacters = /;|\n/;
+// /** Characters to split paths on @see splitPaths */
+// const PathSplitCharacters = /;|\n/;
 
-/**
- * Split `;` separated paths into separate paths
- *
- * Argo has a limitation that arguments to CLIs cannot easily be lists of paths, so users can add multiple paths by creating a string with either `\n` or `;`
- *
- * @example
- * ```typescript
- * splitPaths(["a;b"]) // ['a', 'b']
- * splitPaths(["a\nb"]) // ['a', 'b']
- *````
- * @param paths
- */
-export function splitPaths(paths: string[]): string[] {
-  return paths.map((m) => m.split(PathSplitCharacters)).flat();
-}
+// /**
+//  * Split `;` separated paths into separate paths
+//  *
+//  * Argo has a limitation that arguments to CLIs cannot easily be lists of paths, so users can add multiple paths by creating a string with either `\n` or `;`
+//  *
+//  * @example
+//  * ```typescript
+//  * splitPaths(["a;b"]) // ['a', 'b']
+//  * splitPaths(["a\nb"]) // ['a', 'b']
+//  *````
+//  * @param paths
+//  */
+// export function splitPaths(paths: URL[]): URL[] {
+//   return paths.map((m) => m.split(PathSplitCharacters)).flat();
+// }
 
 export type FileFilter = {
   include?: string;
@@ -105,20 +105,21 @@ export type FileFilter = {
    */
   sizeMin?: number;
 };
-export async function getFiles(paths: string[], args: FileFilter = {}): Promise<string[][]> {
+export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const minSize = args.sizeMin ?? 1; // ignore 0 byte files
   const groupSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
   const outputFiles: FileSizeInfo[] = [];
 
-  const fullPaths = splitPaths(paths);
+  // const fullPaths = splitPaths(paths);
 
-  for (const rawPath of fullPaths) {
-    const targetPath = rawPath.trim();
-    logger.debug({ path: targetPath }, 'List');
-    const fileList = await fsa.toArray(asyncFilter(fsa.details(fsa.toUrl(targetPath)), args));
-    logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
+  for (const path of paths) {
+    // const targetPath = rawPath.trim();
+    logger.debug({ path }, 'List');
+    // const fileList = await fsa.toArray(asyncFilter(fsa.details(fsa.toUrl(targetPath)), args));
+    const fileList = await fsa.toArray(asyncFilter(fsa.details(path), args));
+    logger.info({ path, fileCount: fileList.length }, 'List:Count');
 
     let totalSize = 0;
     for (const file of fileList) {
@@ -131,7 +132,7 @@ export async function getFiles(paths: string[], args: FileFilter = {}): Promise<
     }
     if (limit > 0 && outputFiles.length >= limit) break;
 
-    logger.info({ path: targetPath, fileCount: fileList.length, totalSize }, 'List:Size');
+    logger.info({ path, fileCount: fileList.length, totalSize }, 'List:Size');
   }
 
   return chunkFiles(outputFiles, maxLength, groupSize);
@@ -144,7 +145,7 @@ export async function getFiles(paths: string[], args: FileFilter = {}): Promise<
  * @param addPath The path to combine with the base path. If this is an absolute path, it will overwrite basePath. Anything after the final "/" (i.e. a file name) will remain in place.
  * @returns The combined absolute path.
  */
-export function combinePaths(basePath: string, addPath: string): string {
+export function xxcombinePaths(basePath: string, addPath: string): string {
   // If basePath is a local path, convert it to a `file://` URL for proper resolution
   const isLocal = !basePath.includes('://');
   const relativePrefix = isLocal ? basePath.substring(0, basePath.indexOf('/')) : '';

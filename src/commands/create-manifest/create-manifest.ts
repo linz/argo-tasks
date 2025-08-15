@@ -1,4 +1,4 @@
-import path from 'node:path';
+// import path from 'node:path';
 
 import { fsa } from '@chunkd/fs';
 import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
@@ -11,7 +11,7 @@ import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { config, registerCli, verbose } from '../common.ts';
+import { config, registerCli, Url, UrlFolder, UrlFolderList, verbose } from '../common.ts';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
@@ -40,16 +40,16 @@ export const commandCreateManifest = command({
       long: 'limit',
       description: 'Limit the file count to this amount, -1 is no limit',
     }),
-    output: option({ type: string, long: 'output', description: 'Output location for the listing' }),
-    target: option({ type: string, long: 'target', description: 'Copy destination' }),
-    source: restPositionals({ type: string, displayName: 'source', description: 'Where to list' }),
+    output: option({ type: Url, long: 'output', description: 'Output location for the listing' }),
+    target: option({ type: UrlFolder, long: 'target', description: 'Copy destination' }),
+    source: restPositionals({ type: UrlFolderList, displayName: 'source', description: 'Where to list' }), // TODO: Can this be files or does it have to be folders?
   },
   async handler(args) {
     registerCli(this, args);
 
     const outputCopy: URL[] = [];
 
-    const targetPath: string = args.target;
+    const targetPath = args.target;
     const actionLocation = getActionLocation();
     for (const source of args.source) {
       const outputFiles = await createManifest(source, targetPath, args);
@@ -69,11 +69,11 @@ export const commandCreateManifest = command({
         }
       }
     }
-    await fsa.write(fsa.toUrl(args.output), JSON.stringify(outputCopy));
+    await fsa.write(args.output, JSON.stringify(outputCopy));
   },
 });
 
-export type SourceTarget = { source: string; target: string };
+export type SourceTarget = { source: URL; target: URL };
 export type ManifestFilter = FileFilter & { flatten: boolean; transform?: string };
 
 function createTransformFunc(transform: string): (f: string) => string {
@@ -83,25 +83,24 @@ function createTransformFunc(transform: string): (f: string) => string {
   return new Function('f', 'return ' + transform) as (f: string) => string;
 }
 
-export async function createManifest(
-  source: string,
-  targetPath: string,
-  args: ManifestFilter,
-): Promise<SourceTarget[][]> {
+export async function createManifest(source: URL, targetPath: URL, args: ManifestFilter): Promise<SourceTarget[][]> {
   const outputFiles = await getFiles([source], args);
   const outputCopy: SourceTarget[][] = [];
 
   const transformFunc = args.transform ? createTransformFunc(args.transform) : null;
 
-  for (const chunk of outputFiles) {
+  for (const outputChunks of outputFiles) {
     const current: SourceTarget[] = [];
 
-    for (const filePath of chunk) {
-      const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
+    for (const filePath of outputChunks) {
+      // const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
+      const baseFile = args.flatten
+        ? filePath.pathname.split('/').slice(-1).join('/')
+        : filePath.pathname.slice(source.pathname.length);
       let target = targetPath;
       if (baseFile) {
         // target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
-        target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetPath).href;
+        target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetPath);
       }
       validatePaths(filePath, target);
       current.push({ source: filePath, target });
@@ -112,14 +111,14 @@ export async function createManifest(
   return outputCopy;
 }
 
-export function validatePaths(source: string, target: string): void {
+export function validatePaths(source: URL, target: URL): void {
   // Throws error if the source and target paths are not:
   // - both directories
   // - both paths
-  if (source.endsWith('/') && target.endsWith('/')) {
+  if (source.pathname.endsWith('/') && target.pathname.endsWith('/')) {
     return;
   }
-  if (!source.endsWith('/') && !target.endsWith('/')) {
+  if (!source.pathname.endsWith('/') && !target.pathname.endsWith('/')) {
     return;
   }
   throw new Error(`Path Mismatch - source: ${source}, target: ${target}`);

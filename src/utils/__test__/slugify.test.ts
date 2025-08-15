@@ -1,7 +1,9 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { tryParseUrl } from '../../commands/common.ts';
+import { pathToFileURL } from 'url';
+
+// import { tryParseUrl } from '../../commands/common.ts';
 import { slugify } from '../slugify.ts';
 
 const slugChars = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';
@@ -25,8 +27,7 @@ describe('slugify', () => {
   });
   it('should replace slashes with hyphens', () => {
     const x = 'Tikitapu/Blue Lake';
-    const y = tryParseUrl(x);
-    const u = new URL(y);
+    const u = pathToFileURL(x);
     console.log('url', u);
     assert.equal(slugify('Tikitapu/Blue Lake'), 'tikitapu-blue-lake');
   });

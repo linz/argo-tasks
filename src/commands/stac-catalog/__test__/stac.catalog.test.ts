@@ -4,6 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa, FsMemory } from '@chunkd/fs';
 
 import { createLinks, makeRelative } from '../stac.catalog.ts';
+import { pathToFileURL } from 'url';
 
 describe('stacCatalog', () => {
   const fs = new FsMemory();
@@ -43,18 +44,24 @@ describe('stacCatalog', () => {
 
 describe('makeRelative', () => {
   it('should make relative urls', () => {
-    assert.equal(makeRelative('s3://linz-imagery/', 's3://linz-imagery/catalog.json'), 'catalog.json');
+    const myargs = ['s3://linz-imagery/', 's3://linz-imagery/catalog.json'].map((x) => new URL(x));
+    // assert.equal(makeRelative(...myargs), 'catalog.json');
+    assert.equal(makeRelative(myargs[0], myargs[1]), 'catalog.json');
   });
 
   it('should make relative from absolute paths', () => {
-    assert.equal(makeRelative('/home/blacha/', '/home/blacha/catalog.json'), 'catalog.json');
+    const myargs = [    '/home/blacha/', '/home/blacha/catalog.json'].map((x) => pathToFileURL(x));
+    assert.equal(makeRelative(myargs[0], myargs[1]), 'catalog.json');
+    // assert.equal(makeRelative(...myargs), 'catalog.json');
   });
 
   it('should make relative relative paths', () => {
-    assert.equal(makeRelative('/home/blacha/', './catalog.json'), './catalog.json');
+    const myargs = ['/home/blacha/', './catalog.json'].map((x) => pathToFileURL(x));
+    assert.equal(makeRelative(myargs[0], myargs[1]), 'catalog.json');
   });
 
   it('should not make relative on different paths', () => {
-    assert.throws(() => makeRelative('/home/blacha/', '/home/test/catalog.json'), Error);
+    const myargs = ['/home/blacha/', '/home/test/catalog.json'].map((x) => pathToFileURL(x));
+    assert.throws(() => makeRelative(...myargs), Error);
   });
 });

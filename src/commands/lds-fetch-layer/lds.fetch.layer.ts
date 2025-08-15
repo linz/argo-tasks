@@ -5,12 +5,12 @@ import { createGunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { config, registerCli, verbose } from '../common.ts';
+import { config, registerCli, Url, verbose } from '../common.ts';
 
-function getTargetPath(source: string, path: string): string {
-  if (path.startsWith('./')) return new URL(path.slice(2), source).href;
-  throw new Error('No relative path found: ' + path);
-}
+// function getTargetPath(source: string, path: string): string {
+//   if (path.startsWith('./')) return new URL(path.slice(2), source).href;
+//   throw new Error('No relative path found: ' + path);
+// }
 
 export const commandLdsFetch = command({
   name: 'lds-fetch-layer',
@@ -20,7 +20,7 @@ export const commandLdsFetch = command({
     config,
     verbose,
     layers: restPositionals({ type: string, description: 'Layer id and optional version "layer@version"' }),
-    target: option({ type: string, long: 'target', description: 'Target directory to save files' }),
+    target: option({ type: Url, long: 'target', description: 'Target directory to save files' }),
   },
   async handler(args) {
     registerCli(this, args);
@@ -43,22 +43,38 @@ export const commandLdsFetch = command({
         await fsa.write(targetLocation, fsa.readStream(source).pipe(createGunzip()));
       }
 
-      const collectionJson = await fsa.readJson<stac.StacCollection>(
-        new URL(`s3://linz-lds-cache/${layerId}/collection.json`),
-      );
+      const collectionJsonUrl = new URL(`s3://linz-lds-cache/${layerId}/collection.json`);
+      const collectionJson = await fsa.readJson<stac.StacCollection>(collectionJsonUrl);
+      // const collectionJson = {
+      //   links: [
+      //     { rel: 'item', href: 'item1.json' },
+      //     { rel: 'item', href: './item2.json' },
+      //     { rel: 'item', href: 'https://somewhere/item3.json' },
+      //   ],
+      //   title: 'Example Collection',
+      // }
       logger.info({ layerId, title: collectionJson.title }, 'Collection:Download:Done');
-
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
       if (lastItem == null) throw new Error('No items found');
 
-      // const targetFile = fsa.join(args.target, lastItem.href.replace('.json', '.gpkg'));
-      const targetFile = new URL(lastItem.href.replace('.json', '.gpkg'), args.target);
-
-      const targetPath = fsa.toUrl(
-        getTargetPath(`s3://linz-lds-cache/${layerId}/`, lastItem.href).replace('.json', '.gpkg'),
-      );
+      // const targetFile = fsa.join(args.target, );
+      const targetFileGpkg = lastItem.href.replace('.json', '.gpkg'); // todo: better names?
+      const targetFile = new URL(targetFileGpkg, args.target);
+      // const targetFile = new URL(lastItem.href.replace('.json', '.gpkg'), args.target);
+      const targetPath = new URL(targetFileGpkg, collectionJsonUrl);
+      // const oldtargetPath = fsa.toUrl(
+      //   getTargetPath(`s3://linz-lds-cache/${layerId}/`, lastItem.href).replace('.json', '.gpkg'),
+      // ); // Todo: This used to error when path isn't relative -- is that a requirement?
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.readStream(targetPath).pipe(createGunzip()));
     }
   },
+});
+
+console.log('lds-fetch-layer command registered');
+commandLdsFetch.handler({
+  config: undefined,
+  verbose: false,
+  layers: ['123@1'],
+  target: new URL('file:///tmp/'),
 });

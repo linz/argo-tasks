@@ -57,7 +57,9 @@ describe('command.list', () => {
       group: 1,
     });
 
-    const fileList = JSON.parse((await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8')) as string[][];
+    const fileList = JSON.parse(
+      (await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8'),
+    ) as string[][];
     assert.deepEqual(fileList, [['memory://some-bucket/🦄/🦄 🌈.txt'], ['memory://some-bucket/🌈/🦄 🌈.txt']]);
   });
 
@@ -72,7 +74,9 @@ describe('command.list', () => {
       output: 'memory://host/🦄 🌈/output.json',
       group: 1,
     });
-    const outputJsonFileContent = JSON.parse((await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8')) as string[][];
+    const outputJsonFileContent = JSON.parse(
+      (await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8'),
+    ) as string[][];
     assert.deepEqual(outputJsonFileContent, [['memory://some-bucket/🦄/🦄 🌈.txt']]);
   });
 });

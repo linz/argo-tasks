@@ -1,11 +1,12 @@
 import type { FileInfo } from '@chunkd/core';
 import { fsa } from '@chunkd/fs';
-import { FsFile } from '@chunkd/source-file';
 
+// import { FsFile } from '@chunkd/source-file';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
-import { tryParseUrl } from '../common.ts';
+import { replaceUrlExtension } from '../common.ts';
+// import { tryParseUrl } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -150,28 +151,28 @@ export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
  * If the target file exists, it will be skipped or overwritten based on the command line arguments.
  *
  * @param source
- * @param initialTargetName
+ * @param initialTargetURL
  * @param args
  */
 export async function determineTargetFileOperation(
   source: FileInfo,
-  initialTargetName: string,
+  initialTargetURL: URL,
   args: CopyContractArgs,
 ): Promise<TargetFileOperation> {
   const shouldCompress = shouldCompressFile(args.compress, source.size, MinSizeForCompression);
-  const shouldDecompress = shouldDecompressFile(args.decompress, source.url.href, CompressedFileExtension);
+  const shouldDecompress = shouldDecompressFile(args.decompress, source.url, CompressedFileExtension);
 
-  let finalTargetName = initialTargetName;
+  let finalTargetURL = initialTargetURL;
   if (shouldDecompress) {
     // If we decompress, we remove the .zst extension from the target name
-    finalTargetName = initialTargetName.slice(0, initialTargetName.length - CompressedFileExtension.length);
+    finalTargetURL = replaceUrlExtension(initialTargetURL, new RegExp('\\' + CompressedFileExtension + '$', 'i'));
   } else if (shouldCompress) {
     // If we compress, we append the .zst extension to the target name
-    finalTargetName += CompressedFileExtension;
+    finalTargetURL = new URL(initialTargetURL.href + CompressedFileExtension);
   }
 
-  const head = await tryHead(tryParseUrl(finalTargetName));
-  const target = { ...head, url: head?.url ?? tryParseUrl(finalTargetName), size: head?.size ?? 0 } as FileInfo;
+  const head = await tryHead(finalTargetURL);
+  const target = { ...head, url: head?.url ?? finalTargetURL, size: head?.size ?? 0 } as FileInfo;
   const defaultOperation = shouldDecompress
     ? FileOperation.Decompress
     : shouldCompress
@@ -219,15 +220,15 @@ export async function determineTargetFileOperation(
 export async function verifyTargetFile(target: URL, expectedSize: number, expectedHash: string): Promise<boolean> {
   const targetReadBack = await tryHead(target);
   const targetSize = targetReadBack?.size;
-  const targetFs = fsa.get(target, 'rw');
+  // const targetFs = fsa.get(target, 'rw');
 
-  let targetHash = targetReadBack?.metadata?.[HashKey];
+  const targetHash = targetReadBack?.metadata?.[HashKey];
 
   // TODO: Local file system does not support metadata so assume hash is correct
-  if (FsFile.is(targetFs)) {
-    targetHash = '0';
-    expectedHash = '0';
-  }
+  // if (FsFile.is(targetFs)) {
+  //   targetHash = '0';
+  //   expectedHash = '0';
+  // }
 
   const targetVerified = targetSize === expectedSize && targetHash === expectedHash;
   if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
@@ -257,8 +258,8 @@ function shouldCompressFile(compress: boolean, size: number = 0, minSize: number
  */
 function shouldDecompressFile(
   decompress: boolean,
-  filename: string = '',
+  filename: URL,
   decompressExtension: string = CompressedFileExtension,
 ): boolean {
-  return decompress && filename.endsWith(decompressExtension);
+  return decompress && filename.href.endsWith(decompressExtension);
 }

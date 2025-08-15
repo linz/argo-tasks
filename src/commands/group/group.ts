@@ -1,11 +1,11 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { command, number, option, optional, restPositionals } from 'cmd-ts';
 
 import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
-import { config, forceOutput, registerCli, verbose } from '../common.ts';
+import { config, forceOutput, registerCli, Url, UrlList, verbose } from '../common.ts';
 
 /** Chunk an array into a group size
  * @example
@@ -23,11 +23,11 @@ export function groupItems<T>(items: T[], groupSize: number): T[][] {
   return output;
 }
 
-/** Normalize an input as either a JSON array or just an array  */
-function loadInput(x: string): string[] {
-  if (x.startsWith('[')) return JSON.parse(x) as string[];
-  return [x];
-}
+// /** Normalize an input as either a JSON array or just an array  */
+// function loadInput(x: string): string[] {
+//   if (x.startsWith('[')) return JSON.parse(x) as string[];
+//   return [x];
+// }
 
 export const CommandGroupArgs = {
   config,
@@ -41,12 +41,12 @@ export const CommandGroupArgs = {
     defaultValueIsSerializable: true,
   }),
   inputs: restPositionals({
-    type: string,
+    type: UrlList,
     displayName: 'items',
-    description: 'list of items to group, can be a JSON array',
+    description: 'list of items to group, can be a JSON array', // Todo: check if JSON array still works or if it needs to be a semicolon separated list
   }),
   fromFile: option({
-    type: optional(string),
+    type: optional(Url),
     long: 'from-file',
     description: 'JSON file to load inputs from, must be a JSON Array',
   }),
@@ -60,13 +60,19 @@ export const commandGroup = command({
   async handler(args) {
     registerCli(this, args);
 
-    const inputs: unknown[] = [];
-    for (const input of args.inputs) inputs.push(...loadInput(input));
+    const inputs: URL[] = [];
+    // const x = args.inputs;
+    // const mylist = await UrlList.from('["1","2","3","4"]')
+    //JSON.stringify([ JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])])
+
+    inputs.push(...args.inputs.flat()); // Todo: does this need to be flat?
+
+    // for (const input of args.inputs) inputs.push(input);
     if (args.fromFile) {
-      const fileURL = fsa.toUrl(args.fromFile);
+      const fileURL = args.fromFile;
       if (await fsa.exists(fileURL)) {
         const input = await fsa.readJson<string[]>(fileURL);
-        if (Array.isArray(input)) inputs.push(...input);
+        if (Array.isArray(input)) inputs.push(...input.map((str) => new URL(str)));
       }
     }
 
