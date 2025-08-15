@@ -2,12 +2,12 @@ import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
 import { fsa } from '@chunkd/fs';
 import type { FsAwsS3V3 } from '@chunkd/source-aws-v3';
-import { boolean, command, flag, option, positional, string } from 'cmd-ts';
+import { boolean, command, flag, option, positional } from 'cmd-ts';
 import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { config, registerCli, S3Path, verbose } from '../common.ts';
+import { config, registerCli, replaceUrlExtension, S3Path, UrlFolder, verbose } from '../common.ts';
 
 /** Represents the manifest report structure for S3 Batch Operations Restore. */
 export type ManifestReport = {
@@ -48,7 +48,7 @@ export const commandVerifyRestore = command({
       description:
         'Rename the restore report file to `*.done` if restore is successful to indicate it has been processed',
     }),
-    output: option({ type: string, long: 'output', description: 'Output location to store the restore result' }),
+    output: option({ type: UrlFolder, long: 'output', description: 'Output location to store the restore result' }),
     report: positional({
       type: S3Path,
       displayName: 'report',
@@ -59,7 +59,7 @@ export const commandVerifyRestore = command({
     registerCli(this, args);
     logger.info('VerifyRestore:Start');
 
-    let resultKeys: string[] = [];
+    let resultKeys: URL[] = [];
     try {
       logger.info({ path: args.report.toString() }, 'VerifyRestore:LoadReport');
       const report: ManifestReport = await fsa.readJson(args.report);
@@ -104,9 +104,9 @@ export const commandVerifyRestore = command({
     }
 
     if (anyNotRestored) {
-      await fsa.write(fsa.toUrl(args.output), Buffer.from('false'));
+      await fsa.write(args.output, Buffer.from('false'));
     } else {
-      await fsa.write(fsa.toUrl(args.output), Buffer.from('true'));
+      await fsa.write(args.output, Buffer.from('true'));
       if (args.markDone) {
         await markReportDone(args.report);
       }
@@ -123,7 +123,7 @@ export const commandVerifyRestore = command({
  * @param report - The manifest report containing results.
  * @returns An array of S3 paths for the restored files.
  */
-export function fetchResultKeysFromReport(report: ManifestReport): string[] {
+export function fetchResultKeysFromReport(report: ManifestReport): URL[] {
   const { Results } = report;
   const notSucceeded = Results.filter((r) => r.TaskExecutionStatus?.toLowerCase() !== 'succeeded');
   if (notSucceeded.length) {
@@ -132,7 +132,7 @@ export function fetchResultKeysFromReport(report: ManifestReport): string[] {
     );
   }
 
-  return Results.map((r) => `s3://${r.Bucket}/${r.Key}`);
+  return Results.map((r) => new URL(`s3://${r.Bucket}/${r.Key}`));
 }
 
 /** Fetches the paths of pending restored objects from the report results.
@@ -227,7 +227,8 @@ export function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): b
  * @param reportPath - The path to the report file.
  */
 async function markReportDone(reportPath: URL): Promise<void> {
-  const donePath = new URL(`${reportPath.toString()}.done`);
+  const donePath = replaceUrlExtension(reportPath, new RegExp('$'), '.done');
+  // URL(`${reportPath.toString()}.done`);
   await fsa.write(donePath, await fsa.read(reportPath));
   await fsa.delete(reportPath);
   logger.info({ reportPath, donePath }, 'VerifyRestore:MarkedReportDone');

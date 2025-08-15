@@ -8,14 +8,14 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';
-import { config, registerCli, verbose } from '../common.ts';
+import { config, registerCli, Url, verbose } from '../common.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
-const Url: Type<string, URL> = {
-  async from(str) {
-    return new URL(str);
-  },
-};
+// const Url: Type<string, URL> = {
+//   async from(str) {
+//     return new URL(str);
+//   },
+// };
 
 const imageryRepo = 'linz/imagery';
 

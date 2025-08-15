@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 import type { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { createTiff } from '../../commands/common.ts';
@@ -67,13 +66,13 @@ describe('geotiff', () => {
     );
     fsa.register('memory://', source);
 
-    const tiff = await createTiff('memory://BX20_500_023098.tif');
+    const tiff = await createTiff(fsa.toUrl('memory://BX20_500_023098.tif'));
     const bbox = await findBoundingBox(tiff);
 
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 
-  const url = new URL('memory://BX20_500_023098.tif');
+  const url = fsa.toUrl('memory://BX20_500_023098.tif');
   const fakeSource: Source = { url: url, fetch: () => Promise.resolve(new ArrayBuffer(1)) };
   it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
@@ -81,6 +80,9 @@ describe('geotiff', () => {
   });
 
   it('should parse a tiff with TFW', async () => {
+    const source = new FsMemory();
+    fsa.register('memory://', source);
+
     // Write a sidecar tfw
     await fsa.write(fsa.toUrl('memory://BX20_500_023098.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
     // tiff with no location information and no TFW

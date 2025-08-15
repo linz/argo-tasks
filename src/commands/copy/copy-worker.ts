@@ -8,7 +8,7 @@ import { WorkerRpc } from '@wtrpc/core';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
-import { registerCli, tryParseUrl } from '../common.ts';
+import { registerCli } from '../common.ts';
 import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -42,10 +42,10 @@ export const worker = new WorkerRpc<CopyContract>({
 
       Q.push(async () => {
         const startTime = performance.now();
-        const sourceURL = tryParseUrl(manifestEntry.source);
+        const sourceURL = manifestEntry.source;
         const source = await fsa.head(sourceURL);
         if (source?.size == null || source.size === 0) {
-          logger.info({ path: manifestEntry.source }, 'File:Copy:SkippedEmpty');
+          logger.info({ path: manifestEntry.source.href }, 'File:Copy:SkippedEmpty');
           statsUpdaters[FileOperation.Skip](stats, source?.size ?? 0);
           return;
         }
@@ -58,7 +58,7 @@ export const worker = new WorkerRpc<CopyContract>({
         if (fileOperation !== FileOperation.Skip) {
           logger.info(
             {
-              path: manifestEntry.source,
+              path: manifestEntry.source.href,
               size: source.size,
               fileOperation,
               shouldDeleteSourceOnSuccess,

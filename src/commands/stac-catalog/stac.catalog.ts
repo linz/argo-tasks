@@ -1,22 +1,12 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, positional, string } from 'cmd-ts';
-import { isAbsolute } from 'path';
+import { command, option, positional } from 'cmd-ts';
+// import { isAbsolute } from 'path';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { hashBuffer } from '../../utils/hash.ts';
-import { config, registerCli, verbose } from '../common.ts';
-
-/** is a path a URL */
-export function isUrl(path: string): boolean {
-  try {
-    new URL(path);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
+import { config, registerCli, Url, UrlFolder, verbose } from '../common.ts';
 
 /**
  * Convert a path to relative
@@ -29,14 +19,13 @@ export function isUrl(path: string): boolean {
  * @param filePath target file
  * @returns relative path to file
  */
-export function makeRelative(basePath: string, filePath: string): string {
-  if (isUrl(filePath) || isAbsolute(filePath)) {
-    if (!filePath.startsWith(basePath)) {
-      throw new Error(`FilePaths are not relative base: ${basePath} file: ${filePath}`);
-    }
-    return filePath.slice(basePath.length);
+export function makeRelative(basePath: URL, filePath: URL): string {
+  const basePathFolder = new URL('./', basePath); // Ensure basePath is a "folder" URL
+  // If the filePath starts with the basePathFolder, we can return the relative path
+  if (!filePath.href.startsWith(basePathFolder.href)) {
+    throw new Error(`FilePaths are not relative base: ${basePathFolder.href} file: ${filePath.href}`);
   }
-  return filePath;
+  return filePath.href.replace(basePathFolder.href, '');
 }
 
 const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/schema.json';
@@ -49,18 +38,18 @@ export const commandStacCatalog = command({
     config,
     verbose,
     template: option({
-      type: string,
+      type: Url,
       long: 'template',
       description: 'JSON template file location for the Catalog metadata',
     }),
-    output: option({ type: string, long: 'output', description: 'Output location for the catalog' }),
-    path: positional({ type: string, description: 'Location to search for collection.json paths' }),
+    output: option({ type: Url, long: 'output', description: 'Output location for the catalog' }),
+    path: positional({ type: UrlFolder, description: 'Location to search for collection.json paths' }),
   },
 
   async handler(args) {
     registerCli(this, args);
     logger.info('StacCatalogCreation:Start');
-    const catalog = await fsa.readJson<st.StacCatalog>(new URL(args.template));
+    const catalog = await fsa.readJson<st.StacCatalog>(args.template);
     if (catalog.stac_extensions == null) catalog.stac_extensions = [];
     // Add the file extension for "file:checksum" the links
     if (!catalog.stac_extensions.includes(StacFileExtensionUrl)) {
@@ -71,7 +60,7 @@ export const commandStacCatalog = command({
 
     catalog.links = await createLinks(args.path, catalog.links);
 
-    await fsa.write(fsa.toUrl(args.output), JSON.stringify(catalog, null, 2));
+    await fsa.write(args.output, JSON.stringify(catalog, null, 2));
     logger.info(
       { catalogId: catalog.id, collections: catalog.links.length - templateLinkCount },
       'StacCatalogCreation:Done',
@@ -79,19 +68,19 @@ export const commandStacCatalog = command({
   },
 });
 
-export async function createLinks(basePath: string, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
-  const collections = await fsa.toArray(fsa.list(fsa.toUrl(basePath)));
+export async function createLinks(basePath: URL, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
+  const collections = await fsa.toArray(fsa.list(basePath));
 
   for (const coll of collections) {
-    if (coll.href.endsWith('/collection.json')) {
-      const relPath = makeRelative(basePath, coll.href);
+    if (coll.pathname.endsWith('/collection.json')) {
+      const relPath = makeRelative(basePath, coll);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
       const checksum = hashBuffer(buf);
       const collLink: st.StacLink = {
         rel: 'child',
         // href: fsa.join('./', relPath),
-        href: `./${relPath.replace(/^\/+/, '')}`,
+        href: relPath,
         title: collection.title,
         'file:checksum': checksum,
         'file:size': buf.length,

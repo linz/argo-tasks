@@ -1,15 +1,15 @@
 import { basename } from 'node:path/posix';
 
 import { fsa } from '@chunkd/fs';
-import { command, option, optional, restPositionals, string } from 'cmd-ts';
+import { command, option, optional, restPositionals } from 'cmd-ts';
 import type { StacCollection, StacItem, StacLink } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { combinePaths, splitPaths } from '../../utils/chunk.ts';
+// import { combinePaths } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import type { FileListEntry } from '../../utils/filelist.ts';
-import { registerCli, verbose } from '../common.ts';
+import { registerCli, replaceUrlExtension, Url, UrlList, verbose } from '../common.ts';
 
 interface LinzItemLink extends StacLink {
   'file:checksum': string;
@@ -29,13 +29,13 @@ export const commandIdentifyUpdatedItems = command({
   args: {
     verbose,
     targetCollection: option({
-      type: optional(string),
+      type: optional(Url),
       long: 'target-collection',
       description:
         'Target collection.json file of the dataset that derives from the source dataset. If not provided, all Items of the source dataset will be returned in the list.',
     }),
     sourceCollections: restPositionals({
-      type: string,
+      type: UrlList,
       displayName: 'source-collections',
       description:
         'Location of the source collection.json files that are used to create the target dataset. Split by ";"',
@@ -45,16 +45,20 @@ export const commandIdentifyUpdatedItems = command({
     const startTime = performance.now();
     registerCli(this, args);
     logger.info('identifyUpdatedItems:Start');
-    if (args.targetCollection && !args.targetCollection.endsWith('collection.json')) {
+    if (args.targetCollection && !args.targetCollection.pathname.endsWith('collection.json')) {
       logger.error('--target-collection must point to an existing STAC collection.json or not be set');
       throw new Error('--target-collection must point to an existing STAC collection.json or not be set');
     }
-    const sourceCollectionUrls = splitPaths(args.sourceCollections);
-    if (sourceCollectionUrls.length === 0 || sourceCollectionUrls.some((str) => !str.endsWith('collection.json'))) {
+    // const sourceCollectionUrls = splitPaths(args.sourceCollections);
+    const sourceCollectionUrls = args.sourceCollections.flat();
+    if (
+      sourceCollectionUrls.length === 0 ||
+      sourceCollectionUrls.some((url) => !url.pathname.endsWith('collection.json'))
+    ) {
       logger.error('Source collections must each point to existing STAC collection.json file(s)');
       throw new Error('--source-collections must point to existing STAC collection.json file(s)');
     }
-    type ItemSourceChecksums = Record<string, { href: string; checksum: string }[]>;
+    type ItemSourceChecksums = Record<string, { href: URL; checksum: string }[]>;
 
     const existingItemsAtTarget: ItemSourceChecksums = {};
     const desiredItemsAtTarget: ItemSourceChecksums = {};
@@ -63,10 +67,10 @@ export const commandIdentifyUpdatedItems = command({
     const Q = new ConcurrentQueue(10);
 
     if (args.targetCollection) {
-      const targetCollection = await fsa.readJson<LinzStacCollection>(fsa.toUrl(args.targetCollection));
+      const targetCollection = await fsa.readJson<LinzStacCollection>(args.targetCollection);
       for (const collectionLink of targetCollection.links) {
         if (collectionLink.rel !== 'item') continue;
-        const itemUrl = new URL(collectionLink.href, fsa.toUrl(args.targetCollection));
+        const itemUrl = new URL(collectionLink.href, args.targetCollection);
         Q.push(async () => {
           const itemStac = await fsa.readJson<LinzStacItem>(itemUrl);
           itemStac.links.forEach((itemLink) => {
@@ -76,7 +80,7 @@ export const commandIdentifyUpdatedItems = command({
               existingItemsAtTarget[myItemId] = []; // Initialize an empty array if not present
             }
             existingItemsAtTarget[myItemId].push({
-              href: itemLink.href,
+              href: new URL(itemLink.href, args.targetCollection),
               checksum: itemLink['file:checksum'],
             });
           });
@@ -86,7 +90,7 @@ export const commandIdentifyUpdatedItems = command({
 
     await Promise.all(
       sourceCollectionUrls.map(async (sourceCollectionUrl) => {
-        const sourceCollection = await fsa.readJson<LinzStacCollection>(fsa.toUrl(sourceCollectionUrl));
+        const sourceCollection = await fsa.readJson<LinzStacCollection>(sourceCollectionUrl);
         sourceCollection.links.forEach((sourceItem) => {
           if (sourceItem.rel !== 'item') return;
           const myItemId = basename(sourceItem.href, '.json');
@@ -94,7 +98,7 @@ export const commandIdentifyUpdatedItems = command({
             desiredItemsAtTarget[myItemId] = [];
           }
           desiredItemsAtTarget[myItemId].push({
-            href: combinePaths(sourceCollectionUrl, sourceItem.href),
+            href: new URL(sourceItem.href, sourceCollectionUrl),
             checksum: sourceItem['file:checksum'],
           });
         });
@@ -142,7 +146,7 @@ export const commandIdentifyUpdatedItems = command({
       logger.trace({ itemId }, `identifyUpdatedItems:Skipping ${itemId} because sources match`);
     }
     const tilesToProcess: FileListEntry[] = Object.entries(itemsToProcess).map(([key, value]) => {
-      const tiffInputs = value.map((item) => item.href.replace(/\.json$/, '.tiff'));
+      const tiffInputs = value.map((item) => replaceUrlExtension(item.href, /\.json$/, '.tiff')); // todo: check this retains the checksum
       return {
         output: key,
         input: sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls),
@@ -151,7 +155,7 @@ export const commandIdentifyUpdatedItems = command({
     });
 
     const fileListPath = fsa.toUrl('/tmp/identify-updated-items/file-list.json');
-    await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
+    await fsa.write(fileListPath, JSON.stringify(tilesToProcess)); // todo: what does JSON.stringify do with URLs?
     logger.info(
       {
         existingItems: Object.keys(existingItemsAtTarget).length,
@@ -171,10 +175,10 @@ export const commandIdentifyUpdatedItems = command({
  * @param sourceCollections The source collections to use for sorting.
  * @returns The sorted input file paths.
  */
-function sortInputsBySourceOrder(inputs: string[], sourceCollections: string[]): string[] {
+function sortInputsBySourceOrder(inputs: URL[], sourceCollections: URL[]): URL[] {
   return inputs.sort((a, b) => {
-    const indexA = sourceCollections.findIndex((src) => a.includes(src.replace('/collection.json', '')));
-    const indexB = sourceCollections.findIndex((src) => b.includes(src.replace('/collection.json', '')));
+    const indexA = sourceCollections.findIndex((src) => a.href.includes(src.href.replace('/collection.json', '')));
+    const indexB = sourceCollections.findIndex((src) => b.href.includes(src.href.replace('/collection.json', '')));
     return indexA - indexB;
   });
 }

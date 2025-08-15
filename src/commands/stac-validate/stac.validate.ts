@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
 import Ajv from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
-import { boolean, command, flag, number, option, restPositionals, string } from 'cmd-ts';
+import { boolean, command, flag, number, option, restPositionals } from 'cmd-ts';
 import { createHash } from 'crypto';
 import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
@@ -12,7 +12,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { hashStream, Sha256Prefix } from '../../utils/hash.ts';
-import { config, registerCli, verbose } from '../common.ts';
+import { config, registerCli, UrlFolder, verbose } from '../common.ts';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -52,7 +52,7 @@ export const commandStacValidate = command({
       description: 'Strict checking',
     }),
     location: restPositionals({
-      type: string,
+      type: UrlFolder,
       displayName: 'location',
       description: 'Location of the STAC files to validate',
     }),
@@ -62,7 +62,7 @@ export const commandStacValidate = command({
     registerCli(this, args);
 
     logger.info('StacValidation:Start');
-    const validated = new Set<string>();
+    const validated = new Set<URL>();
 
     const recursive = args.recursive;
 
@@ -70,7 +70,7 @@ export const commandStacValidate = command({
       logger.error('StacValidation:Error:NoLocationProvided');
       process.exit(1);
     }
-    const paths = listLocation(args.location).map((c) => c.trim());
+    const paths = args.location.flat(); // listLocation(args.location).map((c) => c.trim());
 
     // Weird typing for ajv require us to use the "default" export to construct it.
     const ajv = new Ajv.default({
@@ -91,43 +91,43 @@ export const commandStacValidate = command({
     const queue = new ConcurrentQueue(args.concurrency);
 
     /**
-     * Lookup or load and compile a AJV validator from a JSONSChema URL
+     * Lookup or load and compile an AJV validator from a JSONSchema URL
      * @param url JSONSchema URL
      * @returns
      */
-    async function getValidator(url: string): Promise<ValidateFunction> {
+    async function getValidator(url: URL): Promise<ValidateFunction> {
       /**
        * Calling `getSchema(url)` while the schema at `url` is still loading can cause the schema to fail to load correctly
        * To work around this problem ensure only one schema is compiling at a time.
        */
       await schemaQueue;
 
-      const schema = ajv.getSchema(url);
+      const schema = ajv.getSchema(url.href);
       if (schema != null) return schema;
-      let existing = ajvSchema.get(url);
+      let existing = ajvSchema.get(url.href);
 
       if (existing == null) {
-        existing = schemaQueue.then(() => loadSchema(url).then((f) => ajv.compileAsync(f)));
-        ajvSchema.set(url, existing);
+        existing = schemaQueue.then(() => loadSchema(url.href).then((f) => ajv.compileAsync(f)));
+        ajvSchema.set(url.href, existing);
         // Queue should ignore errors so if something in the queue fails it can continue to run
         schemaQueue = existing.catch(() => null);
       }
       return existing;
     }
 
-    const failures: string[] = [];
+    const failures: URL[] = [];
 
-    async function validateStac(path: string): Promise<void> {
+    async function validateStac(path: URL): Promise<void> {
       if (validated.has(path)) {
         logger.warn({ path }, 'SkippedDuplicateStacFile');
         return;
       }
       validated.add(path);
 
-      const stacSchemas: string[] = [];
+      const stacSchemas: URL[] = [];
       let stacJson;
       try {
-        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(new URL(path));
+        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
       } catch (err) {
         logger.error({ path, err }, 'readStacJsonFile:Error');
         failures.push(path);
@@ -235,9 +235,9 @@ export const commandStacValidate = command({
  */
 export async function validateAssets(
   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
-  path: string,
-): Promise<string[]> {
-  const assetsFailures: string[] = [];
+  path: URL,
+): Promise<URL[]> {
+  const assetsFailures: URL[] = [];
   const assets = Object.values(stacJson.assets ?? {}) as st.StacAsset[];
   for (const asset of assets) {
     const isChecksumValid = await validateStacChecksum(asset, path, false);
@@ -255,9 +255,9 @@ export async function validateAssets(
  */
 export async function validateLinks(
   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
-  path: string,
-): Promise<string[]> {
-  const linksFailures: string[] = [];
+  path: URL,
+): Promise<URL[]> {
+  const linksFailures: URL[] = [];
   for (const link of stacJson.links) {
     if (link.rel === 'self') continue;
 
@@ -276,16 +276,16 @@ export async function validateLinks(
  * @param url JSON schema to load
  * @returns object from the cache if it exists or directly from the uri
  */
-async function loadSchema(url: string): Promise<object> {
+async function loadSchema(url: URL): Promise<object> {
   const cacheId = createHash('sha256').update(url).digest('hex');
   const cachePath = `./json-schema-cache/${cacheId}.json`;
 
   try {
-    return await fsa.readJson<object>(fsa.toUrl(cachePath));
+    return await fsa.readJson<object>(cachePath);
   } catch (e) {
-    return fsa.read(fsa.toUrl(url)).then(async (obj) => {
+    return fsa.read(url).then(async (obj) => {
       logger.info({ url, cachePath }, 'Fetch:CacheMiss');
-      await fsa.write(fsa.toUrl(cachePath), obj);
+      await fsa.write(cachePath, obj);
       return JSON.parse(String(obj)) as object;
     });
   }
@@ -300,7 +300,7 @@ async function loadSchema(url: string): Promise<object> {
  */
 export async function validateStacChecksum(
   stacObject: st.StacLink | st.StacAsset,
-  stacPath: string,
+  stacPath: URL,
   allowMissing: boolean,
 ): Promise<boolean> {
   const source = new URL(stacObject.href, stacPath);
@@ -359,8 +359,8 @@ function getSchemaType(schemaType: string): StacSchemaType | null {
  * @param path base location
  * @returns
  */
-export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: string): string | null {
-  logger.trace({ path, schemaType: schemaType }, 'getStacSchema:Start');
+export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: URL): URL | null {
+  logger.trace({ path: path.href, schemaType: schemaType }, 'getStacSchema:Start');
   // Only 1.0.0 is supported
   if (stacVersion !== '1.0.0') return null;
 
@@ -368,8 +368,8 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: 
   if (type == null) return null;
 
   const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-  logger.trace({ path, schemaType, schemaId }, 'getStacSchema:Done');
-  return schemaId;
+  logger.trace({ path: path.href, schemaType, schemaId }, 'getStacSchema:Done');
+  return new URL(schemaId);
 }
 
 /** STAC link "rel" types that are considered children */
@@ -403,16 +403,16 @@ export function isURL(path: string): boolean {
     return false;
   }
 }
-
-// Handle list of lists that results from using the 'list' command to supply location
-export function listLocation(locs: string[]): string[] {
-  const output: string[] = [];
-  for (const loc of locs) {
-    if (loc.startsWith('[')) {
-      output.push(...(JSON.parse(loc) as string[]));
-      continue;
-    }
-    output.push(loc);
-  }
-  return output;
-}
+//
+// // Handle list of lists that results from using the 'list' command to supply location
+// export function listLocation(locs: string[]): string[] {
+//   const output: string[] = [];
+//   for (const loc of locs) {
+//     if (loc.startsWith('[')) {
+//       output.push(...(JSON.parse(loc) as string[]));
+//       continue;
+//     }
+//     output.push(loc);
+//   }
+//   return output;
+// }
