@@ -4,6 +4,7 @@ import { gunzipSync } from 'node:zlib';
 
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
+import { parse } from 'cmd-ts';
 
 import type { CommandArguments } from '../../../__test__/type.util.ts';
 import type { SourceTarget } from '../create-manifest.ts';
@@ -106,6 +107,21 @@ describe('createManifest', () => {
     });
   });
 
+  it('should parse required options', async () => {
+    const parsed = (await parse(
+      commandCreateManifest,
+      [
+        ['--output', 'memory://output/🦄 🌈.json'],
+        ['--target', 'memory:/target/🟪/🦄 🌈.txt'],
+        'memory://source/🟥/',
+      ].flat(),
+    )) as { _tag: 'ok'; value: CommandCreateManifestArgs };
+    assert.equal(parsed._tag, 'ok');
+    assert.deepEqual(parsed.value.source, ['memory://source/🟥/']);
+    assert.deepEqual(parsed.value.target, 'memory:/target/🟪/🦄 🌈.txt');
+    assert.deepEqual(parsed.value.output, 'memory://output/🦄 🌈.json');
+  });
+
   const baseArgs: CommandCreateManifestArgs = {
     config: undefined,
     verbose: false,
@@ -122,13 +138,13 @@ describe('createManifest', () => {
   };
 
   it('should generate a output', async () => {
-    await fsa.write(`memory://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
-    await fsa.write(`memory://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(0));
+    await fsa.write(`memory://source/🟥/🦄 🌈.txt`, Buffer.alloc(1));
+    await fsa.write(`memory://source/🟥/🦄 🌈.json`, Buffer.alloc(0));
 
     await commandCreateManifest.handler({
       ...baseArgs,
-      source: ['memory://some-bucket/'],
-      target: 'memory://target/🦄 🌈/',
+      source: ['memory://source/🟥/'],
+      target: 'memory://target/🟪/',
       output: 'memory://output/🦄 🌈.json',
     });
 
@@ -142,8 +158,8 @@ describe('createManifest', () => {
 
     assert.deepEqual(firstBytes, [
       {
-        source: 'memory://some-bucket/🦄/🦄 🌈.txt',
-        target: 'memory://target/🦄 🌈/🦄/🦄 🌈.txt',
+        source: 'memory://source/🟥/🦄 🌈.txt',
+        target: 'memory://target/🟪/🦄 🌈.txt',
       },
     ]);
   });
