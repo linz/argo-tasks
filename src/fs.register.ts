@@ -2,9 +2,7 @@ import { setTimeout } from 'node:timers/promises';
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { fsa } from '@chunkd/fs';
-import { FsAwsS3 } from '@chunkd/source-aws';
-import type { S3LikeV3 } from '@chunkd/source-aws-v3';
-import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
+import { FsAwsS3 } from '@chunkd/fs-aws';
 import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 
 import { logger } from './log.ts';
@@ -68,14 +66,14 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
  *
  * @param fsClient Filesystem to setup
  */
-export function setupS3FileSystem(fsClient: FsAwsS3V3): void {
-  addMiddlewareToS3Client(fsClient.client);
+export function setupS3FileSystem(fsClient: FsAwsS3): void {
+  addMiddlewareToS3Client(fsClient.s3);
 
   if (fsClient.credentials == null) return;
   const oldFind = fsClient.credentials.find.bind(fsClient.credentials);
   // When file systems are looked up ensure they are registered into `fsa`
-  fsClient.credentials.find = async (path: string): Promise<FsAwsS3 | null> => {
-    const accountConfig = await fsClient.credentials.findCredentials(path);
+  fsClient.credentials.find = async (path: URL): Promise<FsAwsS3 | null> => {
+    const accountConfig = await fsClient.credentials?.findCredentials(path);
     if (accountConfig == null) return null;
 
     const fileSystem = await oldFind(path);
@@ -83,8 +81,8 @@ export function setupS3FileSystem(fsClient: FsAwsS3V3): void {
 
     logger.debug({ prefix: path, roleArn: accountConfig.roleArn }, 'FileSystem:Register');
     fsa.register(accountConfig.prefix, fileSystem);
-    if (fileSystem.s3 != null && 'client' in fileSystem.s3) {
-      addMiddlewareToS3Client((fileSystem.s3 as S3LikeV3).client);
+    if (fileSystem.s3 != null) {
+      addMiddlewareToS3Client(fileSystem.s3);
     }
     return fileSystem;
   };
@@ -119,8 +117,8 @@ function splitConfig(x: string): string[] {
   return x.split(',');
 }
 
-export function registerFileSystem(opts: { config?: string }): FsAwsS3V3 {
-  const s3Fs = new FsAwsS3V3(new S3Client());
+export function registerFileSystem(opts: { config?: string }): FsAwsS3 {
+  const s3Fs = new FsAwsS3(new S3Client());
   setupS3FileSystem(s3Fs);
 
   fsa.register('s3://', s3Fs);
@@ -130,7 +128,7 @@ export function registerFileSystem(opts: { config?: string }): FsAwsS3V3 {
 
   const paths = splitConfig(configPath);
 
-  for (const path of paths) s3Fs.credentials.registerConfig(path, fsa);
+  for (const path of paths) s3Fs.credentials?.registerConfig(fsa.toUrl(path), s3Fs);
 
   return s3Fs;
 }

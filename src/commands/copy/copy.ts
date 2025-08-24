@@ -8,6 +8,7 @@ import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger, logId } from '../../log.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 import { mergeStats } from './copy-helpers.ts';
 import type { CopyContract, CopyStats } from './copy-rpc.ts';
@@ -15,12 +16,10 @@ import type { CopyContract, CopyStats } from './copy-rpc.ts';
 const CopyValidator = z.object({
   source: z
     .string()
-    .url()
-    .transform((val) => fsa.toUrl(val)),
+    .transform((val) => protocolAwareString(fsa.toUrl(val))),
   target: z
     .string()
-    .url()
-    .transform((val) => fsa.toUrl(val)),
+    .transform((val) => protocolAwareString(fsa.toUrl(val))),
 });
 const CopyManifest = z.array(CopyValidator);
 

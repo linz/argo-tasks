@@ -34,8 +34,8 @@ describe('command.list', () => {
     await fsa.write(fsa.toUrl(`memory://some-bucket/test/🦄 🌈.txt`), Buffer.alloc(1));
     await commandList.handler({
       ...baseArgs,
-      location: ['memory://some-bucket/test/'],
-      output: 'memory://host/🦄 🌈/output.json',
+      location: [[new URL('memory://some-bucket/test/')]],
+      output: new URL('memory://host/🦄 🌈/output.json'),
     });
 
     const allFiles = [...mem.files.keys()].map((f) => decodeURI(f));
@@ -52,8 +52,8 @@ describe('command.list', () => {
 
     await commandList.handler({
       ...baseArgs,
-      location: ['memory://some-bucket/🦄/;memory://some-bucket/🌈/'],
-      output: 'memory://host/🦄 🌈/output.json',
+      location: [[new URL('memory://some-bucket/🦄/'), new URL('memory://some-bucket/🌈/')]],
+      output: new URL('memory://host/🦄 🌈/output.json'),
       group: 1,
     });
 
@@ -70,8 +70,8 @@ describe('command.list', () => {
     // console.log(locallist);
     await commandList.handler({
       ...baseArgs,
-      location: ['memory://some-bucket/🦄/;memory://some-bucket/🌈/'],
-      output: 'memory://host/🦄 🌈/output.json',
+      location: [[new URL('memory://some-bucket/🦄/'), new URL('memory://some-bucket/🌈/')]],
+      output: new URL('memory://host/🦄 🌈/output.json'),
       group: 1,
     });
     const outputJsonFileContent = JSON.parse(

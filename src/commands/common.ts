@@ -120,7 +120,27 @@ export const Url: Type<string, URL> = {
  * @param replaceValue to replace the pattern with, defaults to an empty string
  */
 export function replaceUrlExtension(url: URL, pattern: RegExp, replaceValue: string = ''): URL {
+  if (!(url instanceof URL)) {
+    throw new Error('Expected a URL instance');
+  }
   return new URL(url.href.replace(pattern, replaceValue));
+}
+
+/**
+ * Check if a URL path ends with a given string (e.g. filename or file extension).
+ *
+ * @param x URL to check (e.g. a TIFF file URL)
+ * @param needle the term to check for, defaults to '.tiff' or '.tif'
+ * @param caseSensitive whether the check should be case-sensitive, defaults to false
+ * @returns true if the URL path ends with the specified term
+ */
+export function urlPathEndsWith(x: URL, needle: string, caseSensitive = false): boolean {
+  let haystack = x.pathname;
+  if (!caseSensitive) {
+    needle = needle.toLowerCase();
+    haystack = x.pathname.toLowerCase();
+  }
+  return haystack.endsWith(needle);
 }
 
 /**
@@ -188,7 +208,33 @@ export const UrlList: Type<string | string[], URL[]> = {
       .map((str) => Url.from(str))
       .flat(); // todo: check if flat is needed
     return Promise.all(promises);
-    // const yetanotehrthing = Promise.all(strs.map((str) => str.trim()).filter((str) => str.length > 0).map((str) => Url.from(str)));
+  },
+};
+
+/**
+ * Parse an input string as a list of items.
+ *
+ * If it looks like a JSON string, it will be parsed.
+ **/
+export const StrList: Type<string | string[], string[]> = {
+  async from(item: string | string[]) {
+    let items: string[] = [];
+    if (Array.isArray(item)) {
+      items = item.flat();
+    } else if (typeof item === 'string' && item.startsWith('[')) {
+      // If the input is a JSON array, parse it
+      items = await Promise.all(JSON.parse(item).map((str: string) => StrList.from(str)));
+      if (!Array.isArray(items)) {
+        throw new Error('Input must be a JSON array of strings');
+      }
+      console.log(
+        items,
+      );
+    } else {
+      items = [item];
+    }
+    const results: string[] = items.flat();
+    return results; // Flatten the results
   },
 };
 

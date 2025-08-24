@@ -1,11 +1,11 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
 import type { CommandArguments } from '../../../__test__/type.util.ts';
+import { UrlFolder } from '../../common.ts';
 import { SampleCollection } from '../../generate-path/__test__/sample.ts';
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.ts';
 import type { PathMetadata } from '../path.generate.ts';
@@ -221,6 +221,7 @@ describe('command.generatePath', () => {
   beforeEach(() => {
     fsa.register('memory://', mem);
     fsa.register('/tmp/generate-args', mem);
+    fsa.register('file:///tmp/generate-args', mem);
     mem.files.clear();
   });
 
@@ -228,12 +229,12 @@ describe('command.generatePath', () => {
     config: undefined,
     verbose: false,
     targetBucketName: 'some-output-bucket',
-    source: '',
+    source: fsa.toUrl(''),
   };
 
   it('should generate a output', async () => {
     await fsa.write(
-      'memory://bucket/source/test/collection.json',
+      new URL('memory://bucket/source/test/collection.json'),
       Buffer.from(
         JSON.stringify({
           'linz:geospatial_category': 'urban-aerial-photos',
@@ -244,7 +245,7 @@ describe('command.generatePath', () => {
       ),
     );
     await fsa.write(
-      'memory://bucket/source/test/BQ32.json',
+      new URL('memory://bucket/source/test/BQ32.json'),
       Buffer.from(
         JSON.stringify({
           assets: {
@@ -255,11 +256,11 @@ describe('command.generatePath', () => {
         }),
       ),
     );
-    await fsa.write('memory://bucket/source/test/BQ32.tiff', RgbaNztm2000Tiff);
+    await fsa.write(new URL('memory://bucket/source/test/BQ32.tiff'), RgbaNztm2000Tiff);
 
-    await commandGeneratePath.handler({ ...baseArgs, source: 'memory://bucket/source/test/' });
+    await commandGeneratePath.handler({ ...baseArgs, source: await UrlFolder.from('memory://bucket/source/test/') });
 
-    const output = await fsa.read('/tmp/generate-path/target');
+    const output = await fsa.read(fsa.toUrl('/tmp/generate-path/target'));
     assert.deepEqual(output.toString('utf-8'), 's3://some-output-bucket/wellington/source-test/rgb/2193/');
   });
 });

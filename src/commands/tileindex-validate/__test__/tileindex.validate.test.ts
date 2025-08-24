@@ -13,7 +13,7 @@ import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
 import type { FileListEntry } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { MapSheet } from '../../../utils/mapsheet.ts';
-import { createTiff } from '../../common.ts';
+import { createTiff, Url } from '../../common.ts';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
@@ -112,11 +112,11 @@ describe('tiffLocation', () => {
     const duplicates = groupByTileName(location);
     assert.deepEqual(
       duplicates.get('AS21_1000_0101')?.map((c) => c.source.href),
-      [new URL('s3://path/AS21_1000_0101.tiff'), new URL('s3://path/AS21_1000_0101.tiff')],
+      ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
     );
     assert.deepEqual(
       duplicates.get('AY29_1000_0101')?.map((c) => c.source.href),
-      [new URL('s3://path/AY29_1000_0101.tiff'), new URL('s3://path/AY29_1000_0101.tiff')],
+      ['s3://path/AY29_1000_0101.tiff', 's3://path/AY29_1000_0101.tiff'],
     );
   });
 
@@ -165,7 +165,7 @@ describe('validate', () => {
     for (const includeDerived of [true, false]) {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        location: [[new URL('s3://test')]],
+        location: [[await Url.from('s3://test')]],
         retile: true,
         scale: 1000,
         forceOutput: true,
@@ -181,7 +181,7 @@ describe('validate', () => {
     // Destroy the "geo" part of geotiff so TFW loading is also checked fro URL handling
     Object.defineProperty(fakeTiff.images[0], 'isGeoLocated', { value: false });
 
-    const sourceUrl = new URL(`memory://some-bucket/🦄 🌈/`);
+    const sourceUrl = await Url.from(`memory://some-bucket/🦄 🌈/`);
     fakeTiff.source.url = new URL(`BQ32_1000_0101.tiff`, sourceUrl);
 
     const expectedBounds = MapSheet.getMapTileIndex('BQ32_1000_0101');
@@ -233,7 +233,10 @@ describe('validate', () => {
     }
 
     assert.equal(stub.mock.callCount(), 1);
-    assert.deepEqual(stub.mock.calls[0]?.arguments[0], ['s3://test']);
+    assert.deepEqual(
+      stub.mock.calls[0]?.arguments[0]?.map((url) => url.href),
+      ['s3://test'],
+    );
 
     const outputFileList: FeatureCollection = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/output.geojson'));
     assert.equal(outputFileList.features.length, 1);

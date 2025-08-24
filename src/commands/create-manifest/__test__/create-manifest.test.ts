@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { CommandArguments } from '../../../__test__/type.util.ts';
+import { Url, UrlFolder, UrlFolderList } from '../../common.ts';
 import type { SourceTarget } from '../create-manifest.ts';
 import { commandCreateManifest } from '../create-manifest.ts';
 import { createManifest, validatePaths } from '../create-manifest.ts';
@@ -20,11 +21,15 @@ describe('createManifest', () => {
   it('should copy to the target location', async () => {
 
     await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
-      fsa.write(fsa.toUrl('memory://source/foo/bar/topographic.png'), Buffer.from('test')),
+      fsa.write(await Url.from('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
+      fsa.write(await Url.from('memory://source/foo/bar/topographic.png'), Buffer.from('test')),
     ]);
 
-    const outputFiles = await createManifest('memory://source/', 'memory://target/', { flatten: true });
+    const outputFiles = await createManifest(
+      [await Url.from('memory://source/')],
+      await UrlFolder.from('memory://target/'),
+      { flatten: true },
+    );
     assert.deepEqual(outputFiles[0], [
       {
         source: 'memory://source/topographic.json',
@@ -39,13 +44,17 @@ describe('createManifest', () => {
 
   it('should transform files', async () => {
     await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
-      fsa.write(fsa.toUrl('memory://source/foo/bar/topographic.png'), Buffer.from('test')),
+      fsa.write(await Url.from('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
+      fsa.write(await Url.from('memory://source/foo/bar/topographic.png'), Buffer.from('test')),
     ]);
-    const outputFiles = await createManifest('memory://source/', 'memory://target/sub/', {
-      flatten: false,
-      transform: 'f.replace("topographic", "test")',
-    });
+    const outputFiles = await createManifest(
+      await UrlFolderList.from('memory://source/'),
+      await UrlFolder.from('memory://target/sub/'),
+      {
+        flatten: false,
+        transform: 'f.replace("topographic", "test")',
+      },
+    );
     assert.deepEqual(outputFiles[0], [
       {
         source: 'memory://source/topographic.json',
@@ -60,11 +69,15 @@ describe('createManifest', () => {
 
   it('should copy to the target location without flattening', async () => {
     await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
-      fsa.write(fsa.toUrl('memory://source/foo/bar/topographic.png'), Buffer.from('test')),
+      fsa.write(await Url.from('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
+      fsa.write(await Url.from('memory://source/foo/bar/topographic.png'), Buffer.from('test')),
     ]);
 
-    const outputFiles = await createManifest('memory://source/', 'memory://target/sub/', { flatten: false });
+    const outputFiles = await createManifest(
+      [await Url.from('memory://source/')],
+      await UrlFolder.from('memory://target/sub/'),
+      { flatten: false },
+    );
     assert.deepEqual(outputFiles[0], [
       {
         source: 'memory://source/topographic.json',
@@ -83,8 +96,8 @@ describe('createManifest', () => {
     ]);
 
     const outputFiles = await createManifest(
-      'memory://source/topographic.json',
-      'memory://target/sub/topographic.json',
+      [await Url.from('memory://source/topographic.json')],
+      await Url.from('memory://target/sub/topographic.json'),
       { flatten: false },
     );
     assert.deepEqual(outputFiles[0], [
@@ -97,12 +110,12 @@ describe('createManifest', () => {
   describe('validatePaths', () => {
     it('Should throw error for mismatched paths', () => {
       assert.throws(() => {
-        validatePaths('memory://source/', 'memory://target/sub/test.tiff');
+        validatePaths(new URL('memory://source/'), new URL('memory://target/sub/test.tiff'));
       }, Error);
     });
     it('Should also throw error for mismatched paths', () => {
       assert.throws(() => {
-        validatePaths('memory://source/test.tiff', 'memory://target/sub/');
+        validatePaths(new URL('memory://source/test.tiff'), new URL('memory://target/sub/'));
       }, Error);
     });
   });
@@ -112,14 +125,14 @@ describe('createManifest', () => {
       commandCreateManifest,
       [
         ['--output', 'memory://output/🦄 🌈.json'],
-        ['--target', 'memory:/target/🟪/🦄 🌈.txt'],
+        ['--target', 'memory://target/🟪/🦄 🌈'],
         'memory://source/🟥/',
       ].flat(),
     )) as { _tag: 'ok'; value: CommandCreateManifestArgs };
     assert.equal(parsed._tag, 'ok');
-    assert.deepEqual(parsed.value.source, ['memory://source/🟥/']);
-    assert.deepEqual(parsed.value.target, 'memory:/target/🟪/🦄 🌈.txt');
-    assert.deepEqual(parsed.value.output, 'memory://output/🦄 🌈.json');
+    assert.deepEqual(parsed.value.source, [[new URL('memory://source/🟥/')]]);
+    assert.deepEqual(parsed.value.target, new URL('memory://target/🟪/🦄 🌈/')); // adds trailing slash
+    assert.deepEqual(parsed.value.output, new URL('memory://output/🦄 🌈.json'));
   });
 
   const baseArgs: CommandCreateManifestArgs = {
@@ -132,25 +145,27 @@ describe('createManifest', () => {
     groupSize: undefined,
     group: undefined,
     limit: undefined,
-    output: '',
-    target: '',
+    output: Url.from('manifest.json'),
+    target: UrlFolder.from(''),
     source: [],
   };
 
   it('should generate a output', async () => {
-    await fsa.write(`memory://source/🟥/🦄 🌈.txt`, Buffer.alloc(1));
-    await fsa.write(`memory://source/🟥/🦄 🌈.json`, Buffer.alloc(0));
+    await fsa.write(await Url.from('memory://source/🟥/🦄 🌈.txt'), Buffer.alloc(1));
+    await fsa.write(await Url.from('memory://source/🟥/🦄 🌈.json'), Buffer.alloc(0));
 
     await commandCreateManifest.handler({
       ...baseArgs,
-      source: ['memory://source/🟥/'],
-      target: 'memory://target/🟪/',
-      output: 'memory://output/🦄 🌈.json',
+      source: [await UrlFolderList.from('memory://source/🟥/')],
+      target: await UrlFolder.from('memory://target/🟪/'),
+      output: await Url.from('memory://output/🦄 🌈.json'),
     });
 
     // output is a JSON array of base64'd GZIPED json
     // [ "H4sIAA...", "H4sIAA...."]
-    const output = JSON.parse((await fsa.read(fsa.toUrl('memory://output/🦄 🌈.json'))).toString('utf-8')) as string[];
+    const output = JSON.parse(
+      (await fsa.read(await Url.from('memory://output/🦄 🌈.json'))).toString('utf-8'),
+    ) as string[];
     assert.ok(Array.isArray(output));
     const firstBytes = JSON.parse(
       gunzipSync(Buffer.from(output[0] as string, 'base64url')).toString('utf-8'),

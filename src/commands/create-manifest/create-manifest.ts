@@ -11,7 +11,9 @@ import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, Url, UrlFolder, UrlFolderList, verbose } from '../common.ts';
+import { makeRelative } from '../stac-catalog/stac.catalog.ts';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
@@ -47,33 +49,31 @@ export const commandCreateManifest = command({
   async handler(args) {
     registerCli(this, args);
 
-    const outputCopy: URL[] = [];
+    const outputCopy: string[] = [];
 
     const targetPath = args.target;
     const actionLocation = getActionLocation();
-    for (const source of args.source) {
-      const outputFiles = await createManifest(source, targetPath, args);
-      for (const current of outputFiles) {
-        const outBuf = Buffer.from(JSON.stringify(current));
-        const targetHash = createHash('sha256').update(outBuf).digest('base64url');
+    const outputFiles = await createManifest(args.source.flat(), targetPath, args);
+    for (const current of outputFiles) {
+      const outBuf = Buffer.from(JSON.stringify(current));
+      const targetHash = createHash('sha256').update(outBuf).digest('base64url');
 
-        // Store the list of files to move in a bucket rather than the ARGO parameters
-        if (actionLocation) {
-          // const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
-          const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation);
-          const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
-          await fsa.write(targetLocation, JSON.stringify(targetAction));
-          outputCopy.push(targetLocation);
-        } else {
-          outputCopy.push(new URL(gzipSync(outBuf).toString('base64url')));
-        }
+      // Store the list of files to move in a bucket rather than the ARGO parameters
+      if (actionLocation) {
+        // const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
+        const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation);
+        const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
+        await fsa.write(targetLocation, JSON.stringify(targetAction));
+        outputCopy.push(protocolAwareString(targetLocation));
+      } else {
+        outputCopy.push(gzipSync(outBuf).toString('base64url'));
       }
     }
     await fsa.write(args.output, JSON.stringify(outputCopy));
   },
 });
 
-export type SourceTarget = { source: URL; target: URL };
+export type SourceTarget = { source: string; target: string };
 export type ManifestFilter = FileFilter & { flatten: boolean; transform?: string };
 
 function createTransformFunc(transform: string): (f: string) => string {
@@ -83,27 +83,26 @@ function createTransformFunc(transform: string): (f: string) => string {
   return new Function('f', 'return ' + transform) as (f: string) => string;
 }
 
-export async function createManifest(source: URL, targetPath: URL, args: ManifestFilter): Promise<SourceTarget[][]> {
-  const outputFiles = await getFiles([source], args);
+export async function createManifest(sources: URL[], targetPath: URL, args: ManifestFilter): Promise<SourceTarget[][]> {
+  const outputFiles = await getFiles(sources, args);
   const outputCopy: SourceTarget[][] = [];
 
   const transformFunc = args.transform ? createTransformFunc(args.transform) : null;
 
   for (const outputChunks of outputFiles) {
     const current: SourceTarget[] = [];
-
     for (const filePath of outputChunks) {
-      // const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
-      const baseFile = args.flatten
-        ? filePath.pathname.split('/').slice(-1).join('/')
-        : filePath.pathname.slice(source.pathname.length);
-      let target = targetPath;
-      if (baseFile) {
-        // target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
-        target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetPath);
+      const sourceRoot = sources.find((src) => filePath.href.startsWith(src.href));
+      if (!sourceRoot) {
+        throw new Error(`Source root not found for file: ${filePath} in sources: ${sources}`);
       }
+      const baseFile = args.flatten
+        ? filePath.pathname.split('/').slice(-1).join('/') // file name only
+        : makeRelative(sourceRoot, filePath);
+      const target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetPath);
+
       validatePaths(filePath, target);
-      current.push({ source: filePath, target });
+      current.push({ source: protocolAwareString(filePath), target: protocolAwareString(target) });
     }
     outputCopy.push(current);
   }

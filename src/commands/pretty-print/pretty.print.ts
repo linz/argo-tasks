@@ -6,11 +6,10 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getFiles } from '../../utils/chunk.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
-import { config, registerCli, UrlFolder, UrlList, verbose } from '../common.ts';
+import { config, registerCli, UrlFolder, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 
 export function isJson(x: URL): boolean {
-  const search = x.pathname.toLowerCase();
-  return search.endsWith('.json');
+  return urlPathEndsWith(x, '.json');
 }
 
 export const commandPrettyPrint = command({

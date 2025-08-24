@@ -1,7 +1,6 @@
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
 import { fsa } from '@chunkd/fs';
-import type { FsAwsS3V3 } from '@chunkd/source-aws-v3';
 import { boolean, command, flag, option, positional } from 'cmd-ts';
 import pLimit from 'p-limit';
 
@@ -186,7 +185,7 @@ export function parseReportResult(result: string): ReportResult[] {
 /**
  * Heads an S3 object.
  *
- * @param path - The S3 path to the object to check.
+ * @param path - The S3 path to the object to get info from.
  * @throws Will throw an error if the headObject request fails.
  * @returns The head object output.
  */
@@ -195,7 +194,7 @@ async function headS3Object(path: { Bucket: string; Key: string }): Promise<Head
   const objectPath = `s3://${path.Bucket}/${objectKey}`;
   logger.info({ path: objectPath }, 'VerifyRestore:HeadObject:Start');
   try {
-    const headObjectOutput: HeadObjectCommandOutput = await (fsa.get(objectPath, 'r') as FsAwsS3V3).client.send(
+    const headObjectOutput: HeadObjectCommandOutput = await (fsa.get(new URL(objectPath), 'r') as FsAwsS3V3).client.send(
       new HeadObjectCommand({ Bucket: path.Bucket, Key: objectKey }),
     );
     logger.info({ path: objectPath, headObjectOutput }, 'VerifyRestore:HeadObject:Done');

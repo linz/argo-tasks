@@ -4,6 +4,7 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getFiles } from '../../utils/chunk.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, Url, UrlList, verbose } from '../common.ts';
 
 export const CommandListArgs = {
@@ -37,8 +38,9 @@ export const commandList = command({
       logger.error('List:Error:NoLocationProvided');
       process.exit(1);
     }
-    const listLocations = await args.location.flat();
+    const listLocations = args.location.flat();
     const outputFiles = await getFiles(listLocations, args);
-    if (args.output) await fsa.write(args.output, JSON.stringify(outputFiles));
+    const decodedFiles = outputFiles.map((outputFile) => outputFile.map((url) => protocolAwareString(url)));
+    if (args.output) await fsa.write(args.output, JSON.stringify(decodedFiles));
   },
 });

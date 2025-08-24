@@ -6,7 +6,9 @@ import type { FileListEntry } from '../filelist.ts';
 import { createFileList } from '../filelist.ts';
 
 describe('createFileList', () => {
-  const complexUrl = `memory://username@input2:3030/🦄🌈.tiff?query=foo#@1234`;
+  const complexUrl = new URL(`memory://username@input2:3030/🦄🌈.tiff?query=foo#@1234`);
+  const simpleUrl = new URL('memory://input1');
+
   const locationTestOne: TiffLocation = {
     bands: [],
     bbox: [0, 0, 0, 0],
@@ -27,11 +29,11 @@ describe('createFileList', () => {
   it('should create a file list from TiffLocation and string inputs with derived inputs set based on input flag', () => {
     for (const includeDerived of [true, false]) {
       const result: FileListEntry[] = createFileList(entries, includeDerived);
-
+      console.log(JSON.stringify(result));
       assert.deepEqual(result, [
         {
           output: 'output1',
-          input: ['memory://input1', complexUrl],
+          input: [simpleUrl, complexUrl],
           includeDerived: includeDerived,
         },
         {

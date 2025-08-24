@@ -1,14 +1,12 @@
-import type { FileInfo } from '@chunkd/core';
+import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
 
-// import { FsFile } from '@chunkd/source-file';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
 import { replaceUrlExtension } from '../common.ts';
 import { isJson } from '../pretty-print/pretty.print.ts';
 import { guessStacContentType } from '../stac-sync/stac.sync.ts';
-// import { tryParseUrl } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -226,10 +224,13 @@ export async function verifyTargetFile(target: URL, expectedSize: number, expect
   const targetHash = targetReadBack?.metadata?.[HashKey];
 
   // TODO: Local file system does not support metadata so assume hash is correct
-  // if (FsFile.is(targetFs)) {
-  //   targetHash = '0';
-  //   expectedHash = '0';
-  // }
+  if (target.protocol == 'file:') {
+    const targetVerified = targetSize === expectedSize;
+    if (!targetVerified)
+      logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
+
+    return targetVerified;
+  }
 
   const targetVerified = targetSize === expectedSize && targetHash === expectedHash;
   if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');

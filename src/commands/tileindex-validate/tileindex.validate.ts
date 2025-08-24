@@ -16,12 +16,11 @@ import { createFileList } from '../../utils/filelist.ts';
 import { findBoundingBox } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
-import { config, createTiff, forceOutput, registerCli, UrlFolderList, verbose } from '../common.ts';
+import { config, createTiff, forceOutput, registerCli, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 
 export function isTiff(x: URL): boolean {
-  const search = x.pathname.toLowerCase();
-  return search.endsWith('.tiff') || search.endsWith('.tif');
+  return urlPathEndsWith(x, '.tiff') || urlPathEndsWith(x, '.tif');
 }
 
 export const TiffLoader = {

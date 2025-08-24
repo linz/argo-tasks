@@ -44,12 +44,12 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
         {
-          source: fsa.toUrl('memory://source/foo/bar/topographic.png'),
-          target: fsa.toUrl('memory://target/topographic.png'),
+          source: 'memory://source/foo/bar/topographic.png',
+          target: 'memory://target/topographic.png',
         },
       ],
     });
@@ -90,12 +90,12 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
         {
-          source: fsa.toUrl('memory://source/foo/bar/topographic.tiff'),
-          target: fsa.toUrl('memory://target/topographic.tiff'),
+          source: 'memory://source/foo/bar/topographic.tiff',
+          target: 'memory://target/topographic.tiff',
         },
       ],
       fixContentType: true,
@@ -106,7 +106,7 @@ describe('copyFiles', () => {
     ]);
 
     assert.equal(jsonSource?.contentType, 'application/octet-stream');
-    assert.equal(jsonTarget?.contentType, 'application/json');
+    assert.equal(jsonTarget?.contentType, 'application/geo+json');
 
     const [tiffSource, tiffTarget] = await Promise.all([
       fsa.head(fsa.toUrl('memory://source/foo/bar/topographic.tiff')),
@@ -130,12 +130,12 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
         {
-          source: fsa.toUrl('memory://source/foo/bar/topographic.tiff'),
-          target: fsa.toUrl('memory://target/topographic.tiff'),
+          source: 'memory://source/foo/bar/topographic.tiff',
+          target: 'memory://target/topographic.tiff',
         },
       ],
       fixContentType: false,
@@ -176,8 +176,8 @@ describe('copyFiles', () => {
         ...defaultCopyArgs,
         manifest: [
           {
-            source: fsa.toUrl('memory://source/topographic.json'),
-            target: fsa.toUrl('memory://target/topographic.json'),
+            source: 'memory://source/topographic.json',
+            target: 'memory://target/topographic.json',
           },
         ],
         noClobber: true,
@@ -210,8 +210,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       force: true,
@@ -243,8 +243,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       force: true,
@@ -271,8 +271,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       force: true,
@@ -300,8 +300,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       compress: true,
@@ -327,8 +327,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       compress: true,
@@ -363,8 +363,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       force: false,
@@ -389,12 +389,12 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
         {
-          source: fsa.toUrl('memory://source/foo/bar/topographic.png'),
-          target: fsa.toUrl('memory://target/topographic.png'),
+          source: 'memory://source/foo/bar/topographic.png',
+          target: 'memory://target/topographic.png',
         },
       ],
       deleteSource: true,
@@ -429,8 +429,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       force: false,
@@ -459,12 +459,12 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/foo/bar/topographic.png'),
-          target: fsa.toUrl('memory://target/foo/bar/topographic.png'),
+          source: 'memory://source/foo/bar/topographic.png',
+          target: 'memory://target/foo/bar/topographic.png',
         },
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       compress: true,
@@ -489,12 +489,12 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://temp/topographic.png'),
-          target: fsa.toUrl('memory://source/topographic.png'),
+          source: 'memory://temp/topographic.png',
+          target: 'memory://source/topographic.png',
         },
         {
-          source: fsa.toUrl('memory://temp/topographic.tif'),
-          target: fsa.toUrl('memory://source/topographic.tif'),
+          source: 'memory://temp/topographic.tif',
+          target: 'memory://source/topographic.tif',
         },
       ],
       compress: true,
@@ -503,16 +503,16 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.png.zst'),
-          target: fsa.toUrl('memory://target/topographic.png.zst'),
+          source: 'memory://source/topographic.png.zst',
+          target: 'memory://target/topographic.png.zst',
         },
         {
-          source: fsa.toUrl('memory://source/topographic.tif.zst'),
-          target: fsa.toUrl('memory://target/topographic.tif.zst'),
+          source: 'memory://source/topographic.tif.zst',
+          target: 'memory://target/topographic.tif.zst',
         },
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       decompress: true,
@@ -545,8 +545,8 @@ describe('copyFiles', () => {
       ...defaultCopyArgs,
       manifest: [
         {
-          source: fsa.toUrl('memory://source/topographic.json'),
-          target: fsa.toUrl('memory://target/topographic.json'),
+          source: 'memory://source/topographic.json',
+          target: 'memory://target/topographic.json',
         },
       ],
       noClobber: true,

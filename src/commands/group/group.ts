@@ -5,7 +5,7 @@ import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
-import { config, forceOutput, registerCli, Url, UrlList, verbose } from '../common.ts';
+import { config, forceOutput, registerCli, StrList, Url, verbose } from '../common.ts';
 
 /** Chunk an array into a group size
  * @example
@@ -41,9 +41,9 @@ export const CommandGroupArgs = {
     defaultValueIsSerializable: true,
   }),
   inputs: restPositionals({
-    type: UrlList,
+    type: StrList,
     displayName: 'items',
-    description: 'list of items to group, can be a JSON array', // Todo: check if JSON array still works or if it needs to be a semicolon separated list
+    description: 'list of items to group, can be a JSON array',
   }),
   fromFile: option({
     type: optional(Url),
@@ -60,19 +60,13 @@ export const commandGroup = command({
   async handler(args) {
     registerCli(this, args);
 
-    const inputs: URL[] = [];
-    // const x = args.inputs;
-    // const mylist = await UrlList.from('["1","2","3","4"]')
-    //JSON.stringify([ JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])])
-
+    const inputs: string[] = [];
     inputs.push(...args.inputs.flat()); // Todo: does this need to be flat?
 
-    // for (const input of args.inputs) inputs.push(input);
     if (args.fromFile) {
-      const fileURL = args.fromFile;
-      if (await fsa.exists(fileURL)) {
-        const input = await fsa.readJson<string[]>(fileURL);
-        if (Array.isArray(input)) inputs.push(...input.map((str) => new URL(str)));
+      if (await fsa.exists(args.fromFile)) {
+        const input = await fsa.readJson<string[]>(args.fromFile);
+        if (Array.isArray(input)) inputs.push(...input);
       }
     }
 
