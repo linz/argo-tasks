@@ -4,16 +4,9 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { fsa, FsMemory } from '@chunkd/fs';
 import type * as st from 'stac-ts';
 
-import {
-  getStacSchemaUrl,
-  isURL,
-  validateAssets,
-  validateLinks,
-  validateStacChecksum,
-} from '../stac.validate.ts';
+import { getStacSchemaUrl, isURL, validateAssets, validateLinks, validateStacChecksum } from '../stac.validate.ts';
 
 describe('stacValidate', function () {
-
   describe('getStacSchemaUrl', () => {
     it('should return a item url', () => {
       assert.equal(

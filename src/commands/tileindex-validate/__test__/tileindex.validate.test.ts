@@ -10,7 +10,7 @@ import { pathToFileURL } from 'url';
 
 import { logger } from '../../../log.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
-import type { FileListEntry } from '../../../utils/filelist.ts';
+import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { MapSheet } from '../../../utils/mapsheet.ts';
 import { createTiff, Url } from '../../common.ts';
@@ -171,7 +171,9 @@ describe('validate', () => {
         forceOutput: true,
         includeDerived: includeDerived,
       });
-      const outputFileList: [FileListEntry] = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
+      const outputFileList: [FileListEntryClass] = await fsa.readJson(
+        fsa.toUrl('/tmp/tile-index-validate/file-list.json'),
+      );
       assert.strictEqual(outputFileList[0]?.includeDerived, includeDerived);
     }
   });

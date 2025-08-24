@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import type { TiffLocation } from '../../commands/tileindex-validate/tileindex.validate.ts';
-import type { FileListEntry } from '../filelist.ts';
+import type { FileListEntryClass } from '../filelist.ts';
 import { createFileList } from '../filelist.ts';
 
 describe('createFileList', () => {
@@ -28,7 +28,7 @@ describe('createFileList', () => {
 
   it('should create a file list from TiffLocation and string inputs with derived inputs set based on input flag', () => {
     for (const includeDerived of [true, false]) {
-      const result: FileListEntry[] = createFileList(entries, includeDerived);
+      const result: FileListEntryClass[] = createFileList(entries, includeDerived);
       console.log(JSON.stringify(result));
       assert.deepEqual(result, [
         {
@@ -49,7 +49,7 @@ describe('createFileList', () => {
     const entries = new Map<string, TiffLocation[]>();
     const includeDerived = false;
 
-    const result: FileListEntry[] = createFileList(entries, includeDerived);
+    const result: FileListEntryClass[] = createFileList(entries, includeDerived);
 
     assert.deepEqual(result, []);
   });

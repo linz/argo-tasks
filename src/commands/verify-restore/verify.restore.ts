@@ -228,7 +228,6 @@ export function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): b
  */
 async function markReportDone(reportPath: URL): Promise<void> {
   const donePath = replaceUrlExtension(reportPath, new RegExp('$'), '.done');
-  // URL(`${reportPath.toString()}.done`);
   await fsa.write(donePath, await fsa.read(reportPath));
   await fsa.delete(reportPath);
   logger.info({ reportPath, donePath }, 'VerifyRestore:MarkedReportDone');

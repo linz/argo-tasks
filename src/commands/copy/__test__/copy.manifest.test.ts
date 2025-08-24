@@ -91,19 +91,16 @@ describe('createManifest.Copy.E2E', () => {
     const firstManifestUrl = await Url.from(manifest[0] as string);
     const firstManifest = await fsa.readJson<ActionCopy>(firstManifestUrl);
     assert.equal(firstManifest.action, 'copy');
-    assert.deepEqual(
-      firstManifest.parameters.manifest,
-      [
-        {
-          source: './.test/source/🟥/🟧/🌈.pdf',
-          target: './.test/target/🟧/🌈.pdf',
-        },
-        {
-          source: './.test/source/🟥/🟧/🌈.tiff',
-          target: './.test/target/🟧/🌈.tiff',
-        },
-      ],
-    );
+    assert.deepEqual(firstManifest.parameters.manifest, [
+      {
+        source: './.test/source/🟥/🟧/🌈.pdf',
+        target: './.test/target/🟧/🌈.pdf',
+      },
+      {
+        source: './.test/source/🟥/🟧/🌈.tiff',
+        target: './.test/target/🟧/🌈.tiff',
+      },
+    ]);
 
     await commandCopy.handler({ ...baseCopyArgs, manifest: await UrlList.from(manifest[0] as string) });
 

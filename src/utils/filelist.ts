@@ -3,7 +3,7 @@ import { fsa } from '@chunkd/fs';
 import { makeRelative } from '../commands/stac-catalog/stac.catalog.ts';
 import type { TiffLocation } from '../commands/tileindex-validate/tileindex.validate.ts';
 export const HttpProtocols = ['https:', 'http:'];
-export function protocolAwareString(targetLocation: URL) {
+export function protocolAwareString(targetLocation: URL): string {
   return makeRelative(fsa.toUrl('./'), targetLocation, false);
 
 export interface FileListEntry {
@@ -12,10 +12,17 @@ export interface FileListEntry {
   /** List of input files */
   input: URL[];
   includeDerived: boolean;
-  toJSON(): JSON;
+  toJSON(): FileListJsonEntry;
   toString(): string;
 }
-export class FileListEntry implements FileListEntry {
+
+interface FileListJsonEntry {
+  output: string;
+  input: string[];
+  includeDerived: boolean;
+}
+
+export class FileListEntryClass implements FileListEntryClass {
   output: string;
   input: URL[];
   includeDerived: boolean;
@@ -31,8 +38,8 @@ export class FileListEntry implements FileListEntry {
       throw new Error('Input list cannot be empty');
     }
   }
-  toJSON(): JSON {
-    return JSON.parse(this.toString());
+  toJSON(): FileListJsonEntry {
+    return JSON.parse(this.toString()) as FileListJsonEntry;
   }
   toString(): string {
     const stringUrls = this.input.map((url) => makeRelative(fsa.toUrl('./'), url, false));
@@ -53,14 +60,11 @@ export class FileListEntry implements FileListEntry {
  *
  * @returns list of mapsheets with associated input files.
  */
-export function createFileList(
-  entries: Map<string, TiffLocation[]>,
-  includeDerived: boolean,
-): FileListEntry[] {
-  const output: FileListEntry[] = [];
+export function createFileList(entries: Map<string, TiffLocation[]>, includeDerived: boolean): FileListEntryClass[] {
+  const output: FileListEntryClass[] = [];
   for (const [key, value] of entries) {
     output.push(
-      new FileListEntry(
+      new FileListEntryClass(
         key,
         value.map((item) => item.source),
         includeDerived,

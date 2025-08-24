@@ -69,9 +69,9 @@ describe('group', () => {
   it('should load from strings', async () => {
     await commandGroup.handler({
       ...defaultValues,
-      inputs: [await StrList.from(
-        JSON.stringify(['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])]),
-      )],
+      inputs: [
+        await StrList.from(JSON.stringify(['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])])),
+      ],
       forceOutput: true,
       size: 3,
     });

@@ -50,7 +50,7 @@ export const commandGeneratePath = command({
       // fsa.join(args.source, 'collection.json'),
       new URL('collection.json', args.source),
     );
-    if (collection == null) throw new Error(`Failed to get collection.json from ${args.source}.`);
+    if (collection == null) throw new Error(`Failed to get collection.json from ${args.source.href}.`);
 
     const tiff = await loadFirstTiff(args.source, collection);
 
@@ -123,7 +123,7 @@ function formatBucketName(bucketName: string): string {
  */
 export async function loadFirstTiff(source: URL, collection: StacCollection): Promise<Tiff> {
   const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
-  if (itemLink == null) throw new Error(`No items in collection from ${source}.`);
+  if (itemLink == null) throw new Error(`No items in collection from ${source.href}.`);
 
   const itemURL = new URL(itemLink, source);
   const item = await fsa.readJson<StacItem>(itemURL);
