@@ -1,10 +1,9 @@
 import assert from 'node:assert';
-import { before, describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 
-import { UrlList } from '../../common.ts';
+import { StrList, Url } from '../../common.ts';
 import type { CommandGroupArgs } from '../group.ts';
 import { commandGroup, groupItems } from '../group.ts';
 
@@ -29,6 +28,10 @@ describe('groupItems', () => {
 
 describe('group', () => {
   const memoryFs = new FsMemory();
+  beforeEach(() => {
+    fsa.register('file:///tmp/group', memoryFs);
+    memoryFs.files.clear();
+  });
   const defaultValues: CommandGroupArgs = {
     config: undefined,
     verbose: false,
@@ -38,14 +41,10 @@ describe('group', () => {
     inputs: [],
   };
 
-  before(() => {
-    fsa.register('/tmp/group', memoryFs);
-  });
-
   it('should load from a JSON array', async () => {
     await commandGroup.handler({
       ...defaultValues,
-      inputs: UrlList.from(JSON.stringify(['1', '2', '3', '4'])),
+      inputs: [await StrList.from(JSON.stringify([1, 2, 3, 4]))],
       forceOutput: true,
       size: 50,
     });
@@ -56,7 +55,7 @@ describe('group', () => {
   it('should load from multiple JSON arrays', async () => {
     const cliArgs: CommandGroupArgs = {
       ...defaultValues,
-      inputs: JSON.stringify([JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])]),
+      inputs: [await StrList.from(JSON.stringify([JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])]))],
       forceOutput: true,
       size: 3,
     };
@@ -70,7 +69,9 @@ describe('group', () => {
   it('should load from strings', async () => {
     await commandGroup.handler({
       ...defaultValues,
-      inputs: UrlList.from(JSON.stringify(['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])])),
+      inputs: [await StrList.from(
+        JSON.stringify(['s3://foo/bar', JSON.stringify([1, 2, 3, 4]), JSON.stringify(['alpha'])]),
+      )],
       forceOutput: true,
       size: 3,
     });
@@ -85,7 +86,7 @@ describe('group', () => {
     await commandGroup.handler({
       ...defaultValues,
       inputs: [],
-      fromFile: Url.from('/tmp/group/input.json'),
+      fromFile: await Url.from('/tmp/group/input.json'),
       forceOutput: true,
       size: 3,
       config: undefined,

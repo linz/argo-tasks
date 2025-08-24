@@ -9,7 +9,7 @@ export interface CopyContractArgs {
   id: string;
 
   /** List of files that need to be copied */
-  manifest: { source: URL; target: URL }[];
+  manifest: { source: string; target: string }[];
 
   /** Offset into the manifest to start at */
   start: number;

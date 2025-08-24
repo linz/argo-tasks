@@ -6,10 +6,12 @@ import type { StacCollection, StacItem, StacLink } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-// import { combinePaths } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
-import type { FileListEntry } from '../../utils/filelist.ts';
-import { registerCli, replaceUrlExtension, Url, UrlList, verbose } from '../common.ts';
+import { FileListEntry } from '../../utils/filelist.ts';
+import { registerCli, replaceUrlExtension, Url, UrlList, urlPathEndsWith, verbose } from '../common.ts';
+import { makeRelative } from '../stac-catalog/stac.catalog.ts';
+
+console.log(makeRelative);
 
 interface LinzItemLink extends StacLink {
   'file:checksum': string;
@@ -49,16 +51,15 @@ export const commandIdentifyUpdatedItems = command({
       logger.error('--target-collection must point to an existing STAC collection.json or not be set');
       throw new Error('--target-collection must point to an existing STAC collection.json or not be set');
     }
-    // const sourceCollectionUrls = splitPaths(args.sourceCollections);
     const sourceCollectionUrls = args.sourceCollections.flat();
     if (
       sourceCollectionUrls.length === 0 ||
-      sourceCollectionUrls.some((url) => !url.pathname.endsWith('collection.json'))
+      sourceCollectionUrls.some((url) => !urlPathEndsWith(url, 'collection.json'))
     ) {
       logger.error('Source collections must each point to existing STAC collection.json file(s)');
       throw new Error('--source-collections must point to existing STAC collection.json file(s)');
     }
-    type ItemSourceChecksums = Record<string, { href: URL; checksum: string }[]>;
+    type ItemSourceChecksums = Record<string, { href: string; checksum: string }[]>;
 
     const existingItemsAtTarget: ItemSourceChecksums = {};
     const desiredItemsAtTarget: ItemSourceChecksums = {};
@@ -80,7 +81,7 @@ export const commandIdentifyUpdatedItems = command({
               existingItemsAtTarget[myItemId] = []; // Initialize an empty array if not present
             }
             existingItemsAtTarget[myItemId].push({
-              href: new URL(itemLink.href, args.targetCollection),
+              href: makeRelative(args.targetCollection as URL, new URL(itemLink.href, args.targetCollection), false),
               checksum: itemLink['file:checksum'],
             });
           });
@@ -98,7 +99,7 @@ export const commandIdentifyUpdatedItems = command({
             desiredItemsAtTarget[myItemId] = [];
           }
           desiredItemsAtTarget[myItemId].push({
-            href: new URL(sourceItem.href, sourceCollectionUrl),
+            href: makeRelative(fsa.toUrl('./'), new URL(sourceItem.href, sourceCollectionUrl), false),
             checksum: sourceItem['file:checksum'],
           });
         });
@@ -146,16 +147,16 @@ export const commandIdentifyUpdatedItems = command({
       logger.trace({ itemId }, `identifyUpdatedItems:Skipping ${itemId} because sources match`);
     }
     const tilesToProcess: FileListEntry[] = Object.entries(itemsToProcess).map(([key, value]) => {
-      const tiffInputs = value.map((item) => replaceUrlExtension(item.href, /\.json$/, '.tiff')); // todo: check this retains the checksum
-      return {
-        output: key,
-        input: sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls),
-        includeDerived: true,
-      };
+      const tiffInputs = value.map((item) => {
+        const url = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff');
+        url.checksum = item.checksum; // Add checksum to the URL object
+        return url;
+      });
+      return new FileListEntry(key, sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls), true);
     });
 
     const fileListPath = fsa.toUrl('/tmp/identify-updated-items/file-list.json');
-    await fsa.write(fileListPath, JSON.stringify(tilesToProcess)); // todo: what does JSON.stringify do with URLs?
+    await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
     logger.info(
       {
         existingItems: Object.keys(existingItemsAtTarget).length,

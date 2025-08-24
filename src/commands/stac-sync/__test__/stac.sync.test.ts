@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import { hashBuffer, HashKey } from '../../../utils/hash.ts';
 import { synchroniseFiles } from '../stac.sync.ts';
@@ -24,7 +23,7 @@ describe('stacSync', () => {
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
     const destinationURL = new URL('m://destination/stac/');
-    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 1);
+    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destinationURL), 1);
   });
 
   it('shouldUploadFileOnlyOnce', async () => {
@@ -37,8 +36,8 @@ describe('stacSync', () => {
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
     const destinationURL = new URL('m://destination/stac/');
-    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 1);
-    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 0);
+    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destinationURL), 1);
+    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destinationURL), 0);
   });
 
   it('shouldNotUploadFile', async () => {
@@ -54,6 +53,6 @@ describe('stacSync', () => {
       { metadata: { [HashKey]: sourceHash } },
     );
     const destinationURL = new URL('m://destination/stac/');
-    assert.equal(await synchroniseFiles('m://source/stac/', destinationURL), 0);
+    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destinationURL), 0);
   });
 });

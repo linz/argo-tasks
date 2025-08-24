@@ -7,6 +7,7 @@ import { WorkerRpc } from '@wtrpc/core';
 
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
 import { registerCli } from '../common.ts';
 import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';
@@ -42,23 +43,24 @@ export const worker = new WorkerRpc<CopyContract>({
 
       Q.push(async () => {
         const startTime = performance.now();
-        const sourceURL = manifestEntry.source;
+        const sourceURL = fsa.toUrl(manifestEntry.source);
+        const targetURL = fsa.toUrl(manifestEntry.target);
         const source = await fsa.head(sourceURL);
         if (source?.size == null || source.size === 0) {
-          logger.info({ path: manifestEntry.source.href }, 'File:Copy:SkippedEmpty');
+          logger.info({ path: manifestEntry.source }, 'File:Copy:SkippedEmpty');
           statsUpdaters[FileOperation.Skip](stats, source?.size ?? 0);
           return;
         }
         const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
           source,
-          manifestEntry.target,
+          targetURL,
           args,
         );
         let targetVerified = false;
         if (fileOperation !== FileOperation.Skip) {
           logger.info(
             {
-              path: manifestEntry.source.href,
+              path: manifestEntry.source,
               size: source.size,
               fileOperation,
               shouldDeleteSourceOnSuccess,
@@ -94,9 +96,7 @@ export const worker = new WorkerRpc<CopyContract>({
           const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
 
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Write');
-
           await fsa.write(target.url, sourceStream, fileMetadata);
-
           logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Verify');
           const expectedSize = shouldDecompress
             ? hashOriginal.size

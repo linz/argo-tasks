@@ -115,9 +115,7 @@ export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL
   // const fullPaths = splitPaths(paths);
 
   for (const path of paths) {
-    // const targetPath = rawPath.trim();
     logger.debug({ path }, 'List');
-    // const fileList = await fsa.toArray(asyncFilter(fsa.details(fsa.toUrl(targetPath)), args));
     const fileList = await fsa.toArray(asyncFilter(fsa.details(path), args));
     logger.info({ path, fileCount: fileList.length }, 'List:Count');
 

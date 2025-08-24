@@ -3,21 +3,29 @@ import { rm } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { ActionCopy } from '../../../utils/actions.ts';
-import { urlToString } from '../../common.ts';
+import { protocolAwareString } from '../../../utils/filelist.ts';
+import { Url, UrlFolder, UrlFolderList, UrlList } from '../../common.ts';
 import type { CommandCreateManifestArgs } from '../../create-manifest/create-manifest.ts';
 import { commandCreateManifest } from '../../create-manifest/create-manifest.ts';
 import { commandCopy, type CommandCopyArgs } from '../copy.ts';
+const sourceLocation = pathToFileURL('./.test/');
+
+async function getAllFiles(): Promise<[string, number][]> {
+  const files = await fsa.toArray(fsa.details(sourceLocation));
+  const filesShort: [string, number][] = files.map((m) => [protocolAwareString(m.url), m.size ?? 0]);
+  filesShort.sort((a, b) => a[0].localeCompare(b[0]));
+
+  return filesShort;
+}
 
 describe('createManifest.Copy.E2E', () => {
   /**
    * As this test uses sub processes we cannot just write to memory://
    * we need to use an actual file system
    */
-  const sourceLocation = pathToFileURL('./.test/');
 
   const memory = new FsMemory();
   beforeEach(() => {
@@ -26,6 +34,8 @@ describe('createManifest.Copy.E2E', () => {
     fsa.register('s3://', memory);
 
     memory.files.clear();
+    // TODO do we need a "action" logic and a compressed file logic?
+    process.env['ACTION_PATH'] = `memory://actions/🟥/actions/`;
   });
 
   afterEach(async () => {
@@ -42,8 +52,8 @@ describe('createManifest.Copy.E2E', () => {
     groupSize: undefined,
     group: undefined,
     limit: undefined,
-    output: '',
-    target: '',
+    output: fsa.toUrl('manifest.json'),
+    target: fsa.toUrl('./'),
     source: [],
   };
   const baseCopyArgs: CommandCopyArgs = {
@@ -61,82 +71,66 @@ describe('createManifest.Copy.E2E', () => {
   };
 
   it('should create a manifest and copy some files', async () => {
-    const mkPath = (str: string): URL => new URL(str, sourceLocation);
-    await fsa.write(mkPath(`source/🟥/🦄 🌈.txt`), Buffer.alloc(1));
-    await fsa.write(mkPath(`source/🟥/🦄 🌈.json`), Buffer.alloc(2));
-    await fsa.write(mkPath(`source/🟥/🟧/🌈.pdf`), Buffer.alloc(3));
-    await fsa.write(mkPath(`source/🟥/🟧/🌈.tiff`), Buffer.alloc(4));
-
-    // TODO do we need a "action" logic and a compressed file logic?
-    process.env['ACTION_PATH'] = `memory://actions/🟥/actions/`;
+    await fsa.write(new URL(`source/🟥/🦄 🌈.txt`, sourceLocation), Buffer.from('1', 'utf8'));
+    await fsa.write(new URL(`source/🟥/🦄 🌈.json`, sourceLocation), Buffer.from('22', 'utf8'));
+    await fsa.write(new URL(`source/🟥/🟧/🌈.pdf`, sourceLocation), Buffer.from('333', 'utf8'));
+    await fsa.write(new URL(`source/🟥/🟧/🌈.tiff`, sourceLocation), Buffer.from('4444', 'utf8'));
 
     await commandCreateManifest.handler({
       ...baseManifestArgs,
       group: 2,
-      source: [mkPath('source/🟥')],
-      target: mkPath('target/'),
-      output: './.test/🦄 🌈.manifest.json',
+      source: [await UrlFolderList.from('.test/source/🟥')],
+      target: await UrlFolder.from('.test/target/'),
+      output: await Url.from('./.test/🦄 🌈.manifest.json'),
     });
 
-    const basePath = urlToString(sourceLocation);
-
-    const manifest = await fsa.readJson<string[]>('./.test/🦄 🌈.manifest.json');
+    const manifestUrl = fsa.toUrl('./.test/🦄 🌈.manifest.json');
+    const manifest = await fsa.readJson<string[]>(manifestUrl);
 
     assert.equal(manifest.length, 2);
-    const firstManifestUrl = manifest[0] as string;
+    const firstManifestUrl = await Url.from(manifest[0] as string);
     const firstManifest = await fsa.readJson<ActionCopy>(firstManifestUrl);
     assert.equal(firstManifest.action, 'copy');
     assert.deepEqual(
-      firstManifest.parameters.manifest.map((m) => {
-        return { source: m.source.slice(basePath.length), target: m.target.slice(basePath.length) };
-      }),
+      firstManifest.parameters.manifest,
       [
         {
-          source: 'source/🟥/🟧/🌈.pdf',
-          target: 'target/🟧/🌈.pdf',
+          source: './.test/source/🟥/🟧/🌈.pdf',
+          target: './.test/target/🟧/🌈.pdf',
         },
         {
-          source: 'source/🟥/🟧/🌈.tiff',
-          target: 'target/🟧/🌈.tiff',
+          source: './.test/source/🟥/🟧/🌈.tiff',
+          target: './.test/target/🟧/🌈.tiff',
         },
       ],
     );
 
-    await commandCopy.handler({ ...baseCopyArgs, manifest: [firstManifestUrl] });
-
-    async function getAllFiles(): Promise<[string, number][]> {
-      const files = await fsa.toArray(fsa.details(basePath));
-      const filesShort: [string, number][] = files.map((m) => [m.path.slice(basePath.length), m.size ?? 0]);
-      filesShort.sort((a, b) => a[0].localeCompare(b[0]));
-
-      return filesShort;
-    }
+    await commandCopy.handler({ ...baseCopyArgs, manifest: await UrlList.from(manifest[0] as string) });
 
     assert.deepEqual(await getAllFiles(), [
-      ['🦄 🌈.manifest.json', 197],
-      ['source/🟥/🦄 🌈.json', 2],
-      ['source/🟥/🦄 🌈.txt', 1],
-      ['source/🟥/🟧/🌈.pdf', 3],
-      ['source/🟥/🟧/🌈.tiff', 4],
+      ['./.test/🦄 🌈.manifest.json', 197],
+      ['./.test/source/🟥/🦄 🌈.json', 2],
+      ['./.test/source/🟥/🦄 🌈.txt', 1],
+      ['./.test/source/🟥/🟧/🌈.pdf', 3],
+      ['./.test/source/🟥/🟧/🌈.tiff', 4],
 
       // Only the first part of the source has been copied
-      ['target/🟧/🌈.pdf', 3],
-      ['target/🟧/🌈.tiff', 4],
+      ['./.test/target/🟧/🌈.pdf', 3],
+      ['./.test/target/🟧/🌈.tiff', 4],
     ]);
 
-    await commandCopy.handler({ ...baseCopyArgs, force: true, manifest });
-
+    await commandCopy.handler({ ...baseCopyArgs, force: true, manifest: await UrlList.from(manifest) });
     assert.deepEqual(await getAllFiles(), [
-      ['🦄 🌈.manifest.json', 197],
-      ['source/🟥/🦄 🌈.json', 2],
-      ['source/🟥/🦄 🌈.txt', 1],
-      ['source/🟥/🟧/🌈.pdf', 3],
-      ['source/🟥/🟧/🌈.tiff', 4],
+      ['./.test/🦄 🌈.manifest.json', 197],
+      ['./.test/source/🟥/🦄 🌈.json', 2],
+      ['./.test/source/🟥/🦄 🌈.txt', 1],
+      ['./.test/source/🟥/🟧/🌈.pdf', 3],
+      ['./.test/source/🟥/🟧/🌈.tiff', 4],
 
-      ['target/🦄 🌈.json', 2],
-      ['target/🦄 🌈.txt', 1],
-      ['target/🟧/🌈.pdf', 3],
-      ['target/🟧/🌈.tiff', 4],
+      ['./.test/target/🦄 🌈.json', 2],
+      ['./.test/target/🦄 🌈.txt', 1],
+      ['./.test/target/🟧/🌈.pdf', 3],
+      ['./.test/target/🟧/🌈.tiff', 4],
     ]);
   });
 });

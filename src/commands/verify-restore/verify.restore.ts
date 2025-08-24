@@ -1,7 +1,6 @@
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
-import { HeadObjectCommand } from '@aws-sdk/client-s3';
+import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
-import type { FsAwsS3V3 } from '@chunkd/source-aws-v3';
 import { boolean, command, flag, option, positional } from 'cmd-ts';
 import pLimit from 'p-limit';
 
@@ -186,22 +185,24 @@ export function parseReportResult(result: string): ReportResult[] {
 /**
  * Heads an S3 object.
  *
- * @param path - The S3 path to the object to check.
+ * @param path - The S3 path to the object to get info from.
  * @throws Will throw an error if the headObject request fails.
  * @returns The head object output.
  */
-async function headS3Object(path: { Bucket: string; Key: string }): Promise<HeadObjectCommandOutput> {
+async function headS3Object(path: { Bucket: string; Key: string }): Promise<FileInfo<HeadObjectCommandOutput>> {
+  const objectKey = decodeFormUrlEncoded(path.Key);
+  const objectPath = `s3://${path.Bucket}/${objectKey}`;
+  logger.info({ path: objectPath }, 'VerifyRestore:HeadS3Object:Start');
   try {
-    // todo: CHECK IF THIS IS NEEDED WITH DECODE IF USING URLs
-    const objectKey = decodeFormUrlEncoded(path.Key);
-    const headObjectOutput: HeadObjectCommandOutput = await (
-      fsa.get(fsa.toUrl(`s3://${path.Bucket}/${objectKey}`), 'r') as unknown as FsAwsS3V3
-    ).client.send(new HeadObjectCommand({ Bucket: path.Bucket, Key: objectKey }));
-    logger.info({ path, headObjectOutput }, 'VerifyRestore:HeadObject');
-    return headObjectOutput;
+    const fileInfo = (await fsa.head(new URL(objectPath))) as FileInfo<HeadObjectCommandOutput>;
+    if (!fileInfo) {
+      throw new Error('No info returned when head the object');
+    }
+    logger.info({ path: objectPath, fileInfo }, 'VerifyRestore:HeadS3Object:Done');
+    return fileInfo;
   } catch (error) {
-    logger.error({ path, error }, 'VerifyRestore:FailedToHeadObject');
-    throw new Error(`Failed to headObject() for s3://${path.Bucket}/${path.Key}: ${String(error)}`);
+    logger.error({ path: objectPath, error }, 'VerifyRestore:HeadS3Object:Failed');
+    throw new Error(`Failed to headObject() for ${objectPath}: ${String(error)}`);
   }
 }
 
@@ -212,12 +213,15 @@ async function headS3Object(path: { Bucket: string; Key: string }): Promise<Head
  * @throws Will throw an error if the restore status is undefined.
  * @returns A boolean indicating whether the restore is completed.
  */
-export function isRestoreCompleted(headObjectOutput: HeadObjectCommandOutput): boolean {
-  if (headObjectOutput?.Restore === undefined) {
-    logger.error({ headObjectOutput }, 'VerifyRestore:RestoreStatusUndefined');
+export function isRestoreCompleted(fileInfo: FileInfo<HeadObjectCommandOutput>): boolean {
+  logger.info('VerifyRestore:CheckingRestoreStatus');
+  const restoreStatus = fileInfo.$response?.Restore;
+  if (restoreStatus == undefined) {
+    logger.error({ headObjectOutput: fileInfo }, 'VerifyRestore:RestoreStatusUndefined');
     throw new Error('Restore status is undefined.');
   }
-  return headObjectOutput.Restore === 'ongoing-request="false"';
+  logger.info({ restoreStatus }, 'VerifyRestore:RestoreStatus');
+  return restoreStatus.includes('ongoing-request="false"');
 }
 
 /**
