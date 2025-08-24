@@ -14,12 +14,8 @@ import { mergeStats } from './copy-helpers.ts';
 import type { CopyContract, CopyStats } from './copy-rpc.ts';
 
 const CopyValidator = z.object({
-  source: z
-    .string()
-    .transform((val) => protocolAwareString(fsa.toUrl(val))),
-  target: z
-    .string()
-    .transform((val) => protocolAwareString(fsa.toUrl(val))),
+  source: z.string().transform((val) => protocolAwareString(fsa.toUrl(val))),
+  target: z.string().transform((val) => protocolAwareString(fsa.toUrl(val))),
 });
 const CopyManifest = z.array(CopyValidator);
 
@@ -94,9 +90,6 @@ export const commandCopy = command({
 
     const workerUrl = new URL('./copy-worker.ts', import.meta.url);
     const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
-    // when stopped here, check what the import.meta.url is
-    // it should be something like: file:///path/to/project/src/commands/copy/copy.ts
-    // and the workerUrl should be: file:///path/to/project/src/commands/copy/copy-worker.ts
 
     let stats: CopyStats = {
       copied: { count: 0, bytesIn: 0, bytesOut: 0 },
@@ -120,7 +113,8 @@ export const commandCopy = command({
     const startTime = performance.now();
     for (const m of args.manifest) {
       const json = await fsa.readJson<ActionCopy>(m);
-      if (json.action !== 'copy') throw new Error('Invalid action: ' + String(json.action) + ' from:' + m);
+      if (json.action !== 'copy')
+        throw new Error('Invalid action: ' + String(json.action) + ' from:' + protocolAwareString(m));
       const data = json.parameters.manifest;
       const manifest = CopyManifest.parse(data);
 

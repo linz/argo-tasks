@@ -224,10 +224,9 @@ export async function verifyTargetFile(target: URL, expectedSize: number, expect
   const targetHash = targetReadBack?.metadata?.[HashKey];
 
   // TODO: Local file system does not support metadata so assume hash is correct
-  if (target.protocol == 'file:') {
+  if (target.protocol === 'file:') {
     const targetVerified = targetSize === expectedSize;
-    if (!targetVerified)
-      logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
+    if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
 
     return targetVerified;
   }

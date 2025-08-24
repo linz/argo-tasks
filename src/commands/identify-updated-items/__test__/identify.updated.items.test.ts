@@ -3,8 +3,9 @@ import { describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 
-import type { FileListEntry } from '../../../utils/filelist.ts';
+import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import { Url, UrlList } from '../../common.ts';
+import type { IdentifyUpdatedItemsArgs } from '../identify.updated.items.ts';
 import { commandIdentifyUpdatedItems } from '../identify.updated.items.ts';
 /**
  * Test cases implemented:
@@ -30,9 +31,9 @@ describe('identify-updated-items', () => {
       ...baseArgs,
       sourceCollections: [],
     };
-    const resolvedArgs = await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
       Object.fromEntries,
-    );
+    )) as IdentifyUpdatedItemsArgs;
     await assert.rejects(commandIdentifyUpdatedItems.handler(resolvedArgs), {
       message: '--source-collections must point to existing STAC collection.json file(s)',
     });
@@ -45,9 +46,9 @@ describe('identify-updated-items', () => {
         './src/commands/identify-updated-items/__test__/data/dem_1m/collection.json',
       ]),
     };
-    const resolvedArgs = await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
       Object.fromEntries,
-    );
+    )) as IdentifyUpdatedItemsArgs;
     await assert.rejects(commandIdentifyUpdatedItems.handler(resolvedArgs), {
       message: '--source-collections must point to existing STAC collection.json file(s)',
     });
@@ -57,9 +58,9 @@ describe('identify-updated-items', () => {
       ...baseArgs,
       targetCollection: Url.from('./src/commands/identify-updated-items/__test__/data/hillshade/'),
     };
-    const resolvedArgs = await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
       Object.fromEntries,
-    );
+    )) as IdentifyUpdatedItemsArgs;
     await assert.rejects(commandIdentifyUpdatedItems.handler(resolvedArgs), {
       message: '--target-collection must point to an existing STAC collection.json or not be set',
     });
@@ -70,11 +71,13 @@ describe('identify-updated-items', () => {
       ...baseArgs,
       targetCollection: undefined,
     };
-    const resolvedArgs = await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
       Object.fromEntries,
-    );
+    )) as IdentifyUpdatedItemsArgs;
     await commandIdentifyUpdatedItems.handler(resolvedArgs);
-    const outputFileList: [FileListEntry] = await fsa.readJson(fsa.toUrl('/tmp/identify-updated-items/file-list.json'));
+    const outputFileList: [FileListEntryClass] = await fsa.readJson(
+      fsa.toUrl('/tmp/identify-updated-items/file-list.json'),
+    );
     assert.deepEqual(outputFileList, [
       {
         output: 'BD31',
@@ -118,12 +121,14 @@ describe('identify-updated-items', () => {
 
   it('should only add modified items to file-list.json', async () => {
     const args = { ...baseArgs };
-    const resolvedArgs = await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
       Object.fromEntries,
-    );
+    )) as IdentifyUpdatedItemsArgs;
 
     await commandIdentifyUpdatedItems.handler(resolvedArgs);
-    const outputFileList: [FileListEntry] = await fsa.readJson(fsa.toUrl('/tmp/identify-updated-items/file-list.json'));
+    const outputFileList: [FileListEntryClass] = await fsa.readJson(
+      fsa.toUrl('/tmp/identify-updated-items/file-list.json'),
+    );
     assert.deepEqual(outputFileList, [
       {
         output: 'BD32',

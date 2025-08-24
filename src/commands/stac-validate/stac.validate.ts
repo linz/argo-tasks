@@ -388,13 +388,8 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
     return stacJson.links.filter((f) => childrenRel.has(f.rel)).map((f) => new URL(f.href, path));
   }
   if (stacJson.type === 'Feature') return [];
-  throw new Error(`Unknown Stac Type [${stacJson['type']}]: ${path}`);
+  throw new Error(`Unknown Stac Type [${String(stacJson['type'] ?? '')}]: ${path.href}`);
 }
-//
-// export function normaliseHref(href: string, path: string): string {
-//   if (isURL(path)) return new URL(href, path).href;
-//   return join(dirname(path), href);
-// }
 
 export function isURL(path: string): boolean {
   try {
@@ -404,16 +399,3 @@ export function isURL(path: string): boolean {
     return false;
   }
 }
-//
-// // Handle list of lists that results from using the 'list' command to supply location
-// export function listLocation(locs: string[]): string[] {
-//   const output: string[] = [];
-//   for (const loc of locs) {
-//     if (loc.startsWith('[')) {
-//       output.push(...(JSON.parse(loc) as string[]));
-//       continue;
-//     }
-//     output.push(loc);
-//   }
-//   return output;
-// }

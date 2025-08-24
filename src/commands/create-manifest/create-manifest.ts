@@ -44,7 +44,7 @@ export const commandCreateManifest = command({
     }),
     output: option({ type: Url, long: 'output', description: 'Output location for the listing' }),
     target: option({ type: UrlFolder, long: 'target', description: 'Copy destination' }),
-    source: restPositionals({ type: UrlFolderList, displayName: 'source', description: 'Where to list' }), // TODO: Can this be files or does it have to be folders?
+    source: restPositionals({ type: UrlFolderList, displayName: 'source', description: 'Where to list' }),
   },
   async handler(args) {
     registerCli(this, args);
@@ -60,7 +60,6 @@ export const commandCreateManifest = command({
 
       // Store the list of files to move in a bucket rather than the ARGO parameters
       if (actionLocation) {
-        // const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
         const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation);
         const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
         await fsa.write(targetLocation, JSON.stringify(targetAction));
@@ -94,7 +93,8 @@ export async function createManifest(sources: URL[], targetPath: URL, args: Mani
     for (const filePath of outputChunks) {
       const sourceRoot = sources.find((src) => filePath.href.startsWith(src.href));
       if (!sourceRoot) {
-        throw new Error(`Source root not found for file: ${filePath} in sources: ${sources}`);
+        const sourcesList = sources.map((s) => s.href).join(', ');
+        throw new Error(`Source root not found for file: ${filePath.href} in sources: ${sourcesList}`);
       }
       const baseFile = args.flatten
         ? filePath.pathname.split('/').slice(-1).join('/') // file name only
@@ -120,7 +120,7 @@ export function validatePaths(source: URL, target: URL): void {
   if (!source.pathname.endsWith('/') && !target.pathname.endsWith('/')) {
     return;
   }
-  throw new Error(`Path Mismatch - source: ${source}, target: ${target}`);
+  throw new Error(`Path Mismatch - source: ${source.href}, target: ${target.href}`);
 }
 
 export type CommandCreateManifestArgs = CommandArguments<typeof commandCreateManifest>;

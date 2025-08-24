@@ -7,7 +7,6 @@ import { WorkerRpc } from '@wtrpc/core';
 
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
-import { protocolAwareString } from '../../utils/filelist.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
 import { registerCli } from '../common.ts';
 import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';

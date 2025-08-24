@@ -223,13 +223,11 @@ export const StrList: Type<string | string[], string[]> = {
       items = item.flat();
     } else if (typeof item === 'string' && item.startsWith('[')) {
       // If the input is a JSON array, parse it
-      items = await Promise.all(JSON.parse(item).map((str: string) => StrList.from(str)));
+      const parsedItem = JSON.parse(item) as string[];
+      items = (await Promise.all(parsedItem.map((str) => StrList.from(str)))).flat();
       if (!Array.isArray(items)) {
         throw new Error('Input must be a JSON array of strings');
       }
-      console.log(
-        items,
-      );
     } else {
       items = [item];
     }
@@ -237,44 +235,6 @@ export const StrList: Type<string | string[], string[]> = {
     return results; // Flatten the results
   },
 };
-
-//
-// /**
-//  export const UrlList: Type<string | string[], URL[]> = {
-//  async from(input) {
-//  let strs: string[] = [];
-//
-//  if (Array.isArray(input)) {
-//  // Flatten any nested arrays and normalize to strings
-//  strs = input.flatMap(item => {
-//  if (typeof item === 'string' && item.trim().startsWith('[')) {
-//  // This handles the case: ["[\"1\",\"2\"]"]
-//  return JSON.parse(item) as string[];
-//  }
-//  return typeof item === 'string'
-//  ? item.split(PathSplitCharacters)
-//  .map(s => s.trim())
-//  .filter(Boolean)
-//  : [];
-//  });
-//  } else if (typeof input === 'string') {
-//  if (input.trim().startsWith('[')) {
-//  strs = JSON.parse(input) as string[];
-//  } else {
-//  strs = input.split(PathSplitCharacters)
-//  .map(s => s.trim())
-//  .filter(Boolean);
-//  }
-//  } else {
-//  throw new Error('UrlList.from() expected a string or array of strings');
-//  }
-//
-//  // Convert to URLs
-//  return Promise.all(strs.map(str => Url.from(str)));
-//  },
-//  };
-//
-//  */
 
 /**
  * Remove a trailing 'm' from an input value and validate the input is a number.

@@ -7,7 +7,7 @@ import type { StacCollection, StacItem, StacLink } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
-import { FileListEntry } from '../../utils/filelist.ts';
+import { FileListEntryClass } from '../../utils/filelist.ts';
 import { registerCli, replaceUrlExtension, Url, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 import { makeRelative } from '../stac-catalog/stac.catalog.ts';
 
@@ -21,6 +21,12 @@ interface LinzStacItem extends StacItem {
 }
 interface LinzStacCollection extends StacCollection {
   links: LinzItemLink[];
+}
+
+export interface IdentifyUpdatedItemsArgs {
+  verbose: boolean;
+  targetCollection: URL | undefined;
+  sourceCollections: URL[][];
 }
 
 export const commandIdentifyUpdatedItems = command({
@@ -43,7 +49,7 @@ export const commandIdentifyUpdatedItems = command({
         'Location of the source collection.json files that are used to create the target dataset. Split by ";"',
     }),
   },
-  async handler(args) {
+  async handler(args: IdentifyUpdatedItemsArgs) {
     const startTime = performance.now();
     registerCli(this, args);
     logger.info('identifyUpdatedItems:Start');
@@ -146,13 +152,14 @@ export const commandIdentifyUpdatedItems = command({
       }
       logger.trace({ itemId }, `identifyUpdatedItems:Skipping ${itemId} because sources match`);
     }
-    const tilesToProcess: FileListEntry[] = Object.entries(itemsToProcess).map(([key, value]) => {
+    const tilesToProcess: FileListEntryClass[] = Object.entries(itemsToProcess).map(([key, value]) => {
       const tiffInputs = value.map((item) => {
         const url = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff');
         url.checksum = item.checksum; // Add checksum to the URL object
         return url;
       });
-      return new FileListEntry(key, sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls), true);
+      // todo: check this retains the checksum
+      return new FileListEntryClass(key, sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls), true);
     });
 
     const fileListPath = fsa.toUrl('/tmp/identify-updated-items/file-list.json');

@@ -216,7 +216,7 @@ async function headS3Object(path: { Bucket: string; Key: string }): Promise<File
 export function isRestoreCompleted(fileInfo: FileInfo<HeadObjectCommandOutput>): boolean {
   logger.info('VerifyRestore:CheckingRestoreStatus');
   const restoreStatus = fileInfo.$response?.Restore;
-  if (restoreStatus == undefined) {
+  if (restoreStatus === undefined) {
     logger.error({ headObjectOutput: fileInfo }, 'VerifyRestore:RestoreStatusUndefined');
     throw new Error('Restore status is undefined.');
   }
@@ -232,7 +232,6 @@ export function isRestoreCompleted(fileInfo: FileInfo<HeadObjectCommandOutput>):
  */
 async function markReportDone(reportPath: URL): Promise<void> {
   const donePath = replaceUrlExtension(reportPath, new RegExp('$'), '.done');
-  // URL(`${reportPath.toString()}.done`);
   await fsa.write(donePath, await fsa.read(reportPath));
   await fsa.delete(reportPath);
   logger.info({ reportPath, donePath }, 'VerifyRestore:MarkedReportDone');

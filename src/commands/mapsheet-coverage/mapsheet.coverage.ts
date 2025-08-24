@@ -14,7 +14,7 @@ import type { StacCollection, StacItem } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
-import { FileListEntry } from '../../utils/filelist.ts';
+import { FileListEntryClass } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
 import { config, registerCli, replaceUrlExtension, Url, UrlFolder, verbose } from '../common.ts';
@@ -282,9 +282,9 @@ export const commandMapSheetCoverage = command({
     }
 
     // List of tiles to be created, and files from which to create
-    const tilesToProcess: FileListEntry[] = [];
+    const tilesToProcess: FileListEntryClass[] = [];
     for (const [sheetName, inputs] of mapSheets) {
-      tilesToProcess.push(new FileListEntry(sheetName, inputs, true));
+      tilesToProcess.push(new FileListEntryClass(sheetName, inputs, true));
     }
 
     const fileListPath = new URL('file-list.json', args.output);
@@ -310,9 +310,6 @@ async function compareCreation(
 
   // Limit the number of files hashing concurrently
   const hashQueue = pLimit(hashQueueLength);
-
-  // Joining STAC document locations as file paths can be tricky, use the built in URL lib to handle the joins
-  // const compareUrl = tryParseUrl(compareLocation);
 
   const collectionJson = await fsa.readJson<StacCollection>(compareLocation);
 
@@ -350,7 +347,6 @@ async function compareCreation(
         if (needsToBeCreated) return;
 
         const sourceFile = sourceFiles[index];
-        // todo: check if we need to basename() this or not
         if (sourceFile == null || item.href !== basename(sourceFile.pathname.replace('.tiff', '.json'))) {
           logger.debug({ sheetCode, source: item.href }, 'MapSheetCoverage:Compare:source-difference');
           needsToBeCreated = true;
