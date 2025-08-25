@@ -14,11 +14,11 @@ group <options> [...items]
 
 ### Options
 
-| Usage             | Description                                         | Options     |
-| ----------------- | --------------------------------------------------- | ----------- |
-| --config <str>    | Location of role configuration file                 | optional    |
-| --size <number>   | Group items into this number of items group         | default: 50 |
-| --from-file <str> | JSON file to load inputs from, must be a JSON Array | optional    |
+| Usage               | Description                                         | Options     |
+| ------------------- | --------------------------------------------------- | ----------- |
+| --config <str>      | Location of role configuration file                 | optional    |
+| --size <number>     | Group items into this number of items group         | default: 50 |
+| --from-file <value> | JSON file to load inputs from, must be a JSON Array | optional    |
 
 ### Flags
 

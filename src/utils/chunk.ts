@@ -44,25 +44,6 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
   return output;
 }
 
-// /** Characters to split paths on @see splitPaths */
-// const PathSplitCharacters = /;|\n/;
-
-// /**
-//  * Split `;` separated paths into separate paths
-//  *
-//  * Argo has a limitation that arguments to CLIs cannot easily be lists of paths, so users can add multiple paths by creating a string with either `\n` or `;`
-//  *
-//  * @example
-//  * ```typescript
-//  * splitPaths(["a;b"]) // ['a', 'b']
-//  * splitPaths(["a\nb"]) // ['a', 'b']
-//  *````
-//  * @param paths
-//  */
-// export function splitPaths(paths: URL[]): URL[] {
-//   return paths.map((m) => m.split(PathSplitCharacters)).flat();
-// }
-
 export type FileFilter = {
   include?: string;
   exclude?: string;
@@ -111,8 +92,6 @@ export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL
   const groupSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
   const outputFiles: FileSizeInfo[] = [];
-
-  // const fullPaths = splitPaths(paths);
 
   for (const path of paths) {
     logger.debug({ path }, 'List');
