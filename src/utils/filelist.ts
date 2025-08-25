@@ -5,6 +5,7 @@ import type { TiffLocation } from '../commands/tileindex-validate/tileindex.vali
 export const HttpProtocols = ['https:', 'http:'];
 export function protocolAwareString(targetLocation: URL): string {
   return makeRelative(fsa.toUrl('./'), targetLocation, false);
+}
 
 export interface FileListEntry {
   /** output file name eg "AS21_10000_0103" */
