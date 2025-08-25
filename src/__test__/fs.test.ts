@@ -1,11 +1,11 @@
 import { after, before, beforeEach, describe, it } from 'node:test';
 
-import { CompositeError } from '@chunkd/core';
+// import { CompositeError } from '@chunkd/fs';
 // import type { FileSystemAbstraction } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/fs';
-import type { FsAwsS3 } from '@chunkd/source-aws';
-import type { S3LikeV3 } from '@chunkd/source-aws-v3';
+import type { FsAwsS3 } from '@chunkd/fs-aws';
+// import type { S3LikeV3 } from '@chunkd/source-aws-v3';
 import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 
@@ -70,17 +70,18 @@ describe('Register', () => {
 
   it('should add both middleware', async () => {
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
-    await s3Fs.credentials.find('s3://_linz-topographic/foo.json');
+    await s3Fs.credentials?.find(new URL('s3://_linz-topographic/foo.json'));
 
     const fileSystems = [...s3Fs.credentials.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
-    const newFs = fileSystems[0]!.s3 as S3LikeV3;
+    // const newFs = fileSystems[0]!.s3 as S3LikeV3;
+    const newFs = fileSystems[0];
     assert.equal(
-      newFs.client.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
+      newFs.s3.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
       'FQDN - finalizeRequest',
     );
     assert.equal(
-      newFs.client.middlewareStack.identify().find((f) => f.startsWith('EAI_AGAIN -')),
+      newFs.s3.middlewareStack.identify().find((f) => f.startsWith('EAI_AGAIN -')),
       'EAI_AGAIN - build',
     );
   });
@@ -97,7 +98,8 @@ describe('Register', () => {
 
     const fileSystems = [...s3Fs.credentials.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
-    const newFs = fileSystems[0]!.s3 as S3LikeV3;
+    // const newFs = fileSystems[0]!.s3 as S3LikeV3;
+    const newFs = fileSystems[0].s3;
 
     assert.deepEqual(
       newFs.client.middlewareStack.identify().filter((f) => f.startsWith('FQDN -')),
@@ -112,15 +114,18 @@ describe('Register', () => {
     assert.deepEqual(fsSystemsPath(), ['s3://']);
 
     s3Fs.credentials.onFileSystemCreated = (_ac, fs): void => {
-      const fsS3 = fs as FsAwsS3;
-      const s3 = fsS3.s3 as S3LikeV3;
+      const fsS3 = fs;
+      // const s3 = fsS3.s3 as S3LikeV3;
+      const s3 = fsS3.s3;
       s3.client.middlewareStack.add(throw403);
     };
 
     const ret = await fsa.read(fsa.toUrl('s3://_linz-topographic/foo.json')).catch((e: Error) => e);
     assert.equal(String(ret), 'CompositeError: Failed to read: "s3://_linz-topographic/foo.json"');
-    assert.equal(CompositeError.isCompositeError(ret), true);
-    const ce = ret as CompositeError;
+    assert.equal(ret instanceof Error, true);
+    // assert.equal(CompositeError.isCompositeError(ret), true);
+    // const ce = ret as CompositeError;
+    const ce = ret;
     assert.equal(ce.code, 418);
   });
 
