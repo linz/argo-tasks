@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
+import type { FileInfo } from '@chunkd/fs';
 
 import {
   decodeFormUrlEncoded,
@@ -10,7 +11,6 @@ import {
   isRestoreCompleted,
   parseReportResult,
 } from '../verify.restore.ts';
-import type { FileInfo } from '@chunkd/fs';
 
 describe('fetchResultKeysFromReport', () => {
   it('returns keys for succeeded results', async () => {
@@ -138,7 +138,7 @@ describe('isRestoreCompleted', () => {
     const fileInfo: FileInfo<HeadObjectCommandOutput> = {
       url: new URL('s3://bucket/key'), // not used in isRestoreCompleted
       $response: headObjectOutput,
-    }
+    };
     assert.strictEqual(isRestoreCompleted(fileInfo), true);
   });
 

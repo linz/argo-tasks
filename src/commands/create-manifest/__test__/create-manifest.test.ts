@@ -146,8 +146,8 @@ describe('createManifest', () => {
     groupSize: undefined,
     group: undefined,
     limit: undefined,
-    output: Url.from('manifest.json'),
-    target: UrlFolder.from(''),
+    output: new URL('memory://manifest.json'),
+    target: new URL('memory://target/'),
     source: [],
   };
 

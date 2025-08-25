@@ -455,7 +455,7 @@ describe('copyFiles', () => {
         contentType: 'application/octet-stream',
       }),
     ]);
-    const stats: CopyStats = await worker.routes.copy({
+    const stats = (await worker.routes.copy({
       ...defaultCopyArgs,
       manifest: [
         {
@@ -468,7 +468,7 @@ describe('copyFiles', () => {
         },
       ],
       compress: true,
-    });
+    })) as CopyStats;
     assert.equal(stats.decompressed.count, '0');
     assert.equal(stats.compressed.count, '1');
     assert.equal(stats.copied.count, '1');
@@ -499,7 +499,7 @@ describe('copyFiles', () => {
       ],
       compress: true,
     });
-    const stats = await worker.routes.copy({
+    const stats = (await worker.routes.copy({
       ...defaultCopyArgs,
       manifest: [
         {
@@ -516,7 +516,7 @@ describe('copyFiles', () => {
         },
       ],
       decompress: true,
-    });
+    })) as CopyStats;
     const tiffTarget = await fsa.head(fsa.toUrl('memory://target/topographic.tif'));
     assert.equal(tiffTarget?.contentType, 'image/tiff; application=geotiff; profile=cloud-optimized');
 
@@ -541,7 +541,7 @@ describe('copyFiles', () => {
         },
       }),
     ]);
-    const stats: CopyStats = await worker.routes.copy({
+    const stats: CopyStats = (await worker.routes.copy({
       ...defaultCopyArgs,
       manifest: [
         {
@@ -550,7 +550,7 @@ describe('copyFiles', () => {
         },
       ],
       noClobber: true,
-    });
+    })) as CopyStats;
     assert.equal(stats.skipped.count, '1');
     assert.equal(stats.total.count, '1');
     assert.equal(stats.processed.count, '0');
