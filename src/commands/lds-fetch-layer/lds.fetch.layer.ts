@@ -33,37 +33,21 @@ export const commandLdsFetch = command({
 
         logger.info({ layerId, layerVersion, source }, 'Collection:Item:Fetch');
         const fileName = `./${layerId}_${layerVersion}.gpkg`;
-        // const targetLocation = fsa.join(args.target, fileName);
         const targetLocation = new URL(fileName, args.target);
         await fsa.write(targetLocation, fsa.readStream(source).pipe(createGunzip()));
       }
 
       const collectionJsonUrl = new URL(`s3://linz-lds-cache/${layerId}/collection.json`);
       const collectionJson = await fsa.readJson<stac.StacCollection>(collectionJsonUrl);
-      // const collectionJson = {
-      //   links: [
-      //     { rel: 'item', href: 'item1.json' },
-      //     { rel: 'item', href: './item2.json' },
-      //     { rel: 'item', href: 'https://somewhere/item3.json' },
-      //   ],
-      //   title: 'Example Collection',
-      // }
       logger.info({ layerId, title: collectionJson.title }, 'Collection:Download:Done');
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
       if (lastItem == null) throw new Error('No items found');
 
-      const targetFileGpkg = lastItem.href.replace('.json', '.gpkg'); // todo: better names?
+      const targetFileGpkg = lastItem.href.replace('.json', '.gpkg');
       const targetFile = new URL(targetFileGpkg, args.target);
       const targetPath = new URL(targetFileGpkg, collectionJsonUrl);
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.readStream(targetPath).pipe(createGunzip()));
     }
   },
-});
-
-void commandLdsFetch.handler({
-  config: undefined,
-  verbose: false,
-  layers: ['123@1'],
-  target: new URL('file:///tmp/'),
 });
