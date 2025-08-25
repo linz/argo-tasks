@@ -6,6 +6,7 @@ import * as prettier from 'prettier';
 
 import { AllCommands } from '../commands/index.ts';
 import { commandHasExample, ExampleSymbol } from './readme.example.ts';
+import { protocolAwareString } from '../utils/filelist.js';
 const AnsiRemove = /\u001b\[.*?m/g;
 
 function hasHelp(f: unknown): f is ProvidesHelp {
@@ -94,7 +95,7 @@ async function generateReadme(): Promise<void> {
     const targetReadme = new URL('README.md', fsa.toUrl(targetPath));
 
     writeFileSync(targetReadme, formatted);
-    const cmdHeader = [`[${cmd.name}](${targetReadme.toString()})`, cmd.description].join('|');
+    const cmdHeader = [`[${cmd.name}](${protocolAwareString(targetReadme)})`, cmd.description].join('|');
     commandIndex.push(`|${cmdHeader}|`);
   }
 
