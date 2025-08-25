@@ -7,11 +7,6 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 
-// function getTargetPath(source: string, path: string): string {
-//   if (path.startsWith('./')) return new URL(path.slice(2), source).href;
-//   throw new Error('No relative path found: ' + path);
-// }
-
 export const commandLdsFetch = command({
   name: 'lds-fetch-layer',
   version: CliInfo.version,
@@ -57,10 +52,8 @@ export const commandLdsFetch = command({
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
       if (lastItem == null) throw new Error('No items found');
 
-      // const targetFile = fsa.join(args.target, );
       const targetFileGpkg = lastItem.href.replace('.json', '.gpkg'); // todo: better names?
       const targetFile = new URL(targetFileGpkg, args.target);
-      // const targetFile = new URL(lastItem.href.replace('.json', '.gpkg'), args.target);
       const targetPath = new URL(targetFileGpkg, collectionJsonUrl);
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.readStream(targetPath).pipe(createGunzip()));
@@ -68,7 +61,6 @@ export const commandLdsFetch = command({
   },
 });
 
-console.log('lds-fetch-layer command registered');
 void commandLdsFetch.handler({
   config: undefined,
   verbose: false,

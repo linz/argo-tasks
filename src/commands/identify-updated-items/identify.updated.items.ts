@@ -11,8 +11,6 @@ import { FileListEntryClass } from '../../utils/filelist.ts';
 import { registerCli, replaceUrlExtension, Url, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 import { makeRelative } from '../stac-catalog/stac.catalog.ts';
 
-console.log(makeRelative);
-
 interface LinzItemLink extends StacLink {
   'file:checksum': string;
 }
@@ -22,7 +20,9 @@ interface LinzStacItem extends StacItem {
 interface LinzStacCollection extends StacCollection {
   links: LinzItemLink[];
 }
-
+interface UrlWithChecksum extends URL {
+  checksum?: string;
+}
 export interface IdentifyUpdatedItemsArgs {
   verbose: boolean;
   targetCollection: URL | undefined;
@@ -152,11 +152,10 @@ export const commandIdentifyUpdatedItems = command({
     }
     const tilesToProcess: FileListEntryClass[] = Object.entries(itemsToProcess).map(([key, value]) => {
       const tiffInputs = value.map((item) => {
-        const url = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff');
-        url.checksum = item.checksum; // Add checksum to the URL object
+        const url = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff') as UrlWithChecksum;
+        url.checksum = item.checksum;
         return url;
       });
-      // todo: check this retains the checksum
       return new FileListEntryClass(key, sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls), true);
     });
 

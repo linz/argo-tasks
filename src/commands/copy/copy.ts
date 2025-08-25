@@ -11,7 +11,7 @@ import type { ActionCopy } from '../../utils/actions.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 import { mergeStats } from './copy-helpers.ts';
-import type { CopyContract, CopyStats } from './copy-rpc.ts';
+import type { CopyContractForRpc, CopyStats } from './copy-rpc.ts';
 
 const CopyValidator = z.object({
   source: z.string().transform((val) => protocolAwareString(fsa.toUrl(val))),
@@ -89,7 +89,7 @@ export const commandCopy = command({
     registerCli(this, args);
 
     const workerUrl = new URL('./copy-worker.ts', import.meta.url);
-    const pool = new WorkerRpcPool<CopyContract>(args.concurrency, workerUrl);
+    const pool = new WorkerRpcPool<CopyContractForRpc>(args.concurrency, workerUrl);
 
     let stats: CopyStats = {
       copied: { count: 0, bytesIn: 0, bytesOut: 0 },
@@ -137,7 +137,7 @@ export const commandCopy = command({
       }
     }
 
-    const results = await Promise.all(manifestChunks);
+    const results = (await Promise.all(manifestChunks)) as CopyStats[];
     for (const result of results) {
       stats = mergeStats(stats, result);
     }

@@ -6,7 +6,6 @@ import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 
 import { registerFileSystem } from '../fs.register.ts';
-import { S3Client } from '@aws-sdk/client-s3';
 
 export class HttpError extends Error {
   statusCode: number;
@@ -95,7 +94,7 @@ describe('Register', () => {
     const fileSystems = [...s3Fs.credentials!.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
     // const newFs = fileSystems[0]!.s3 as S3LikeV3;
-    const newFs = fileSystems[0]!.s3 as S3Client;
+    const newFs = fileSystems[0]!.s3;
 
     assert.deepEqual(
       newFs.middlewareStack.identify().filter((f) => f.startsWith('FQDN -')),

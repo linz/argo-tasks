@@ -124,7 +124,7 @@ export function registerFileSystem(opts: { config?: string }): FsAwsS3 {
 
   const paths = splitConfig(configPath);
 
-  for (const path of paths) s3Fs.credentials?.registerConfig(fsa.toUrl(path), fsa);
+  for (const path of paths) s3Fs.credentials?.registerConfig(fsa.toUrl(path), fsa as unknown as FsAwsS3);
 
   return s3Fs;
 }
