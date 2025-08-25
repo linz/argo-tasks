@@ -4,7 +4,6 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { fsa } from '@chunkd/fs';
 import type { AwsCredentialConfig } from '@chunkd/fs-aws';
 import { AwsS3CredentialProvider, FsAwsS3 } from '@chunkd/fs-aws';
-
 import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 
 import { logger } from './log.ts';
