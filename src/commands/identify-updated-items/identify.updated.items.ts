@@ -116,8 +116,6 @@ export const commandIdentifyUpdatedItems = command({
       logger.fatal({ err }, 'identifyUpdatedItems:Failed');
       throw err;
     });
-    logger.debug(existingItemsAtTarget);
-    logger.debug(desiredItemsAtTarget);
     for (const [itemId, desiredItemChecksums] of Object.entries(desiredItemsAtTarget)) {
       const existingItemChecksums = existingItemsAtTarget[itemId] ?? [];
       logger.trace({ existingItemChecksums, desiredItemChecksums }, `identifyUpdatedItems:Checking ${itemId}`);

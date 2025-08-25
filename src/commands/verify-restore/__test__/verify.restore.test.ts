@@ -10,6 +10,7 @@ import {
   isRestoreCompleted,
   parseReportResult,
 } from '../verify.restore.ts';
+import type { FileInfo } from '@chunkd/fs';
 
 describe('fetchResultKeysFromReport', () => {
   it('returns keys for succeeded results', async () => {
@@ -134,7 +135,11 @@ describe('isRestoreCompleted', () => {
       Restore: 'ongoing-request="false"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.strictEqual(isRestoreCompleted(headObjectOutput), true);
+    const fileInfo: FileInfo<HeadObjectCommandOutput> = {
+      url: new URL('s3://bucket/key'), // not used in isRestoreCompleted
+      $response: headObjectOutput,
+    }
+    assert.strictEqual(isRestoreCompleted(fileInfo), true);
   });
 
   it('returns false if Restore is ongoing-request="true"', async () => {
@@ -142,14 +147,22 @@ describe('isRestoreCompleted', () => {
       Restore: 'ongoing-request="true"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.strictEqual(isRestoreCompleted(headObjectOutput), false);
+    const fileInfo: FileInfo<HeadObjectCommandOutput> = {
+      url: new URL('s3://bucket/key'), // not used in isRestoreCompleted
+      $response: headObjectOutput,
+    };
+    assert.strictEqual(isRestoreCompleted(fileInfo), false);
   });
 
   it('throws if Restore is undefined', async () => {
     const headObjectOutput: HeadObjectCommandOutput = {
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.throws(() => isRestoreCompleted(headObjectOutput), /undefined/);
+    const fileInfo: FileInfo<HeadObjectCommandOutput> = {
+      url: new URL('s3://bucket/key'), // not used in isRestoreCompleted
+      ...headObjectOutput,
+    };
+    assert.throws(() => isRestoreCompleted(fileInfo), /undefined/);
   });
 });
 
