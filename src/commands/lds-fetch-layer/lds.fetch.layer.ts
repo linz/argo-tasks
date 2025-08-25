@@ -69,7 +69,7 @@ export const commandLdsFetch = command({
 });
 
 console.log('lds-fetch-layer command registered');
-commandLdsFetch.handler({
+void commandLdsFetch.handler({
   config: undefined,
   verbose: false,
   layers: ['123@1'],
