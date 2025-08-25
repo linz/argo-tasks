@@ -14,10 +14,10 @@ pretty-print <options> <path>
 
 ### Options
 
-| Usage          | Description                                                                              | Options  |
-| -------------- | ---------------------------------------------------------------------------------------- | -------- |
-| --config <str> | Location of role configuration file                                                      | optional |
-| --target <str> | Use if files have to be saved somewhere else instead of overwriting the source (testing) | optional |
+| Usage            | Description                                                                              | Options  |
+| ---------------- | ---------------------------------------------------------------------------------------- | -------- |
+| --config <str>   | Location of role configuration file                                                      | optional |
+| --target <value> | Use if files have to be saved somewhere else instead of overwriting the source (testing) | optional |
 
 ### Flags
 

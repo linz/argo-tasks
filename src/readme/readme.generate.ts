@@ -31,7 +31,7 @@ async function generateReadme(): Promise<void> {
       continue;
     }
 
-    const targetPath = `./src/commands/${cmd.name}`;
+    const targetPath = `./src/commands/${cmd.name}/`;
     const stat = await fsa.exists(fsa.toUrl(targetPath));
     if (stat === false) {
       console.log(`Command missing folder ${targetPath}`);
