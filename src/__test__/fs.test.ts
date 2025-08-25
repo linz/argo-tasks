@@ -1,15 +1,12 @@
 import { after, before, beforeEach, describe, it } from 'node:test';
 
-// import { CompositeError } from '@chunkd/fs';
-// import type { FileSystemAbstraction } from '@chunkd/fs';
-import { fsa } from '@chunkd/fs';
+import { fsa, FsError } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/fs';
-import type { FsAwsS3 } from '@chunkd/fs-aws';
-// import type { S3LikeV3 } from '@chunkd/source-aws-v3';
 import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 
 import { registerFileSystem } from '../fs.register.ts';
+import { S3Client } from '@aws-sdk/client-s3';
 
 export class HttpError extends Error {
   statusCode: number;
@@ -70,12 +67,12 @@ describe('Register', () => {
 
   it('should add both middleware', async () => {
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
-    await s3Fs.credentials?.find(new URL('s3://_linz-topographic/foo.json'));
+    await s3Fs.credentials!.find(new URL('s3://_linz-topographic/foo.json'));
 
-    const fileSystems = [...s3Fs.credentials.fileSystems.values()];
+    const fileSystems = [...s3Fs.credentials!.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
     // const newFs = fileSystems[0]!.s3 as S3LikeV3;
-    const newFs = fileSystems[0];
+    const newFs = fileSystems[0]!;
     assert.equal(
       newFs.s3.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
       'FQDN - finalizeRequest',
@@ -89,20 +86,19 @@ describe('Register', () => {
   it('should not duplicate middleware', async () => {
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
     assert.equal(
-      s3Fs.client.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
+      s3Fs.s3.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
       'FQDN - finalizeRequest',
     );
+    await s3Fs.credentials!.find(new URL('s3://_linz-topographic/foo.json'));
+    await s3Fs.credentials!.find(new URL('s3://_linz-topographic-upload/foo.json'));
 
-    await s3Fs.credentials.find('s3://_linz-topographic/foo.json');
-    await s3Fs.credentials.find('s3://_linz-topographic-upload/foo.json');
-
-    const fileSystems = [...s3Fs.credentials.fileSystems.values()];
+    const fileSystems = [...s3Fs.credentials!.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
     // const newFs = fileSystems[0]!.s3 as S3LikeV3;
-    const newFs = fileSystems[0].s3;
+    const newFs = fileSystems[0]!.s3 as S3Client;
 
     assert.deepEqual(
-      newFs.client.middlewareStack.identify().filter((f) => f.startsWith('FQDN -')),
+      newFs.middlewareStack.identify().filter((f) => f.startsWith('FQDN -')),
       ['FQDN - finalizeRequest'],
     );
   });
@@ -110,23 +106,21 @@ describe('Register', () => {
   it('should register on 403', async () => {
     assert.equal(fsa.systems.length, 1);
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
-    s3Fs.client.middlewareStack.add(throw403, throw403Init);
+    s3Fs.s3.middlewareStack.add(throw403, throw403Init);
     assert.deepEqual(fsSystemsPath(), ['s3://']);
-
+    if (s3Fs.credentials == null) throw new Error('No credentials');
     s3Fs.credentials.onFileSystemCreated = (_ac, fs): void => {
-      const fsS3 = fs;
-      // const s3 = fsS3.s3 as S3LikeV3;
-      const s3 = fsS3.s3;
-      s3.client.middlewareStack.add(throw403);
+      const s3 = fs.s3;
+      s3.middlewareStack.add(throw403);
     };
 
     const ret = await fsa.read(fsa.toUrl('s3://_linz-topographic/foo.json')).catch((e: Error) => e);
-    assert.equal(String(ret), 'CompositeError: Failed to read: "s3://_linz-topographic/foo.json"');
+    assert.equal(String(ret), 'Error: Failed to read: "s3://_linz-topographic/foo.json"');
     assert.equal(ret instanceof Error, true);
-    // assert.equal(CompositeError.isCompositeError(ret), true);
-    // const ce = ret as CompositeError;
-    const ce = ret;
-    assert.equal(ce.code, 418);
+
+    assert.equal(FsError.is(ret), true);
+    const fse = ret as FsError;
+    assert.equal(fse.code, 418);
   });
 
   it('should register all buckets', async (t) => {
@@ -134,11 +128,11 @@ describe('Register', () => {
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
 
     // All requests to s3 will error with http 403
-    s3Fs.client.middlewareStack.add(throw403, throw403Init);
+    s3Fs.s3.middlewareStack.add(throw403, throw403Init);
 
     const fakeTopo = new FsMemory();
     await fakeTopo.write(fsa.toUrl('s3://_linz-topographic/foo.json'), 's3://_linz-topographic/foo.json');
-    t.mock.method(s3Fs.credentials, 'createFileSystem', () => fakeTopo);
+    t.mock.method(s3Fs.credentials!, 'createFileSystem', () => fakeTopo);
 
     assert.deepEqual(fsSystemsPath(), ['s3://']);
 
