@@ -6,6 +6,7 @@ import { FsAwsS3 } from '@chunkd/fs-aws';
 import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 
 import { logger } from './log.ts';
+import { AwsS3CredentialProvider } from '@chunkd/fs-aws/build/src/credentials.js';
 
 /** Check to see if hostname exists inside of a object */
 function hasHostName(x: unknown): x is { hostname: string } {
@@ -119,6 +120,7 @@ function splitConfig(x: string): string[] {
 
 export function registerFileSystem(opts: { config?: string }): FsAwsS3 {
   const s3Fs = new FsAwsS3(new S3Client());
+  s3Fs.credentials = new AwsS3CredentialProvider();
   setupS3FileSystem(s3Fs);
 
   fsa.register('s3://', s3Fs);
