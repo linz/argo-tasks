@@ -14,9 +14,9 @@ identify-updated-items <options> [...source-collections]
 
 ### Options
 
-| Usage                     | Description                                                                                                                                                     | Options  |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| --target-collection <str> | Target collection.json file of the dataset that derives from the source dataset. If not provided, all Items of the source dataset will be returned in the list. | optional |
+| Usage                       | Description                                                                                                                                                     | Options  |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| --target-collection <value> | Target collection.json file of the dataset that derives from the source dataset. If not provided, all Items of the source dataset will be returned in the list. | optional |
 
 ### Flags
 
