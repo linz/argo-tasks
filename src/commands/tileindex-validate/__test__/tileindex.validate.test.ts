@@ -5,13 +5,14 @@ import { Projection } from '@basemaps/geo';
 import { fsa, FsMemory } from '@chunkd/fs';
 import type { BBox } from '@linzjs/geojson';
 import type { FeatureCollection } from 'geojson';
+import { pathToFileURL } from 'url';
 
 import { logger } from '../../../log.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
-import type { FileListEntry } from '../../../utils/filelist.ts';
+import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { MapSheet } from '../../../utils/mapsheet.ts';
-import { createTiff, urlToString } from '../../common.ts';
+import { createTiff, Url } from '../../common.ts';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
@@ -109,11 +110,11 @@ describe('tiffLocation', () => {
     const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
     const duplicates = groupByTileName(location);
     assert.deepEqual(
-      duplicates.get('AS21_1000_0101')?.map((c) => urlToString(c.source)),
+      duplicates.get('AS21_1000_0101')?.map((c) => c.source.href),
       ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
     );
     assert.deepEqual(
-      duplicates.get('AY29_1000_0101')?.map((c) => urlToString(c.source)),
+      duplicates.get('AY29_1000_0101')?.map((c) => c.source.href),
       ['s3://path/AY29_1000_0101.tiff', 's3://path/AY29_1000_0101.tiff'],
     );
   });
@@ -163,13 +164,15 @@ describe('validate', () => {
     for (const includeDerived of [true, false]) {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        location: ['s3://test'],
+        location: [[await Url.from('s3://test')]],
         retile: true,
         scale: 1000,
         forceOutput: true,
         includeDerived: includeDerived,
       });
-      const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+      const outputFileList: [FileListEntryClass] = await fsa.readJson(
+        fsa.toUrl('/tmp/tile-index-validate/file-list.json'),
+      );
       assert.strictEqual(outputFileList[0]?.includeDerived, includeDerived);
     }
   });
@@ -179,28 +182,28 @@ describe('validate', () => {
     // Destroy the "geo" part of geotiff so TFW loading is also checked fro URL handling
     Object.defineProperty(fakeTiff.images[0], 'isGeoLocated', { value: false });
 
-    const sourceUrl = `memory://some-bucket/🦄 🌈/`;
+    const sourceUrl = await Url.from(`memory://some-bucket/🦄 🌈/`);
     fakeTiff.source.url = new URL(`BQ32_1000_0101.tiff`, sourceUrl);
 
     const expectedBounds = MapSheet.getMapTileIndex('BQ32_1000_0101');
     assert.ok(expectedBounds);
 
     await fsa.write(
-      `${sourceUrl}BQ32_1000_0101.tfw`,
+      new URL('BQ32_1000_0101.tfw', sourceUrl),
       `1\n0\n0\n-1\n${expectedBounds?.origin.x + 0.5}\n${expectedBounds?.origin.y - 0.5}`,
     );
 
     const stub = t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      location: [sourceUrl],
+      location: [[sourceUrl]],
       retile: false,
       validate: true,
       scale: 1000,
       forceOutput: true,
     });
 
-    const fileList: unknown[] = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+    const fileList: unknown[] = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
 
     assert.deepEqual(fileList[0], {
       output: 'BQ32_1000_0101',
@@ -219,7 +222,7 @@ describe('validate', () => {
     try {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        location: ['s3://test'],
+        location: [[new URL('s3://test')]],
         retile: false,
         validate: true,
         scale: 1000,
@@ -231,9 +234,12 @@ describe('validate', () => {
     }
 
     assert.equal(stub.mock.callCount(), 1);
-    assert.deepEqual(stub.mock.calls[0]?.arguments[0], ['s3://test']);
+    assert.deepEqual(
+      stub.mock.calls[0]?.arguments[0]?.map((url) => url.href),
+      ['s3://test'],
+    );
 
-    const outputFileList: FeatureCollection = await fsa.readJson('/tmp/tile-index-validate/output.geojson');
+    const outputFileList: FeatureCollection = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/output.geojson'));
     assert.equal(outputFileList.features.length, 1);
     const firstFeature = outputFileList.features[0];
     assert.equal(firstFeature?.properties?.['tileName'], 'AS21_1000_0101');
@@ -244,11 +250,11 @@ describe('validate', () => {
   });
 
   it('should fail with 0 byte tiffs', async () => {
-    await fsa.write('/tmp/empty/foo.tiff', Buffer.from(''));
+    await fsa.write(fsa.toUrl('/tmp/empty/foo.tiff'), Buffer.from(''));
     const ret = await commandTileIndexValidate
       .handler({
         ...baseArguments,
-        location: ['/tmp/empty/'],
+        location: [[pathToFileURL('/tmp/empty/')]],
         retile: false,
         validate: true,
         scale: 1000,
@@ -267,12 +273,12 @@ describe('validate', () => {
 
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      location: ['s3://test'],
+      location: [[new URL('s3://test')]],
       retile: true,
       scale: 1000,
       forceOutput: true,
     });
-    const outputFileList = await fsa.readJson('/tmp/tile-index-validate/file-list.json');
+    const outputFileList = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
     assert.deepEqual(outputFileList, [
       {
         output: 'AS21_1000_0101',
@@ -290,7 +296,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: ['s3://test'],
+          location: [[new URL('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,
@@ -308,7 +314,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: ['s3://test'],
+          location: [[new URL('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,
@@ -332,7 +338,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: ['s3://test'],
+          location: [[new URL('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,
@@ -350,7 +356,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: ['s3://test'],
+          location: [[new URL('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,
@@ -378,11 +384,11 @@ describe('GridSizeFromString', () => {
 
 describe('is8BitsTiff', () => {
   it('should be a 8 bits TIFF', async () => {
-    const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
+    const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
     await assert.doesNotReject(validate8BitsTiff(testTiff));
   });
   it('should not be a 8 bits TIFF', async () => {
-    const testTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
+    const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
     await assert.rejects(validate8BitsTiff(testTiff), {
       name: 'Error',
       message: `${testTiff.source.url.href} is not a 8 bits TIFF`,
@@ -392,8 +398,8 @@ describe('is8BitsTiff', () => {
 
 describe('validatePreset', () => {
   it('should validate multiple tiffs', async (t) => {
-    const test16bTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/16b.tiff');
-    const test8bTiff = await createTiff('./src/commands/tileindex-validate/__test__/data/8b.tiff');
+    const test16bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
+    const test8bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
     const fatalStub = t.mock.method(logger, 'fatal');
     await assert.rejects(validatePreset('webp', [test16bTiff, test16bTiff, test8bTiff]), {
       name: 'Error',

@@ -16,12 +16,11 @@ import { createFileList } from '../../utils/filelist.ts';
 import { findBoundingBox } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
-import { config, createTiff, forceOutput, registerCli, verbose } from '../common.ts';
+import { config, createTiff, forceOutput, registerCli, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 
-export function isTiff(x: string): boolean {
-  const search = x.toLowerCase();
-  return search.endsWith('.tiff') || search.endsWith('.tif');
+export function isTiff(x: URL): boolean {
+  return urlPathEndsWith(x, '.tiff') || urlPathEndsWith(x, '.tif');
 }
 
 export const TiffLoader = {
@@ -32,7 +31,7 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: string[], args?: FileFilter): Promise<Tiff[]> {
+  async load(locations: URL[], args?: FileFilter): Promise<Tiff[]> {
     // Include 0 byte files and filter them out with {@see isTiff}
     const files = await getFiles(locations, { ...args, sizeMin: 0 });
     const tiffLocations = files.flat().filter(isTiff);
@@ -43,7 +42,7 @@ export const TiffLoader = {
     if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
 
     const promises = await Promise.allSettled(
-      tiffLocations.map((loc: string) => {
+      tiffLocations.map((loc: URL) => {
         return createTiff(loc).catch((e: unknown) => {
           // Ensure tiff loading errors include the location of the tiff
           logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
@@ -214,7 +213,7 @@ export const commandTileIndexValidate = command({
       defaultValue: () => false,
     }),
     location: restPositionals({
-      type: string,
+      type: UrlFolderList,
       displayName: 'location',
       description: 'Location of the source files. Accepts multiple source paths.',
     }),
@@ -225,7 +224,8 @@ export const commandTileIndexValidate = command({
     logger.info('TileIndex:Start');
 
     const readTiffStartTime = performance.now();
-    const tiffs = await TiffLoader.load(args.location, args);
+    const tiffLocationURLs = args.location.flat();
+    const tiffs = await TiffLoader.load(tiffLocationURLs, args);
     await validatePreset(args.preset, tiffs);
 
     const projections = new Set(tiffs.map((t) => t.images[0]?.epsg));
@@ -257,7 +257,7 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await fsa.write('/tmp/tile-index-validate/input.geojson', {
+      const inputGeoJson = {
         type: 'FeatureCollection',
         features: tiffLocations.map((loc) => {
           const epsg = args.sourceEpsg ?? loc.epsg;
@@ -270,10 +270,13 @@ export const commandTileIndexValidate = command({
             tileName: loc.tileNames.join(', '),
           });
         }),
-      });
-      logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:InputGeoJson');
-
-      await fsa.write('/tmp/tile-index-validate/output.geojson', {
+      };
+      const inputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/input.geojson');
+      const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
+      const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
+      await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
+      logger.info({ path: inputGeoJsonFileName.href }, 'Write:InputGeoJson');
+      const outputGeojson = {
         type: 'FeatureCollection',
         features: [...outputTiles.keys()].map((key) => {
           const mapTileIndex = MapSheet.getMapTileIndex(key);
@@ -283,11 +286,13 @@ export const commandTileIndexValidate = command({
             tileName: key,
           });
         }),
-      });
-      logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:OutputGeojson');
+      };
+      await fsa.write(outputGeoJsonFileName, JSON.stringify(outputGeojson));
+      logger.info({ path: outputGeoJsonFileName.href }, 'Write:OutputGeojson');
 
-      await fsa.write('/tmp/tile-index-validate/file-list.json', createFileList(outputTiles, args.includeDerived));
-      logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputTiles.size }, 'Write:FileList');
+      const fileList = createFileList(outputTiles, args.includeDerived);
+      await fsa.write(fileListFileName, JSON.stringify(fileList));
+      logger.info({ path: fileListFileName.href, count: outputTiles.size }, 'Write:FileList');
     }
 
     let retileNeeded = false;
