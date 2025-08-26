@@ -3,7 +3,6 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
-// import { FsMemory } from '@chunkd/fs';
 import { MinSizeForCompression } from '../copy-helpers.ts';
 import type { CopyStats } from '../copy-rpc.ts';
 import { worker } from '../copy-worker.ts';

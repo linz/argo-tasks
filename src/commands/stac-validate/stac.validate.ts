@@ -1,10 +1,9 @@
-import { fsa } from '@chunkd/fs';
+import { fsa, FsHttp } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
 import Ajv from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals } from 'cmd-ts';
 import { createHash } from 'crypto';
-// import { dirname, join } from 'path';
 import { performance } from 'perf_hooks';
 import type * as st from 'stac-ts';
 import { pathToFileURL } from 'url';
@@ -13,7 +12,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { hashStream, Sha256Prefix } from '../../utils/hash.ts';
-import { config, registerCli, UrlFolder, verbose } from '../common.ts';
+import { config, registerCli, UrlList, verbose } from '../common.ts';
 
 export const commandStacValidate = command({
   name: 'stac-validate',
@@ -53,13 +52,15 @@ export const commandStacValidate = command({
       description: 'Strict checking',
     }),
     location: restPositionals({
-      type: UrlFolder,
+      type: UrlList,
       displayName: 'location',
       description: 'Location of the STAC files to validate',
     }),
   },
 
   async handler(args) {
+    fsa.register('https://', new FsHttp());
+
     registerCli(this, args);
 
     logger.info('StacValidation:Start');
@@ -389,13 +390,4 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
   }
   if (stacJson.type === 'Feature') return [];
   throw new Error(`Unknown Stac Type [${String(stacJson['type'] ?? '')}]: ${path.href}`);
-}
-
-export function isURL(path: string): boolean {
-  try {
-    new URL(path);
-    return true;
-  } catch (err) {
-    return false;
-  }
 }

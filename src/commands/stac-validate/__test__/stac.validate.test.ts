@@ -4,8 +4,13 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { fsa, FsMemory } from '@chunkd/fs';
 import type * as st from 'stac-ts';
 
-import { getStacSchemaUrl, isURL, validateAssets, validateLinks, validateStacChecksum } from '../stac.validate.ts';
-
+import {
+  commandStacValidate,
+  getStacSchemaUrl,
+  validateAssets,
+  validateLinks,
+  validateStacChecksum,
+} from '../stac.validate.ts';
 describe('stacValidate', function () {
   describe('getStacSchemaUrl', () => {
     it('should return a item url', () => {
@@ -32,11 +37,6 @@ describe('stacValidate', function () {
     it('should return null on invalid type', () => {
       assert.equal(getStacSchemaUrl('CollectionItem', '1.0.0', fsa.toUrl('placeholder_url')), null);
     });
-  });
-
-  it('isURL', () => {
-    assert.equal(isURL('s3://test-bucket/test-survey/collection.json'), true);
-    assert.equal(isURL('data/test-survey/collection.json'), false);
   });
 
   describe('validate checksum', () => {
@@ -82,6 +82,24 @@ describe('stacValidate', function () {
       const errors = await validateAssets(stacItem, fsa.toUrl(`${path}item.json`));
       assert.equal(errors.length, 1);
     });
+    it('should be able to validate a public collection via https', async () => {
+      const collection =
+        'https://nz-imagery.s3-ap-southeast-2.amazonaws.com/new-zealand/new-zealand_2020-2021_10m/rgb/2193/collection.json';
+      const collectionUrl = fsa.toUrl(collection);
+      assert.doesNotThrow(async () => {
+        await commandStacValidate.handler({
+          config: undefined,
+          verbose: false,
+          concurrency: 1,
+          checksumAssets: false,
+          checksumLinks: false,
+          recursive: false,
+          strict: false,
+          location: [[collectionUrl]],
+        });
+      });
+    });
+
     it('should validate a valid link checksum', async () => {
       await fsa.write(fsa.toUrl(`${path}item.json`), Buffer.from(JSON.stringify({ test: true })));
       const stacCollection: st.StacCollection = {
