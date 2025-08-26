@@ -1,13 +1,14 @@
 import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
-import { command, positional, string } from 'cmd-ts';
+import { command, positional } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { md } from '../../readme/markdown.ts';
 import { annotateExample } from '../../readme/readme.example.ts';
 import { hashBuffer, HashKey } from '../../utils/hash.ts';
-import { config, registerCli, S3Path, verbose } from '../common.ts';
+import { config, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
+import { makeRelative } from '../../utils/filelist.ts';
 
 export const commandStacSync = command({
   name: 'stac-sync',
@@ -16,7 +17,7 @@ export const commandStacSync = command({
   args: {
     config,
     verbose,
-    sourcePath: positional({ type: string, description: 'Location of the source STAC to synchronise from' }),
+    sourcePath: positional({ type: UrlFolder, description: 'Location of the source STAC to synchronise from' }),
     destinationPath: positional({
       type: S3Path,
       description: 'Location of the destination STAC in S3 to synchronise to',
@@ -25,7 +26,7 @@ export const commandStacSync = command({
 
   async handler(args) {
     registerCli(this, args);
-    logger.info({ source: args.sourcePath, destination: args.destinationPath }, 'StacSync:Start');
+    logger.info({ source: args.sourcePath.href, destination: args.destinationPath }, 'StacSync:Start');
     const nb = await synchroniseFiles(args.sourcePath, args.destinationPath);
     logger.info({ copied: nb }, 'StacSync:Done');
   },
@@ -40,15 +41,15 @@ annotateExample(commandStacSync, 'Sync STAC to s3', md.code('bash', 'stac sync /
  * @param destinationPath S3 path where the files need to be synchronized
  * @returns the number of files copied over
  */
-export async function synchroniseFiles(sourcePath: string, destinationPath: URL): Promise<number> {
+export async function synchroniseFiles(sourcePath: URL, destinationPath: URL): Promise<number> {
   let count = 0;
   const sourceFilesInfo = await fsa.toArray(fsa.details(sourcePath));
 
   await Promise.all(
     sourceFilesInfo.map(async (fileInfo) => {
-      if (!fileInfo.path.endsWith('.json')) return;
+      if (!fileInfo.url.pathname.endsWith('.json')) return;
 
-      const key = new URL(fileInfo.path.slice(sourcePath.length), destinationPath);
+      const key = new URL(makeRelative(sourcePath, fileInfo.url), destinationPath);
       (await uploadFileToS3(fileInfo, key)) && count++;
     }),
   );
@@ -63,16 +64,16 @@ export async function synchroniseFiles(sourcePath: string, destinationPath: URL)
  * @returns whether the file was uploaded
  */
 export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
-  const destinationHead = await fsa.head(path.href);
-  const sourceData = await fsa.read(sourceFileInfo.path);
+  const destinationHead = await fsa.head(path);
+  const sourceData = await fsa.read(sourceFileInfo.url);
   const sourceHash = hashBuffer(sourceData);
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;
   }
 
-  await fsa.write(path.href, sourceData, {
+  await fsa.write(path, sourceData, {
     metadata: { [HashKey]: sourceHash },
-    contentType: guessStacContentType(path.href),
+    contentType: guessStacContentType(path),
   });
   logger.debug({ path: path.href }, 'StacSync:FileUploaded');
   return true;
@@ -88,9 +89,9 @@ export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promi
  * Assumes anything ending with '.json' is a stac item
  * @see {@link https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md#stac-media-types}
  */
-function guessStacContentType(path: string): string | undefined {
-  if (path.endsWith('collection.json')) return 'application/json';
-  if (path.endsWith('catalog.json')) return 'application/json';
-  if (path.endsWith('.json')) return 'application/geo+json';
+export function guessStacContentType(path: URL): string | undefined {
+  if (path.pathname.endsWith('collection.json')) return 'application/json';
+  if (path.pathname.endsWith('catalog.json')) return 'application/json';
+  if (path.pathname.endsWith('.json')) return 'application/geo+json';
   return;
 }
