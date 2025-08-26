@@ -1,15 +1,14 @@
 import { basename } from 'node:path/posix';
 
 import { fsa } from '@chunkd/fs';
-import { command, option, optional, restPositionals, string } from 'cmd-ts';
+import { command, option, optional, restPositionals } from 'cmd-ts';
 import type { StacCollection, StacItem, StacLink } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { combinePaths, splitPaths } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
-import type { FileListEntry } from '../../utils/filelist.ts';
-import { registerCli, verbose } from '../common.ts';
+import { FileListEntryClass, makeRelative } from '../../utils/filelist.ts';
+import { registerCli, replaceUrlExtension, Url, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 
 interface LinzItemLink extends StacLink {
   'file:checksum': string;
@@ -20,6 +19,14 @@ interface LinzStacItem extends StacItem {
 interface LinzStacCollection extends StacCollection {
   links: LinzItemLink[];
 }
+interface UrlWithChecksum extends URL {
+  checksum?: string;
+}
+export interface IdentifyUpdatedItemsArgs {
+  verbose: boolean;
+  targetCollection: URL | undefined;
+  sourceCollections: URL[][];
+}
 
 export const commandIdentifyUpdatedItems = command({
   name: 'identify-updated-items',
@@ -29,29 +36,31 @@ export const commandIdentifyUpdatedItems = command({
   args: {
     verbose,
     targetCollection: option({
-      type: optional(string),
+      type: optional(Url),
       long: 'target-collection',
       description:
         'Target collection.json file of the dataset that derives from the source dataset. If not provided, all Items of the source dataset will be returned in the list.',
     }),
     sourceCollections: restPositionals({
-      type: string,
+      type: UrlList,
       displayName: 'source-collections',
       description:
         'Location of the source collection.json files that are used to create the target dataset. Split by ";"',
     }),
   },
-  async handler(args) {
+  async handler(args: IdentifyUpdatedItemsArgs) {
     const startTime = performance.now();
     registerCli(this, args);
     logger.info('identifyUpdatedItems:Start');
-
-    if (args.targetCollection && !args.targetCollection.endsWith('collection.json')) {
+    if (args.targetCollection && !args.targetCollection.pathname.endsWith('collection.json')) {
       logger.error('--target-collection must point to an existing STAC collection.json or not be set');
       throw new Error('--target-collection must point to an existing STAC collection.json or not be set');
     }
-    const sourceCollectionUrls = splitPaths(args.sourceCollections);
-    if (sourceCollectionUrls.length === 0 || sourceCollectionUrls.some((str) => !str.endsWith('collection.json'))) {
+    const sourceCollectionUrls = args.sourceCollections.flat();
+    if (
+      sourceCollectionUrls.length === 0 ||
+      sourceCollectionUrls.some((url) => !urlPathEndsWith(url, 'collection.json'))
+    ) {
       logger.error('Source collections must each point to existing STAC collection.json file(s)');
       throw new Error('--source-collections must point to existing STAC collection.json file(s)');
     }
@@ -67,7 +76,7 @@ export const commandIdentifyUpdatedItems = command({
       const targetCollection = await fsa.readJson<LinzStacCollection>(args.targetCollection);
       for (const collectionLink of targetCollection.links) {
         if (collectionLink.rel !== 'item') continue;
-        const itemUrl = combinePaths(args.targetCollection, collectionLink.href);
+        const itemUrl = new URL(collectionLink.href, args.targetCollection);
         Q.push(async () => {
           const itemStac = await fsa.readJson<LinzStacItem>(itemUrl);
           itemStac.links.forEach((itemLink) => {
@@ -77,7 +86,7 @@ export const commandIdentifyUpdatedItems = command({
               existingItemsAtTarget[myItemId] = []; // Initialize an empty array if not present
             }
             existingItemsAtTarget[myItemId].push({
-              href: itemLink.href,
+              href: makeRelative(args.targetCollection as URL, new URL(itemLink.href, args.targetCollection), false),
               checksum: itemLink['file:checksum'],
             });
           });
@@ -95,7 +104,7 @@ export const commandIdentifyUpdatedItems = command({
             desiredItemsAtTarget[myItemId] = [];
           }
           desiredItemsAtTarget[myItemId].push({
-            href: combinePaths(sourceCollectionUrl, sourceItem.href),
+            href: makeRelative(fsa.toUrl('./'), new URL(sourceItem.href, sourceCollectionUrl), false),
             checksum: sourceItem['file:checksum'],
           });
         });
@@ -106,8 +115,6 @@ export const commandIdentifyUpdatedItems = command({
       logger.fatal({ err }, 'identifyUpdatedItems:Failed');
       throw err;
     });
-    logger.debug(existingItemsAtTarget);
-    logger.debug(desiredItemsAtTarget);
     for (const [itemId, desiredItemChecksums] of Object.entries(desiredItemsAtTarget)) {
       const existingItemChecksums = existingItemsAtTarget[itemId] ?? [];
       logger.trace({ existingItemChecksums, desiredItemChecksums }, `identifyUpdatedItems:Checking ${itemId}`);
@@ -142,16 +149,16 @@ export const commandIdentifyUpdatedItems = command({
       }
       logger.trace({ itemId }, `identifyUpdatedItems:Skipping ${itemId} because sources match`);
     }
-    const tilesToProcess: FileListEntry[] = Object.entries(itemsToProcess).map(([key, value]) => {
-      const tiffInputs = value.map((item) => item.href.replace(/\.json$/, '.tiff'));
-      return {
-        output: key,
-        input: sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls),
-        includeDerived: true,
-      };
+    const tilesToProcess: FileListEntryClass[] = Object.entries(itemsToProcess).map(([key, value]) => {
+      const tiffInputs = value.map((item) => {
+        const url = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff') as UrlWithChecksum;
+        url.checksum = item.checksum;
+        return url;
+      });
+      return new FileListEntryClass(key, sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls), true);
     });
 
-    const fileListPath = '/tmp/identify-updated-items/file-list.json';
+    const fileListPath = fsa.toUrl('/tmp/identify-updated-items/file-list.json');
     await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
     logger.info(
       {
@@ -172,10 +179,10 @@ export const commandIdentifyUpdatedItems = command({
  * @param sourceCollections The source collections to use for sorting.
  * @returns The sorted input file paths.
  */
-function sortInputsBySourceOrder(inputs: string[], sourceCollections: string[]): string[] {
+function sortInputsBySourceOrder(inputs: URL[], sourceCollections: URL[]): URL[] {
   return inputs.sort((a, b) => {
-    const indexA = sourceCollections.findIndex((src) => a.includes(src.replace('/collection.json', '')));
-    const indexB = sourceCollections.findIndex((src) => b.includes(src.replace('/collection.json', '')));
+    const indexA = sourceCollections.findIndex((src) => a.href.includes(src.href.replace('/collection.json', '')));
+    const indexB = sourceCollections.findIndex((src) => b.href.includes(src.href.replace('/collection.json', '')));
     return indexA - indexB;
   });
 }
