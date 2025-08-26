@@ -1,4 +1,4 @@
-import { fsa } from '@chunkd/fs';
+import { fsa, FsHttp } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
 import Ajv from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';

@@ -2,9 +2,8 @@ import { setTimeout } from 'node:timers/promises';
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { fsa } from '@chunkd/fs';
-import { FsAwsS3 } from '@chunkd/source-aws';
-import type { S3LikeV3 } from '@chunkd/source-aws-v3';
-import { FsAwsS3V3 } from '@chunkd/source-aws-v3';
+import type { AwsCredentialConfig } from '@chunkd/fs-aws';
+import { AwsS3CredentialProvider, FsAwsS3 } from '@chunkd/fs-aws';
 import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 
 import { logger } from './log.ts';

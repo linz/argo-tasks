@@ -1,4 +1,4 @@
-import type { FileInfo } from '@chunkd/core';
+import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
 import { command, positional, string } from 'cmd-ts';
 

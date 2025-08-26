@@ -1,4 +1,5 @@
 import { urlToString } from '../commands/common.ts';
+import { fsa } from '@chunkd/fs';
 import type { TiffLocation } from '../commands/tileindex-validate/tileindex.validate.ts';
 
 export type FileListEntry = {

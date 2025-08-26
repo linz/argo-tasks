@@ -1,6 +1,5 @@
-import type { FileInfo } from '@chunkd/core';
+import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
-import { FsFile } from '@chunkd/source-file';
 
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';

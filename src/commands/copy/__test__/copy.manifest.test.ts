@@ -3,8 +3,7 @@ import { rm } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { ActionCopy } from '../../../utils/actions.ts';
 import { urlToString } from '../../common.ts';

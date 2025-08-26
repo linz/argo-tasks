@@ -2,8 +2,7 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 import { gunzipSync } from 'node:zlib';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 import { parse } from 'cmd-ts';
 
 import type { CommandArguments } from '../../../__test__/type.util.ts';

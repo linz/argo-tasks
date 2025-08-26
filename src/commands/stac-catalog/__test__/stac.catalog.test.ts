@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import { createLinks, makeRelative } from '../stac.catalog.ts';
 

@@ -1,11 +1,6 @@
 import { after, before, beforeEach, describe, it } from 'node:test';
 
-import { CompositeError } from '@chunkd/core';
-import type { FileSystemAbstraction } from '@chunkd/fs';
-import { fsa } from '@chunkd/fs';
-import type { FsAwsS3 } from '@chunkd/source-aws';
-import type { S3LikeV3 } from '@chunkd/source-aws-v3';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsError, FsMemory } from '@chunkd/fs';
 import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 

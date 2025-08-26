@@ -1,3 +1,5 @@
+import { fsa } from '@chunkd/fs';
+
 /**
  * Store actions as JSON documents on a file system rather than passing huge JSON documents around
  *

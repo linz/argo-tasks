@@ -42,25 +42,6 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
   return output;
 }
 
-/** Characters to split paths on @see splitPaths */
-const PathSplitCharacters = /;|\n/;
-
-/**
- * Split `;` separated paths into separate paths
- *
- * Argo has a limitation that arguments to CLIs cannot easily be lists of paths, so users can add multiple paths by creating a string with either `\n` or `;`
- *
- * @example
- * ```typescript
- * splitPaths(["a;b"]) // ['a', 'b']
- * splitPaths(["a\nb"]) // ['a', 'b']
- *````
- * @param paths
- */
-export function splitPaths(paths: string[]): string[] {
-  return paths.map((m) => m.split(PathSplitCharacters)).flat();
-}
-
 export type FileFilter = {
   include?: string;
   exclude?: string;
@@ -133,25 +114,4 @@ export async function getFiles(paths: string[], args: FileFilter = {}): Promise<
   }
 
   return chunkFiles(outputFiles, maxLength, groupSize);
-}
-
-/**
- * Combine a base path with a relative path, resolving them to a single path.
- *
- * @param basePath The base path (can be a URL or local file path). Anything after the final "/" (i.e. a file name) will be removed.
- * @param addPath The path to combine with the base path. If this is an absolute path, it will overwrite basePath. Anything after the final "/" (i.e. a file name) will remain in place.
- * @returns The combined absolute path.
- */
-export function combinePaths(basePath: string, addPath: string): string {
-  // If basePath is a local path, convert it to a `file://` URL for proper resolution
-  const isLocal = !basePath.includes('://');
-  const relativePrefix = isLocal ? basePath.substring(0, basePath.indexOf('/')) : '';
-
-  const baseURL = new URL(isLocal ? `file://${basePath}` : basePath);
-
-  // Resolve relative path against the base path
-  const combinedPath = new URL(addPath, baseURL).href;
-
-  // If the base path was a relative local path, convert the combined URL back to a local path
-  return isLocal ? relativePrefix + new URL(combinedPath).pathname : combinedPath;
 }

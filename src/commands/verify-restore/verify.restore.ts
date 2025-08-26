@@ -1,7 +1,6 @@
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
-import { HeadObjectCommand } from '@aws-sdk/client-s3';
+import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
-import type { FsAwsS3V3 } from '@chunkd/source-aws-v3';
 import { boolean, command, flag, option, positional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 

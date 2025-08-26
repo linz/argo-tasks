@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
 import type { CommandArguments } from '../../../__test__/type.util.ts';

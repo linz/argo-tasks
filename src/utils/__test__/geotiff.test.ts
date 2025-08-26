@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 import type { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { createTiff } from '../../commands/common.ts';
