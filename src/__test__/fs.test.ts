@@ -35,7 +35,6 @@ describe('Register', () => {
   /** find all the file systems related to s3:// */
   const fsSystemsPath = (): string[] => {
     fsa.get(fsa.toUrl('s3://'), 'r'); // ensure systems' array is sorted
-    // return fsa.systems.filter((f) => f.path.startsWith('s3://')).map((f) => f.path);
     return fsa.systems.filter((f) => f.prefix.startsWith('s3://')).map((f) => f.prefix);
   };
 
@@ -70,7 +69,6 @@ describe('Register', () => {
 
     const fileSystems = [...s3Fs.credentials!.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
-    // const newFs = fileSystems[0]!.s3 as S3LikeV3;
     const newFs = fileSystems[0]!;
     assert.equal(
       newFs.s3.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
@@ -93,7 +91,6 @@ describe('Register', () => {
 
     const fileSystems = [...s3Fs.credentials!.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
-    // const newFs = fileSystems[0]!.s3 as S3LikeV3;
     const newFs = fileSystems[0]!.s3;
 
     assert.deepEqual(

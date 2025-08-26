@@ -66,8 +66,6 @@ describe('command.list', () => {
   it('should ignore empty files from ; separated lists', async () => {
     await fsa.write(fsa.toUrl(`memory://some-bucket/🦄/🦄 🌈.txt`), Buffer.alloc(1));
     await fsa.write(fsa.toUrl(`memory://some-bucket/🌈/🦄 🌈.txt`), Buffer.alloc(0));
-    // const locallist= await fsa.list(fsa.toUrl('./'));
-    // console.log(locallist);
     await commandList.handler({
       ...baseArgs,
       location: [[new URL('memory://some-bucket/🦄/'), new URL('memory://some-bucket/🌈/')]],

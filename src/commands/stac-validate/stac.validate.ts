@@ -72,7 +72,7 @@ export const commandStacValidate = command({
       logger.error('StacValidation:Error:NoLocationProvided');
       process.exit(1);
     }
-    const paths = args.location.flat(); // listLocation(args.location).map((c) => c.trim());
+    const paths = args.location.flat();
 
     // Weird typing for ajv require us to use the "default" export to construct it.
     const ajv = new Ajv.default({

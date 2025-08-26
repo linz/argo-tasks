@@ -28,7 +28,6 @@ export function makeRelative(basePath: URL, filePath: URL, strict = true): strin
   if (strict && !filePath.href.startsWith(basePathFolder.href)) {
     throw new Error(`FilePaths are not relative base: ${basePathFolder.href} file: ${filePath.href}`);
   }
-  // todo: review how this function returns relative paths. A string starting with "./" is more logical but not all calling code may expect this.
   const relativePath = filePath.href.replace(basePathFolder.href, './');
   if (HttpProtocols.includes(filePath.protocol)) {
     return relativePath;
@@ -87,8 +86,6 @@ export async function createLinks(basePath: URL, templateLinks: st.StacLink[]): 
       const checksum = hashBuffer(buf);
       const collLink: st.StacLink = {
         rel: 'child',
-        // href: fsa.join('./', relPath),
-        // href: './' + relPath,
         href: relPath,
         title: collection.title,
         'file:checksum': checksum,

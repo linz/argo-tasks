@@ -361,8 +361,6 @@ async function compareCreation(
         }
 
         // TODO: to improve performance further we could use the source collection.json as it contains all the item checksums
-        // const sourceItemHash = await hashQueue(() => hashStream(fsa.readStream(fsa.toUrl(item.href))));
-        // TODO: this used to be item.href, is sourceFile correct?
         const sourceItemHash = await hashQueue(() => hashStream(fsa.readStream(sourceFile)));
         logger.trace(
           { source: item.href, hash: sourceItemHash, isOk: sourceItemHash === item['file:checksum'] },

@@ -1,5 +1,3 @@
-// import path from 'node:path';
-
 import { fsa } from '@chunkd/fs';
 import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';

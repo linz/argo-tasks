@@ -4,8 +4,6 @@ import { RasterTypeKey, TiffTagGeo } from '@cogeotiff/core';
 
 import { replaceUrlExtension } from '../commands/common.ts';
 
-// import { urlToString } from '../commands/common.ts';
-
 /**
  * Attempt to parse a tiff world file
  *
@@ -87,13 +85,10 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   let tfwData;
   for (const ext of variants) {
     const candidateUrl = new URL(baseUrl.href + ext);
-    // candidateUrl.pathname += ext;
     try {
       tfwData = await fsa.read(candidateUrl);
-      break; // found one, exit loop
-    } catch (err) {
-      // Not found, keep trying
-    }
+      break;
+    } catch (err) {}
   }
 
   if (!tfwData) {
