@@ -3,7 +3,6 @@ import { describe, it } from 'node:test';
 
 import { pathToFileURL } from 'url';
 
-// import { tryParseUrl } from '../../commands/common.ts';
 import { slugify } from '../slugify.ts';
 
 const slugChars = 'abcdefghijklmnopqrstuvwxyz0123456789_.-';

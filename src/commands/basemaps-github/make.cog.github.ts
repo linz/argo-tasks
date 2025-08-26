@@ -9,7 +9,6 @@ import type {
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
 
-// import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';

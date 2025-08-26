@@ -23,12 +23,6 @@ export function groupItems<T>(items: T[], groupSize: number): T[][] {
   return output;
 }
 
-// /** Normalize an input as either a JSON array or just an array  */
-// function loadInput(x: string): string[] {
-//   if (x.startsWith('[')) return JSON.parse(x) as string[];
-//   return [x];
-// }
-
 export const CommandGroupArgs = {
   config,
   verbose,
@@ -61,7 +55,7 @@ export const commandGroup = command({
     registerCli(this, args);
 
     const inputs: string[] = [];
-    inputs.push(...args.inputs.flat()); // Todo: does this need to be flat?
+    inputs.push(...args.inputs.flat());
 
     if (args.fromFile) {
       if (await fsa.exists(args.fromFile)) {

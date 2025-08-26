@@ -48,7 +48,6 @@ export interface targetInfo {
  */
 export function parseTargetUrl(url: URL, offset: 0 | 1): targetInfo {
   // Parse target bucket, epsg and imagery name from the target url
-  // const url = new URL(target);
   const target = url.href;
   const bucket = url.hostname;
   const splits = url.pathname.split('/');
@@ -88,7 +87,6 @@ async function parseRasterTargetInfo(
 
   assertValidBucket(bucket, ValidTargetBuckets);
 
-  // const collectionPath = fsa.join(target, 'collection.json');
   const base = target.href.endsWith('/') ? target : new URL(target.href + '/');
   const collectionURL = new URL('collection.json', base);
 
@@ -164,7 +162,6 @@ async function parseElevationTargetInfo(
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
-  // const collectionURL = fsa.join(target, 'collection.json');
   const base = target.href.endsWith('/') ? target : new URL(target.href + '/');
   const collectionURL = new URL('collection.json', base);
 

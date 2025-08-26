@@ -54,7 +54,6 @@ describe('stac-setup', () => {
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));
     files.sort();
-    // assert.deepStrictEqual(files, ['memory://tmp/stac-setup/collection-id', 'memory://tmp/stac-setup/linz-slug']);
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory://tmp/stac-setup/collection-id'),
       fsa.toUrl('memory://tmp/stac-setup/linz-slug'),
