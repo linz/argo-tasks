@@ -8,7 +8,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import type { StacCollectionLinz } from '../../utils/metadata.ts';
 import { GeospatialDataCategories } from '../../utils/metadata.ts';
-import { config, createTiff, registerCli, verbose } from '../common.ts';
+import { config, createTiff, registerCli, UrlFolder, verbose } from '../common.ts';
 
 export interface PathMetadata {
   targetBucketName: string;
@@ -34,7 +34,7 @@ export const commandGeneratePath = command({
     }),
 
     source: positional({
-      type: string,
+      type: UrlFolder,
       displayName: 'path',
       description: 'path to source data where collection.json file is located',
     }),
@@ -46,10 +46,8 @@ export const commandGeneratePath = command({
 
     logger.info({ source: args.source }, 'GeneratePath:Start');
 
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      fsa.join(args.source, 'collection.json'),
-    );
-    if (collection == null) throw new Error(`Failed to get collection.json from ${args.source}.`);
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(new URL('collection.json', args.source));
+    if (collection == null) throw new Error(`Failed to get collection.json from ${args.source.href}.`);
 
     const tiff = await loadFirstTiff(args.source, collection);
 
@@ -65,8 +63,7 @@ export const commandGeneratePath = command({
     const target = generatePath(metadata);
     logger.info({ duration: performance.now() - startTime, target: target }, 'GeneratePath:Done');
 
-    // Path to where the target is located
-    await fsa.write('/tmp/generate-path/target', target);
+    await fsa.write(fsa.toUrl('/tmp/generate-path/target'), target);
     logger.info({ location: '/tmp/generate-path/target', target: target }, 'GeneratePath:Written');
   },
 });
@@ -120,20 +117,20 @@ function formatBucketName(bucketName: string): string {
  * @param collection
  * @returns
  */
-export async function loadFirstTiff(source: string, collection: StacCollection): Promise<Tiff> {
+export async function loadFirstTiff(source: URL, collection: StacCollection): Promise<Tiff> {
   const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
-  if (itemLink == null) throw new Error(`No items in collection from ${source}.`);
+  if (itemLink == null) throw new Error(`No items in collection from ${source.href}.`);
 
-  const itemPath = new URL(itemLink, source).href;
-  const item = await fsa.readJson<StacItem>(itemPath);
-  if (item == null) throw new Error(`Failed to get item.json from ${itemPath}.`);
+  const itemURL = new URL(itemLink, source);
+  const item = await fsa.readJson<StacItem>(itemURL);
+  if (item == null) throw new Error(`Failed to get item.json from ${itemURL.toString()}.`);
 
   const tiffLink = item.assets['visual']?.href;
-  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemPath}`);
+  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemURL.toString()}`);
 
-  const tiffPath = new URL(tiffLink, source).href;
-  const tiff = await createTiff(tiffPath);
-  if (tiff == null) throw new Error(`Failed to get tiff from ${tiffPath}.`);
+  const tiffURL = new URL(tiffLink, source);
+  const tiff = await createTiff(tiffURL);
+  if (tiff == null) throw new Error(`Failed to get tiff from ${tiffURL.toString()}.`);
   return tiff;
 }
 
