@@ -3,6 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { gunzipSync } from 'node:zlib';
 
 import { fsa, FsMemory } from '@chunkd/fs';
+import { parse } from 'cmd-ts';
 
 import type { CommandArguments } from '../../../__test__/type.util.ts';
 import { Url, UrlFolder, UrlFolderList } from '../../common.ts';
@@ -19,7 +20,6 @@ describe('createManifest', () => {
     memory.files.clear();
   });
   it('should copy to the target location', async () => {
-
     await Promise.all([
       fsa.write(await Url.from('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
       fsa.write(await Url.from('memory://source/foo/bar/topographic.png'), Buffer.from('test')),
