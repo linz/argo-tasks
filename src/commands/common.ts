@@ -2,8 +2,7 @@ import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
 import type { Type } from 'cmd-ts';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
-import pLimit from 'p-limit';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { pathToFileURL } from 'url';
 
 import { registerFileSystem } from '../fs.register.ts';
 import { logger, registerLogger } from '../log.ts';
@@ -79,9 +78,6 @@ export function parseSize(size: string): number {
   return Math.round(fileSize);
 }
 
-/** Limit fetches to 25 concurrently **/
-export const TiffQueue = pLimit(25);
-
 /**
  * There is a minor difference between @chunkd/core and @cogeotiff/core
  * because @chunkd/core is a major version behind, when it upgrades this can be removed
@@ -91,45 +87,14 @@ export const TiffQueue = pLimit(25);
  * @param loc location to load the tiff from
  * @returns Initialized tiff
  */
-export function createTiff(loc: string): Promise<Tiff> {
+export function createTiff(loc: URL): Promise<Tiff> {
   const source = fsa.source(loc);
-
-  const tiff = new Tiff({
-    url: tryParseUrl(loc),
-    fetch: (offset, length): Promise<ArrayBuffer> => {
-      /** Limit fetches concurrency see {@link TiffQueue} **/
-      return TiffQueue(() => source.fetchBytes(offset, length));
-    },
-  });
+  const tiff = new Tiff(source);
   return tiff.init();
 }
 
 /**
- * Attempt to parse a location as a string as a URL,
- *
- * Relative paths will be converted into file urls.
- */
-export function tryParseUrl(loc: string): URL {
-  try {
-    return new URL(loc);
-  } catch (e) {
-    return pathToFileURL(loc);
-  }
-}
-
-/**
- * When chunkd moves to URLs this can be removed
- *
- * But reading a file as a string with `file://....` does not work in node
- * it needs to be converted with `fileURLToPath`
- */
-export function urlToString(u: URL): string {
-  if (u.protocol === 'file:') return fileURLToPath(u);
-  return decodeURI(u.href);
-}
-
-/**
- * Parse a input parameter as a URL.
+ * Parse an input parameter as a URL.
  *
  * If it looks like a file path, it will be converted using `pathToFileURL`.
  **/
@@ -144,7 +109,38 @@ export const Url: Type<string, URL> = {
 };
 
 /**
- * Parse a input parameter as a URL which represents a folder.
+ * Remove the file extension from a URL, typically used to remove `.tiff` or `.tif` extensions.
+ *
+ * @param url
+ * @param pattern to replace
+ * @param replaceValue to replace the pattern with, defaults to an empty string
+ */
+export function replaceUrlExtension(url: URL, pattern: RegExp, replaceValue: string = ''): URL {
+  if (!(url instanceof URL)) {
+    throw new Error('Expected a URL instance');
+  }
+  return new URL(url.href.replace(pattern, replaceValue));
+}
+
+/**
+ * Check if a URL path ends with a given string (e.g. filename or file extension).
+ *
+ * @param x URL to check (e.g. a TIFF file URL)
+ * @param needle the term to check for, defaults to '.tiff' or '.tif'
+ * @param caseSensitive whether the check should be case-sensitive, defaults to false
+ * @returns true if the URL path ends with the specified term
+ */
+export function urlPathEndsWith(x: URL, needle: string, caseSensitive = false): boolean {
+  let haystack = x.pathname;
+  if (!caseSensitive) {
+    needle = needle.toLowerCase();
+    haystack = x.pathname.toLowerCase();
+  }
+  return haystack.endsWith(needle);
+}
+
+/**
+ * Parse an input parameter as a URL which represents a folder.
  *
  * If it looks like a file path, it will be converted using `pathToFileURL`.
  * Any search parameters or hash will be removed, and a trailing slash added
@@ -160,8 +156,83 @@ export const UrlFolder: Type<string, URL> = {
   },
 };
 
+const PathSplitCharacters = /[;\n]/;
 /**
- * Remove a trailing 'm' from a input value and validate the input is a number.
+ * Parse an input parameter as a list of URLs which represent folders.
+ *
+ * If it looks like a file path, it will be converted using `pathToFileURL`.
+ * Any search parameters or hash will be removed, and a trailing slash added
+ * to the path section if it's not present.
+ **/
+export const UrlFolderList: Type<string, URL[]> = {
+  async from(str) {
+    const urls = str
+      .split(PathSplitCharacters)
+      .map((str) => str.trim())
+      .filter((str) => str.length > 0)
+      .map((str) => UrlFolder.from(str));
+    return await Promise.all(urls);
+  },
+};
+
+/**
+ * Parse an input parameter as a list of URLs.
+ *
+ * If it looks like a file path, it will be converted using `pathToFileURL`.
+ **/
+export const UrlList: Type<string | string[], URL[]> = {
+  async from(str: string | string[]) {
+    let strs: string[] = [];
+    if (Array.isArray(str)) {
+      strs = str.flat();
+    } else if (str.startsWith('[')) {
+      // If the input is a JSON array, parse it
+      strs = JSON.parse(str) as string[];
+      if (!Array.isArray(strs)) {
+        throw new Error('Input must be a JSON array of URLs');
+      }
+    } else {
+      strs = str
+        .split(PathSplitCharacters)
+        .map((str) => str.trim())
+        .filter((str) => str.length > 0);
+    }
+    const promises: Promise<URL>[] = strs
+      .map((str) => str.trim())
+      .filter((str) => str.length > 0)
+      .map((str) => Url.from(str))
+      .flat();
+    return Promise.all(promises);
+  },
+};
+
+/**
+ * Parse an input string as a list of items.
+ *
+ * If it looks like a JSON string, it will be parsed.
+ **/
+export const StrList: Type<string | string[], string[]> = {
+  async from(item: string | string[]) {
+    let items: string[] = [];
+    if (Array.isArray(item)) {
+      items = item.flat();
+    } else if (typeof item === 'string' && item.startsWith('[')) {
+      // If the input is a JSON array, parse it
+      const parsedItem = JSON.parse(item) as string[];
+      items = (await Promise.all(parsedItem.map((str) => StrList.from(str)))).flat();
+      if (!Array.isArray(items)) {
+        throw new Error('Input must be a JSON array of strings');
+      }
+    } else {
+      items = [item];
+    }
+    const results: string[] = items.flat();
+    return results;
+  },
+};
+
+/**
+ * Remove a trailing 'm' from an input value and validate the input is a number.
  *
  * @param str input value
  * @returns value without trailing 'm' (if it exists)
@@ -180,11 +251,11 @@ export const MeterAsString: Type<string, string> = {
 };
 
 /**
- * Parse a input parameter as a URL which represents a S3 path.
+ * Parse an input parameter as a URL which represents a S3 path.
  */
 export const S3Path: Type<string, URL> = {
   async from(str) {
     if (!str.startsWith('s3://')) throw new Error('Path is not S3');
-    return new URL(str);
+    return await Url.from(str);
   },
 };

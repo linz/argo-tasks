@@ -65,62 +65,57 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
 /**
  * When a new AWS file system is created copy across the middleware, but only if the middleware does not exist
  *
- * @param fsClient Filesystem to setup
+ * @param fileSystem to setup
  */
-export function setupS3FileSystem(fsClient: FsAwsS3V3): void {
-  addMiddlewareToS3Client(fsClient.client);
-
-  if (fsClient.credentials == null) return;
-  const oldFind = fsClient.credentials.find.bind(fsClient.credentials);
-  // When file systems are looked up ensure they are registered into `fsa`
-  fsClient.credentials.find = async (path: string): Promise<FsAwsS3 | null> => {
-    const accountConfig = await fsClient.credentials.findCredentials(path);
-    if (accountConfig == null) return null;
-
-    const fileSystem = await oldFind(path);
-    if (fileSystem == null) return null;
-
-    logger.debug({ prefix: path, roleArn: accountConfig.roleArn }, 'FileSystem:Register');
-    fsa.register(accountConfig.prefix, fileSystem);
-    if (fileSystem.s3 != null && 'client' in fileSystem.s3) {
-      addMiddlewareToS3Client((fileSystem.s3 as S3LikeV3).client);
-    }
-    return fileSystem;
+export function setupS3FileSystem(fileSystem: FsAwsS3): FsAwsS3 {
+  const credentials = new AwsS3CredentialProvider();
+  credentials.onFileSystemFound = (acc: AwsCredentialConfig, fs?: FsAwsS3, path?: URL): void => {
+    if (fs == null) return;
+    logger.info({ prefix: acc.prefix, roleArn: acc.roleArn, path: path?.href }, 'FileSystem:Register');
+    addMiddlewareToS3Client(fs.s3);
+    fsa.register(acc.prefix, fs);
   };
+  fileSystem.s3 = addMiddlewareToS3Client(fileSystem.s3);
+  fileSystem.credentials = credentials;
+
+  return fileSystem;
 }
 
 /**
  * ensure the FQDN and EAI_AGAIN Middleware exist on a s3 client
  *
- * @param client
+ * @param s3Client to setup
  */
-export function addMiddlewareToS3Client(client: S3Client): void {
-  // There doesnt appear to be a has or find, so the only option is to list all middleware
+export function addMiddlewareToS3Client(s3Client: S3Client): S3Client {
+  // There doesn't appear to be a has or find, so the only option is to list all middleware
   // which returns a list in a format: "FQDN - finalizeRequest"
-  const middleware = client.middlewareStack.identify();
+  if (s3Client == null) return s3Client;
+  const middleware = s3Client.middlewareStack.identify();
 
   if (middleware.find((f) => f.startsWith('FQDN ')) == null) {
-    client.middlewareStack.add(fqdn, { name: 'FQDN', step: 'finalizeRequest' });
+    s3Client.middlewareStack.add(fqdn, { name: 'FQDN', step: 'finalizeRequest' });
   }
 
   if (middleware.find((f) => f.startsWith('EAI_AGAIN ')) == null) {
-    client.middlewareStack.add(
+    s3Client.middlewareStack.add(
       eaiAgainBuilder((attempt: number) => 100 + attempt * 1000),
       { name: 'EAI_AGAIN', step: 'build' },
     );
   }
+  return s3Client;
 }
 
 FsAwsS3.MaxListCount = 1000;
 
+/** Split a config string into an array of strings */
 function splitConfig(x: string): string[] {
   if (x.startsWith('[')) return JSON.parse(x) as string[];
   return x.split(',');
 }
 
-export function registerFileSystem(opts: { config?: string }): FsAwsS3V3 {
-  const s3Fs = new FsAwsS3V3(new S3Client());
-  setupS3FileSystem(s3Fs);
+/** Register the S3 file system with chunkd/fsa */
+export function registerFileSystem(opts: { config?: string }): FsAwsS3 {
+  const s3Fs = setupS3FileSystem(new FsAwsS3(new S3Client()));
 
   fsa.register('s3://', s3Fs);
 
@@ -129,7 +124,7 @@ export function registerFileSystem(opts: { config?: string }): FsAwsS3V3 {
 
   const paths = splitConfig(configPath);
 
-  for (const path of paths) s3Fs.credentials.registerConfig(path, fsa);
+  for (const path of paths) s3Fs.credentials?.registerConfig(fsa.toUrl(path), fsa as unknown as FsAwsS3);
 
   return s3Fs;
 }

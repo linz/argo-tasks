@@ -1,21 +1,23 @@
+import { basename } from 'node:path/posix';
+
 import { fsa } from '@chunkd/fs';
 
 import { parseSize } from '../commands/common.ts';
 import { logger } from '../log.ts';
 
 export interface FileSizeInfo {
-  path: string;
+  url: URL;
   size?: number;
 }
 
-export async function* asyncFilter<T extends { path: string; size?: number }>(
+export async function* asyncFilter<T extends { url: URL; size?: number }>(
   source: AsyncGenerator<T>,
   opts?: { include?: string; exclude?: string },
 ): AsyncGenerator<T> {
   const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
   const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
   for await (const f of source) {
-    const testPath = f.path.toLowerCase();
+    const testPath = basename(f.url.href.toLowerCase());
     if (exclude && exclude.test(testPath)) continue;
     if (include === true) yield f;
     else if (include.test(testPath)) yield f;
@@ -23,14 +25,14 @@ export async function* asyncFilter<T extends { path: string; size?: number }>(
 }
 
 /** Chunk files into a max size (eg 1GB chunks) or max count (eg 100 files) or what ever comes first when both are defined */
-export function chunkFiles(values: FileSizeInfo[], count: number, size: number): string[][] {
-  if (count == null && size == null) return [values.map((c) => c.path)];
+export function chunkFiles(values: FileSizeInfo[], count: number, size: number): URL[][] {
+  if (count == null && size == null) return [values.map((c) => c.url)];
 
-  const output: string[][] = [];
-  let current: string[] = [];
+  const output: URL[][] = [];
+  let current: URL[] = [];
   let totalSize = 0;
   for (const v of values) {
-    current.push(v.path);
+    current.push(v.url);
     if (v.size) totalSize += v.size;
     if ((count > 0 && current.length >= count) || (size > 0 && totalSize >= size)) {
       output.push(current);
@@ -84,20 +86,23 @@ export type FileFilter = {
    */
   sizeMin?: number;
 };
-export async function getFiles(paths: string[], args: FileFilter = {}): Promise<string[][]> {
+
+/**
+ * Get a list of files from a set of paths with filtering and limits
+ * @param paths
+ * @param args
+ */
+export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const minSize = args.sizeMin ?? 1; // ignore 0 byte files
   const groupSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
   const outputFiles: FileSizeInfo[] = [];
 
-  const fullPaths = splitPaths(paths);
-
-  for (const rawPath of fullPaths) {
-    const targetPath = rawPath.trim();
-    logger.debug({ path: targetPath }, 'List');
-    const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), args));
-    logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
+  for (const path of paths) {
+    logger.debug({ path }, 'List');
+    const fileList = await fsa.toArray(asyncFilter(fsa.details(path), args));
+    logger.info({ path, fileCount: fileList.length }, 'List:Count');
 
     let totalSize = 0;
     for (const file of fileList) {
@@ -110,7 +115,7 @@ export async function getFiles(paths: string[], args: FileFilter = {}): Promise<
     }
     if (limit > 0 && outputFiles.length >= limit) break;
 
-    logger.info({ path: targetPath, fileCount: fileList.length, totalSize }, 'List:Size');
+    logger.info({ path, fileCount: fileList.length, totalSize }, 'List:Size');
   }
 
   return chunkFiles(outputFiles, maxLength, groupSize);
