@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { afterEach, before, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';

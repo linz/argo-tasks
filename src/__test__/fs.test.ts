@@ -1,7 +1,6 @@
 import { after, before, beforeEach, describe, it } from 'node:test';
 
-import { fsa, FsError } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsError, FsMemory } from '@chunkd/fs';
 import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
 

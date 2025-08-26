@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import { UrlList } from '../../commands/common.ts';
 import { getFiles } from '../chunk.ts';

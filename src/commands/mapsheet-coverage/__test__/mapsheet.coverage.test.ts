@@ -2,8 +2,7 @@ import assert from 'node:assert';
 import { afterEach, before, describe, it } from 'node:test';
 
 import { Nztm2000QuadTms, Projection } from '@basemaps/geo';
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 import { featuresToMultiPolygon } from '@linzjs/geojson';
 import type { StacCollection } from 'stac-ts';
 

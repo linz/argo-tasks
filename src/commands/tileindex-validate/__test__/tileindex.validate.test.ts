@@ -2,8 +2,7 @@ import assert from 'node:assert';
 import { before, beforeEach, describe, it } from 'node:test';
 
 import { Projection } from '@basemaps/geo';
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 import type { BBox } from '@linzjs/geojson';
 import type { FeatureCollection } from 'geojson';
 import { pathToFileURL } from 'url';
