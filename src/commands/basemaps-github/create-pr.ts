@@ -73,6 +73,11 @@ export function parseTargetUrl(url: URL, offset: 0 | 1): targetInfo {
   }
 }
 
+/** Ensure the provided url ends with a slash */
+function addSlash(url: URL): URL {
+  return url.href.endsWith('/') ? url : new URL(url.href + '/');
+}
+
 /**
  * Pass Raster target location with the following format
  * s3://linz-basemaps-staging/2193/west-coast_rural_2015-16_0-3m/01F6P21PNQC7D67W5SHQF806Z3/
@@ -87,8 +92,7 @@ async function parseRasterTargetInfo(
 
   assertValidBucket(bucket, ValidTargetBuckets);
 
-  const base = target.href.endsWith('/') ? target : new URL(target.href + '/');
-  const collectionURL = new URL('collection.json', base);
+  const collectionURL = new URL('collection.json', addSlash(target));
 
   const collection = await fsa.readJson<StacCollection>(collectionURL);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
@@ -162,8 +166,7 @@ async function parseElevationTargetInfo(
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
-  const base = target.href.endsWith('/') ? target : new URL(target.href + '/');
-  const collectionURL = new URL('collection.json', base);
+  const collectionURL = new URL('collection.json', addSlash(target));
 
   const collection = await fsa.readJson<StacCollection>(collectionURL);
   if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
