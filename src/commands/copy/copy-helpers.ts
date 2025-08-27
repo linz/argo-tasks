@@ -4,6 +4,9 @@ import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
+import { replaceUrlExtension } from '../common.ts';
+import { isJson } from '../pretty-print/pretty.print.ts';
+import { guessStacContentType } from '../stac-sync/stac.sync.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -118,12 +121,12 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
  * Also, if the file has been written with an unknown binary contentType attempt to fix it with common content types
  *
  *
- * @param path File path to fix the metadata of
+ * @param url URL of file to fix the metadata of
  * @param meta File metadata
  * @returns New fixed file metadata if fixed otherwise source file metadata
  */
-export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
-  if (path.toLowerCase().endsWith(CompressedFileExtension)) {
+export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
+  if (url.pathname.toLowerCase().endsWith(CompressedFileExtension)) {
     return { ...meta, contentType: 'application/zstd' };
   } else if (meta.contentType === 'application/zstd') {
     // if content type is `zstd` but extension isn't, set to a "fixable" content type
@@ -133,10 +136,10 @@ export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
 
   // Assume our tiffs are cloud optimized
-  if (isTiff(path)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+  if (isTiff(url)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
 
   // overwrite with application/json
-  if (path.endsWith('.json')) return { ...meta, contentType: 'application/json' };
+  if (isJson(url)) return { ...meta, contentType: guessStacContentType(url) };
 
   return meta;
 }
@@ -147,28 +150,28 @@ export function fixFileMetadata(path: string, meta: FileInfo): FileInfo {
  * If the target file exists, it will be skipped or overwritten based on the command line arguments.
  *
  * @param source
- * @param initialTargetName
+ * @param initialTargetURL
  * @param args
  */
 export async function determineTargetFileOperation(
   source: FileInfo,
-  initialTargetName: string,
+  initialTargetURL: URL,
   args: CopyContractArgs,
 ): Promise<TargetFileOperation> {
   const shouldCompress = shouldCompressFile(args.compress, source.size, MinSizeForCompression);
-  const shouldDecompress = shouldDecompressFile(args.decompress, source.path, CompressedFileExtension);
+  const shouldDecompress = shouldDecompressFile(args.decompress, source.url, CompressedFileExtension);
 
-  let finalTargetName = initialTargetName;
+  let finalTargetURL = initialTargetURL;
   if (shouldDecompress) {
     // If we decompress, we remove the .zst extension from the target name
-    finalTargetName = initialTargetName.slice(0, initialTargetName.length - CompressedFileExtension.length);
+    finalTargetURL = replaceUrlExtension(initialTargetURL, new RegExp('\\' + CompressedFileExtension + '$', 'i'));
   } else if (shouldCompress) {
     // If we compress, we append the .zst extension to the target name
-    finalTargetName += CompressedFileExtension;
+    finalTargetURL = new URL(initialTargetURL.href + CompressedFileExtension);
   }
 
-  const head = await tryHead(finalTargetName);
-  const target = { ...head, path: head?.path ?? finalTargetName, size: head?.size ?? 0 } as FileInfo;
+  const head = await tryHead(finalTargetURL);
+  const target = { ...head, url: head?.url ?? finalTargetURL, size: head?.size ?? 0 } as FileInfo;
   const defaultOperation = shouldDecompress
     ? FileOperation.Decompress
     : shouldCompress
@@ -181,7 +184,7 @@ export async function determineTargetFileOperation(
   };
 
   source.metadata ??= {};
-  source.metadata[HashKey] ??= await hashStream(fsa.stream(source.path));
+  source.metadata[HashKey] ??= await hashStream(fsa.readStream(source.url));
   const hashMisMatch = source.metadata[HashKey] !== target?.metadata?.[HashKey];
 
   if (target.size === 0) {
@@ -194,12 +197,12 @@ export async function determineTargetFileOperation(
   } else if (args.noClobber && hashMisMatch) {
     // With noClobber (and not force), we do not overwrite existing files (only copy new files).
     // Error if the target file already exists and has a different hash.
-    logger.error({ target: target.path, source: source.path }, 'File:Overwrite');
+    logger.error({ target: target.url.href, source: source.url.href }, 'File:Overwrite');
     throw new Error(
       'Target already exists with different hash. Use --force to overwrite. target: ' +
-        target.path +
+        target.url.toString() +
         ' source: ' +
-        source.path,
+        source.url.toString(),
     );
   }
   return myTargetAction;
@@ -213,17 +216,19 @@ export async function determineTargetFileOperation(
  * @param expectedHash The expected hash of the target file.
  * @returns {boolean} True if the target file matches the expected size and hash, otherwise logs an error and returns false.
  */
-export async function verifyTargetFile(target: string, expectedSize: number, expectedHash: string): Promise<boolean> {
+export async function verifyTargetFile(target: URL, expectedSize: number, expectedHash: string): Promise<boolean> {
   const targetReadBack = await tryHead(target);
   const targetSize = targetReadBack?.size;
-  const targetFs = fsa.get(target, 'rw');
+  // const targetFs = fsa.get(target, 'rw');
 
-  let targetHash = targetReadBack?.metadata?.[HashKey];
+  const targetHash = targetReadBack?.metadata?.[HashKey];
 
   // TODO: Local file system does not support metadata so assume hash is correct
-  if (FsFile.is(targetFs)) {
-    targetHash = '0';
-    expectedHash = '0';
+  if (target.protocol === 'file:') {
+    const targetVerified = targetSize === expectedSize;
+    if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
+
+    return targetVerified;
   }
 
   const targetVerified = targetSize === expectedSize && targetHash === expectedHash;
@@ -254,8 +259,8 @@ function shouldCompressFile(compress: boolean, size: number = 0, minSize: number
  */
 function shouldDecompressFile(
   decompress: boolean,
-  filename: string = '',
+  filename: URL,
   decompressExtension: string = CompressedFileExtension,
 ): boolean {
-  return decompress && filename.endsWith(decompressExtension);
+  return decompress && filename.href.endsWith(decompressExtension);
 }
