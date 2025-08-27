@@ -9,7 +9,7 @@ import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { protocolAwareString, makeRelative } from '../../utils/filelist.ts';
+import { makeRelative, protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, Url, UrlFolder, UrlFolderList, verbose } from '../common.ts';
 
 export const commandCreateManifest = command({

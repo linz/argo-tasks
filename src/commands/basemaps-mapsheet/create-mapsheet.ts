@@ -10,7 +10,7 @@ import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { registerCli, verbose } from '../common.ts';
+import { registerCli, Url, verbose } from '../common.ts';
 
 const gunzipProm = promisify(gunzip);
 
@@ -23,9 +23,9 @@ export function isGzip(b: Buffer): boolean {
  *
  * If the file ends with .gz or is a GZIP like {@link isGzip} file it will automatically be decompressed.
  */
-async function readConfig(config: string): Promise<ConfigBundled> {
+async function readConfig(config: URL): Promise<ConfigBundled> {
   const obj = await fsa.read(config);
-  if (config.endsWith('.gz') || isGzip(obj)) {
+  if (config.href.endsWith('.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
     return JSON.parse(data.toString()) as ConfigBundled;
   }
@@ -40,17 +40,17 @@ interface Output {
 export const CommandCreateMapSheetArgs = {
   verbose,
   path: option({
-    type: string,
+    type: Url,
     long: 'path',
     description: 'Path of flatgeobuf, this can be both a local path or s3 location',
   }),
   bmConfig: option({
-    type: string,
+    type: Url,
     long: 'bm-config',
     description: 'Path of basemaps config json, this can be both a local path or s3 location',
   }),
   output: option({
-    type: string,
+    type: Url,
     long: 'output',
     description: 'Output of the map sheet file',
   }),
@@ -86,8 +86,8 @@ export const basemapsCreateMapSheet = command({
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
-    const rest = fgb.deserialize(buf) as FeatureCollection;
-    const featuresWritePromise = fsa.write('features.json', JSON.stringify(rest));
+    const rest = fgb.deserialize(buf);
+    const featuresWritePromise = fsa.write(fsa.toUrl('features.json'), JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
@@ -139,7 +139,7 @@ export async function createMapSheet(
       if (img.bounds == null || Bounds.fromJson(img.bounds).intersects(bounds)) {
         for (const file of img.files) {
           if (bounds.intersects(Bounds.fromJson(file))) {
-            current.files.push(fsa.join(img.uri, getTiffName(file.name)));
+            current.files.push(new URL(getTiffName(file.name), img.uri.endsWith('/') ? img.uri : `${img.uri}/`).href);
           }
         }
       }
