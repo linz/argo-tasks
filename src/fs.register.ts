@@ -107,11 +107,13 @@ export function addMiddlewareToS3Client(s3Client: S3Client): S3Client {
 
 FsAwsS3.MaxListCount = 1000;
 
+/** Split a config string into an array of strings */
 function splitConfig(x: string): string[] {
   if (x.startsWith('[')) return JSON.parse(x) as string[];
   return x.split(',');
 }
 
+/** Register the S3 file system with chunkd/fsa */
 export function registerFileSystem(opts: { config?: string }): FsAwsS3 {
   const s3Fs = setupS3FileSystem(new FsAwsS3(new S3Client()));
 

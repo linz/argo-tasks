@@ -63,7 +63,6 @@ export const commandGeneratePath = command({
     const target = generatePath(metadata);
     logger.info({ duration: performance.now() - startTime, target: target }, 'GeneratePath:Done');
 
-    // Path to where the target is located
     await fsa.write(fsa.toUrl('/tmp/generate-path/target'), target);
     logger.info({ location: '/tmp/generate-path/target', target: target }, 'GeneratePath:Written');
   },

@@ -85,6 +85,7 @@ describe('Register', () => {
       s3Fs.s3.middlewareStack.identify().find((f) => f.startsWith('FQDN -')),
       'FQDN - finalizeRequest',
     );
+
     await s3Fs.credentials!.find(new URL('s3://_linz-topographic/foo.json'));
     await s3Fs.credentials!.find(new URL('s3://_linz-topographic-upload/foo.json'));
 
@@ -103,16 +104,13 @@ describe('Register', () => {
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
     s3Fs.s3.middlewareStack.add(throw403, throw403Init);
     assert.deepEqual(fsSystemsPath(), ['s3://']);
-    if (s3Fs.credentials == null) throw new Error('No credentials');
-    s3Fs.credentials.onFileSystemCreated = (_ac, fs): void => {
+    s3Fs.credentials!.onFileSystemCreated = (_ac, fs): void => {
       const s3 = fs.s3;
       s3.middlewareStack.add(throw403);
     };
 
     const ret = await fsa.read(fsa.toUrl('s3://_linz-topographic/foo.json')).catch((e: Error) => e);
     assert.equal(String(ret), 'Error: Failed to read: "s3://_linz-topographic/foo.json"');
-    assert.equal(ret instanceof Error, true);
-
     assert.equal(FsError.is(ret), true);
     const fse = ret as FsError;
     assert.equal(fse.code, 418);

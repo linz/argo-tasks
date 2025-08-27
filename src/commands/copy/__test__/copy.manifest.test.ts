@@ -13,6 +13,9 @@ import { commandCreateManifest } from '../../create-manifest/create-manifest.ts'
 import { commandCopy, type CommandCopyArgs } from '../copy.ts';
 const sourceLocation = pathToFileURL('./.test/');
 
+/**
+ * Get all files and their sizes in the test directory
+ */
 async function getAllFiles(): Promise<[string, number][]> {
   const files = await fsa.toArray(fsa.details(sourceLocation));
   const filesShort: [string, number][] = files.map((m) => [protocolAwareString(m.url), m.size ?? 0]);
@@ -34,7 +37,7 @@ describe('createManifest.Copy.E2E', () => {
     fsa.register('s3://', memory);
 
     memory.files.clear();
-    // TODO do we need a "action" logic and a compressed file logic?
+    // FIXME do we need a "action" logic and a compressed file logic?
     process.env['ACTION_PATH'] = `memory://actions/🟥/actions/`;
   });
 

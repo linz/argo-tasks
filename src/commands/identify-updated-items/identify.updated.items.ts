@@ -7,9 +7,8 @@ import type { StacCollection, StacItem, StacLink } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
-import { FileListEntryClass } from '../../utils/filelist.ts';
+import { FileListEntryClass, makeRelative } from '../../utils/filelist.ts';
 import { registerCli, replaceUrlExtension, Url, UrlList, urlPathEndsWith, verbose } from '../common.ts';
-import { makeRelative } from '../stac-catalog/stac.catalog.ts';
 
 interface LinzItemLink extends StacLink {
   'file:checksum': string;

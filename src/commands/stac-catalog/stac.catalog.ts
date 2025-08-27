@@ -1,39 +1,12 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, positional } from 'cmd-ts';
-// import { isAbsolute } from 'path';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { HttpProtocols } from '../../utils/filelist.ts';
+import { makeRelative } from '../../utils/filelist.ts';
 import { hashBuffer } from '../../utils/hash.ts';
 import { config, registerCli, Url, UrlFolder, verbose } from '../common.ts';
-
-/**
- * Convert a path to relative
- *
- * https://foo.com + https://foo.com/bar.html => ./bar.html
- * s3://foo/ + s3://foo/bar/baz.html => ./bar/baz.html
- * /home/blacha + /home/blacha/index.json => ./index.json
- *
- * @param basePath path to make relative to
- * @param filePath target file
- * @param strict whether to throw an error if the filePath is not relative to the basePath
- *
- * @returns relative path to file
- */
-export function makeRelative(basePath: URL, filePath: URL, strict = true): string {
-  const basePathFolder = new URL('./', basePath); // Ensure basePath is a "folder" URL
-  // If the filePath starts with the basePathFolder, we can return the relative path
-  if (strict && !filePath.href.startsWith(basePathFolder.href)) {
-    throw new Error(`FilePaths are not relative base: ${basePathFolder.href} file: ${filePath.href}`);
-  }
-  const relativePath = filePath.href.replace(basePathFolder.href, './');
-  if (HttpProtocols.includes(filePath.protocol)) {
-    return relativePath;
-  }
-  return decodeURIComponent(relativePath);
-}
 
 const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/schema.json';
 

@@ -6,7 +6,7 @@ import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { config, registerCli, replaceUrlExtension, S3Path, UrlFolder, verbose } from '../common.ts';
+import { config, registerCli, replaceUrlExtension, S3Path, Url, verbose } from '../common.ts';
 
 /** Represents the manifest report structure for S3 Batch Operations Restore. */
 export type ManifestReport = {
@@ -47,7 +47,7 @@ export const commandVerifyRestore = command({
       description:
         'Rename the restore report file to `*.done` if restore is successful to indicate it has been processed',
     }),
-    output: option({ type: UrlFolder, long: 'output', description: 'Output location to store the restore result' }),
+    output: option({ type: Url, long: 'output', description: 'Output location to store the restore result' }),
     report: positional({
       type: S3Path,
       displayName: 'report',

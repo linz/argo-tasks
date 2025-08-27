@@ -2,7 +2,6 @@ import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
 import type { Type } from 'cmd-ts';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
-import pLimit from 'p-limit';
 import { pathToFileURL } from 'url';
 
 import { registerFileSystem } from '../fs.register.ts';
@@ -78,9 +77,6 @@ export function parseSize(size: string): number {
   if (isNaN(fileSize)) throw new Error(`Failed to parse: ${size} as a file size`);
   return Math.round(fileSize);
 }
-
-/** Limit fetches to 25 concurrently **/
-export const TiffQueue = pLimit(25);
 
 /**
  * There is a minor difference between @chunkd/core and @cogeotiff/core
@@ -201,20 +197,26 @@ export const UrlList: Type<string | string[], URL[]> = {
         .map((str) => str.trim())
         .filter((str) => str.length > 0);
     }
-    // const mything = await Promise.resolve(strs.map((str) => str.trim()).filter((str) => str.length > 0).map((str) => Url.from(str)));
     const promises: Promise<URL>[] = strs
       .map((str) => str.trim())
       .filter((str) => str.length > 0)
       .map((str) => Url.from(str))
-      .flat(); // todo: check if flat is needed
+      .flat();
     return Promise.all(promises);
   },
 };
 
 /**
  * Parse an input string as a list of items.
- *
  * If it looks like a JSON string, it will be parsed.
+ * Other strings will be retained.
+ *
+ * Examples:
+ * - '["item1","item2",["item3", "item4"]]' -> ["item1", "item2", "item3", "item4"]
+ * - ["item1","item2",["item3", "item4"]] -> ["item1", "item2", "item3", "item4"]
+ * - 'item1' -> ["item1"]
+ * - 'item1,item2,item3,item4' -> ["item1,item2,item3,item4"]
+ *
  **/
 export const StrList: Type<string | string[], string[]> = {
   async from(item: string | string[]) {
@@ -232,7 +234,7 @@ export const StrList: Type<string | string[], string[]> = {
       items = [item];
     }
     const results: string[] = items.flat();
-    return results; // Flatten the results
+    return results;
   },
 };
 

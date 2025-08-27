@@ -9,9 +9,8 @@ import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { protocolAwareString } from '../../utils/filelist.ts';
+import { makeRelative, protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, Url, UrlFolder, UrlFolderList, verbose } from '../common.ts';
-import { makeRelative } from '../stac-catalog/stac.catalog.ts';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',

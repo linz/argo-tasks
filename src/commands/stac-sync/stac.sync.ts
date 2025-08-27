@@ -6,9 +6,9 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { md } from '../../readme/markdown.ts';
 import { annotateExample } from '../../readme/readme.example.ts';
+import { makeRelative } from '../../utils/filelist.ts';
 import { hashBuffer, HashKey } from '../../utils/hash.ts';
 import { config, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
-import { makeRelative } from '../stac-catalog/stac.catalog.ts';
 
 export const commandStacSync = command({
   name: 'stac-sync',

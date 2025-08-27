@@ -8,6 +8,7 @@ import { getFiles } from '../../utils/chunk.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { config, registerCli, UrlFolder, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 
+/** Does this URL point to a JSON file (based on extension) */
 export function isJson(x: URL): boolean {
   return urlPathEndsWith(x, '.json');
 }

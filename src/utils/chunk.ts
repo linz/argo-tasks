@@ -10,6 +10,7 @@ export interface FileSizeInfo {
   size?: number;
 }
 
+/** Asynchronously filter a list of file URLs based on include/exclude regex */
 export async function* asyncFilter<T extends { url: URL; size?: number }>(
   source: AsyncGenerator<T>,
   opts?: { include?: string; exclude?: string },
@@ -86,6 +87,12 @@ export type FileFilter = {
    */
   sizeMin?: number;
 };
+
+/**
+ * Get a list of files from a set of paths with filtering and limits
+ * @param paths
+ * @param args
+ */
 export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const minSize = args.sizeMin ?? 1; // ignore 0 byte files
@@ -113,25 +120,4 @@ export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL
   }
 
   return chunkFiles(outputFiles, maxLength, groupSize);
-}
-
-/**
- * Combine a base path with a relative path, resolving them to a single path.
- *
- * @param basePath The base path (can be a URL or local file path). Anything after the final "/" (i.e. a file name) will be removed.
- * @param addPath The path to combine with the base path. If this is an absolute path, it will overwrite basePath. Anything after the final "/" (i.e. a file name) will remain in place.
- * @returns The combined absolute path.
- */
-export function xxcombinePaths(basePath: string, addPath: string): string {
-  // If basePath is a local path, convert it to a `file://` URL for proper resolution
-  const isLocal = !basePath.includes('://');
-  const relativePrefix = isLocal ? basePath.substring(0, basePath.indexOf('/')) : '';
-
-  const baseURL = new URL(isLocal ? `file://${basePath}` : basePath);
-
-  // Resolve relative path against the base path
-  const combinedPath = new URL(addPath, baseURL).href;
-
-  // If the base path was a relative local path, convert the combined URL back to a local path
-  return isLocal ? relativePrefix + new URL(combinedPath).pathname : combinedPath;
 }
