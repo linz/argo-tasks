@@ -4,8 +4,8 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa, FsMemory } from '@chunkd/fs';
 import { pathToFileURL } from 'url';
 
-import { createLinks } from '../stac.catalog.ts';
 import { makeRelative } from '../../../utils/filelist.ts';
+import { createLinks } from '../stac.catalog.ts';
 
 describe('stacCatalog', () => {
   const fs = new FsMemory();
