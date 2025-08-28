@@ -3,6 +3,7 @@ import { command, option, optional, positional } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
 
 export const archiveSetup = command({
@@ -33,11 +34,14 @@ export const archiveSetup = command({
     }
 
     const archiveLocation = getArchiveLocation(args.path, archiveBucketName);
-    const archiveLocationOutputPath = new URL('archive-location', args.output);
+    const saveArchiveLocationTo = new URL('archive-location', args.output);
 
-    await fsa.write(archiveLocationOutputPath, archiveLocation);
+    await fsa.write(saveArchiveLocationTo, protocolAwareString(archiveLocation));
 
-    logger.info({ duration: performance.now() - startTime, archiveLocation }, 'ArchiveSetup:Done');
+    logger.info(
+      { duration: performance.now() - startTime, archiveLocation: protocolAwareString(archiveLocation) },
+      'ArchiveSetup:Done',
+    );
   },
 });
 
@@ -85,10 +89,10 @@ export function isSafePath(location: URL, minDepth = 2): boolean {
  *
  * @param sourceLocation - The location where the files to archive are.
  * @param archiveBucketName - The name of the bucket to use to archive the files.
- * @returns the path where the archived files should be stored.
+ * @returns the location where the archived files should be stored.
  */
-export function getArchiveLocation(sourceLocation: URL, archiveBucketName: string): string {
-  const archiveLocation = new URL(sourceLocation.toString());
+export function getArchiveLocation(sourceLocation: URL, archiveBucketName: string): URL {
+  const archiveLocation = new URL(sourceLocation);
   archiveLocation.hostname = archiveBucketName;
-  return archiveLocation.toString();
+  return archiveLocation;
 }
