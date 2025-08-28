@@ -79,14 +79,14 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   }
 
   // Attempt to read a TFW next to the tiff
-  const baseUrl = replaceUrlExtension(tiff.source.url, /\.(tiff?)$/i);
+  const baseLocation = replaceUrlExtension(tiff.source.url, /\.(tiff?)$/i);
 
-  const variants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
+  const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
   let tfwData;
-  for (const ext of variants) {
-    const candidateUrl = new URL(baseUrl.href + ext);
+  for (const tfwExtension of tfwVariants) {
+    const candidateTfwLocation = new URL(baseLocation.href + tfwExtension);
     try {
-      tfwData = await fsa.read(candidateUrl);
+      tfwData = await fsa.read(candidateTfwLocation);
       break;
     } catch (err) {}
   }

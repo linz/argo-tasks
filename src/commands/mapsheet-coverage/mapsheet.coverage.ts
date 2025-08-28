@@ -165,9 +165,9 @@ export const commandMapSheetCoverage = command({
       if (captureAreaLink == null) {
         throw new Error(`Missing capture area asset in collection "${targetCollection.href}"`);
       }
-      const targetCaptureAreaUrl = new URL(captureAreaLink.href, targetCollection);
+      const targetCaptureAreaLocation = new URL(captureAreaLink.href, targetCollection);
 
-      const captureArea = forceMultiPolygon(await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaUrl));
+      const captureArea = forceMultiPolygon(await fsa.readJson<GeoJSON.Feature>(targetCaptureAreaLocation));
 
       // As these times are mostly made up, convert them into NZ time to prevent
       // flown years being a year off when the interval is 2023-12-31T12:00:00.000Z (or Jan 1st NZT)
@@ -220,7 +220,7 @@ export const commandMapSheetCoverage = command({
 
       // Layer has no information included in the output
       if (diff.length === 0) {
-        logger.warn({ layer: layer.name, location: targetCaptureAreaUrl.href }, 'FullyCovered');
+        logger.warn({ layer: layer.name, location: targetCaptureAreaLocation.href }, 'FullyCovered');
         const outputPath = new URL(`remove-${layer.name}.geojson`, args.output);
         await fsa.write(outputPath, JSON.stringify(captureArea));
         continue;
@@ -240,7 +240,7 @@ export const commandMapSheetCoverage = command({
         if (args.mapSheet && args.mapSheet !== ms.mapSheet) continue;
 
         const existing = mapSheets.get(ms.mapSheet) ?? [];
-        // TODO this is not the safest way of getting access to the tiff, it would be best to load the stac item
+        // FIXME this is not the safest way of getting access to the tiff, it would be best to load the stac item
         existing.unshift(replaceUrlExtension(url, new RegExp('.json'), '.tiff'));
         mapSheets.set(ms.mapSheet, existing);
       }
@@ -288,7 +288,7 @@ export const commandMapSheetCoverage = command({
     }
 
     const fileListPath = new URL('file-list.json', args.output);
-    await fsa.write(fileListPath, JSON.stringify(tilesToProcess)); // todo: verify that stringify works as expected
+    await fsa.write(fileListPath, JSON.stringify(tilesToProcess));
     logger.info(
       {
         duration: performance.now() - startTime,

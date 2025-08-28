@@ -85,7 +85,7 @@ describe('stacValidate', function () {
     it('should be able to validate a public collection via https', async () => {
       const collection =
         'https://nz-imagery.s3-ap-southeast-2.amazonaws.com/new-zealand/new-zealand_2020-2021_10m/rgb/2193/collection.json';
-      const collectionUrl = fsa.toUrl(collection);
+      const collectionLocation = fsa.toUrl(collection);
       assert.doesNotThrow(async () => {
         await commandStacValidate.handler({
           config: undefined,
@@ -95,7 +95,7 @@ describe('stacValidate', function () {
           checksumLinks: false,
           recursive: false,
           strict: false,
-          location: [[collectionUrl]],
+          location: [[collectionLocation]],
         });
       });
     });

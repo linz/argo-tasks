@@ -69,9 +69,9 @@ export const commandStacGithubImport = command({
     const botEmail = BotEmails[args.repoName];
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
 
-    const basemapsConfigLinkURL = new URL('config-url', args.source);
+    const basemapsConfigLocation = new URL('config-url', args.source);
     const prBody: string[] = [];
-    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL);
+    const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
     prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
     prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 

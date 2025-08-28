@@ -224,8 +224,8 @@ export const commandTileIndexValidate = command({
     logger.info('TileIndex:Start');
 
     const readTiffStartTime = performance.now();
-    const tiffLocationURLs = args.location.flat();
-    const tiffs = await TiffLoader.load(tiffLocationURLs, args);
+    const tiffLocationsToLoad = args.location.flat();
+    const tiffs = await TiffLoader.load(tiffLocationsToLoad, args);
     await validatePreset(args.preset, tiffs);
 
     const projections = new Set(tiffs.map((t) => t.images[0]?.epsg));

@@ -41,9 +41,9 @@ const workerImplementation: CopyContract = {
 
       Q.push(async () => {
         const startTime = performance.now();
-        const sourceURL = fsa.toUrl(manifestEntry.source);
-        const targetURL = fsa.toUrl(manifestEntry.target);
-        const source = await fsa.head(sourceURL);
+        const sourceLocation = fsa.toUrl(manifestEntry.source);
+        const targetLocation = fsa.toUrl(manifestEntry.target);
+        const source = await fsa.head(sourceLocation);
         if (source?.size == null || source.size === 0) {
           logger.info({ path: manifestEntry.source }, 'File:Copy:SkippedEmpty');
           statsUpdaters[FileOperation.Skip](stats, source?.size ?? 0);
@@ -51,7 +51,7 @@ const workerImplementation: CopyContract = {
         }
         const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
           source,
-          targetURL,
+          targetLocation,
           args,
         );
         let targetVerified = false;
@@ -68,7 +68,7 @@ const workerImplementation: CopyContract = {
           const hashOriginal = new HashTransform('sha256');
           const hashCompressed = new HashTransform('sha256');
 
-          const rawSourceStream = fsa.readStream(sourceURL);
+          const rawSourceStream = fsa.readStream(sourceLocation);
           let sourceStream = rawSourceStream;
 
           const shouldCompress = fileOperation === FileOperation.Compress;
@@ -128,7 +128,7 @@ const workerImplementation: CopyContract = {
         if (shouldDeleteSourceOnSuccess && (targetVerified || fileOperation === FileOperation.Skip)) {
           const startTimeDelete = performance.now();
           logger.info({ path: manifestEntry.source }, 'File:DeleteSource:Start');
-          await fsa.delete(sourceURL);
+          await fsa.delete(sourceLocation);
           statsUpdaters[FileOperation.Delete](stats, source.size);
           logger.debug(
             { ...manifestEntry, size: source.size, duration: performance.now() - startTimeDelete },

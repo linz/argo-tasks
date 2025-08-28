@@ -37,15 +37,15 @@ export const commandLdsFetch = command({
         await fsa.write(targetLocation, fsa.readStream(source).pipe(createGunzip()));
       }
 
-      const collectionJsonUrl = new URL(`s3://linz-lds-cache/${layerId}/collection.json`);
-      const collectionJson = await fsa.readJson<stac.StacCollection>(collectionJsonUrl);
+      const collectionJsonLocation = new URL(`s3://linz-lds-cache/${layerId}/collection.json`);
+      const collectionJson = await fsa.readJson<stac.StacCollection>(collectionJsonLocation);
       logger.info({ layerId, title: collectionJson.title }, 'Collection:Download:Done');
       const lastItem = collectionJson.links.filter((f) => f.rel === 'item').pop();
       if (lastItem == null) throw new Error('No items found');
 
       const targetFileGpkg = lastItem.href.replace('.json', '.gpkg');
       const targetFile = new URL(targetFileGpkg, args.target);
-      const targetPath = new URL(targetFileGpkg, collectionJsonUrl);
+      const targetPath = new URL(targetFileGpkg, collectionJsonLocation);
       logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.readStream(targetPath).pipe(createGunzip()));
     }

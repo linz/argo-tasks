@@ -52,19 +52,19 @@ export const commandPrettyPrint = command({
 /**
  * Format the file
  *
- * @param path of the file to format
- * @param target where to save the output. If not specified, overwrite the original file.
+ * @param sourceLocation of the file to format
+ * @param targetLocation where to save the output. If not specified, overwrite the original file.
  */
-export async function formatFile(path: URL, target?: URL): Promise<void> {
-  logger.debug({ file: path.href }, 'PrettyPrint:RunPrettier');
-  let outputFile = new URL(path);
-  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(path)), DEFAULT_PRETTIER_FORMAT);
-  if (target) {
+export async function formatFile(sourceLocation: URL, targetLocation?: URL): Promise<void> {
+  logger.debug({ file: sourceLocation.href }, 'PrettyPrint:RunPrettier');
+  let outputLocation = sourceLocation;
+  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(sourceLocation)), DEFAULT_PRETTIER_FORMAT);
+  if (targetLocation) {
     // FIXME: can be duplicate files
-    outputFile = new URL(path.pathname.replace(new RegExp('.*/', ''), ''), target);
+    outputLocation = new URL(sourceLocation.pathname.replace(new RegExp('.*/', ''), ''), targetLocation);
   }
 
-  await fsa.write(outputFile, Buffer.from(prettyPrinted));
+  await fsa.write(outputLocation, Buffer.from(prettyPrinted));
 }
 
 /**

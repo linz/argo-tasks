@@ -48,9 +48,9 @@ export const commandCreateManifest = command({
 
     const outputCopy: string[] = [];
 
-    const targetPath = args.target;
+    const targetLocation = args.target;
     const actionLocation = getActionLocation();
-    const outputFiles = await createManifest(args.source.flat(), targetPath, args);
+    const outputFiles = await createManifest(args.source.flat(), targetLocation, args);
     for (const current of outputFiles) {
       const outBuf = Buffer.from(JSON.stringify(current));
       const targetHash = createHash('sha256').update(outBuf).digest('base64url');
@@ -79,7 +79,11 @@ function createTransformFunc(transform: string): (f: string) => string {
   return new Function('f', 'return ' + transform) as (f: string) => string;
 }
 
-export async function createManifest(sources: URL[], targetPath: URL, args: ManifestFilter): Promise<SourceTarget[][]> {
+export async function createManifest(
+  sources: URL[],
+  targetLocation: URL,
+  args: ManifestFilter,
+): Promise<SourceTarget[][]> {
   const outputFiles = await getFiles(sources, args);
   const outputCopy: SourceTarget[][] = [];
 
@@ -96,7 +100,7 @@ export async function createManifest(sources: URL[], targetPath: URL, args: Mani
       const baseFile = args.flatten
         ? filePath.pathname.split('/').slice(-1).join('/') // file name only
         : makeRelative(sourceRoot, filePath);
-      const target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetPath);
+      const target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetLocation);
 
       validatePaths(filePath, target);
       current.push({ source: protocolAwareString(filePath), target: protocolAwareString(target) });

@@ -182,21 +182,21 @@ describe('validate', () => {
     // Destroy the "geo" part of geotiff so TFW loading is also checked fro URL handling
     Object.defineProperty(fakeTiff.images[0], 'isGeoLocated', { value: false });
 
-    const sourceUrl = await Url.from(`memory://some-bucket/🦄 🌈/`);
-    fakeTiff.source.url = new URL(`BQ32_1000_0101.tiff`, sourceUrl);
+    const sourceLocation = await Url.from(`memory://some-bucket/🦄 🌈/`);
+    fakeTiff.source.url = new URL(`BQ32_1000_0101.tiff`, sourceLocation);
 
     const expectedBounds = MapSheet.getMapTileIndex('BQ32_1000_0101');
     assert.ok(expectedBounds);
 
     await fsa.write(
-      new URL('BQ32_1000_0101.tfw', sourceUrl),
+      new URL('BQ32_1000_0101.tfw', sourceLocation),
       `1\n0\n0\n-1\n${expectedBounds?.origin.x + 0.5}\n${expectedBounds?.origin.y - 0.5}`,
     );
 
     const stub = t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      location: [[sourceUrl]],
+      location: [[sourceLocation]],
       retile: false,
       validate: true,
       scale: 1000,

@@ -35,21 +35,21 @@ export const commandStacSync = command({
 annotateExample(commandStacSync, 'Sync STAC to s3', md.code('bash', 'stac sync /path/to/stac/ s3://nz-imagery/'));
 
 /**
- * Synchronise STAC (JSON) files from a path to another.
+ * Synchronise STAC (JSON) files from one location to another.
  *
- * @param sourcePath where the source files are
- * @param destinationPath S3 path where the files need to be synchronized
+ * @param sourceLocation where the source files are
+ * @param targetLocation S3 path where the files need to be synchronised
  * @returns the number of files copied over
  */
-export async function synchroniseFiles(sourcePath: URL, destinationPath: URL): Promise<number> {
+export async function synchroniseFiles(sourceLocation: URL, targetLocation: URL): Promise<number> {
   let count = 0;
-  const sourceFilesInfo = await fsa.toArray(fsa.details(sourcePath));
+  const sourceFilesInfo = await fsa.toArray(fsa.details(sourceLocation));
 
   await Promise.all(
     sourceFilesInfo.map(async (fileInfo) => {
       if (!fileInfo.url.pathname.endsWith('.json')) return;
 
-      const key = new URL(makeRelative(sourcePath, fileInfo.url), destinationPath);
+      const key = new URL(makeRelative(sourceLocation, fileInfo.url), targetLocation);
       (await uploadFileToS3(fileInfo, key)) && count++;
     }),
   );
@@ -60,27 +60,27 @@ export async function synchroniseFiles(sourcePath: URL, destinationPath: URL): P
  * Upload a file to the destination if the same version (matched hash) does not exist.
  *
  * @param sourceFileInfo Source file metadata
- * @param path Target URL
+ * @param targetLocation Target URL
  * @returns whether the file was uploaded
  */
-export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promise<boolean> {
-  const destinationHead = await fsa.head(path);
+export async function uploadFileToS3(sourceFileInfo: FileInfo, targetLocation: URL): Promise<boolean> {
+  const destinationHead = await fsa.head(targetLocation);
   const sourceData = await fsa.read(sourceFileInfo.url);
   const sourceHash = hashBuffer(sourceData);
   if (destinationHead?.size === sourceFileInfo.size && sourceHash === destinationHead?.metadata?.[HashKey]) {
     return false;
   }
 
-  await fsa.write(path, sourceData, {
+  await fsa.write(targetLocation, sourceData, {
     metadata: { [HashKey]: sourceHash },
-    contentType: guessStacContentType(path),
+    contentType: guessStacContentType(targetLocation),
   });
-  logger.debug({ path: path.href }, 'StacSync:FileUploaded');
+  logger.debug({ path: targetLocation.href }, 'StacSync:FileUploaded');
   return true;
 }
 
 /**
- * Guess the content type of a STAC file
+ * Guess the content-type of a STAC file
  *
  * - application/geo+json - A STAC Item
  * - application/json - A STAC Catalog
@@ -89,9 +89,10 @@ export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promi
  * Assumes anything ending with '.json' is a stac item
  * @see {@link https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md#stac-media-types}
  */
-export function guessStacContentType(path: URL): string | undefined {
-  if (path.pathname.endsWith('collection.json')) return 'application/json';
-  if (path.pathname.endsWith('catalog.json')) return 'application/json';
-  if (path.pathname.endsWith('.json')) return 'application/geo+json';
+export function guessStacContentType(location: URL): string | undefined {
+  if (location.pathname.endsWith('collection.json')) return 'application/json';
+  if (location.pathname.endsWith('catalog.json')) return 'application/json';
+  if (location.pathname.endsWith('.json')) return 'application/geo+json';
+  if (location.pathname.endsWith('.geojson')) return 'application/geo+json';
   return;
 }

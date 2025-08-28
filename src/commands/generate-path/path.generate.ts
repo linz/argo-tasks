@@ -121,16 +121,16 @@ export async function loadFirstTiff(source: URL, collection: StacCollection): Pr
   const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
   if (itemLink == null) throw new Error(`No items in collection from ${source.href}.`);
 
-  const itemURL = new URL(itemLink, source);
-  const item = await fsa.readJson<StacItem>(itemURL);
-  if (item == null) throw new Error(`Failed to get item.json from ${itemURL.toString()}.`);
+  const itemLocation = new URL(itemLink, source);
+  const item = await fsa.readJson<StacItem>(itemLocation);
+  if (item == null) throw new Error(`Failed to get item.json from ${itemLocation.toString()}.`);
 
   const tiffLink = item.assets['visual']?.href;
-  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemURL.toString()}`);
+  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemLocation.toString()}`);
 
-  const tiffURL = new URL(tiffLink, source);
-  const tiff = await createTiff(tiffURL);
-  if (tiff == null) throw new Error(`Failed to get tiff from ${tiffURL.toString()}.`);
+  const tiffLocation = new URL(tiffLink, source);
+  const tiff = await createTiff(tiffLocation);
+  if (tiff == null) throw new Error(`Failed to get tiff from ${tiffLocation.toString()}.`);
   return tiff;
 }
 

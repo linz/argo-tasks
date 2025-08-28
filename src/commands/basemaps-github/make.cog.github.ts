@@ -109,7 +109,6 @@ export class MakeCogGithub {
       };
 
       const tileSetPath = path.join('config', 'tileset', region, 'imagery', `${layer.name}.json`);
-      // const tileSetPath = fsa.joinAll('config', 'tileset', region, 'imagery', `${layer.name}.json`);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, tileSet);
     } else {

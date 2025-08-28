@@ -72,7 +72,7 @@ export const commandStacValidate = command({
       logger.error('StacValidation:Error:NoLocationProvided');
       process.exit(1);
     }
-    const paths = args.location.flat();
+    const stacFileLocations = args.location.flat();
 
     // Weird typing for ajv require us to use the "default" export to construct it.
     const ajv = new Ajv.default({
@@ -119,27 +119,30 @@ export const commandStacValidate = command({
 
     const failures: URL[] = [];
 
-    async function validateStac(path: URL): Promise<void> {
-      if (validated.has(path)) {
-        logger.warn({ path }, 'SkippedDuplicateStacFile');
+    async function validateStac(stacFileLocation: URL): Promise<void> {
+      if (validated.has(stacFileLocation)) {
+        logger.warn({ stacFileLocation }, 'SkippedDuplicateStacFile');
         return;
       }
-      validated.add(path);
+      validated.add(stacFileLocation);
 
       const stacSchemas: URL[] = [];
       let stacJson;
       try {
-        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(path);
+        stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(stacFileLocation);
       } catch (err) {
-        logger.error({ path, err }, 'readStacJsonFile:Error');
-        failures.push(path);
+        logger.error({ stacFileLocation, err }, 'readStacJsonFile:Error');
+        failures.push(stacFileLocation);
         return;
       }
 
-      const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, path);
+      const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, stacFileLocation);
       if (schema === null) {
-        logger.error({ path, stacType: stacJson.type, stacVersion: stacJson.stac_version }, 'getStacSchemaUrl:Error');
-        failures.push(path);
+        logger.error(
+          { stacFileLocation, stacType: stacJson.type, stacVersion: stacJson.stac_version },
+          'getStacSchemaUrl:Error',
+        );
+        failures.push(stacFileLocation);
         return;
       }
 
@@ -152,10 +155,13 @@ export const commandStacValidate = command({
       for (const sch of stacSchemas) {
         const validate = await getValidator(sch);
 
-        logger.trace({ title: stacJson.title, type: stacJson.type, path, schema: sch }, 'Validation:Start');
+        logger.trace({ title: stacJson.title, type: stacJson.type, stacFileLocation, schema: sch }, 'Validation:Start');
         const valid = validate(stacJson);
         if (valid === true) {
-          logger.trace({ title: stacJson.title, type: stacJson.type, path, valid, schema: sch }, 'Validation:Done:Ok');
+          logger.trace(
+            { title: stacJson.title, type: stacJson.type, stacFileLocation, valid, schema: sch },
+            'Validation:Done:Ok',
+          );
           continue;
         }
 
@@ -163,7 +169,7 @@ export const commandStacValidate = command({
         for (const err of validate.errors as DefinedError[]) {
           logger.error(
             {
-              path: path,
+              stacFileLocation: stacFileLocation,
               instancePath: err.instancePath,
               schemaPath: err.schemaPath,
               keyword: err.keyword,
@@ -173,12 +179,12 @@ export const commandStacValidate = command({
             'Validation:Failed',
           );
         }
-        failures.push(path);
-        logger.error({ title: stacJson.title, type: stacJson.type, path, valid }, 'Validation:Done:Failed');
+        failures.push(stacFileLocation);
+        logger.error({ title: stacJson.title, type: stacJson.type, stacFileLocation, valid }, 'Validation:Done:Failed');
       }
 
       if (args.checksumAssets) {
-        const assetFailures = await validateAssets(stacJson, path);
+        const assetFailures = await validateAssets(stacJson, stacFileLocation);
         if (assetFailures.length > 0) {
           isOk = false;
           failures.push(...assetFailures);
@@ -186,17 +192,17 @@ export const commandStacValidate = command({
       }
 
       if (args.checksumLinks) {
-        const linksFailures = await validateLinks(stacJson, path);
+        const linksFailures = await validateLinks(stacJson, stacFileLocation);
         if (linksFailures.length > 0) {
           isOk = false;
           failures.push(...linksFailures);
         }
       }
 
-      if (isOk) logger.info({ title: stacJson.title, type: stacJson.type, path }, 'Validation:Done:Ok');
+      if (isOk) logger.info({ title: stacJson.title, type: stacJson.type, stacFileLocation }, 'Validation:Done:Ok');
 
       if (recursive) {
-        for (const child of getStacChildren(stacJson, path)) {
+        for (const child of getStacChildren(stacJson, stacFileLocation)) {
           queue.push(() =>
             validateStac(child).catch((err: unknown) => {
               logger.error({ err, path: child }, 'Failed');
@@ -207,11 +213,11 @@ export const commandStacValidate = command({
       }
     }
 
-    for (const path of paths) {
+    for (const stacFileLocation of stacFileLocations) {
       queue.push(() =>
-        validateStac(path).catch((err: unknown) => {
-          logger.error({ err, path }, 'Failed');
-          failures.push(path);
+        validateStac(stacFileLocation).catch((err: unknown) => {
+          logger.error({ err, stacFileLocation }, 'Failed');
+          failures.push(stacFileLocation);
           process.exit();
         }),
       );
@@ -232,18 +238,18 @@ export const commandStacValidate = command({
  * Validate STAC Assets
  *
  * @param stacJson
- * @param path absolute path of the STAC location
+ * @param stacFileLocation URL of the STAC location
  * @returns the list of link paths that failed the validation
  */
 export async function validateAssets(
   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
-  path: URL,
+  stacFileLocation: URL,
 ): Promise<URL[]> {
   const assetsFailures: URL[] = [];
   const assets = Object.values(stacJson.assets ?? {}) as st.StacAsset[];
   for (const asset of assets) {
-    const isChecksumValid = await validateStacChecksum(asset, path, false);
-    if (!isChecksumValid) assetsFailures.push(path);
+    const isChecksumValid = await validateStacChecksum(asset, stacFileLocation, false);
+    if (!isChecksumValid) assetsFailures.push(stacFileLocation);
   }
   return assetsFailures;
 }
@@ -252,20 +258,20 @@ export async function validateAssets(
  * Validate STAC Links
  *
  * @param stacJson
- * @param path absolute path to the STAC location
- * @returns the list of link paths that failed the validation
+ * @param stacFileLocation URL to the STAC file
+ * @returns the list of links that failed the validation
  */
 export async function validateLinks(
   stacJson: st.StacItem | st.StacCollection | st.StacCatalog,
-  path: URL,
+  stacFileLocation: URL,
 ): Promise<URL[]> {
   const linksFailures: URL[] = [];
   for (const link of stacJson.links) {
     if (link.rel === 'self') continue;
 
     // Allowing missing checksums as some STAC links might not have checksum
-    const isChecksumValid = await validateStacChecksum(link, path, true);
-    if (!isChecksumValid) linksFailures.push(path);
+    const isChecksumValid = await validateStacChecksum(link, stacFileLocation, true);
+    if (!isChecksumValid) linksFailures.push(stacFileLocation);
   }
   return linksFailures;
 }
@@ -279,14 +285,14 @@ export async function validateLinks(
  * @returns object from the cache if it exists or directly from the uri
  */
 async function loadSchema(urlString: string): Promise<object> {
-  const url = new URL(urlString);
-  const cacheId = createHash('sha256').update(url.href).digest('hex');
+  const schemaLocation = new URL(urlString);
+  const cacheId = createHash('sha256').update(schemaLocation.href).digest('hex');
   const cachePath = pathToFileURL(`./json-schema-cache/${cacheId}.json`);
   try {
     return await fsa.readJson<object>(cachePath);
   } catch (e) {
-    return fsa.read(url).then(async (obj) => {
-      logger.info({ url, cachePath }, 'Fetch:CacheMiss');
+    return fsa.read(schemaLocation).then(async (obj) => {
+      logger.info({ schemaLocation, cachePath }, 'Fetch:CacheMiss');
       await fsa.write(cachePath, obj);
       return JSON.parse(String(obj)) as object;
     });
@@ -296,26 +302,26 @@ async function loadSchema(urlString: string): Promise<object> {
 /**
  * Validate if the checksum found in the stacObject (`file:checksum`) corresponds to its actual file checksum.
  * @param stacObject a STAC Link or Asset
- * @param stacPath path to the STAC location
+ * @param stacFileLocation URL to the STAC file
  * @param allowMissing allow missing checksum to be valid
- * @returns weither the checksum is valid or not
+ * @returns whether the checksum is valid or not
  */
 export async function validateStacChecksum(
   stacObject: st.StacLink | st.StacAsset,
-  stacPath: URL,
+  stacFileLocation: URL,
   allowMissing: boolean,
 ): Promise<boolean> {
-  const source = new URL(stacObject.href, stacPath);
+  const source = new URL(stacObject.href, stacFileLocation);
   const checksum: string = stacObject['file:checksum'] as string;
 
   if (checksum == null) {
     if (allowMissing) return true;
-    logger.error({ source, checksum, type: stacObject.rel, parent: stacPath }, 'Validate:Checksum:Missing');
+    logger.error({ source, checksum, type: stacObject.rel, parent: stacFileLocation }, 'Validate:Checksum:Missing');
     return false;
   }
 
   if (!checksum.startsWith(Sha256Prefix)) {
-    logger.error({ source, checksum, type: stacObject.rel, parent: stacPath }, 'Validate:Checksum:Unknown');
+    logger.error({ source, checksum, type: stacObject.rel, parent: stacFileLocation }, 'Validate:Checksum:Unknown');
     return false;
   }
   logger.debug({ source, checksum }, 'Validate:Checksum');
@@ -325,12 +331,15 @@ export async function validateStacChecksum(
 
   if (hash !== checksum) {
     logger.error(
-      { source, checksum, found: hash, type: stacObject.rel, parent: stacPath, duration },
+      { source, checksum, found: hash, type: stacObject.rel, parent: stacFileLocation, duration },
       'Checksum:Validation:Failed',
     );
     return false;
   }
-  logger.debug({ source, checksum, type: stacObject.rel, parent: stacPath, duration }, 'Checksum:Validation:Ok');
+  logger.debug(
+    { source, checksum, type: stacObject.rel, parent: stacFileLocation, duration },
+    'Checksum:Validation:Ok',
+  );
   return true;
 }
 
@@ -358,11 +367,11 @@ function getSchemaType(schemaType: string): StacSchemaType | null {
  * Determine the STAC JSON Schema URL for a stac "type" field and version
  * @param schemaType Type of GeoJSON eg "Feature"
  * @param stacVersion version of STAC to use
- * @param path base location
+ * @param location base location
  * @returns
  */
-export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: URL): URL | null {
-  logger.trace({ path: path.href, schemaType: schemaType }, 'getStacSchema:Start');
+export function getStacSchemaUrl(schemaType: string, stacVersion: string, location: URL): URL | null {
+  logger.trace({ path: location.href, schemaType: schemaType }, 'getStacSchema:Start');
   // Only 1.0.0 is supported
   if (stacVersion !== '1.0.0') return null;
 
@@ -370,7 +379,7 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, path: 
   if (type == null) return null;
 
   const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-  logger.trace({ path: path.href, schemaType, schemaId }, 'getStacSchema:Done');
+  logger.trace({ path: location.href, schemaType, schemaId }, 'getStacSchema:Done');
   return new URL(schemaId);
 }
 
@@ -381,13 +390,13 @@ const childrenRel = new Set(['child', 'item']);
  * find all the children items in a STAC document
  *
  * @param stacJson STAC Document
- * @param path source location of the STAC document to determine relative paths
+ * @param stacLocation source location of the STAC document to resolve relative paths
  * @returns list of locations of child item
  */
-export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, path: URL): URL[] {
+export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.StacCatalog, stacLocation: URL): URL[] {
   if (stacJson.type === 'Catalog' || stacJson.type === 'Collection') {
-    return stacJson.links.filter((f) => childrenRel.has(f.rel)).map((f) => new URL(f.href, path));
+    return stacJson.links.filter((f) => childrenRel.has(f.rel)).map((f) => new URL(f.href, stacLocation));
   }
   if (stacJson.type === 'Feature') return [];
-  throw new Error(`Unknown Stac Type [${String(stacJson['type'] ?? '')}]: ${path.href}`);
+  throw new Error(`Unknown Stac Type [${String(stacJson['type'] ?? '')}]: ${stacLocation.href}`);
 }

@@ -69,9 +69,9 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
  */
 export function setupS3FileSystem(fileSystem: FsAwsS3): FsAwsS3 {
   const credentials = new AwsS3CredentialProvider();
-  credentials.onFileSystemFound = (acc: AwsCredentialConfig, fs?: FsAwsS3, path?: URL): void => {
+  credentials.onFileSystemFound = (acc: AwsCredentialConfig, fs?: FsAwsS3, location?: URL): void => {
     if (fs == null) return;
-    logger.info({ prefix: acc.prefix, roleArn: acc.roleArn, path: path?.href }, 'FileSystem:Register');
+    logger.info({ prefix: acc.prefix, roleArn: acc.roleArn, path: location?.href }, 'FileSystem:Register');
     addMiddlewareToS3Client(fs.s3);
     fsa.register(acc.prefix, fs);
   };

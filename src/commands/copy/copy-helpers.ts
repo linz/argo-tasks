@@ -4,7 +4,7 @@ import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
-import { replaceUrlExtension } from '../common.ts';
+import { replaceUrlExtension, urlPathEndsWith } from '../common.ts';
 import { isJson } from '../pretty-print/pretty.print.ts';
 import { guessStacContentType } from '../stac-sync/stac.sync.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
@@ -126,7 +126,7 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
  * @returns New fixed file metadata if fixed otherwise source file metadata
  */
 export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
-  if (url.pathname.toLowerCase().endsWith(CompressedFileExtension)) {
+  if (urlPathEndsWith(url, CompressedFileExtension)) {
     return { ...meta, contentType: 'application/zstd' };
   } else if (meta.contentType === 'application/zstd') {
     // if content type is `zstd` but extension isn't, set to a "fixable" content type
@@ -138,7 +138,7 @@ export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
   // Assume our tiffs are cloud optimized
   if (isTiff(url)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
 
-  // overwrite with application/json
+  // Overwrite with application/json, or application/geo+json for geojson files
   if (isJson(url)) return { ...meta, contentType: guessStacContentType(url) };
 
   return meta;
@@ -150,28 +150,31 @@ export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
  * If the target file exists, it will be skipped or overwritten based on the command line arguments.
  *
  * @param source
- * @param initialTargetURL
+ * @param initialTargetLocation
  * @param args
  */
 export async function determineTargetFileOperation(
   source: FileInfo,
-  initialTargetURL: URL,
+  initialTargetLocation: URL,
   args: CopyContractArgs,
 ): Promise<TargetFileOperation> {
   const shouldCompress = shouldCompressFile(args.compress, source.size, MinSizeForCompression);
   const shouldDecompress = shouldDecompressFile(args.decompress, source.url, CompressedFileExtension);
 
-  let finalTargetURL = initialTargetURL;
+  let finalTargetLocation = initialTargetLocation;
   if (shouldDecompress) {
     // If we decompress, we remove the .zst extension from the target name
-    finalTargetURL = replaceUrlExtension(initialTargetURL, new RegExp('\\' + CompressedFileExtension + '$', 'i'));
+    finalTargetLocation = replaceUrlExtension(
+      initialTargetLocation,
+      new RegExp('\\' + CompressedFileExtension + '$', 'i'),
+    );
   } else if (shouldCompress) {
     // If we compress, we append the .zst extension to the target name
-    finalTargetURL = new URL(initialTargetURL.href + CompressedFileExtension);
+    finalTargetLocation = new URL(initialTargetLocation.href + CompressedFileExtension);
   }
 
-  const head = await tryHead(finalTargetURL);
-  const target = { ...head, url: head?.url ?? finalTargetURL, size: head?.size ?? 0 } as FileInfo;
+  const head = await tryHead(finalTargetLocation);
+  const target = { ...head, url: head?.url ?? finalTargetLocation, size: head?.size ?? 0 } as FileInfo;
   const defaultOperation = shouldDecompress
     ? FileOperation.Decompress
     : shouldCompress
@@ -180,7 +183,7 @@ export async function determineTargetFileOperation(
   const myTargetAction: TargetFileOperation = {
     target: target,
     fileOperation: FileOperation.Skip,
-    shouldDeleteSourceOnSuccess: args.deleteSource || args.compress, // || shouldDecompress, // || shouldCompress,
+    shouldDeleteSourceOnSuccess: args.deleteSource || args.compress,
   };
 
   source.metadata ??= {};
@@ -219,11 +222,10 @@ export async function determineTargetFileOperation(
 export async function verifyTargetFile(target: URL, expectedSize: number, expectedHash: string): Promise<boolean> {
   const targetReadBack = await tryHead(target);
   const targetSize = targetReadBack?.size;
-  // const targetFs = fsa.get(target, 'rw');
 
   const targetHash = targetReadBack?.metadata?.[HashKey];
 
-  // TODO: Local file system does not support metadata so assume hash is correct
+  // Fixme: Local file system does not support metadata so assume hash is correct
   if (target.protocol === 'file:') {
     const targetVerified = targetSize === expectedSize;
     if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');

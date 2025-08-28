@@ -74,8 +74,8 @@ export function parseTargetUrl(url: URL, offset: 0 | 1): targetInfo {
 }
 
 /** Ensure the provided url ends with a slash */
-function addSlash(url: URL): URL {
-  return url.href.endsWith('/') ? url : new URL(url.href + '/');
+function ensureTrailingSlash(loc: URL): URL {
+  return loc.href.endsWith('/') ? loc : new URL(loc.href + '/');
 }
 
 /**
@@ -92,27 +92,29 @@ async function parseRasterTargetInfo(
 
   assertValidBucket(bucket, ValidTargetBuckets);
 
-  const collectionURL = new URL('collection.json', addSlash(target));
+  const collectionLocation = new URL('collection.json', ensureTrailingSlash(target));
 
-  const collection = await fsa.readJson<StacCollection>(collectionURL);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
+  const collection = await fsa.readJson<StacCollection>(collectionLocation);
+  if (collection == null)
+    throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionURL.toString()}`);
+  if (title == null)
+    throw new Error(`Failed to get imagery title from collection.json: ${collectionLocation.toString()}`);
 
   // Validate the source location
   const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
-  const sourceUrl = new URL(source);
-  const sourceBucket = sourceUrl.hostname;
+  const sourceLocation = new URL(source);
+  const sourceBucket = sourceLocation.hostname;
   logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
   if (sourceBucket == null || !ValidSourceBuckets.has(sourceBucket)) {
-    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceUrl.href}.`);
+    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceLocation.href}.`);
   }
   // Try to get the region for individual layers
   let region;
   if (individual) {
     logger.info({ source }, 'CreatePR: Get region for individual imagery');
-    const regionValue = sourceUrl.pathname.split('/')[1];
+    const regionValue = sourceLocation.pathname.split('/')[1];
     if (regionValue) region = regionValue;
     else {
       logger.warn({ source }, 'CreatePR: Failed to find region and use individual instead.');
@@ -139,9 +141,10 @@ async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title
   }
 
   // Try to get the title
-  const collectionURL = new URL('collection.json', target); // Todo: This replaces any filename with collection.json. Todo: verify this works as intended
-  const collection = await fsa.readJson<StacCollection>(collectionURL);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
+  const collectionLocation = new URL('collection.json', target);
+  const collection = await fsa.readJson<StacCollection>(collectionLocation);
+  if (collection == null)
+    throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
   const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');
   let title = collection.title;
   // Get title from lds:title for individual vector layer
@@ -166,25 +169,26 @@ async function parseElevationTargetInfo(
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
-  const collectionURL = new URL('collection.json', addSlash(target));
+  const collectionLocation = new URL('collection.json', ensureTrailingSlash(target));
 
-  const collection = await fsa.readJson<StacCollection>(collectionURL);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionURL.toString()}.`);
+  const collection = await fsa.readJson<StacCollection>(collectionLocation);
+  if (collection == null)
+    throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
   const title = collection.title;
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
 
   // Validate the source location
   const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
-  const sourceUrl = new URL(source);
-  const sourceBucket = sourceUrl.hostname;
+  const sourceLocation = new URL(source);
+  const sourceBucket = sourceLocation.hostname;
   assertValidBucket(sourceBucket, ValidSourceBuckets);
 
   // Try to get the region for individual layers
   let region;
   if (individual) {
     logger.info({ source }, 'CreatePR: Get region for individual imagery');
-    const regionValue = sourceUrl.pathname.split('/')[1];
+    const regionValue = sourceLocation.pathname.split('/')[1];
     if (regionValue) region = regionValue;
     else {
       logger.warn({ source }, 'CreatePR: Failed to find region and use individual instead.');

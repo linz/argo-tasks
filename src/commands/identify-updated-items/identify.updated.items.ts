@@ -56,10 +56,10 @@ export const commandIdentifyUpdatedItems = command({
       logger.error('--target-collection must point to an existing STAC collection.json or not be set');
       throw new Error('--target-collection must point to an existing STAC collection.json or not be set');
     }
-    const sourceCollectionUrls = args.sourceCollections.flat();
+    const sourceCollectionLocations = args.sourceCollections.flat();
     if (
-      sourceCollectionUrls.length === 0 ||
-      sourceCollectionUrls.some((url) => !urlPathEndsWith(url, 'collection.json'))
+      sourceCollectionLocations.length === 0 ||
+      sourceCollectionLocations.some((loc) => !urlPathEndsWith(loc, 'collection.json'))
     ) {
       logger.error('Source collections must each point to existing STAC collection.json file(s)');
       throw new Error('--source-collections must point to existing STAC collection.json file(s)');
@@ -76,9 +76,9 @@ export const commandIdentifyUpdatedItems = command({
       const targetCollection = await fsa.readJson<LinzStacCollection>(args.targetCollection);
       for (const collectionLink of targetCollection.links) {
         if (collectionLink.rel !== 'item') continue;
-        const itemUrl = new URL(collectionLink.href, args.targetCollection);
+        const itemLocation = new URL(collectionLink.href, args.targetCollection);
         Q.push(async () => {
-          const itemStac = await fsa.readJson<LinzStacItem>(itemUrl);
+          const itemStac = await fsa.readJson<LinzStacItem>(itemLocation);
           itemStac.links.forEach((itemLink) => {
             if (itemLink.rel !== 'derived_from') return;
             const myItemId = itemStac.id ?? basename(itemLink.href, '.json');
@@ -95,8 +95,8 @@ export const commandIdentifyUpdatedItems = command({
     }
 
     await Promise.all(
-      sourceCollectionUrls.map(async (sourceCollectionUrl) => {
-        const sourceCollection = await fsa.readJson<LinzStacCollection>(sourceCollectionUrl);
+      sourceCollectionLocations.map(async (sourceCollectionLocation) => {
+        const sourceCollection = await fsa.readJson<LinzStacCollection>(sourceCollectionLocation);
         sourceCollection.links.forEach((sourceItem) => {
           if (sourceItem.rel !== 'item') return;
           const myItemId = basename(sourceItem.href, '.json');
@@ -104,7 +104,7 @@ export const commandIdentifyUpdatedItems = command({
             desiredItemsAtTarget[myItemId] = [];
           }
           desiredItemsAtTarget[myItemId].push({
-            href: makeRelative(fsa.toUrl('./'), new URL(sourceItem.href, sourceCollectionUrl), false),
+            href: makeRelative(fsa.toUrl('./'), new URL(sourceItem.href, sourceCollectionLocation), false),
             checksum: sourceItem['file:checksum'],
           });
         });
@@ -151,11 +151,11 @@ export const commandIdentifyUpdatedItems = command({
     }
     const tilesToProcess: FileListEntryClass[] = Object.entries(itemsToProcess).map(([key, value]) => {
       const tiffInputs = value.map((item) => {
-        const url = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff') as UrlWithChecksum;
-        url.checksum = item.checksum;
-        return url;
+        const tiffLocation = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff') as UrlWithChecksum;
+        tiffLocation.checksum = item.checksum;
+        return tiffLocation;
       });
-      return new FileListEntryClass(key, sortInputsBySourceOrder(tiffInputs, sourceCollectionUrls), true);
+      return new FileListEntryClass(key, sortInputsBySourceOrder(tiffInputs, sourceCollectionLocations), true);
     });
 
     const fileListPath = fsa.toUrl('/tmp/identify-updated-items/file-list.json');

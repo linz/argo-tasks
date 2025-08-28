@@ -125,16 +125,16 @@ export function replaceUrlExtension(url: URL, pattern: RegExp, replaceValue: str
 /**
  * Check if a URL path ends with a given string (e.g. filename or file extension).
  *
- * @param x URL to check (e.g. a TIFF file URL)
+ * @param loc URL to check (e.g. a TIFF file URL)
  * @param needle the term to check for, defaults to '.tiff' or '.tif'
  * @param caseSensitive whether the check should be case-sensitive, defaults to false
  * @returns true if the URL path ends with the specified term
  */
-export function urlPathEndsWith(x: URL, needle: string, caseSensitive = false): boolean {
-  let haystack = x.pathname;
+export function urlPathEndsWith(loc: URL, needle: string, caseSensitive = false): boolean {
+  let haystack = loc.pathname;
   if (!caseSensitive) {
     needle = needle.toLowerCase();
-    haystack = x.pathname.toLowerCase();
+    haystack = loc.pathname.toLowerCase();
   }
   return haystack.endsWith(needle);
 }

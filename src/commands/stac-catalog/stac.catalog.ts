@@ -48,12 +48,12 @@ export const commandStacCatalog = command({
   },
 });
 
-export async function createLinks(basePath: URL, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
-  const collections = await fsa.toArray(fsa.list(basePath));
+export async function createLinks(baseLocation: URL, templateLinks: st.StacLink[]): Promise<st.StacLink[]> {
+  const collections = await fsa.toArray(fsa.list(baseLocation));
 
   for (const coll of collections) {
     if (coll.pathname.endsWith('/collection.json')) {
-      const relPath = makeRelative(basePath, coll);
+      const relPath = makeRelative(baseLocation, coll);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;
       const checksum = hashBuffer(buf);

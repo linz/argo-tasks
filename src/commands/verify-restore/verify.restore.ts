@@ -227,13 +227,13 @@ export function isRestoreCompleted(fileInfo: FileInfo<HeadObjectCommandOutput>):
  * Renames the report file adding a `.done` suffix to indicate it has been processed.
  * This is useful to avoid reprocessing the same report file.
  *
- * @param reportPath - The path to the report file.
+ * @param reportLocation - The path to the report file.
  */
-async function markReportDone(reportPath: URL): Promise<void> {
-  const donePath = replaceUrlExtension(reportPath, new RegExp('$'), '.done');
-  await fsa.write(donePath, await fsa.read(reportPath));
-  await fsa.delete(reportPath);
-  logger.info({ reportPath, donePath }, 'VerifyRestore:MarkedReportDone');
+async function markReportDone(reportLocation: URL): Promise<void> {
+  const doneLocation = replaceUrlExtension(reportLocation, new RegExp('$'), '.done');
+  await fsa.write(doneLocation, await fsa.read(reportLocation));
+  await fsa.delete(reportLocation);
+  logger.info({ reportLocation, doneLocation }, 'VerifyRestore:MarkedReportDone');
 }
 /**
  * Decodes a URL-encoded string.

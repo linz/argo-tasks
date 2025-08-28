@@ -24,20 +24,20 @@ export function protocolAwareString(targetLocation: URL): string {
  * s3://foo/ + s3://foo/bar/baz.html => ./bar/baz.html
  * file:///home/blacha + file:///home/blacha/index.json => ./index.json
  *
- * @param basePath path to make relative to
- * @param filePath target file
- * @param strict whether to throw an error if the filePath is not relative to the basePath
+ * @param baseLocation URL to make relative to
+ * @param fileLocation target file
+ * @param strict whether to throw an error if the fileLocation is not relative to the baseLocation
  *
  * @returns relative path to file
  */
-export function makeRelative(basePath: URL, filePath: URL, strict = true): string {
-  const basePathFolder = new URL('./', basePath); // Ensure basePath ends with "/"
-  // If the filePath starts with the basePathFolder, we can return the relative path
-  if (strict && !filePath.href.startsWith(basePathFolder.href)) {
-    throw new Error(`FilePaths are not relative base: ${basePathFolder.href} file: ${filePath.href}`);
+export function makeRelative(baseLocation: URL, fileLocation: URL, strict = true): string {
+  const baseLocationFolder = new URL('./', baseLocation); // Ensure baseLocation ends with "/"
+  // If the fileLocation starts with baseLocationFolder, we can return the relative path of fileLocation
+  if (strict && !fileLocation.href.startsWith(baseLocationFolder.href)) {
+    throw new Error(`FilePaths are not relative base: ${baseLocationFolder.href} file: ${fileLocation.href}`);
   }
-  const relativePath = filePath.href.replace(basePathFolder.href, './');
-  if (HttpProtocols.includes(filePath.protocol)) {
+  const relativePath = fileLocation.href.replace(baseLocationFolder.href, './');
+  if (HttpProtocols.includes(fileLocation.protocol)) {
     return relativePath;
   }
   return decodeURIComponent(relativePath);
