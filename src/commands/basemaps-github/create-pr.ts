@@ -75,7 +75,8 @@ export function parseTargetUrl(url: URL, offset: 0 | 1): targetInfo {
 
 /** Ensure the provided url ends with a slash */
 function ensureTrailingSlash(loc: URL): URL {
-  return loc.href.endsWith('/') ? loc : new URL(loc.href + '/');
+  if (!loc.pathname.endsWith('/')) loc.pathname += '/';
+  return loc;
 }
 
 /**
