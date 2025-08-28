@@ -2,7 +2,6 @@ import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
 import type { Type } from 'cmd-ts';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
-import { pathToFileURL } from 'url';
 
 import { registerFileSystem } from '../fs.register.ts';
 import { logger, registerLogger } from '../log.ts';
@@ -83,6 +82,7 @@ export function parseSize(size: string): number {
  * because @chunkd/core is a major version behind, when it upgrades this can be removed
  *
  * Because the major version upgrade for chunkd is a lot of work skip it for now (2023-11)
+ * 2025-08: chunkd has been upgraded to v11 but this still seems useful
  *
  * @param loc location to load the tiff from
  * @returns Initialized tiff
@@ -100,11 +100,7 @@ export function createTiff(loc: URL): Promise<Tiff> {
  **/
 export const Url: Type<string, URL> = {
   from(str) {
-    try {
-      return Promise.resolve(new URL(str));
-    } catch (e) {
-      return Promise.resolve(pathToFileURL(str));
-    }
+    return Promise.resolve(fsa.toUrl(str));
   },
 };
 
@@ -116,9 +112,6 @@ export const Url: Type<string, URL> = {
  * @param replaceValue to replace the pattern with, defaults to an empty string
  */
 export function replaceUrlExtension(url: URL, pattern: RegExp, replaceValue: string = ''): URL {
-  if (!(url instanceof URL)) {
-    throw new Error('Expected a URL instance');
-  }
   return new URL(url.href.replace(pattern, replaceValue));
 }
 
