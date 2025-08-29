@@ -17,7 +17,7 @@ import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
 import { FileListEntryClass } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
-import { config, registerCli, replaceUrlExtension, Url, UrlFolder, verbose } from '../common.ts';
+import { config, registerCli, replaceUrlExtension, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
 /** Datasets to skip */
 const Skip = new Set([
@@ -127,7 +127,7 @@ export const commandMapSheetCoverage = command({
       return;
     }
 
-    if (args.compare && !args.compare.pathname.endsWith('collection.json')) {
+    if (args.compare && !urlPathEndsWith(args.compare, 'collection.json')) {
       logger.error('--compare must compare with an existing STAC collection.json');
       return;
     }

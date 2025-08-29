@@ -8,7 +8,7 @@ import type { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { registerCli, verbose } from '../common.ts';
+import { ensureTrailingSlash, registerCli, verbose } from '../common.ts';
 import type { Category } from './make.cog.github.ts';
 import { Categories, MakeCogGithub } from './make.cog.github.ts';
 
@@ -36,21 +36,21 @@ export interface targetInfo {
 }
 
 /**
- * Parse information from target url include raster, vector and elevation
+ * Parse information from target location include raster, vector and elevation
  * s3://linz-basemaps/3857/canterbury_rural_2014-2015_0-30m_RGBA/01HSF04SG9M1P3V667A4NZ1MN8/
  * s3://linz-basemaps/elevation/3857/bay-of-plenty_2019-2022_dem_1m/01HSF04SG9M1P3V667A4NZ1MN8/
  * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
  *
  * TODO: This should get from metadata instead of the parse string once we got the attributes in metadata
  *
- * @param url Target url to parse the information from
+ * @param location Target location to parse the information from
  * @param offset Adding index offset to exclude the `/vector/` or `/elevation/` in s3 path. 0 for raster, 1 for vector and elevation.
  */
-export function parseTargetUrl(url: URL, offset: 0 | 1): targetInfo {
-  // Parse target bucket, epsg and imagery name from the target url
-  const target = url.href;
-  const bucket = url.hostname;
-  const splits = url.pathname.split('/');
+export function parseTargetUrl(location: URL, offset: 0 | 1): targetInfo {
+  // Parse target bucket, epsg and imagery name from the target location
+  const target = location.href;
+  const bucket = location.hostname;
+  const splits = location.pathname.split('/');
   const epsg = Epsg.tryGet(Number(splits[1 + offset]));
   const name = splits[2 + offset];
 
@@ -71,12 +71,6 @@ export function parseTargetUrl(url: URL, offset: 0 | 1): targetInfo {
   } else {
     return { bucket, epsg, name };
   }
-}
-
-/** Ensure the provided url ends with a slash */
-function ensureTrailingSlash(loc: URL): URL {
-  if (!loc.pathname.endsWith('/')) loc.pathname += '/';
-  return loc;
 }
 
 /**

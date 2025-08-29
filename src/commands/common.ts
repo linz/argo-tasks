@@ -2,7 +2,6 @@ import { fsa } from '@chunkd/fs';
 import { Tiff } from '@cogeotiff/core';
 import type { Type } from 'cmd-ts';
 import { boolean, flag, option, optional, string } from 'cmd-ts';
-import { pathToFileURL } from 'url';
 
 import { registerFileSystem } from '../fs.register.ts';
 import { logger, registerLogger } from '../log.ts';
@@ -83,6 +82,7 @@ export function parseSize(size: string): number {
  * because @chunkd/core is a major version behind, when it upgrades this can be removed
  *
  * Because the major version upgrade for chunkd is a lot of work skip it for now (2023-11)
+ * 2025-08: chunkd has been upgraded to v11 but this still seems useful
  *
  * @param loc location to load the tiff from
  * @returns Initialized tiff
@@ -93,6 +93,12 @@ export function createTiff(loc: URL): Promise<Tiff> {
   return tiff.init();
 }
 
+/** Ensure the provided url ends with a slash */
+export function ensureTrailingSlash(location: URL): URL {
+  if (!location.pathname.endsWith('/')) location.pathname += '/';
+  return location;
+}
+
 /**
  * Parse an input parameter as a URL.
  *
@@ -100,41 +106,34 @@ export function createTiff(loc: URL): Promise<Tiff> {
  **/
 export const Url: Type<string, URL> = {
   from(str) {
-    try {
-      return Promise.resolve(new URL(str));
-    } catch (e) {
-      return Promise.resolve(pathToFileURL(str));
-    }
+    return Promise.resolve(fsa.toUrl(str));
   },
 };
 
 /**
  * Remove the file extension from a URL, typically used to remove `.tiff` or `.tif` extensions.
  *
- * @param url
+ * @param location
  * @param pattern to replace
  * @param replaceValue to replace the pattern with, defaults to an empty string
  */
-export function replaceUrlExtension(url: URL, pattern: RegExp, replaceValue: string = ''): URL {
-  if (!(url instanceof URL)) {
-    throw new Error('Expected a URL instance');
-  }
-  return new URL(url.href.replace(pattern, replaceValue));
+export function replaceUrlExtension(location: URL, pattern: RegExp, replaceValue: string = ''): URL {
+  return new URL(location.href.replace(pattern, replaceValue));
 }
 
 /**
  * Check if a URL path ends with a given string (e.g. filename or file extension).
  *
- * @param x URL to check (e.g. a TIFF file URL)
+ * @param location URL to check (e.g. a TIFF file URL)
  * @param needle the term to check for, defaults to '.tiff' or '.tif'
  * @param caseSensitive whether the check should be case-sensitive, defaults to false
  * @returns true if the URL path ends with the specified term
  */
-export function urlPathEndsWith(x: URL, needle: string, caseSensitive = false): boolean {
-  let haystack = x.pathname;
+export function urlPathEndsWith(location: URL, needle: string, caseSensitive = false): boolean {
+  let haystack = location.pathname;
   if (!caseSensitive) {
     needle = needle.toLowerCase();
-    haystack = x.pathname.toLowerCase();
+    haystack = location.pathname.toLowerCase();
   }
   return haystack.endsWith(needle);
 }
@@ -148,11 +147,10 @@ export function urlPathEndsWith(x: URL, needle: string, caseSensitive = false): 
  **/
 export const UrlFolder: Type<string, URL> = {
   async from(str) {
-    const url = await Url.from(str);
-    url.search = '';
-    url.hash = '';
-    if (!url.pathname.endsWith('/')) url.pathname += '/';
-    return url;
+    const location = await Url.from(str);
+    location.search = '';
+    location.hash = '';
+    return ensureTrailingSlash(location);
   },
 };
 
@@ -208,8 +206,16 @@ export const UrlList: Type<string | string[], URL[]> = {
 
 /**
  * Parse an input string as a list of items.
- *
  * If it looks like a JSON string, it will be parsed.
+ * Other strings will be retained.
+ *
+ * @example
+ * ```typescript
+ * StrList.from('["item1","item2",["item3", "item4"]]')  // returns ["item1", "item2", "item3", "item4"]
+ * StrList.from(['item1', 'item2', ['item3', 'item4']])  // returns ["item1", "item2", "item3", "item4"]
+ * StrList.from('item1,item2,item3,item4')  // returns ["item1,item2,item3,item4"]
+ * StrList.from('item1')  // returns ["item1"]
+ * ```
  **/
 export const StrList: Type<string | string[], string[]> = {
   async from(item: string | string[]) {
@@ -259,3 +265,26 @@ export const S3Path: Type<string, URL> = {
     return await Url.from(str);
   },
 };
+
+/** Does this URL point to a JSON file (based on extension) */
+export function isJson(location: URL): boolean {
+  return urlPathEndsWith(location, '.json');
+}
+
+/**
+ * Guess the content-type of a STAC file
+ *
+ * - application/geo+json - A STAC Item
+ * - application/json - A STAC Catalog
+ * - application/json - A STAC Collection
+ *
+ * Assumes anything ending with '.json' is a stac item
+ * @see {@link https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md#stac-media-types}
+ */
+export function guessStacContentType(location: URL): string | undefined {
+  if (urlPathEndsWith(location, 'collection.json')) return 'application/json';
+  if (urlPathEndsWith(location, 'catalog.json')) return 'application/json';
+  if (urlPathEndsWith(location, '.json')) return 'application/geo+json';
+  if (urlPathEndsWith(location, '.geojson')) return 'application/geo+json';
+  return;
+}

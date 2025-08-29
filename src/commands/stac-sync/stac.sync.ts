@@ -8,7 +8,7 @@ import { md } from '../../readme/markdown.ts';
 import { annotateExample } from '../../readme/readme.example.ts';
 import { makeRelative } from '../../utils/filelist.ts';
 import { hashBuffer, HashKey } from '../../utils/hash.ts';
-import { config, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
+import { config, guessStacContentType, isJson, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
 
 export const commandStacSync = command({
   name: 'stac-sync',
@@ -47,7 +47,7 @@ export async function synchroniseFiles(sourcePath: URL, destinationPath: URL): P
 
   await Promise.all(
     sourceFilesInfo.map(async (fileInfo) => {
-      if (!fileInfo.url.pathname.endsWith('.json')) return;
+      if (!isJson(fileInfo.url)) return;
 
       const key = new URL(makeRelative(sourcePath, fileInfo.url), destinationPath);
       (await uploadFileToS3(fileInfo, key)) && count++;
@@ -77,21 +77,4 @@ export async function uploadFileToS3(sourceFileInfo: FileInfo, path: URL): Promi
   });
   logger.debug({ path: path.href }, 'StacSync:FileUploaded');
   return true;
-}
-
-/**
- * Guess the content type of a STAC file
- *
- * - application/geo+json - A STAC Item
- * - application/json - A STAC Catalog
- * - application/json - A STAC Collection
- *
- * Assumes anything ending with '.json' is a stac item
- * @see {@link https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md#stac-media-types}
- */
-export function guessStacContentType(path: URL): string | undefined {
-  if (path.pathname.endsWith('collection.json')) return 'application/json';
-  if (path.pathname.endsWith('catalog.json')) return 'application/json';
-  if (path.pathname.endsWith('.json')) return 'application/geo+json';
-  return;
 }
