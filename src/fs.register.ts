@@ -105,7 +105,7 @@ export function addMiddlewareToS3Client(s3Client: S3Client): S3Client {
   return s3Client;
 }
 
-FsAwsS3.MaxListCount = 1000;
+FsAwsS3.MaxListCount = 5000;
 
 /** Split a config string into an array of strings */
 function splitConfig(x: string): string[] {
