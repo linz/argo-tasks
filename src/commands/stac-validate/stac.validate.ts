@@ -94,23 +94,23 @@ export const commandStacValidate = command({
 
     /**
      * Lookup or load and compile an AJV validator from a JSONSchema URL
-     * @param url JSONSchema URL
+     * @param location JSONSchema URL
      * @returns
      */
-    async function getValidator(url: URL): Promise<ValidateFunction> {
+    async function getValidator(location: URL): Promise<ValidateFunction> {
       /**
-       * Calling `getSchema(url)` while the schema at `url` is still loading can cause the schema to fail to load correctly
+       * Calling `getSchema(location)` while the schema at `location` is still loading can cause the schema to fail to load correctly
        * To work around this problem ensure only one schema is compiling at a time.
        */
       await schemaQueue;
 
-      const schema = ajv.getSchema(url.href);
+      const schema = ajv.getSchema(location.href);
       if (schema != null) return schema;
-      let existing = ajvSchema.get(url.href);
+      let existing = ajvSchema.get(location.href);
 
       if (existing == null) {
-        existing = schemaQueue.then(() => loadSchema(url.href).then((f) => ajv.compileAsync(f)));
-        ajvSchema.set(url.href, existing);
+        existing = schemaQueue.then(() => loadSchema(location.href).then((f) => ajv.compileAsync(f)));
+        ajvSchema.set(location.href, existing);
         // Queue should ignore errors so if something in the queue fails it can continue to run
         schemaQueue = existing.catch(() => null);
       }

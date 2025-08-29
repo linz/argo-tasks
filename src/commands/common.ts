@@ -107,12 +107,12 @@ export const Url: Type<string, URL> = {
 /**
  * Remove the file extension from a URL, typically used to remove `.tiff` or `.tif` extensions.
  *
- * @param url
+ * @param location
  * @param pattern to replace
  * @param replaceValue to replace the pattern with, defaults to an empty string
  */
-export function replaceUrlExtension(url: URL, pattern: RegExp, replaceValue: string = ''): URL {
-  return new URL(url.href.replace(pattern, replaceValue));
+export function replaceUrlExtension(location: URL, pattern: RegExp, replaceValue: string = ''): URL {
+  return new URL(location.href.replace(pattern, replaceValue));
 }
 
 /**

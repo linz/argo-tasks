@@ -121,12 +121,12 @@ export const statsUpdaters: Record<FileOperation, (stats: CopyStats, sourceSize:
  * Also, if the file has been written with an unknown binary contentType attempt to fix it with common content types
  *
  *
- * @param url URL of file to fix the metadata of
+ * @param location URL of file to fix the metadata of
  * @param meta File metadata
  * @returns New fixed file metadata if fixed otherwise source file metadata
  */
-export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
-  if (urlPathEndsWith(url, CompressedFileExtension)) {
+export function fixFileMetadata(location: URL, meta: FileInfo): FileInfo {
+  if (urlPathEndsWith(location, CompressedFileExtension)) {
     return { ...meta, contentType: 'application/zstd' };
   } else if (meta.contentType === 'application/zstd') {
     // if content type is `zstd` but extension isn't, set to a "fixable" content type
@@ -136,10 +136,10 @@ export function fixFileMetadata(url: URL, meta: FileInfo): FileInfo {
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
 
   // Assume our tiffs are cloud optimized
-  if (isTiff(url)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+  if (isTiff(location)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
 
   // Overwrite with application/json, or application/geo+json for geojson files
-  if (isJson(url)) return { ...meta, contentType: guessStacContentType(url) };
+  if (isJson(location)) return { ...meta, contentType: guessStacContentType(location) };
 
   return meta;
 }
