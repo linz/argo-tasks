@@ -4,9 +4,7 @@ import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
-import { replaceUrlExtension, urlPathEndsWith } from '../common.ts';
-import { isJson } from '../pretty-print/pretty.print.ts';
-import { guessStacContentType } from '../stac-sync/stac.sync.ts';
+import { guessStacContentType, isJson, replaceUrlExtension, urlPathEndsWith } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -264,5 +262,5 @@ function shouldDecompressFile(
   filename: URL,
   decompressExtension: string = CompressedFileExtension,
 ): boolean {
-  return decompress && filename.href.endsWith(decompressExtension);
+  return decompress && filename.pathname.endsWith(decompressExtension);
 }

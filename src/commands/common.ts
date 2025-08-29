@@ -93,6 +93,12 @@ export function createTiff(loc: URL): Promise<Tiff> {
   return tiff.init();
 }
 
+/** Ensure the provided url ends with a slash */
+export function ensureTrailingSlash(location: URL): URL {
+  if (!location.pathname.endsWith('/')) location.pathname += '/';
+  return location;
+}
+
 /**
  * Parse an input parameter as a URL.
  *
@@ -118,16 +124,16 @@ export function replaceUrlExtension(location: URL, pattern: RegExp, replaceValue
 /**
  * Check if a URL path ends with a given string (e.g. filename or file extension).
  *
- * @param loc URL to check (e.g. a TIFF file URL)
+ * @param location URL to check (e.g. a TIFF file URL)
  * @param needle the term to check for, defaults to '.tiff' or '.tif'
  * @param caseSensitive whether the check should be case-sensitive, defaults to false
  * @returns true if the URL path ends with the specified term
  */
-export function urlPathEndsWith(loc: URL, needle: string, caseSensitive = false): boolean {
-  let haystack = loc.pathname;
+export function urlPathEndsWith(location: URL, needle: string, caseSensitive = false): boolean {
+  let haystack = location.pathname;
   if (!caseSensitive) {
     needle = needle.toLowerCase();
-    haystack = loc.pathname.toLowerCase();
+    haystack = location.pathname.toLowerCase();
   }
   return haystack.endsWith(needle);
 }
@@ -141,11 +147,10 @@ export function urlPathEndsWith(loc: URL, needle: string, caseSensitive = false)
  **/
 export const UrlFolder: Type<string, URL> = {
   async from(str) {
-    const url = await Url.from(str);
-    url.search = '';
-    url.hash = '';
-    if (!url.pathname.endsWith('/')) url.pathname += '/';
-    return url;
+    const location = await Url.from(str);
+    location.search = '';
+    location.hash = '';
+    return ensureTrailingSlash(location);
   },
 };
 
@@ -260,3 +265,26 @@ export const S3Path: Type<string, URL> = {
     return await Url.from(str);
   },
 };
+
+/** Does this URL point to a JSON file (based on extension) */
+export function isJson(location: URL): boolean {
+  return urlPathEndsWith(location, '.json');
+}
+
+/**
+ * Guess the content-type of a STAC file
+ *
+ * - application/geo+json - A STAC Item
+ * - application/json - A STAC Catalog
+ * - application/json - A STAC Collection
+ *
+ * Assumes anything ending with '.json' is a stac item
+ * @see {@link https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md#stac-media-types}
+ */
+export function guessStacContentType(location: URL): string | undefined {
+  if (urlPathEndsWith(location, 'collection.json')) return 'application/json';
+  if (urlPathEndsWith(location, 'catalog.json')) return 'application/json';
+  if (urlPathEndsWith(location, '.json')) return 'application/geo+json';
+  if (urlPathEndsWith(location, '.geojson')) return 'application/geo+json';
+  return;
+}

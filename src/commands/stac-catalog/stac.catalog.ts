@@ -6,7 +6,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { makeRelative } from '../../utils/filelist.ts';
 import { hashBuffer } from '../../utils/hash.ts';
-import { config, registerCli, Url, UrlFolder, verbose } from '../common.ts';
+import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
 const StacFileExtensionUrl = 'https://stac-extensions.github.io/file/v2.1.0/schema.json';
 
@@ -52,7 +52,7 @@ export async function createLinks(baseLocation: URL, templateLinks: st.StacLink[
   const collections = await fsa.toArray(fsa.list(baseLocation));
 
   for (const coll of collections) {
-    if (coll.pathname.endsWith('/collection.json')) {
+    if (urlPathEndsWith(coll, '/collection.json')) {
       const relPath = makeRelative(baseLocation, coll);
       const buf = await fsa.read(coll);
       const collection = JSON.parse(buf.toString()) as st.StacCollection;

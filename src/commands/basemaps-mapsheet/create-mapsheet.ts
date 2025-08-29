@@ -10,7 +10,7 @@ import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { registerCli, Url, verbose } from '../common.ts';
+import { registerCli, Url, urlPathEndsWith, verbose } from '../common.ts';
 
 const gunzipProm = promisify(gunzip);
 
@@ -25,7 +25,7 @@ export function isGzip(b: Buffer): boolean {
  */
 async function readConfig(config: URL): Promise<ConfigBundled> {
   const obj = await fsa.read(config);
-  if (config.href.endsWith('.gz') || isGzip(obj)) {
+  if (urlPathEndsWith(config, '.gz') || isGzip(obj)) {
     const data = await gunzipProm(obj);
     return JSON.parse(data.toString()) as ConfigBundled;
   }

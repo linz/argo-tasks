@@ -8,7 +8,7 @@ import type { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { registerCli, verbose } from '../common.ts';
+import { ensureTrailingSlash, registerCli, verbose } from '../common.ts';
 import type { Category } from './make.cog.github.ts';
 import { Categories, MakeCogGithub } from './make.cog.github.ts';
 
@@ -71,12 +71,6 @@ export function parseTargetUrl(location: URL, offset: 0 | 1): targetInfo {
   } else {
     return { bucket, epsg, name };
   }
-}
-
-/** Ensure the provided url ends with a slash */
-function ensureTrailingSlash(loc: URL): URL {
-  if (!loc.pathname.endsWith('/')) loc.pathname += '/';
-  return loc;
 }
 
 /**

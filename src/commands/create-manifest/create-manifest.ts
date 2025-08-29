@@ -10,7 +10,7 @@ import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
 import { makeRelative, protocolAwareString } from '../../utils/filelist.ts';
-import { config, registerCli, Url, UrlFolder, UrlFolderList, verbose } from '../common.ts';
+import { config, registerCli, Url, UrlFolder, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
@@ -115,10 +115,7 @@ export function validatePaths(source: URL, target: URL): void {
   // Throws error if the source and target paths are not:
   // - both directories
   // - both paths
-  if (source.pathname.endsWith('/') && target.pathname.endsWith('/')) {
-    return;
-  }
-  if (!source.pathname.endsWith('/') && !target.pathname.endsWith('/')) {
+  if (urlPathEndsWith(source, '/') === urlPathEndsWith(target, '/')) {
     return;
   }
   throw new Error(`Path Mismatch - source: ${source.href}, target: ${target.href}`);
