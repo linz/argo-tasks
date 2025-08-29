@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa } from '@chunkd/fs';
 import { FsMemory } from '@chunkd/source-memory';
 
-import { deleteEmptyFolders } from '../delete.empty.folders.ts';
+import { deleteEmptyFolders, isFolder } from '../delete.empty.folders.ts';
 
 /**
  * Create a directory tree in memory
@@ -23,17 +23,53 @@ async function createTree(base: string, structure: Record<string, string | null>
   }
 }
 
-describe('deleteEmptyFolders', () => {
-  const memFs = new FsMemory();
-  const base = 'memory://base/';
+const memFs = new FsMemory();
+const base = 'memory://base/';
 
-  beforeEach(async () => {
-    fsa.systems.length = 0;
-    fsa.register('memory://', memFs);
-    memFs.files.clear();
-    await fsa.write(base, '');
+beforeEach(async () => {
+  fsa.systems.length = 0;
+  fsa.register('memory://', memFs);
+  memFs.files.clear();
+  await fsa.write(base, '');
+});
+
+describe('isFolder', () => {
+  it('should return true for an empty folder (0 bytes, trailing slash)', async () => {
+    const folder = base + 'empty/';
+    await fsa.write(folder, '');
+    const result = await isFolder(folder);
+    assert.strictEqual(result, true);
   });
 
+  it('should return false for a file (no trailing slash)', async () => {
+    const file = base + 'file.txt';
+    await fsa.write(file, 'data');
+    const result = await isFolder(file);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return false for a folder with non-zero size', async () => {
+    const folder = base + 'notEmpty/';
+    await fsa.write(folder, 'data');
+    const result = await isFolder(folder);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return false for a string without trailing slash', async () => {
+    const folder = base + 'noSlash';
+    await fsa.write(folder, '');
+    const result = await isFolder(folder);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return false for a non-existent path', async () => {
+    const folder = base + 'doesnotexist/';
+    const result = await isFolder(folder);
+    assert.strictEqual(result, false);
+  });
+});
+
+describe('deleteEmptyFolders', () => {
   it('should delete empty folders recursively', async () => {
     await createTree(base, {
       'a/': null,

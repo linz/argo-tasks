@@ -57,16 +57,7 @@ export async function deleteEmptyFolders(location: URL, dryRun: boolean = true):
   const deletedFolders: string[] = [];
 
   for (const obj of subs) {
-    let isFolder = false;
-
-    if (obj.endsWith('/')) {
-      const info = await fsa.head(obj);
-      if (info?.size === 0) {
-        isFolder = true;
-      }
-    }
-
-    if (isFolder) {
+    if (await isFolder(obj)) {
       if (obj === location.toString()) continue;
       const subDeleted = await deleteEmptyFolders(new URL(obj), dryRun);
       deletedFolders.push(...subDeleted);
@@ -88,4 +79,20 @@ export async function deleteEmptyFolders(location: URL, dryRun: boolean = true):
   }
 
   return deletedFolders;
+}
+
+/**
+ * Check if a location is a folder.
+ *
+ * @param location The location to check.
+ * @returns True if the location is a folder, false otherwise.
+ */
+export async function isFolder(location: string): Promise<boolean> {
+  if (location.endsWith('/')) {
+    const info = await fsa.head(location);
+    if (info?.size === 0) {
+      return true;
+    }
+  }
+  return false;
 }
