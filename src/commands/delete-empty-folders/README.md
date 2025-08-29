@@ -10,7 +10,7 @@ delete-empty-folders <options> [...location]
 
 | Usage         | Description                              | Options |
 | ------------- | ---------------------------------------- | ------- |
-| [...location] | location to the empty folders to delete. |         |
+| [...location] | Location to the empty folders to delete. |         |
 
 ### Options
 
