@@ -204,12 +204,13 @@ export const UrlList: Type<string | string[], URL[]> = {
  * If it looks like a JSON string, it will be parsed.
  * Other strings will be retained.
  *
- * Examples:
- * - '["item1","item2",["item3", "item4"]]' -> ["item1", "item2", "item3", "item4"]
- * - ["item1","item2",["item3", "item4"]] -> ["item1", "item2", "item3", "item4"]
- * - 'item1' -> ["item1"]
- * - 'item1,item2,item3,item4' -> ["item1,item2,item3,item4"]
- *
+ * @example
+ * ```typescript
+ * StrList.from('["item1","item2",["item3", "item4"]]')  // returns ["item1", "item2", "item3", "item4"]
+ * StrList.from(['item1', 'item2', ['item3', 'item4']])  // returns ["item1", "item2", "item3", "item4"]
+ * StrList.from('item1,item2,item3,item4')  // returns ["item1,item2,item3,item4"]
+ * StrList.from('item1')  // returns ["item1"]
+ * ```
  **/
 export const StrList: Type<string | string[], string[]> = {
   async from(item: string | string[]) {

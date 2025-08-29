@@ -11,7 +11,7 @@ export interface FileSizeInfo {
 }
 
 /** Asynchronously filter a list of file URLs based on include/exclude regex */
-export async function* asyncFilter<T extends { url: URL; size?: number }>(
+export async function* asyncFilter<T extends FileSizeInfo>(
   source: AsyncGenerator<T>,
   opts?: { include?: string; exclude?: string },
 ): AsyncGenerator<T> {
