@@ -18,7 +18,7 @@ export const CommandListArgs = {
   location: restPositionals({
     type: string,
     displayName: 'location',
-    description: 'Path to the empty folders to delete.',
+    description: 'location to the empty folders to delete.',
   }),
 };
 

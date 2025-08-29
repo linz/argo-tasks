@@ -8,9 +8,9 @@ delete-empty-folders <options> [...location]
 
 ### Arguments
 
-| Usage         | Description                          | Options |
-| ------------- | ------------------------------------ | ------- |
-| [...location] | Path to the empty folders to delete. |         |
+| Usage         | Description                              | Options |
+| ------------- | ---------------------------------------- | ------- |
+| [...location] | location to the empty folders to delete. |         |
 
 ### Options
 
