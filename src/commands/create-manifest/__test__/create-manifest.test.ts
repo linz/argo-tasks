@@ -110,12 +110,12 @@ describe('createManifest', () => {
   describe('validatePaths', () => {
     it('Should throw error for mismatched paths', () => {
       assert.throws(() => {
-        validatePaths(new URL('memory://source/'), new URL('memory://target/sub/test.tiff'));
+        validatePaths(fsa.toUrl('memory://source/'), fsa.toUrl('memory://target/sub/test.tiff'));
       }, Error);
     });
     it('Should also throw error for mismatched paths', () => {
       assert.throws(() => {
-        validatePaths(new URL('memory://source/test.tiff'), new URL('memory://target/sub/'));
+        validatePaths(fsa.toUrl('memory://source/test.tiff'), fsa.toUrl('memory://target/sub/'));
       }, Error);
     });
   });
@@ -130,9 +130,9 @@ describe('createManifest', () => {
       ].flat(),
     )) as { _tag: 'ok'; value: CommandCreateManifestArgs };
     assert.equal(parsed._tag, 'ok');
-    assert.deepEqual(parsed.value.source, [[new URL('memory://source/🟥/')]]);
-    assert.deepEqual(parsed.value.target, new URL('memory://target/🟪/🦄 🌈/')); // adds trailing slash
-    assert.deepEqual(parsed.value.output, new URL('memory://output/🦄 🌈.json'));
+    assert.deepEqual(parsed.value.source, [[fsa.toUrl('memory://source/🟥/')]]);
+    assert.deepEqual(parsed.value.target, fsa.toUrl('memory://target/🟪/🦄 🌈/')); // adds trailing slash
+    assert.deepEqual(parsed.value.output, fsa.toUrl('memory://output/🦄 🌈.json'));
   });
 
   const baseArgs: CommandCreateManifestArgs = {
@@ -145,8 +145,8 @@ describe('createManifest', () => {
     groupSize: undefined,
     group: undefined,
     limit: undefined,
-    output: new URL('memory://manifest.json'),
-    target: new URL('memory://target/'),
+    output: fsa.toUrl('memory://manifest.json'),
+    target: fsa.toUrl('memory://target/'),
     source: [],
   };
 

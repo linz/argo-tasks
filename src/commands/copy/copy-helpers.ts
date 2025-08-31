@@ -168,7 +168,7 @@ export async function determineTargetFileOperation(
     );
   } else if (shouldCompress) {
     // If we compress, we append the .zst extension to the target name
-    finalTargetLocation = new URL(initialTargetLocation.href + CompressedFileExtension);
+    finalTargetLocation = fsa.toUrl(initialTargetLocation.href + CompressedFileExtension);
   }
 
   const head = await tryHead(finalTargetLocation);

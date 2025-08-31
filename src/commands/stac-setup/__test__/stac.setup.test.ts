@@ -29,7 +29,7 @@ describe('stac-setup', () => {
     config: undefined,
     surveyId: undefined,
     odrUrl: '',
-    output: new URL('memory://tmp/stac-setup/'),
+    output: fsa.toUrl('memory://tmp/stac-setup/'),
     gsd: '1',
     region: 'gisborne',
     geographicDescription: 'Wairoa',
@@ -40,7 +40,7 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: 'memory://collection.json',
-      output: new URL('memory://tmp/stac-setup/'),
+      output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
@@ -67,7 +67,7 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: '',
-      output: new URL('memory://tmp/stac-setup/'),
+      output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
@@ -93,7 +93,7 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: '',
-      output: new URL('memory://tmp/stac-setup/'),
+      output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '',
       endYear: '',
       gsd: '10',
@@ -117,7 +117,7 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: '',
-      output: new URL('memory://tmp/stac-setup/'),
+      output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '1982',
       endYear: '1983',
       gsd: '0.375',

@@ -22,8 +22,8 @@ describe('stacSync', () => {
       fsa.toUrl('m://destination/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
-    const destination = new URL('m://destination/stac/');
-    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destination), 1);
+    const destination = fsa.toUrl('m://destination/stac/');
+    assert.equal(await synchroniseFiles(fsa.toUrl('m://source/stac/'), destination), 1);
   });
 
   it('shouldUploadFileOnlyOnce', async () => {
@@ -35,9 +35,9 @@ describe('stacSync', () => {
       fsa.toUrl('m://destination/stac/wellington/collection.json'),
       JSON.stringify({ title: 'Wellington Collection', description: 'abc' }),
     );
-    const destination = new URL('m://destination/stac/');
-    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destination), 1);
-    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destination), 0);
+    const destination = fsa.toUrl('m://destination/stac/');
+    assert.equal(await synchroniseFiles(fsa.toUrl('m://source/stac/'), destination), 1);
+    assert.equal(await synchroniseFiles(fsa.toUrl('m://source/stac/'), destination), 0);
   });
 
   it('shouldNotUploadFile', async () => {
@@ -52,7 +52,7 @@ describe('stacSync', () => {
       JSON.stringify({ title: 'Wellington Collection', description: 'abcd' }),
       { metadata: { [HashKey]: sourceHash } },
     );
-    const destination = new URL('m://destination/stac/');
-    assert.equal(await synchroniseFiles(new URL('m://source/stac/'), destination), 0);
+    const destination = fsa.toUrl('m://destination/stac/');
+    assert.equal(await synchroniseFiles(fsa.toUrl('m://source/stac/'), destination), 0);
   });
 });

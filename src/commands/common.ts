@@ -118,7 +118,7 @@ export const Url: Type<string, URL> = {
  * @param replaceValue to replace the pattern with, defaults to an empty string
  */
 export function replaceUrlExtension(location: URL, pattern: RegExp, replaceValue: string = ''): URL {
-  return new URL(location.href.replace(pattern, replaceValue));
+  return fsa.toUrl(location.href.replace(pattern, replaceValue));
 }
 
 /**

@@ -94,7 +94,7 @@ export const commandStacSetup = command({
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,
-      defaultValue: () => new URL('file:///tmp/stac-setup/'),
+      defaultValue: () => fsa.toUrl('file:///tmp/stac-setup/'),
     }),
   },
 
@@ -107,7 +107,7 @@ export const commandStacSetup = command({
       const collectionPath = args.odrUrl.endsWith('collection.json')
         ? args.odrUrl
         : path.join(args.odrUrl, 'collection.json');
-      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(new URL(collectionPath));
+      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(fsa.toUrl(collectionPath));
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) throw new Error(`Invalid slug: ${slug}.`);

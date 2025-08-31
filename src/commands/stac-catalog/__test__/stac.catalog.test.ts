@@ -46,7 +46,7 @@ describe('stacCatalog', () => {
 describe('makeRelative', () => {
   it('should make relative urls', () => {
     assert.equal(
-      makeRelative(new URL('s3://linz-imagery/'), new URL('s3://linz-imagery/catalog.json')),
+      makeRelative(fsa.toUrl('s3://linz-imagery/'), fsa.toUrl('s3://linz-imagery/catalog.json')),
       './catalog.json',
     );
   });

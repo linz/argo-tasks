@@ -96,7 +96,7 @@ export const commandMapSheetCoverage = command({
       description: 'Location of the basemaps configuration file',
       defaultValueIsSerializable: true,
       defaultValue: () => {
-        return new URL('https://raw.githubusercontent.com/linz/basemaps-config/master/config/tileset/elevation.json');
+        return fsa.toUrl('https://raw.githubusercontent.com/linz/basemaps-config/master/config/tileset/elevation.json');
       },
     }),
     mapSheet: option({
@@ -114,7 +114,7 @@ export const commandMapSheetCoverage = command({
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,
-      defaultValue: () => new URL('file:///tmp/mapsheet-coverage/'),
+      defaultValue: () => fsa.toUrl('file:///tmp/mapsheet-coverage/'),
     }),
   },
   async handler(args) {

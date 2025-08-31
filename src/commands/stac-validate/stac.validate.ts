@@ -148,7 +148,7 @@ export const commandStacValidate = command({
 
       stacSchemas.push(schema);
       if (stacJson.stac_extensions) {
-        for (const se of stacJson.stac_extensions) stacSchemas.push(new URL(se));
+        for (const se of stacJson.stac_extensions) stacSchemas.push(fsa.toUrl(se));
       }
 
       let isOk = true;
@@ -285,7 +285,7 @@ export async function validateLinks(
  * @returns object from the cache if it exists or directly from the uri
  */
 async function loadSchema(urlString: string): Promise<object> {
-  const schemaLocation = new URL(urlString);
+  const schemaLocation = fsa.toUrl(urlString);
   const cacheId = createHash('sha256').update(schemaLocation.href).digest('hex');
   const cachePath = pathToFileURL(`./json-schema-cache/${cacheId}.json`);
   try {
@@ -380,7 +380,7 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, locati
 
   const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
   logger.trace({ path: location.href, schemaType, schemaId }, 'getStacSchema:Done');
-  return new URL(schemaId);
+  return fsa.toUrl(schemaId);
 }
 
 /** STAC link "rel" types that are considered children */

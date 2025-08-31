@@ -84,7 +84,7 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
   let tfwData;
   for (const tfwExtension of tfwVariants) {
-    const candidateTfwLocation = new URL(baseLocation.href + tfwExtension);
+    const candidateTfwLocation = fsa.toUrl(baseLocation.href + tfwExtension);
     try {
       tfwData = await fsa.read(candidateTfwLocation);
       break;

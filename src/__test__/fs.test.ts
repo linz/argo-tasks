@@ -64,7 +64,7 @@ describe('Register', () => {
 
   it('should add both middleware', async () => {
     const s3Fs = registerFileSystem({ config: 'memory://config.json' });
-    await s3Fs.credentials!.find(new URL('s3://_linz-topographic/foo.json'));
+    await s3Fs.credentials!.find(fsa.toUrl('s3://_linz-topographic/foo.json'));
 
     const fileSystems = [...s3Fs.credentials!.fileSystems.values()];
     assert.equal(fileSystems.length, 1);
@@ -86,8 +86,8 @@ describe('Register', () => {
       'FQDN - finalizeRequest',
     );
 
-    await s3Fs.credentials!.find(new URL('s3://_linz-topographic/foo.json'));
-    await s3Fs.credentials!.find(new URL('s3://_linz-topographic-upload/foo.json'));
+    await s3Fs.credentials!.find(fsa.toUrl('s3://_linz-topographic/foo.json'));
+    await s3Fs.credentials!.find(fsa.toUrl('s3://_linz-topographic-upload/foo.json'));
 
     const fileSystems = [...s3Fs.credentials!.fileSystems.values()];
     assert.equal(fileSystems.length, 1);

@@ -29,7 +29,6 @@ describe('createFileList', () => {
   it('should create a file list from TiffLocation and string inputs with derived inputs set based on input flag', () => {
     for (const includeDerived of [true, false]) {
       const result: FileListEntryClass[] = createFileList(entries, includeDerived);
-      console.log(JSON.stringify(result));
       assert.deepEqual(result, [
         {
           output: 'output1',

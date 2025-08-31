@@ -19,12 +19,12 @@ describe('getFiles', () => {
     await fsa.write(fsa.toUrl('gf://c/c.txt'), Buffer.from('hello world'));
 
     const files = await getFiles(await UrlList.from('gf://a/;gf://b/\ngf://c/'));
-    assert.deepEqual(files, [[new URL('gf://a/a.txt'), new URL('gf://b/b.txt'), new URL('gf://c/c.txt')]]);
+    assert.deepEqual(files, [[fsa.toUrl('gf://a/a.txt'), fsa.toUrl('gf://b/b.txt'), fsa.toUrl('gf://c/c.txt')]]);
   });
 
   it('should skip zero byte files by default', async () => {
     await fsa.write(fsa.toUrl('gf://a/a.txt'), Buffer.from(''));
     assert.deepEqual(await getFiles(await UrlList.from(['gf://a/'])), []);
-    assert.deepEqual(await getFiles(await UrlList.from(['gf://a/']), { sizeMin: 0 }), [[new URL('gf://a/a.txt')]]);
+    assert.deepEqual(await getFiles(await UrlList.from(['gf://a/']), { sizeMin: 0 }), [[fsa.toUrl('gf://a/a.txt')]]);
   });
 });

@@ -131,7 +131,7 @@ export function fetchResultKeysFromReport(report: ManifestReport): URL[] {
     );
   }
 
-  return Results.map((r) => new URL(`s3://${r.Bucket}/${r.Key}`));
+  return Results.map((r) => fsa.toUrl(`s3://${r.Bucket}/${r.Key}`));
 }
 
 /** Fetches the paths of pending restored objects from the report results.
@@ -194,7 +194,7 @@ async function headS3Object(path: { Bucket: string; Key: string }): Promise<File
   const objectPath = `s3://${path.Bucket}/${objectKey}`;
   logger.info({ path: objectPath }, 'VerifyRestore:HeadS3Object:Start');
   try {
-    const fileInfo = (await fsa.head(new URL(objectPath))) as FileInfo<HeadObjectCommandOutput>;
+    const fileInfo = (await fsa.head(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
     if (!fileInfo) {
       throw new Error('No info returned when trying to head the object');
     }

@@ -234,7 +234,7 @@ describe('command.generatePath', () => {
 
   it('should generate a output', async () => {
     await fsa.write(
-      new URL('memory://bucket/source/test/collection.json'),
+      fsa.toUrl('memory://bucket/source/test/collection.json'),
       Buffer.from(
         JSON.stringify({
           'linz:geospatial_category': 'urban-aerial-photos',
@@ -245,7 +245,7 @@ describe('command.generatePath', () => {
       ),
     );
     await fsa.write(
-      new URL('memory://bucket/source/test/BQ32.json'),
+      fsa.toUrl('memory://bucket/source/test/BQ32.json'),
       Buffer.from(
         JSON.stringify({
           assets: {
@@ -256,7 +256,7 @@ describe('command.generatePath', () => {
         }),
       ),
     );
-    await fsa.write(new URL('memory://bucket/source/test/BQ32.tiff'), RgbaNztm2000Tiff);
+    await fsa.write(fsa.toUrl('memory://bucket/source/test/BQ32.tiff'), RgbaNztm2000Tiff);
 
     await commandGeneratePath.handler({ ...baseArgs, source: await UrlFolder.from('memory://bucket/source/test/') });
 

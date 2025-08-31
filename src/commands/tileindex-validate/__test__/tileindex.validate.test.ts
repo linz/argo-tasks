@@ -222,7 +222,7 @@ describe('validate', () => {
     try {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        location: [[new URL('s3://test')]],
+        location: [[fsa.toUrl('s3://test')]],
         retile: false,
         validate: true,
         scale: 1000,
@@ -273,7 +273,7 @@ describe('validate', () => {
 
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      location: [[new URL('s3://test')]],
+      location: [[fsa.toUrl('s3://test')]],
       retile: true,
       scale: 1000,
       forceOutput: true,
@@ -296,7 +296,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[new URL('s3://test')]],
+          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,
@@ -314,7 +314,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[new URL('s3://test')]],
+          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,
@@ -338,7 +338,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[new URL('s3://test')]],
+          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,
@@ -356,7 +356,7 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[new URL('s3://test')]],
+          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
           scale: 1000,

@@ -53,8 +53,8 @@ describe('mapsheet-coverage', () => {
   const mem = new FsMemory();
   const baseArgs = {
     epsgCode: 2193,
-    location: new URL('ms://config.json'),
-    output: new URL('ms://output/'),
+    location: fsa.toUrl('ms://config.json'),
+    output: fsa.toUrl('ms://output/'),
     compare: undefined,
     verbose: false,
     mapSheet: undefined,
