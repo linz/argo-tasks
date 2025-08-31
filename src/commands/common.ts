@@ -125,7 +125,7 @@ export function replaceUrlExtension(location: URL, pattern: RegExp, replaceValue
  * Check if a URL path ends with a given string (e.g. filename or file extension).
  *
  * @param location URL to check (e.g. a TIFF file URL)
- * @param needle the term to check for, defaults to '.tiff' or '.tif'
+ * @param needle the term to check for
  * @param caseSensitive whether the check should be case-sensitive, defaults to false
  * @returns true if the URL path ends with the specified term
  */

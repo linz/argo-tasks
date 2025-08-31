@@ -90,11 +90,13 @@ async function parseRasterTargetInfo(
   const collectionLocation = new URL('collection.json', ensureTrailingSlash(target));
 
   const collection = await fsa.readJson<StacCollection>(collectionLocation);
-  if (collection == null)
+  if (collection == null) {
     throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
+  }
   const title = collection.title;
-  if (title == null)
+  if (title == null) {
     throw new Error(`Failed to get imagery title from collection.json: ${collectionLocation.toString()}`);
+  }
 
   // Validate the source location
   const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
@@ -138,8 +140,9 @@ async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title
   // Try to get the title
   const collectionLocation = new URL('collection.json', target);
   const collection = await fsa.readJson<StacCollection>(collectionLocation);
-  if (collection == null)
+  if (collection == null) {
     throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
+  }
   const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');
   let title = collection.title;
   // Get title from lds:title for individual vector layer
@@ -167,8 +170,9 @@ async function parseElevationTargetInfo(
   const collectionLocation = new URL('collection.json', ensureTrailingSlash(target));
 
   const collection = await fsa.readJson<StacCollection>(collectionLocation);
-  if (collection == null)
+  if (collection == null) {
     throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
+  }
   const title = collection.title;
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
 
