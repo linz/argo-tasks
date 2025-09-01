@@ -4,7 +4,7 @@ Sync STAC files
 
 ## Usage
 
-stac-sync <options> <str> <arg>
+stac-sync <options> <arg> <arg>
 
 ## Examples
 
@@ -18,7 +18,7 @@ stac sync /path/to/stac/ s3://nz-imagery/
 
 | Usage | Description                                              | Options |
 | ----- | -------------------------------------------------------- | ------- |
-| <str> | Location of the source STAC to synchronise from          |         |
+| <arg> | Location of the source STAC to synchronise from          |         |
 | <arg> | Location of the destination STAC in S3 to synchronise to |         |
 
 ### Options

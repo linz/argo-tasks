@@ -2,12 +2,15 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
+import type { FileInfo } from '@chunkd/fs';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import {
   decodeFormUrlEncoded,
   fetchPendingRestoredObjectPaths,
   fetchResultKeysFromReport,
   isRestoreCompleted,
+  markReportDone,
   parseReportResult,
 } from '../verify.restore.ts';
 
@@ -20,7 +23,7 @@ describe('fetchResultKeysFromReport', () => {
       ],
     };
     const keys = fetchResultKeysFromReport(report);
-    assert.deepEqual(keys, ['s3://b/k', 's3://b2/k2']);
+    assert.deepEqual(keys, [fsa.toUrl('s3://b/k'), fsa.toUrl('s3://b2/k2')]);
   });
 
   it('throws if any result is not succeeded', async () => {
@@ -134,7 +137,11 @@ describe('isRestoreCompleted', () => {
       Restore: 'ongoing-request="false"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.strictEqual(isRestoreCompleted(headObjectOutput), true);
+    const fileInfo: FileInfo<HeadObjectCommandOutput> = {
+      url: fsa.toUrl('s3://bucket/key'), // not used in isRestoreCompleted
+      $response: headObjectOutput,
+    };
+    assert.strictEqual(isRestoreCompleted(fileInfo), true);
   });
 
   it('returns false if Restore is ongoing-request="true"', async () => {
@@ -142,14 +149,22 @@ describe('isRestoreCompleted', () => {
       Restore: 'ongoing-request="true"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.strictEqual(isRestoreCompleted(headObjectOutput), false);
+    const fileInfo: FileInfo<HeadObjectCommandOutput> = {
+      url: fsa.toUrl('s3://bucket/key'), // not used in isRestoreCompleted
+      $response: headObjectOutput,
+    };
+    assert.strictEqual(isRestoreCompleted(fileInfo), false);
   });
 
   it('throws if Restore is undefined', async () => {
     const headObjectOutput: HeadObjectCommandOutput = {
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };
-    assert.throws(() => isRestoreCompleted(headObjectOutput), /undefined/);
+    const fileInfo: FileInfo<HeadObjectCommandOutput> = {
+      url: fsa.toUrl('s3://bucket/key'), // not used in isRestoreCompleted
+      ...headObjectOutput,
+    };
+    assert.throws(() => isRestoreCompleted(fileInfo), /undefined/);
   });
 });
 
@@ -175,5 +190,22 @@ describe('decodeFormUrlEncoded', () => {
       decodeFormUrlEncoded('%2Fpath%2Fto%2Bfile+with+spaces%2Band%2Bplus'),
       '/path/to+file with spaces+and+plus',
     );
+  });
+});
+
+describe('markReportDone', () => {
+  const memory = new FsMemory();
+  fsa.register('memory://', memory);
+  memory.files.clear();
+
+  it('should rename the report file by adding a .done suffix', async () => {
+    const reportfile = fsa.toUrl('memory://fake/report.csv');
+    await fsa.write(reportfile, 'report content');
+    await markReportDone(reportfile);
+    const doneFile = fsa.toUrl('memory://fake/report.csv.done');
+    const doneContent = (await fsa.read(doneFile)).toString();
+    assert.strictEqual(doneContent, 'report content');
+    const exists = await fsa.exists(reportfile);
+    assert.strictEqual(exists, false);
   });
 });

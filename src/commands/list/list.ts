@@ -4,7 +4,8 @@ import { command, number, option, optional, restPositionals, string } from 'cmd-
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { config, registerCli, verbose } from '../common.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
+import { config, registerCli, Url, UrlList, verbose } from '../common.ts';
 
 export const CommandListArgs = {
   config,
@@ -22,8 +23,8 @@ export const CommandListArgs = {
     long: 'limit',
     description: 'Limit the file count to this amount, -1 is no limit',
   }),
-  output: option({ type: optional(string), long: 'output', description: 'Output location for the listing' }),
-  location: restPositionals({ type: string, displayName: 'location', description: 'Where to list' }),
+  output: option({ type: optional(Url), long: 'output', description: 'Output location for the listing' }),
+  location: restPositionals({ type: UrlList, displayName: 'location', description: 'Where to list' }),
 };
 
 export const commandList = command({
@@ -37,7 +38,9 @@ export const commandList = command({
       logger.error('List:Error:NoLocationProvided');
       process.exit(1);
     }
-    const outputFiles = await getFiles(args.location, args);
-    if (args.output) await fsa.write(args.output, JSON.stringify(outputFiles));
+    const listLocations = args.location.flat();
+    const outputFiles = await getFiles(listLocations, args);
+    const decodedFiles = outputFiles.map((outputFile) => outputFile.map((url) => protocolAwareString(url)));
+    if (args.output) await fsa.write(args.output, JSON.stringify(decodedFiles));
   },
 });

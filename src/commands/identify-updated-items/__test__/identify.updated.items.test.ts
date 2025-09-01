@@ -3,9 +3,10 @@ import { describe, it } from 'node:test';
 
 import { fsa } from '@chunkd/fs';
 
-import type { FileListEntry } from '../../../utils/filelist.ts';
+import type { FileListEntryClass } from '../../../utils/filelist.ts';
+import { Url, UrlList } from '../../common.ts';
+import type { IdentifyUpdatedItemsArgs } from '../identify.updated.items.ts';
 import { commandIdentifyUpdatedItems } from '../identify.updated.items.ts';
-
 /**
  * Test cases implemented:
  * Do not process:
@@ -20,39 +21,47 @@ import { commandIdentifyUpdatedItems } from '../identify.updated.items.ts';
 describe('identify-updated-items', () => {
   const baseArgs = {
     verbose: false,
-    targetCollection: './src/commands/identify-updated-items/__test__/data/hillshade/collection.json',
-    sourceCollections: [
-      './src/commands/identify-updated-items/__test__/data/dem_8m/collection.json',
-      './src/commands/identify-updated-items/__test__/data/dem_1m/collection.json',
-    ],
+    targetCollection: Url.from('./src/commands/identify-updated-items/__test__/data/hillshade/collection.json'),
+    sourceCollections: UrlList.from(
+      './src/commands/identify-updated-items/__test__/data/dem_8m/collection.json;./src/commands/identify-updated-items/__test__/data/dem_1m/collection.json',
+    ),
   };
   it('should throw an error if no source collections are provided', async () => {
     const args = {
       ...baseArgs,
       sourceCollections: [],
     };
-    await assert.rejects(commandIdentifyUpdatedItems.handler(args), {
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+      Object.fromEntries,
+    )) as IdentifyUpdatedItemsArgs;
+    await assert.rejects(commandIdentifyUpdatedItems.handler(resolvedArgs), {
       message: '--source-collections must point to existing STAC collection.json file(s)',
     });
   });
   it('should throw an error if source collection does not point to collection.json file', async () => {
     const args = {
       ...baseArgs,
-      sourceCollections: [
+      sourceCollections: UrlList.from([
         './src/commands/identify-updated-items/__test__/data/dem_8m/',
         './src/commands/identify-updated-items/__test__/data/dem_1m/collection.json',
-      ],
+      ]),
     };
-    await assert.rejects(commandIdentifyUpdatedItems.handler(args), {
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+      Object.fromEntries,
+    )) as IdentifyUpdatedItemsArgs;
+    await assert.rejects(commandIdentifyUpdatedItems.handler(resolvedArgs), {
       message: '--source-collections must point to existing STAC collection.json file(s)',
     });
   });
   it('should throw an error if a target collection is set but does not point to a "collection.json" file', async () => {
     const args = {
       ...baseArgs,
-      targetCollection: './src/commands/identify-updated-items/__test__/data/hillshade/',
+      targetCollection: Url.from('./src/commands/identify-updated-items/__test__/data/hillshade/'),
     };
-    await assert.rejects(commandIdentifyUpdatedItems.handler(args), {
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+      Object.fromEntries,
+    )) as IdentifyUpdatedItemsArgs;
+    await assert.rejects(commandIdentifyUpdatedItems.handler(resolvedArgs), {
       message: '--target-collection must point to an existing STAC collection.json or not be set',
     });
   });
@@ -62,8 +71,13 @@ describe('identify-updated-items', () => {
       ...baseArgs,
       targetCollection: undefined,
     };
-    await commandIdentifyUpdatedItems.handler(args);
-    const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/identify-updated-items/file-list.json');
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+      Object.fromEntries,
+    )) as IdentifyUpdatedItemsArgs;
+    await commandIdentifyUpdatedItems.handler(resolvedArgs);
+    const outputFileList: [FileListEntryClass] = await fsa.readJson(
+      fsa.toUrl('/tmp/identify-updated-items/file-list.json'),
+    );
     assert.deepEqual(outputFileList, [
       {
         output: 'BD31',
@@ -106,8 +120,15 @@ describe('identify-updated-items', () => {
   });
 
   it('should only add modified items to file-list.json', async () => {
-    await commandIdentifyUpdatedItems.handler(baseArgs);
-    const outputFileList: [FileListEntry] = await fsa.readJson('/tmp/identify-updated-items/file-list.json');
+    const args = { ...baseArgs };
+    const resolvedArgs = (await Promise.all(Object.entries(args).map(async ([key, value]) => [key, await value])).then(
+      Object.fromEntries,
+    )) as IdentifyUpdatedItemsArgs;
+
+    await commandIdentifyUpdatedItems.handler(resolvedArgs);
+    const outputFileList: [FileListEntryClass] = await fsa.readJson(
+      fsa.toUrl('/tmp/identify-updated-items/file-list.json'),
+    );
     assert.deepEqual(outputFileList, [
       {
         output: 'BD32',

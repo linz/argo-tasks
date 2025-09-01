@@ -1,18 +1,12 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, optional, positional, string } from 'cmd-ts';
-import { basename } from 'path';
+import { command, option, optional, positional } from 'cmd-ts';
 import prettier from 'prettier';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getFiles } from '../../utils/chunk.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
-import { config, registerCli, verbose } from '../common.ts';
-
-function isJson(x: string): boolean {
-  const search = x.toLowerCase();
-  return search.endsWith('.json');
-}
+import { config, isJson, registerCli, UrlFolder, UrlList, verbose } from '../common.ts';
 
 export const commandPrettyPrint = command({
   name: 'pretty-print',
@@ -22,11 +16,11 @@ export const commandPrettyPrint = command({
     config,
     verbose,
     target: option({
-      type: optional(string),
+      type: optional(UrlFolder),
       long: 'target',
       description: 'Use if files have to be saved somewhere else instead of overwriting the source (testing)',
     }),
-    path: positional({ type: string, displayName: 'path', description: 'Path of the files to pretty print' }),
+    path: positional({ type: UrlList, displayName: 'path', description: 'Path of the files to pretty print' }),
   },
 
   async handler(args) {
@@ -37,7 +31,7 @@ export const commandPrettyPrint = command({
       logger.info({ target: args.target }, 'PrettyPrint:Info');
     }
 
-    const files = await getFiles([args.path]);
+    const files = await getFiles(args.path);
     const jsonFiles = files.flat().filter(isJson);
     if (jsonFiles.length === 0) throw new Error('No Files found');
 
@@ -45,7 +39,7 @@ export const commandPrettyPrint = command({
     if (jsonFiles[0]) await fsa.head(jsonFiles[0]);
 
     // format files
-    await Promise.all(jsonFiles.map((f: string) => formatFile(f, args.target)));
+    await Promise.all(jsonFiles.map((f: URL) => formatFile(f, args.target)));
     logger.info({ fileCount: jsonFiles.length, duration: performance.now() - startTime }, 'PrettyPrint:Done');
   },
 });
@@ -53,18 +47,19 @@ export const commandPrettyPrint = command({
 /**
  * Format the file
  *
- * @param path of the file to format
- * @param target where to save the output. If not specified, overwrite the original file.
+ * @param sourceLocation of the file to format
+ * @param targetLocation where to save the output. If not specified, overwrite the original file.
  */
-export async function formatFile(path: string, target = ''): Promise<void> {
-  logger.debug({ file: path }, 'PrettyPrint:RunPrettier');
-  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(path)), DEFAULT_PRETTIER_FORMAT);
-  if (target) {
+export async function formatFile(sourceLocation: URL, targetLocation?: URL): Promise<void> {
+  logger.debug({ file: sourceLocation.href }, 'PrettyPrint:RunPrettier');
+  let outputLocation = sourceLocation;
+  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(sourceLocation)), DEFAULT_PRETTIER_FORMAT);
+  if (targetLocation) {
     // FIXME: can be duplicate files
-    path = fsa.join(target, basename(path));
+    outputLocation = new URL(sourceLocation.pathname.replace(new RegExp('.*/', ''), ''), targetLocation);
   }
 
-  await fsa.write(path, Buffer.from(prettyPrinted));
+  await fsa.write(outputLocation, Buffer.from(prettyPrinted));
 }
 
 /**

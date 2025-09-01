@@ -4,21 +4,21 @@ Construct STAC catalog
 
 ## Usage
 
-stac-catalog <options> <str>
+stac-catalog <options> <arg>
 
 ### Arguments
 
 | Usage | Description                                  | Options |
 | ----- | -------------------------------------------- | ------- |
-| <str> | Location to search for collection.json paths |         |
+| <arg> | Location to search for collection.json paths |         |
 
 ### Options
 
-| Usage            | Description                                          | Options  |
-| ---------------- | ---------------------------------------------------- | -------- |
-| --config <str>   | Location of role configuration file                  | optional |
-| --template <str> | JSON template file location for the Catalog metadata |          |
-| --output <str>   | Output location for the catalog                      |          |
+| Usage              | Description                                          | Options  |
+| ------------------ | ---------------------------------------------------- | -------- |
+| --config <str>     | Location of role configuration file                  | optional |
+| --template <value> | JSON template file location for the Catalog metadata |          |
+| --output <value>   | Output location for the catalog                      |          |
 
 ### Flags
 

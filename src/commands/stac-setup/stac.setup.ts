@@ -1,5 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
+import path from 'path';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
@@ -7,13 +8,13 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
-import { config, MeterAsString, registerCli, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.ts';
+import { config, MeterAsString, registerCli, UrlFolder, verbose } from '../common.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
   geographicDescription?: string;
   region: string;
-  /** Optional survey ID if it exists, eg SN8066, commonly used with scanned historical imagery */
+  /** Optional survey ID if it exists, e.g. SN8066, commonly used with scanned historical imagery */
   surveyId?: string;
   date: string;
   gsd: string;
@@ -93,7 +94,7 @@ export const commandStacSetup = command({
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,
-      defaultValue: () => tryParseUrl('/tmp/stac-setup/'),
+      defaultValue: () => fsa.toUrl('file:///tmp/stac-setup/'),
     }),
   },
 
@@ -105,8 +106,8 @@ export const commandStacSetup = command({
     if (args.odrUrl) {
       const collectionPath = args.odrUrl.endsWith('collection.json')
         ? args.odrUrl
-        : fsa.join(args.odrUrl, 'collection.json');
-      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionPath);
+        : path.join(args.odrUrl, 'collection.json');
+      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(fsa.toUrl(collectionPath));
       if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) throw new Error(`Invalid slug: ${slug}.`);
@@ -207,6 +208,6 @@ export function formatDate(startDate?: string, endDate?: string): string {
 export async function writeSetupFiles(slug: string, collectionId: string, output?: URL): Promise<void> {
   const slugPath = new URL('linz-slug', output);
   const collectionIdPath = new URL('collection-id', output);
-  await fsa.write(urlToString(slugPath), slug);
-  await fsa.write(urlToString(collectionIdPath), collectionId);
+  await fsa.write(slugPath, slug);
+  await fsa.write(collectionIdPath, collectionId);
 }
