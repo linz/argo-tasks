@@ -82,7 +82,7 @@ export function parseSize(size: string): number {
  * because @chunkd/core is a major version behind, when it upgrades this can be removed
  *
  * Because the major version upgrade for chunkd is a lot of work skip it for now (2023-11)
- * 2025-08: chunkd has been upgraded to v11 but this still seems useful
+ * 2025-09: chunkd has been upgraded to v11 but this still seems useful
  *
  * @param location to load the tiff from
  * @returns Initialized tiff
