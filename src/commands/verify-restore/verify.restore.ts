@@ -9,17 +9,10 @@ import { logger } from '../../log.ts';
 import { config, registerCli, S3Path, Url, verbose } from '../common.ts';
 
 /** Represents the manifest report structure for S3 Batch Operations Restore. */
-export type ManifestReport = {
-  Results: ManifestReportResult[];
-};
+export type ManifestReport = { Results: ManifestReportResult[] };
 
 /** Represents a single result in the manifest report. */
-export type ManifestReportResult = {
-  TaskExecutionStatus: string;
-  Bucket: string;
-  MD5Checksum: string;
-  Key: string;
-};
+export type ManifestReportResult = { TaskExecutionStatus: string; Bucket: string; MD5Checksum: string; Key: string };
 
 /** Represents a single result (CSV file) in the report. */
 type ReportResult = {
@@ -71,7 +64,7 @@ export const commandVerifyRestore = command({
     Each report manifest links to multiple CSV files or "sub manifests"
       that contains the list of files that were triggered for restoration.
     */
-    let anyNotRestored = false;
+    let isAllRestored = true;
     for (const key of resultKeys) {
       logger.info({ key }, 'VerifyRestore:ProcessingCSVResult');
       const resultPath = new URL(key, args.report);
@@ -84,15 +77,15 @@ export const commandVerifyRestore = command({
         limit(async () => {
           logger.info({ path: file }, 'VerifyRestore:CheckingFile');
           const headObjectOutput = await headS3Object(file);
-          let restoreCompleted = false;
+          let isObjectRestored = false;
           try {
-            restoreCompleted = isRestoreCompleted(headObjectOutput);
+            isObjectRestored = isRestoreCompleted(headObjectOutput);
           } catch (error: unknown) {
             logger.error({ path: file, error }, 'VerifyRestore:FailedToCheckRestoreStatus');
             throw new Error(`Failed to check restore status for s3://${file.Bucket}/${file.Key}: ${String(error)}`);
           }
-          if (!restoreCompleted) {
-            anyNotRestored = true;
+          if (!isObjectRestored) {
+            isAllRestored = false;
             logger.info({ path: file }, 'VerifyRestore:NotRestored');
             return;
           }
@@ -102,16 +95,12 @@ export const commandVerifyRestore = command({
       await Promise.all(restoreChecks);
     }
 
-    if (anyNotRestored) {
-      await fsa.write(args.output, Buffer.from('false'));
-    } else {
-      await fsa.write(args.output, Buffer.from('true'));
-      if (args.markDone) {
-        await markReportDone(args.report);
-      }
+    await fsa.write(args.output, Buffer.from(isAllRestored.toString()));
+    if (isAllRestored && args.markDone) {
+      await markReportDone(args.report);
     }
 
-    logger.info('VerifyRestore:Done');
+    logger.info({ restored: isAllRestored }, 'VerifyRestore:Done');
   },
 });
 
@@ -148,10 +137,7 @@ export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): 
     );
   }
 
-  return resultEntries.map((row) => ({
-    Bucket: row.Bucket,
-    Key: row.Key,
-  }));
+  return resultEntries.map((row) => ({ Bucket: row.Bucket, Key: row.Key }));
 }
 
 /**
@@ -216,10 +202,10 @@ export function isRestoreCompleted(fileInfo: FileInfo<HeadObjectCommandOutput>):
   logger.info('VerifyRestore:CheckingRestoreStatus');
   const restoreStatus = fileInfo.$response?.Restore;
   if (restoreStatus === undefined) {
-    logger.error({ headObjectOutput: fileInfo }, 'VerifyRestore:RestoreStatusUndefined');
+    logger.error({ fileInfo }, 'VerifyRestore:RestoreStatusUndefined');
     throw new Error('Restore status is undefined.');
   }
-  logger.info({ restoreStatus }, 'VerifyRestore:RestoreStatus');
+  logger.debug({ restoreStatus }, 'VerifyRestore:RestoreStatus');
   return restoreStatus.includes('ongoing-request="false"');
 }
 
