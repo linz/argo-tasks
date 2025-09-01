@@ -10,8 +10,7 @@ import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
 import { registerCli } from '../common.ts';
 import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';
-import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
-// import type { CopyContract, CopyContractArgs, CopyContractForRpc, CopyStats } from './copy-rpc.ts';
+import type { CopyContract, CopyContractArgs, CopyContractForRpc, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
@@ -19,8 +18,7 @@ const Q = new ConcurrentQueue(10);
 /** Current log id */
 let currentId: string | null = null;
 
-export const worker = new WorkerRpc<CopyContract>({
-  // const workerImplementation: CopyContract = {
+const workerImplementation: CopyContract = {
   async copy(args: CopyContractArgs): Promise<CopyStats> {
     const stats: CopyStats = {
       copied: { count: 0, bytesIn: 0, bytesOut: 0 },
@@ -147,10 +145,9 @@ export const worker = new WorkerRpc<CopyContract>({
     });
     return stats;
   },
-});
-// };
-//
-// export const worker = new WorkerRpc<CopyContractForRpc>(workerImplementation as CopyContractForRpc);
+};
+
+export const worker = new WorkerRpc<CopyContractForRpc>(workerImplementation as CopyContractForRpc);
 
 worker.onStart = (): Promise<void> => {
   registerCli({ name: 'copy:worker' }, {});

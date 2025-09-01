@@ -17,7 +17,7 @@ import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
 import { FileListEntryClass } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
-import { config, registerCli, replaceUrlExtension, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
+import { config, registerCli, replaceUrlPathPattern, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
 /** Datasets to skip */
 const Skip = new Set([
@@ -32,7 +32,7 @@ const ValidCodes = new Set([EpsgCode.Google, EpsgCode.Nztm2000]);
  * Convert a Feature to MultiPolygon, throw if the feature cannot be easily converted
  *
  * @throws if the feature is not a Polygon or MultiPolygon
- * @param feature geojson feature to convert
+ * @param f geojson feature to convert
  * @returns
  */
 function forceMultiPolygon(f: GeoJSON.Feature): GeoJSON.Feature<GeoJSON.MultiPolygon> {
@@ -47,7 +47,7 @@ function forceMultiPolygon(f: GeoJSON.Feature): GeoJSON.Feature<GeoJSON.MultiPol
  * a polygon of 0.00001 x 0.00001 (about 1m x 1m) converts to 1e-10 degrees^2
  *
  * @warning
- * This is a approximation and should not be used for anything other than rough scale comparisons
+ * This is an approximation and should not be used for anything other than rough scale comparisons
  */
 const DegreesSquareToMetersSquared = 1e-10;
 
@@ -86,7 +86,7 @@ export const commandMapSheetCoverage = command({
     epsgCode: option({
       type: number,
       long: 'epsg-code',
-      description: 'Basemaps configuration layer ESPG code to use',
+      description: 'Basemaps configuration layer EPSG code to use',
       defaultValueIsSerializable: true,
       defaultValue: () => EpsgCode.Nztm2000,
     }),
@@ -241,7 +241,7 @@ export const commandMapSheetCoverage = command({
 
         const existing = mapSheets.get(ms.mapSheet) ?? [];
         // FIXME this is not the safest way of getting access to the tiff, it would be best to load the stac item
-        existing.unshift(replaceUrlExtension(url, new RegExp('.json'), '.tiff'));
+        existing.unshift(replaceUrlPathPattern(url, new RegExp('\\.json$'), '.tiff'));
         mapSheets.set(ms.mapSheet, existing);
       }
 
@@ -268,7 +268,7 @@ export const commandMapSheetCoverage = command({
       gzipSync(JSON.stringify({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: layersCombined } })),
     );
 
-    // Which areas of each layers are needed for the output, this should be uncompressed to make it easier to be consumed and viewed
+    // Which areas of each layer are needed for the output, this should be uncompressed to make it easier to be consumed and viewed
     logger.info('Write:RequiredLayers');
     const captureDatesPath = new URL('capture-dates.geojson', args.output);
     await fsa.write(captureDatesPath, JSON.stringify(captureDates));

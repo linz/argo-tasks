@@ -84,19 +84,25 @@ export function parseSize(size: string): number {
  * Because the major version upgrade for chunkd is a lot of work skip it for now (2023-11)
  * 2025-08: chunkd has been upgraded to v11 but this still seems useful
  *
- * @param loc location to load the tiff from
+ * @param location to load the tiff from
  * @returns Initialized tiff
  */
-export function createTiff(loc: URL): Promise<Tiff> {
-  const source = fsa.source(loc);
+export function createTiff(location: URL): Promise<Tiff> {
+  const source = fsa.source(location);
   const tiff = new Tiff(source);
   return tiff.init();
 }
 
-/** Ensure the provided url ends with a slash */
+/**
+ * Ensure the provided URL ends with a slash.
+ *
+ * @param location URL to ensure has a trailing slash
+ * @returns location with trailing slash as a new URL object
+ * */
 export function ensureTrailingSlash(location: URL): URL {
-  if (!location.pathname.endsWith('/')) location.pathname += '/';
-  return location;
+  const locWithSlash = new URL(location);
+  if (!locWithSlash.pathname.endsWith('/')) locWithSlash.pathname += '/';
+  return locWithSlash;
 }
 
 /**
@@ -111,14 +117,18 @@ export const Url: Type<string, URL> = {
 };
 
 /**
- * Remove the file extension from a URL, typically used to remove `.tiff` or `.tif` extensions.
+ * Replace a pattern in a URL, typically used to remove `.tiff` or `.tif` extensions.
  *
- * @param location
+ * @param location (URL) to modify
  * @param pattern to replace
  * @param replaceValue to replace the pattern with, defaults to an empty string
+ *
+ * @returns modified location as a new URL object
  */
-export function replaceUrlExtension(location: URL, pattern: RegExp, replaceValue: string = ''): URL {
-  return fsa.toUrl(location.href.replace(pattern, replaceValue));
+export function replaceUrlPathPattern(location: URL, pattern: RegExp, replaceValue: string = ''): URL {
+  const modifiedLocation = new URL(location);
+  modifiedLocation.pathname = modifiedLocation.pathname.replace(pattern, replaceValue);
+  return modifiedLocation;
 }
 
 /**
@@ -180,40 +190,21 @@ export const UrlFolderList: Type<string, URL[]> = {
  **/
 export const UrlList: Type<string | string[], URL[]> = {
   async from(str: string | string[]) {
-    let strs: string[] = [];
-    if (Array.isArray(str)) {
-      strs = str.flat();
-    } else if (str.startsWith('[')) {
-      // If the input is a JSON array, parse it
-      strs = JSON.parse(str) as string[];
-      if (!Array.isArray(strs)) {
-        throw new Error('Input must be a JSON array of URLs');
-      }
-    } else {
-      strs = str
-        .split(PathSplitCharacters)
-        .map((str) => str.trim())
-        .filter((str) => str.length > 0);
-    }
-    const promises: Promise<URL>[] = strs
-      .map((str) => str.trim())
-      .filter((str) => str.length > 0)
-      .map((str) => Url.from(str))
-      .flat();
-    return Promise.all(promises);
+    return Promise.all((await StrList.from(str)).map((m) => Url.from(m)));
   },
 };
 
 /**
  * Parse an input string as a list of items.
  * If it looks like a JSON string, it will be parsed.
- * Other strings will be retained.
+ * Other strings will be split by @see {@link PathSplitCharacters}.
+ * Do not mix JSON arrays and delimited strings.
  *
  * @example
  * ```typescript
  * StrList.from('["item1","item2",["item3", "item4"]]')  // returns ["item1", "item2", "item3", "item4"]
- * StrList.from(['item1', 'item2', ['item3', 'item4']])  // returns ["item1", "item2", "item3", "item4"]
- * StrList.from('item1,item2,item3,item4')  // returns ["item1,item2,item3,item4"]
+ * StrList.from(['item1', 'item2;item2b', ['item3', 'item4']])  // returns ["item1", "item2;item2b", "item3", "item4"]
+ * StrList.from('item1;item2; ;;item3;item4')  // returns ["item1", "item2", "item3", "item4"]
  * StrList.from('item1')  // returns ["item1"]
  * ```
  **/
@@ -227,8 +218,14 @@ export const StrList: Type<string | string[], string[]> = {
       const parsedItem = JSON.parse(item) as string[];
       items = (await Promise.all(parsedItem.map((str) => StrList.from(str)))).flat();
       if (!Array.isArray(items)) {
-        throw new Error('Input must be a JSON array of strings');
+        throw new Error('Input must be a JSON array');
       }
+    } else if (typeof item === 'string' && item.match(PathSplitCharacters)) {
+      const parsedItem = item
+        .split(PathSplitCharacters)
+        .map((str) => str.trim())
+        .filter((str) => str.length > 0);
+      items = (await Promise.all(parsedItem.map((str) => StrList.from(str.split(PathSplitCharacters))))).flat();
     } else {
       items = [item];
     }

@@ -8,7 +8,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { FileListEntryClass, makeRelative } from '../../utils/filelist.ts';
-import { registerCli, replaceUrlExtension, Url, UrlList, urlPathEndsWith, verbose } from '../common.ts';
+import { registerCli, replaceUrlPathPattern, Url, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 
 interface LinzItemLink extends StacLink {
   'file:checksum': string;
@@ -151,7 +151,11 @@ export const commandIdentifyUpdatedItems = command({
     }
     const tilesToProcess: FileListEntryClass[] = Object.entries(itemsToProcess).map(([key, value]) => {
       const tiffInputs = value.map((item) => {
-        const tiffLocation = replaceUrlExtension(fsa.toUrl(item.href), /\.json$/, '.tiff') as UrlWithChecksum;
+        const tiffLocation = replaceUrlPathPattern(
+          fsa.toUrl(item.href),
+          new RegExp('\\.json$', 'i'),
+          '.tiff',
+        ) as UrlWithChecksum;
         tiffLocation.checksum = item.checksum;
         return tiffLocation;
       });

@@ -14,7 +14,7 @@ export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
   geographicDescription?: string;
   region: string;
-  /** Optional survey ID if it exists, eg SN8066, commonly used with scanned historical imagery */
+  /** Optional survey ID if it exists, e.g. SN8066, commonly used with scanned historical imagery */
   surveyId?: string;
   date: string;
   gsd: string;

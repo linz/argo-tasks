@@ -163,9 +163,7 @@ describe('createManifest', () => {
 
     // output is a JSON array of base64'd GZIPED json
     // [ "H4sIAA...", "H4sIAA...."]
-    const output = JSON.parse(
-      (await fsa.read(await Url.from('memory://output/🦄 🌈.json'))).toString('utf-8'),
-    ) as string[];
+    const output = await fsa.readJson<string[]>(await Url.from('memory://output/🦄 🌈.json'));
     assert.ok(Array.isArray(output));
     const firstBytes = JSON.parse(
       gunzipSync(Buffer.from(output[0] as string, 'base64url')).toString('utf-8'),

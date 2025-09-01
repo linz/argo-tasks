@@ -48,7 +48,7 @@ describe('stac-setup', () => {
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
     } as const;
-    await fsa.write(fsa.toUrl('memory://collection.json'), JSON.stringify(structuredClone(SampleCollection)));
+    await fsa.write(fsa.toUrl('memory://collection.json'), JSON.stringify(SampleCollection));
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));

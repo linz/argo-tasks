@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import type { Tiff } from '@cogeotiff/core';
 import { RasterTypeKey, TiffTagGeo } from '@cogeotiff/core';
 
-import { replaceUrlExtension } from '../commands/common.ts';
+import { replaceUrlPathPattern } from '../commands/common.ts';
 
 /**
  * Attempt to parse a tiff world file
@@ -79,7 +79,7 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   }
 
   // Attempt to read a TFW next to the tiff
-  const baseLocation = replaceUrlExtension(tiff.source.url, /\.(tiff?)$/i);
+  const baseLocation = replaceUrlPathPattern(tiff.source.url, new RegExp('\\.tiff?$', 'i'));
 
   const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
   let tfwData;

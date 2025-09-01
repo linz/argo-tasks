@@ -6,7 +6,7 @@ import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { config, registerCli, replaceUrlExtension, S3Path, Url, verbose } from '../common.ts';
+import { config, registerCli, S3Path, Url, verbose } from '../common.ts';
 
 /** Represents the manifest report structure for S3 Batch Operations Restore. */
 export type ManifestReport = {
@@ -229,8 +229,9 @@ export function isRestoreCompleted(fileInfo: FileInfo<HeadObjectCommandOutput>):
  *
  * @param reportLocation - The path to the report file.
  */
-async function markReportDone(reportLocation: URL): Promise<void> {
-  const doneLocation = replaceUrlExtension(reportLocation, new RegExp('$'), '.done');
+export async function markReportDone(reportLocation: URL): Promise<void> {
+  const doneLocation = new URL(reportLocation);
+  doneLocation.pathname += '.done';
   await fsa.write(doneLocation, await fsa.read(reportLocation));
   await fsa.delete(reportLocation);
   logger.info({ reportLocation, doneLocation }, 'VerifyRestore:MarkedReportDone');

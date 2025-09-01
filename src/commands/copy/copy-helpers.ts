@@ -4,7 +4,7 @@ import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
-import { guessStacContentType, isJson, replaceUrlExtension, urlPathEndsWith } from '../common.ts';
+import { guessStacContentType, isJson, replaceUrlPathPattern, urlPathEndsWith } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
@@ -162,7 +162,7 @@ export async function determineTargetFileOperation(
   let finalTargetLocation = initialTargetLocation;
   if (shouldDecompress) {
     // If we decompress, we remove the .zst extension from the target name
-    finalTargetLocation = replaceUrlExtension(
+    finalTargetLocation = replaceUrlPathPattern(
       initialTargetLocation,
       new RegExp('\\' + CompressedFileExtension + '$', 'i'),
     );
