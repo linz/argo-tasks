@@ -80,9 +80,9 @@ export const basemapsCreateMapSheet = command({
     const include = args.include ? new RegExp(args.include.toLowerCase(), 'i') : undefined;
     const exclude = args.exclude ? new RegExp(args.exclude.toLowerCase(), 'i') : undefined;
 
-    logger.info({ path }, 'MapSheet:LoadFgb');
+    logger.info({ path: path.href }, 'MapSheet:LoadFgb');
     const buf = await fsa.read(path);
-    logger.info({ config }, 'MapSheet:LoadConfig');
+    logger.info({ config: config.href }, 'MapSheet:LoadConfig');
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
@@ -92,10 +92,10 @@ export const basemapsCreateMapSheet = command({
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
 
-    logger.info({ path, config }, 'MapSheet:CreateMapSheet');
+    logger.info({ path: path.href, config }, 'MapSheet:CreateMapSheet');
     const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
 
-    logger.info({ outputPath }, 'MapSheet:WriteOutput');
+    logger.info({ outputPath: outputPath.href }, 'MapSheet:WriteOutput');
     const outputWritePromise = fsa.write(outputPath, JSON.stringify(outputs, null, 2));
 
     await Promise.all([featuresWritePromise, outputWritePromise]);

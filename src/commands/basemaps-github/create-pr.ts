@@ -82,7 +82,7 @@ async function parseRasterTargetInfo(
   target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
-  logger.info({ target }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: target.href }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 0);
 
   assertValidBucket(bucket, ValidTargetBuckets);
@@ -101,7 +101,7 @@ async function parseRasterTargetInfo(
   // Validate the source location
   const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
-  const sourceLocation = new URL(source);
+  const sourceLocation = fsa.toUrl(source);
   const sourceBucket = sourceLocation.hostname;
   logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
   if (sourceBucket == null || !ValidSourceBuckets.has(sourceBucket)) {
@@ -128,7 +128,7 @@ async function parseRasterTargetInfo(
  * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
  */
 async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title: string; epsg: EpsgCode }> {
-  logger.info({ target }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: target.href }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name, filename } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
@@ -163,7 +163,7 @@ async function parseElevationTargetInfo(
   target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined; source: string }> {
-  logger.info({ target }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: target.href }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
@@ -179,7 +179,7 @@ async function parseElevationTargetInfo(
   // Validate the source location
   const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
-  const sourceLocation = new URL(source);
+  const sourceLocation = fsa.toUrl(source);
   const sourceBucket = sourceLocation.hostname;
   assertValidBucket(sourceBucket, ValidSourceBuckets);
 

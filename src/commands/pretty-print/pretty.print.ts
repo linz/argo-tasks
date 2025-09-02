@@ -28,7 +28,7 @@ export const commandPrettyPrint = command({
     const startTime = performance.now();
     logger.info('PrettyPrint:Start');
     if (args.target) {
-      logger.info({ target: args.target }, 'PrettyPrint:Info');
+      logger.info({ target: args.target.href }, 'PrettyPrint:Info');
     }
 
     const files = await getFiles(args.path);

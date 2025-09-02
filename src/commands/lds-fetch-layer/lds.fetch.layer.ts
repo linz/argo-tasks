@@ -46,7 +46,7 @@ export const commandLdsFetch = command({
       const targetFileGpkg = lastItem.href.replace('.json', '.gpkg');
       const targetFile = new URL(targetFileGpkg, args.target);
       const targetPath = new URL(targetFileGpkg, collectionJsonLocation);
-      logger.info({ layerId, lastItem, source: targetPath }, 'Collection:Item:Fetch');
+      logger.info({ layerId, lastItem, source: targetPath.href }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.readStream(targetPath).pipe(createGunzip()));
     }
   },
