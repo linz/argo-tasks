@@ -160,7 +160,7 @@ async function parseElevationTargetInfo(
   target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined; source: string }> {
-  logger.info({ target }, 'CreatePR: Get the layer information from target');
+  logger.info({ target.href }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
