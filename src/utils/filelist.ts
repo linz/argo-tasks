@@ -18,7 +18,9 @@ export function protocolAwareString(targetLocation: URL): string {
 }
 
 /**
- * Convert a path to relative
+ * Crude URL to relative path converter.
+ * Output from this function needs forward slashes to be compatible with URLs,
+ * so this is not cross-platform safe.
  *
  * https://foo.com + https://foo.com/bar.html => ./bar.html
  * s3://foo/ + s3://foo/bar/baz.html => ./bar/baz.html
@@ -31,7 +33,7 @@ export function protocolAwareString(targetLocation: URL): string {
  * @returns relative path to file
  */
 export function makeRelative(baseLocation: URL, fileLocation: URL, strict = true): string {
-  const baseLocationFolder = new URL('./', baseLocation); // Ensure baseLocation ends with "/"
+  const baseLocationFolder = new URL('./', baseLocation); // Ensure baseLocation ends with "/" (cuts off anything after the final "/", i.e. a file name)
   // If the fileLocation starts with baseLocationFolder, we can return the relative path of fileLocation
   if (strict && !fileLocation.href.startsWith(baseLocationFolder.href)) {
     throw new Error(`FilePaths are not relative base: ${baseLocationFolder.href} file: ${fileLocation.href}`);
