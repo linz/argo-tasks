@@ -7,6 +7,7 @@ import { AwsS3CredentialProvider, FsAwsS3 } from '@chunkd/fs-aws';
 import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from '@smithy/types';
 
 import { logger } from './log.ts';
+import { protocolAwareString } from './utils/filelist.ts';
 
 /** Check to see if hostname exists inside of a object */
 function hasHostName(x: unknown): x is { hostname: string } {
@@ -71,7 +72,10 @@ export function setupS3FileSystem(fileSystem: FsAwsS3): FsAwsS3 {
   const credentials = new AwsS3CredentialProvider();
   credentials.onFileSystemFound = (acc: AwsCredentialConfig, fs?: FsAwsS3, location?: URL): void => {
     if (fs == null) return;
-    logger.info({ prefix: acc.prefix, roleArn: acc.roleArn, path: location?.href }, 'FileSystem:Register');
+    logger.info(
+      { prefix: acc.prefix, roleArn: acc.roleArn, path: location ? protocolAwareString(location) : undefined },
+      'FileSystem:Register',
+    );
     addMiddlewareToS3Client(fs.s3);
     fsa.register(acc.prefix, fs);
   };

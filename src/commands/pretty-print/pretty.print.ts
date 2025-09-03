@@ -6,6 +6,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getFiles } from '../../utils/chunk.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, isJson, registerCli, UrlFolder, UrlList, verbose } from '../common.ts';
 
 export const commandPrettyPrint = command({
@@ -28,7 +29,7 @@ export const commandPrettyPrint = command({
     const startTime = performance.now();
     logger.info('PrettyPrint:Start');
     if (args.target) {
-      logger.info({ target: args.target.href }, 'PrettyPrint:Info');
+      logger.info({ target: protocolAwareString(args.target) }, 'PrettyPrint:Info');
     }
 
     const files = await getFiles(args.path);
@@ -51,7 +52,7 @@ export const commandPrettyPrint = command({
  * @param targetLocation where to save the output. If not specified, overwrite the original file.
  */
 export async function formatFile(sourceLocation: URL, targetLocation?: URL): Promise<void> {
-  logger.debug({ file: sourceLocation.href }, 'PrettyPrint:RunPrettier');
+  logger.debug({ file: protocolAwareString(sourceLocation) }, 'PrettyPrint:RunPrettier');
   let outputLocation = sourceLocation;
   const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(sourceLocation)), DEFAULT_PRETTIER_FORMAT);
   if (targetLocation) {

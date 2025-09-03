@@ -6,6 +6,7 @@ import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, S3Path, Url, verbose } from '../common.ts';
 
 /** Represents the manifest report structure for S3 Batch Operations Restore. */
@@ -60,11 +61,11 @@ export const commandVerifyRestore = command({
 
     let resultKeys: URL[] = [];
     try {
-      logger.info({ path: args.report.toString() }, 'VerifyRestore:LoadReport');
+      logger.info({ path: protocolAwareString(args.report) }, 'VerifyRestore:LoadReport');
       const report: ManifestReport = await fsa.readJson(args.report);
       resultKeys = fetchResultKeysFromReport(report);
     } catch (error) {
-      logger.error({ error, path: args.report.toString() }, 'VerifyRestore:FailedToLoadReport');
+      logger.error({ error, path: protocolAwareString(args.report) }, 'VerifyRestore:FailedToLoadReport');
       throw error;
     }
     /* 
@@ -73,7 +74,7 @@ export const commandVerifyRestore = command({
     */
     let anyNotRestored = false;
     for (const key of resultKeys) {
-      logger.info({ key }, 'VerifyRestore:ProcessingCSVResult');
+      logger.info({ key: protocolAwareString(key) }, 'VerifyRestore:ProcessingCSVResult');
       const resultPath = new URL(key, args.report);
       const reportResult = await fsa.read(resultPath);
       const resultEntries: ReportResult[] = parseReportResult(reportResult.toString());
@@ -234,7 +235,10 @@ export async function markReportDone(reportLocation: URL): Promise<void> {
   doneLocation.pathname += '.done';
   await fsa.write(doneLocation, await fsa.read(reportLocation));
   await fsa.delete(reportLocation);
-  logger.info({ reportLocation, doneLocation }, 'VerifyRestore:MarkedReportDone');
+  logger.info(
+    { reportLocation: protocolAwareString(reportLocation), doneLocation: protocolAwareString(doneLocation) },
+    'VerifyRestore:MarkedReportDone',
+  );
 }
 /**
  * Decodes a URL-encoded string.

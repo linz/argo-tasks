@@ -6,6 +6,7 @@ import type * as st from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { GithubApi } from '../../utils/github.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
@@ -130,7 +131,7 @@ export const commandStacGithubImport = command({
     const pr = await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
     if (pr != null) {
       const prUrl = new URL(`https://github.com/${args.repoName}/pull/${pr}`);
-      logger.info({ prUrl: prUrl.href }, 'Git:PullRequestCreated');
+      logger.info({ prUrl: protocolAwareString(prUrl) }, 'Git:PullRequestCreated');
       await fsa.write(fsa.toUrl('/tmp/pull-request/url'), prUrl.href);
     }
   },

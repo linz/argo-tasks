@@ -10,6 +10,7 @@ import { gunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { registerCli, Url, urlPathEndsWith, verbose } from '../common.ts';
 
 const gunzipProm = promisify(gunzip);
@@ -73,16 +74,16 @@ export const basemapsCreateMapSheet = command({
   args: CommandCreateMapSheetArgs,
   async handler(args) {
     registerCli(this, args);
-    const path = args.path;
+    const location = args.path;
     const config = args.bmConfig;
-    const outputPath = args.output;
+    const outputLocation = args.output;
 
     const include = args.include ? new RegExp(args.include.toLowerCase(), 'i') : undefined;
     const exclude = args.exclude ? new RegExp(args.exclude.toLowerCase(), 'i') : undefined;
 
-    logger.info({ path: path.href }, 'MapSheet:LoadFgb');
-    const buf = await fsa.read(path);
-    logger.info({ config: config.href }, 'MapSheet:LoadConfig');
+    logger.info({ path: protocolAwareString(location) }, 'MapSheet:LoadFgb');
+    const buf = await fsa.read(location);
+    logger.info({ config: protocolAwareString(config) }, 'MapSheet:LoadConfig');
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
@@ -92,11 +93,11 @@ export const basemapsCreateMapSheet = command({
     const aerial = await mem.TileSet.get('ts_aerial');
     if (aerial == null) throw new Error('Invalid config file.');
 
-    logger.info({ path: path.href, config }, 'MapSheet:CreateMapSheet');
+    logger.info({ path: protocolAwareString(location), config }, 'MapSheet:CreateMapSheet');
     const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
 
-    logger.info({ outputPath: outputPath.href }, 'MapSheet:WriteOutput');
-    const outputWritePromise = fsa.write(outputPath, JSON.stringify(outputs, null, 2));
+    logger.info({ outputPath: protocolAwareString(outputLocation) }, 'MapSheet:WriteOutput');
+    const outputWritePromise = fsa.write(outputLocation, JSON.stringify(outputs, null, 2));
 
     await Promise.all([featuresWritePromise, outputWritePromise]);
   },

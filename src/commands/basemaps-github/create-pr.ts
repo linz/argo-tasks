@@ -8,6 +8,7 @@ import type { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { ensureTrailingSlash, registerCli, verbose } from '../common.ts';
 import type { Category } from './make.cog.github.ts';
 import { Categories, MakeCogGithub } from './make.cog.github.ts';
@@ -82,7 +83,7 @@ async function parseRasterTargetInfo(
   target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
-  logger.info({ target: target.href }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: protocolAwareString(target) }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 0);
 
   assertValidBucket(bucket, ValidTargetBuckets);
@@ -128,7 +129,7 @@ async function parseRasterTargetInfo(
  * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
  */
 async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title: string; epsg: EpsgCode }> {
-  logger.info({ target: target.href }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: protocolAwareString(target) }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name, filename } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
@@ -163,7 +164,7 @@ async function parseElevationTargetInfo(
   target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined; source: string }> {
-  logger.info({ target: target.href }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: protocolAwareString(target) }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);

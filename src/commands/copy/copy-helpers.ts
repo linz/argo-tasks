@@ -3,6 +3,7 @@ import { fsa } from '@chunkd/fs';
 
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
 import { guessStacContentType, isJson, replaceUrlPathPattern, urlPathEndsWith } from '../common.ts';
 import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
@@ -198,12 +199,15 @@ export async function determineTargetFileOperation(
   } else if (args.noClobber && hashMisMatch) {
     // With noClobber (and not force), we do not overwrite existing files (only copy new files).
     // Error if the target file already exists and has a different hash.
-    logger.error({ target: target.url.href, source: source.url.href }, 'File:Overwrite');
+    logger.error(
+      { target: protocolAwareString(target.url), source: protocolAwareString(source.url) },
+      'File:Overwrite',
+    );
     throw new Error(
       'Target already exists with different hash. Use --force to overwrite. target: ' +
-        target.url.toString() +
+        protocolAwareString(target.url) +
         ' source: ' +
-        source.url.toString(),
+        protocolAwareString(source.url),
     );
   }
   return myTargetAction;
@@ -226,13 +230,21 @@ export async function verifyTargetFile(target: URL, expectedSize: number, expect
   // Fixme: Local file system does not support metadata so assume hash is correct
   if (target.protocol === 'file:') {
     const targetVerified = targetSize === expectedSize;
-    if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
+    if (!targetVerified)
+      logger.fatal(
+        { target: protocolAwareString(target), expectedHash, targetHash, expectedSize, targetSize },
+        'Copy:Failed',
+      );
 
     return targetVerified;
   }
 
   const targetVerified = targetSize === expectedSize && targetHash === expectedHash;
-  if (!targetVerified) logger.fatal({ target, expectedHash, targetHash, expectedSize, targetSize }, 'Copy:Failed');
+  if (!targetVerified)
+    logger.fatal(
+      { target: protocolAwareString(target), expectedHash, targetHash, expectedSize, targetSize },
+      'Copy:Failed',
+    );
 
   return targetVerified;
 }

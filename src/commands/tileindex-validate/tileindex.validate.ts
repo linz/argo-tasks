@@ -12,7 +12,7 @@ import { isArgo } from '../../utils/argo.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { createFileList } from '../../utils/filelist.ts';
+import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
 import { findBoundingBox } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
@@ -45,7 +45,7 @@ export const TiffLoader = {
       tiffLocations.map((loc: URL) => {
         return createTiff(loc).catch((e: unknown) => {
           // Ensure tiff loading errors include the location of the tiff
-          logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
+          logger.fatal({ source: protocolAwareString(loc), err: e }, 'Tiff:Load:Failed');
           throw e;
         });
       }),
@@ -136,7 +136,10 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
   if (preset === 'webp') {
     const promises = tiffs.map((f) => {
       return validate8BitsTiff(f).catch((err) => {
-        logger.fatal({ reason: String(err), source: f.source.url.href, preset }, 'Tiff:ValidatePreset:failed');
+        logger.fatal(
+          { reason: String(err), source: protocolAwareString(f.source.url), preset },
+          'Tiff:ValidatePreset:failed',
+        );
         rejected = true;
       });
     });
@@ -262,7 +265,7 @@ export const commandTileIndexValidate = command({
         features: tiffLocations.map((loc) => {
           const epsg = args.sourceEpsg ?? loc.epsg;
           if (epsg == null) {
-            logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
+            logger.error({ source: protocolAwareString(loc.source) }, 'TileIndex:Epsg:missing');
             return;
           }
           return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
@@ -275,7 +278,7 @@ export const commandTileIndexValidate = command({
       const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
       const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
       await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
-      logger.info({ path: inputGeoJsonFileName.href }, 'Write:InputGeoJson');
+      logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
       const outputGeojson = {
         type: 'FeatureCollection',
         features: [...outputTiles.keys()].map((key) => {
@@ -288,11 +291,11 @@ export const commandTileIndexValidate = command({
         }),
       };
       await fsa.write(outputGeoJsonFileName, JSON.stringify(outputGeojson));
-      logger.info({ path: outputGeoJsonFileName.href }, 'Write:OutputGeojson');
+      logger.info({ path: protocolAwareString(outputGeoJsonFileName) }, 'Write:OutputGeojson');
 
       const fileList = createFileList(outputTiles, args.includeDerived);
       await fsa.write(fileListFileName, JSON.stringify(fileList));
-      logger.info({ path: fileListFileName.href, count: outputTiles.size }, 'Write:FileList');
+      logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
     }
 
     let retileNeeded = false;
@@ -301,10 +304,13 @@ export const commandTileIndexValidate = command({
       if (tiffs.length === 1) continue;
       if (args.retile) {
         const bandType = validateConsistentBands(tiffs);
-        logger.info({ tileName, uris: tiffs.map((v) => v.source), bands: bandType }, 'TileIndex:Retile');
+        logger.info(
+          { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
+          'TileIndex:Retile',
+        );
       } else {
         retileNeeded = true;
-        logger.error({ tileName, uris: tiffs.map((v) => v.source) }, 'TileIndex:Duplicate');
+        logger.error({ tileName, uris: tiffs.map((v) => protocolAwareString(v.source)) }, 'TileIndex:Duplicate');
       }
     }
 
@@ -343,7 +349,7 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
     if (currentBands !== firstBand) {
       // Dump all the imagery and their band types into logs so it can be debugged later
       for (const v of locs) {
-        logger.error({ path: v.source, bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
+        logger.error({ path: protocolAwareString(v.source), bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
       }
 
       throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source.href}`);
@@ -418,7 +424,10 @@ export async function extractTiffLocations(
 
         const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
         if (sourceEpsg == null) {
-          logger.error({ reason: 'EPSG is missing', source: tiff.source }, 'MissingEPSG:ExtracTiffLocations:Failed');
+          logger.error(
+            { reason: 'EPSG is missing', source: protocolAwareString(tiff.source.url) },
+            'MissingEPSG:ExtracTiffLocations:Failed',
+          );
           return null;
         }
 
@@ -429,7 +438,7 @@ export async function extractTiffLocations(
 
         if (targetBbox === null) {
           logger.error(
-            { reason: 'Failed to reproject point', source: tiff.source },
+            { reason: 'Failed to reproject point', source: protocolAwareString(tiff.source.url) },
             'Reprojection:ExtracTiffLocations:Failed',
           );
           return null;
@@ -450,7 +459,7 @@ export async function extractTiffLocations(
           bands: await extractBandInformation(tiff),
         };
       } catch (e) {
-        logger.error({ reason: e, source: tiff.source }, 'ExtractTiffLocation:Failed');
+        logger.error({ reason: e, source: protocolAwareString(tiff.source.url) }, 'ExtractTiffLocation:Failed');
         return null;
       } finally {
         await tiff.source.close?.();
@@ -478,7 +487,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
   const mapTileIndex = MapSheet.getMapTileIndex(tileName);
   if (mapTileIndex == null) {
     logger.error(
-      { reason: `Failed to extract bounding box from: ${tileName}`, source: tiff.source },
+      { reason: `Failed to extract bounding box from: ${tileName}`, source: protocolAwareString(tiff.source) },
       'TileInvalid:Validation:Failed',
     );
     return false;
@@ -488,7 +497,10 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
   const errY = Math.abs(tiff.bbox[3] - mapTileIndex.bbox[3]);
   if (errX > allowedErrorMetres || errY > allowedErrorMetres) {
     logger.error(
-      { reason: `The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]}`, source: tiff.source },
+      {
+        reason: `The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]}`,
+        source: protocolAwareString(tiff.source),
+      },
       'TileInvalid:Validation:Failed',
     );
     return false;
@@ -497,7 +509,10 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
   const tiffSize = getSize(tiff.bbox);
   if (tiffSize.width !== mapTileIndex.width) {
     logger.error(
-      { reason: `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width}`, source: tiff.source },
+      {
+        reason: `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width}`,
+        source: protocolAwareString(tiff.source),
+      },
       'TileInvalid:Validation:Failed',
     );
     return false;
@@ -507,7 +522,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
     logger.error(
       {
         reason: `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height}`,
-        source: tiff.source,
+        source: protocolAwareString(tiff.source),
       },
       'TileInvalid:Validation:Failed',
     );

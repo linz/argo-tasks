@@ -6,7 +6,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { md } from '../../readme/markdown.ts';
 import { annotateExample } from '../../readme/readme.example.ts';
-import { makeRelative } from '../../utils/filelist.ts';
+import { makeRelative, protocolAwareString } from '../../utils/filelist.ts';
 import { hashBuffer, HashKey } from '../../utils/hash.ts';
 import { config, guessStacContentType, isJson, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
 
@@ -26,7 +26,10 @@ export const commandStacSync = command({
 
   async handler(args) {
     registerCli(this, args);
-    logger.info({ source: args.sourcePath.href, destination: args.destinationPath }, 'StacSync:Start');
+    logger.info(
+      { source: protocolAwareString(args.sourcePath), destination: protocolAwareString(args.destinationPath) },
+      'StacSync:Start',
+    );
     const nb = await synchroniseFiles(args.sourcePath, args.destinationPath);
     logger.info({ copied: nb }, 'StacSync:Done');
   },
@@ -75,6 +78,6 @@ export async function uploadFileToS3(sourceFileInfo: FileInfo, targetLocation: U
     metadata: { [HashKey]: sourceHash },
     contentType: guessStacContentType(targetLocation),
   });
-  logger.debug({ path: targetLocation.href }, 'StacSync:FileUploaded');
+  logger.debug({ path: protocolAwareString(targetLocation) }, 'StacSync:FileUploaded');
   return true;
 }

@@ -143,7 +143,16 @@ export const commandCopy = command({
     }
 
     await pool.close();
-    logger.info({ copyStats: stats, duration: performance.now() - startTime }, 'File:Copy:Done');
+    logger.info(
+      {
+        copyStats: stats,
+        compressionRatio: ((stats.compressed.bytesOut / stats.compressed.bytesIn) * 100).toFixed(1) + '%',
+        decompressionRatio: ((stats.decompressed.bytesOut / stats.decompressed.bytesIn) * 100).toFixed(1) + '%',
+        overallRatio: ((stats.processed.bytesOut / stats.processed.bytesIn) * 100).toFixed(1) + '%',
+        duration: (performance.now() - startTime).toFixed(2),
+      },
+      'File:Copy:Done',
+    );
   },
 });
 

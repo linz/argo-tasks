@@ -4,6 +4,7 @@ import { fsa } from '@chunkd/fs';
 
 import { parseSize } from '../commands/common.ts';
 import { logger } from '../log.ts';
+import { protocolAwareString } from './filelist.ts';
 
 export interface FileSizeInfo {
   url: URL;
@@ -18,7 +19,7 @@ export async function* asyncFilter<T extends FileSizeInfo>(
   const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
   const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
   for await (const f of source) {
-    const testPath = basename(f.url.href.toLowerCase());
+    const testPath = basename(f.url.pathname.toLowerCase());
     if (exclude && exclude.test(testPath)) continue;
     if (include === true) yield f;
     else if (include.test(testPath)) yield f;
@@ -89,21 +90,23 @@ export type FileFilter = {
 };
 
 /**
- * Get a list of files from a set of paths with filtering and limits
- * @param paths
- * @param args
+ * Get a list of files from a set of locations with filtering and limits
+ * @param locations to list files from
+ * @param args filtering and limits {@link FileFilter}
+ *
+ * @returns list of files chunked into groups (promise of array of array of URLs)
  */
-export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL[][]> {
+export async function getFiles(locations: URL[], args: FileFilter = {}): Promise<URL[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const minSize = args.sizeMin ?? 1; // ignore 0 byte files
   const groupSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
   const outputFiles: FileSizeInfo[] = [];
 
-  for (const path of paths) {
-    logger.debug({ path }, 'List');
-    const fileList = await fsa.toArray(asyncFilter(fsa.details(path), args));
-    logger.info({ path, fileCount: fileList.length }, 'List:Count');
+  for (const location of locations) {
+    logger.debug({ location: protocolAwareString(location) }, 'List');
+    const fileList = await fsa.toArray(asyncFilter(fsa.details(location), args));
+    logger.info({ location: protocolAwareString(location), fileCount: fileList.length }, 'List:Count');
 
     let totalSize = 0;
     for (const file of fileList) {
@@ -116,7 +119,7 @@ export async function getFiles(paths: URL[], args: FileFilter = {}): Promise<URL
     }
     if (limit > 0 && outputFiles.length >= limit) break;
 
-    logger.info({ path, fileCount: fileList.length, totalSize }, 'List:Size');
+    logger.info({ location: protocolAwareString(location), fileCount: fileList.length, totalSize }, 'List:Size');
   }
 
   return chunkFiles(outputFiles, maxLength, groupSize);

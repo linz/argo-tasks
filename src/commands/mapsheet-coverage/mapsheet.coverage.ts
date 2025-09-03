@@ -14,7 +14,7 @@ import type { StacCollection, StacItem } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
-import { FileListEntryClass } from '../../utils/filelist.ts';
+import { FileListEntryClass, protocolAwareString } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
 import { config, registerCli, replaceUrlPathPattern, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
@@ -220,7 +220,7 @@ export const commandMapSheetCoverage = command({
 
       // Layer has no information included in the output
       if (diff.length === 0) {
-        logger.warn({ layer: layer.name, location: targetCaptureAreaLocation.href }, 'FullyCovered');
+        logger.warn({ layer: layer.name, location: protocolAwareString(targetCaptureAreaLocation) }, 'FullyCovered');
         const outputPath = new URL(`remove-${layer.name}.geojson`, args.output);
         await fsa.write(outputPath, JSON.stringify(captureArea));
         continue;
@@ -306,7 +306,10 @@ async function compareCreation(
   mapSheets: Map<string, URL[]>,
   hashQueueLength = 25,
 ): Promise<string[]> {
-  logger.info({ compareTo: compareLocation.href, mapSheetCount: mapSheets.size }, 'MapSheetCoverage:Compare');
+  logger.info(
+    { compareTo: protocolAwareString(compareLocation), mapSheetCount: mapSheets.size },
+    'MapSheetCoverage:Compare',
+  );
 
   // Limit the number of files hashing concurrently
   const hashQueue = pLimit(hashQueueLength);
@@ -332,7 +335,7 @@ async function compareCreation(
       logger.debug(
         {
           sheetCode: sheetCode,
-          sourceLocations: sourceFiles.map((url) => url.href),
+          sourceLocations: sourceFiles.map((loc) => protocolAwareString(loc)),
           oldLocations: derivedFrom.map((m) => m.href),
         },
         'MapSheetCoverage:difference',

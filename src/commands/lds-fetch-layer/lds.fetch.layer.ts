@@ -5,6 +5,7 @@ import { createGunzip } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 
 export const commandLdsFetch = command({
@@ -31,7 +32,7 @@ export const commandLdsFetch = command({
         const source = new URL(`s3://linz-lds-cache/${layerId}/${layerId}_${layerVersion}.gpkg`);
         await fsa.head(source); // Ensure we have read permission for the source
 
-        logger.info({ layerId, layerVersion, source }, 'Collection:Item:Fetch');
+        logger.info({ layerId, layerVersion, source: protocolAwareString(source) }, 'Collection:Item:Fetch');
         const fileName = `./${layerId}_${layerVersion}.gpkg`;
         const targetLocation = new URL(fileName, args.target);
         await fsa.write(targetLocation, fsa.readStream(source).pipe(createGunzip()));
@@ -46,7 +47,7 @@ export const commandLdsFetch = command({
       const targetFileGpkg = lastItem.href.replace('.json', '.gpkg');
       const targetFile = new URL(targetFileGpkg, args.target);
       const targetPath = new URL(targetFileGpkg, collectionJsonLocation);
-      logger.info({ layerId, lastItem, source: targetPath.href }, 'Collection:Item:Fetch');
+      logger.info({ layerId, lastItem, source: protocolAwareString(targetPath) }, 'Collection:Item:Fetch');
       await fsa.write(targetFile, fsa.readStream(targetPath).pipe(createGunzip()));
     }
   },

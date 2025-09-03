@@ -11,6 +11,7 @@ import { pathToFileURL } from 'url';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { hashStream, Sha256Prefix } from '../../utils/hash.ts';
 import { config, registerCli, UrlList, verbose } from '../common.ts';
 
@@ -121,7 +122,7 @@ export const commandStacValidate = command({
 
     async function validateStac(stacFileLocation: URL): Promise<void> {
       if (validated.has(stacFileLocation)) {
-        logger.warn({ stacFileLocation }, 'SkippedDuplicateStacFile');
+        logger.warn({ stacFileLocation: protocolAwareString(stacFileLocation) }, 'SkippedDuplicateStacFile');
         return;
       }
       validated.add(stacFileLocation);
@@ -131,7 +132,7 @@ export const commandStacValidate = command({
       try {
         stacJson = await fsa.readJson<st.StacItem | st.StacCollection | st.StacCatalog>(stacFileLocation);
       } catch (err) {
-        logger.error({ stacFileLocation, err }, 'readStacJsonFile:Error');
+        logger.error({ stacFileLocation: protocolAwareString(stacFileLocation), err }, 'readStacJsonFile:Error');
         failures.push(stacFileLocation);
         return;
       }
@@ -139,7 +140,11 @@ export const commandStacValidate = command({
       const schema = getStacSchemaUrl(stacJson.type, stacJson.stac_version, stacFileLocation);
       if (schema === null) {
         logger.error(
-          { stacFileLocation, stacType: stacJson.type, stacVersion: stacJson.stac_version },
+          {
+            stacFileLocation: protocolAwareString(stacFileLocation),
+            stacType: stacJson.type,
+            stacVersion: stacJson.stac_version,
+          },
           'getStacSchemaUrl:Error',
         );
         failures.push(stacFileLocation);
@@ -155,11 +160,25 @@ export const commandStacValidate = command({
       for (const sch of stacSchemas) {
         const validate = await getValidator(sch);
 
-        logger.trace({ title: stacJson.title, type: stacJson.type, stacFileLocation, schema: sch }, 'Validation:Start');
+        logger.trace(
+          {
+            title: stacJson.title,
+            type: stacJson.type,
+            stacFileLocation: protocolAwareString(stacFileLocation),
+            schema: sch,
+          },
+          'Validation:Start',
+        );
         const valid = validate(stacJson);
         if (valid === true) {
           logger.trace(
-            { title: stacJson.title, type: stacJson.type, stacFileLocation, valid, schema: sch },
+            {
+              title: stacJson.title,
+              type: stacJson.type,
+              stacFileLocation: protocolAwareString(stacFileLocation),
+              valid,
+              schema: sch,
+            },
             'Validation:Done:Ok',
           );
           continue;
@@ -169,7 +188,7 @@ export const commandStacValidate = command({
         for (const err of validate.errors as DefinedError[]) {
           logger.error(
             {
-              stacFileLocation: stacFileLocation,
+              stacFileLocation: protocolAwareString(stacFileLocation),
               instancePath: err.instancePath,
               schemaPath: err.schemaPath,
               keyword: err.keyword,
@@ -180,7 +199,15 @@ export const commandStacValidate = command({
           );
         }
         failures.push(stacFileLocation);
-        logger.error({ title: stacJson.title, type: stacJson.type, stacFileLocation, valid }, 'Validation:Done:Failed');
+        logger.error(
+          {
+            title: stacJson.title,
+            type: stacJson.type,
+            stacFileLocation: protocolAwareString(stacFileLocation),
+            valid,
+          },
+          'Validation:Done:Failed',
+        );
       }
 
       if (args.checksumAssets) {
@@ -199,13 +226,17 @@ export const commandStacValidate = command({
         }
       }
 
-      if (isOk) logger.info({ title: stacJson.title, type: stacJson.type, stacFileLocation }, 'Validation:Done:Ok');
+      if (isOk)
+        logger.info(
+          { title: stacJson.title, type: stacJson.type, stacFileLocation: protocolAwareString(stacFileLocation) },
+          'Validation:Done:Ok',
+        );
 
       if (recursive) {
         for (const child of getStacChildren(stacJson, stacFileLocation)) {
           queue.push(() =>
             validateStac(child).catch((err: unknown) => {
-              logger.error({ err, path: child }, 'Failed');
+              logger.error({ err, path: protocolAwareString(child) }, 'Failed');
               failures.push(child);
             }),
           );
@@ -216,7 +247,7 @@ export const commandStacValidate = command({
     for (const stacFileLocation of stacFileLocations) {
       queue.push(() =>
         validateStac(stacFileLocation).catch((err: unknown) => {
-          logger.error({ err, stacFileLocation }, 'Failed');
+          logger.error({ err, stacFileLocation: protocolAwareString(stacFileLocation) }, 'Failed');
           failures.push(stacFileLocation);
           process.exit();
         }),
@@ -292,7 +323,10 @@ async function loadSchema(urlString: string): Promise<object> {
     return await fsa.readJson<object>(cachePath);
   } catch (e) {
     return fsa.read(schemaLocation).then(async (obj) => {
-      logger.info({ schemaLocation, cachePath }, 'Fetch:CacheMiss');
+      logger.info(
+        { schemaLocation: protocolAwareString(schemaLocation), cachePath: protocolAwareString(cachePath) },
+        'Fetch:CacheMiss',
+      );
       await fsa.write(cachePath, obj);
       return JSON.parse(String(obj)) as object;
     });
@@ -316,28 +350,57 @@ export async function validateStacChecksum(
 
   if (checksum == null) {
     if (allowMissing) return true;
-    logger.error({ source, checksum, type: stacObject.rel, parent: stacFileLocation }, 'Validate:Checksum:Missing');
+    logger.error(
+      {
+        source: protocolAwareString(source),
+        checksum,
+        type: stacObject.rel,
+        parent: protocolAwareString(stacFileLocation),
+      },
+      'Validate:Checksum:Missing',
+    );
     return false;
   }
 
   if (!checksum.startsWith(Sha256Prefix)) {
-    logger.error({ source, checksum, type: stacObject.rel, parent: stacFileLocation }, 'Validate:Checksum:Unknown');
+    logger.error(
+      {
+        source: protocolAwareString(source),
+        checksum,
+        type: stacObject.rel,
+        parent: protocolAwareString(stacFileLocation),
+      },
+      'Validate:Checksum:Unknown',
+    );
     return false;
   }
-  logger.debug({ source, checksum }, 'Validate:Checksum');
+  logger.debug({ source: protocolAwareString(source), checksum }, 'Validate:Checksum');
   const startTime = performance.now();
   const hash = await hashStream(fsa.readStream(source));
   const duration = performance.now() - startTime;
 
   if (hash !== checksum) {
     logger.error(
-      { source, checksum, found: hash, type: stacObject.rel, parent: stacFileLocation, duration },
+      {
+        source: protocolAwareString(source),
+        checksum,
+        found: hash,
+        type: stacObject.rel,
+        parent: protocolAwareString(stacFileLocation),
+        duration,
+      },
       'Checksum:Validation:Failed',
     );
     return false;
   }
   logger.debug(
-    { source, checksum, type: stacObject.rel, parent: stacFileLocation, duration },
+    {
+      source: protocolAwareString(source),
+      checksum,
+      type: stacObject.rel,
+      parent: protocolAwareString(stacFileLocation),
+      duration,
+    },
     'Checksum:Validation:Ok',
   );
   return true;
@@ -371,7 +434,7 @@ function getSchemaType(schemaType: string): StacSchemaType | null {
  * @returns
  */
 export function getStacSchemaUrl(schemaType: string, stacVersion: string, location: URL): URL | null {
-  logger.trace({ path: location.href, schemaType: schemaType }, 'getStacSchema:Start');
+  logger.trace({ path: protocolAwareString(location), schemaType: schemaType }, 'getStacSchema:Start');
   // Only 1.0.0 is supported
   if (stacVersion !== '1.0.0') return null;
 
@@ -379,7 +442,7 @@ export function getStacSchemaUrl(schemaType: string, stacVersion: string, locati
   if (type == null) return null;
 
   const schemaId = `https://schemas.stacspec.org/v${stacVersion}/${type}-spec/json-schema/${type}.json`;
-  logger.trace({ path: location.href, schemaType, schemaId }, 'getStacSchema:Done');
+  logger.trace({ path: protocolAwareString(location), schemaType, schemaId }, 'getStacSchema:Done');
   return fsa.toUrl(schemaId);
 }
 

@@ -6,6 +6,7 @@ import type { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import type { StacCollectionLinz } from '../../utils/metadata.ts';
 import { GeospatialDataCategories } from '../../utils/metadata.ts';
 import { config, createTiff, registerCli, UrlFolder, verbose } from '../common.ts';
@@ -44,7 +45,7 @@ export const commandGeneratePath = command({
     registerCli(this, args);
     const startTime = performance.now();
 
-    logger.info({ source: args.source }, 'GeneratePath:Start');
+    logger.info({ source: protocolAwareString(args.source) }, 'GeneratePath:Start');
 
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(new URL('collection.json', args.source));
     if (collection == null) throw new Error(`Failed to get collection.json from ${args.source.href}.`);
@@ -61,10 +62,10 @@ export const commandGeneratePath = command({
     };
 
     const target = generatePath(metadata);
-    logger.info({ duration: performance.now() - startTime, target: target }, 'GeneratePath:Done');
+    logger.info({ duration: performance.now() - startTime, target }, 'GeneratePath:Done');
 
     await fsa.write(fsa.toUrl('/tmp/generate-path/target'), target);
-    logger.info({ location: '/tmp/generate-path/target', target: target }, 'GeneratePath:Written');
+    logger.info({ location: '/tmp/generate-path/target', target }, 'GeneratePath:Written');
   },
 });
 
