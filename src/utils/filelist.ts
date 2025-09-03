@@ -36,7 +36,9 @@ export function makeRelative(baseLocation: URL, fileLocation: URL, strict = true
   const baseLocationFolder = new URL('./', baseLocation); // Ensure baseLocation ends with "/" (cuts off anything after the final "/", i.e. a file name)
   // If the fileLocation starts with baseLocationFolder, we can return the relative path of fileLocation
   if (strict && !fileLocation.href.startsWith(baseLocationFolder.href)) {
-    throw new Error(`FilePaths are not relative base: ${baseLocationFolder.href} file: ${fileLocation.href}`);
+    throw new Error(
+      `FilePaths are not relative base: ${protocolAwareString(baseLocationFolder)} file: ${protocolAwareString(fileLocation)}`,
+    );
   }
   const relativePath = fileLocation.href.replace(baseLocationFolder.href, './');
   if (HttpProtocols.includes(fileLocation.protocol)) {

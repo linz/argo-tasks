@@ -106,7 +106,7 @@ async function parseRasterTargetInfo(
   const sourceBucket = sourceLocation.hostname;
   logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
   if (sourceBucket == null || !ValidSourceBuckets.has(sourceBucket)) {
-    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceLocation.href}.`);
+    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${protocolAwareString(sourceLocation)}.`);
   }
   // Try to get the region for individual layers
   let region;

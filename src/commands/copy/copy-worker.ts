@@ -7,6 +7,7 @@ import { WorkerRpc } from '@wtrpc/core';
 
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
 import { registerCli } from '../common.ts';
 import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';
@@ -107,7 +108,7 @@ const workerImplementation: CopyContract = {
           if (!targetVerified) {
             // Cleanup the failed copy so it can be retried
             await fsa.delete(target.url);
-            throw new Error(`Failed to copy source:${manifestEntry.source} target:${target.url.href}`);
+            throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`);
           }
 
           statsUpdaters[fileOperation](stats, source.size, expectedSize);

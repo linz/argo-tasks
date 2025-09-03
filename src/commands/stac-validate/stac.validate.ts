@@ -461,5 +461,5 @@ export function getStacChildren(stacJson: st.StacItem | st.StacCollection | st.S
     return stacJson.links.filter((f) => childrenRel.has(f.rel)).map((f) => new URL(f.href, stacLocation));
   }
   if (stacJson.type === 'Feature') return [];
-  throw new Error(`Unknown Stac Type [${String(stacJson['type'] ?? '')}]: ${stacLocation.href}`);
+  throw new Error(`Unknown Stac Type [${String(stacJson['type'] ?? '')}]: ${protocolAwareString(stacLocation)}`);
 }

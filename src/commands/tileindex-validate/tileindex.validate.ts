@@ -352,7 +352,9 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
         logger.error({ path: protocolAwareString(v.source), bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
       }
 
-      throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source.href}`);
+      throw new Error(
+        `heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0] ? protocolAwareString(locs[0]?.source) : undefined}`,
+      );
     }
   }
   return firstBands;
@@ -567,15 +569,15 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
  */
 export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   const baseImage = tiff.images[0];
-  if (baseImage === undefined) throw new Error(`Can't get base image for ${tiff.source.url.href}`);
+  if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
 
   const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
   if (bitsPerSample == null) {
-    throw new Error(`Failed to extract band information from ${tiff.source.url.href}`);
+    throw new Error(`Failed to extract band information from ${protocolAwareString(tiff.source.url)}`);
   }
 
   if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8)) {
-    throw new Error(`${tiff.source.url.href} is not a 8 bits TIFF`);
+    throw new Error(`${protocolAwareString(tiff.source.url)} is not a 8 bits TIFF`);
   }
 }
 

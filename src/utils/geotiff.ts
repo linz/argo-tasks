@@ -3,6 +3,7 @@ import type { Tiff } from '@cogeotiff/core';
 import { RasterTypeKey, TiffTagGeo } from '@cogeotiff/core';
 
 import { replaceUrlPathPattern } from '../commands/common.ts';
+import { protocolAwareString } from './filelist.ts';
 
 /**
  * Attempt to parse a tiff world file
@@ -56,11 +57,13 @@ export const PixelIsPoint = 2;
 export async function findBoundingBox(tiff: Tiff): Promise<[number, number, number, number]> {
   const img = tiff.images[0];
   if (img == null) {
-    throw new Error(`Failed to find bounding box/origin - no images found in file: ${tiff.source.url.href}`);
+    throw new Error(
+      `Failed to find bounding box/origin - no images found in file: ${protocolAwareString(tiff.source.url)}`,
+    );
   }
   const size = img.size;
 
-  // If the tiff has geo location information just read it from the tiff
+  // If the tiff has geolocation information just read it from the tiff
   if (img.isGeoLocated) {
     const origin = img.origin;
     const resolution = img.resolution;

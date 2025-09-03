@@ -95,7 +95,7 @@ export async function createManifest(
       const sourceRoot = sources.find((src) => filePath.href.startsWith(src.href));
       if (!sourceRoot) {
         const sourcesList = sources.map((s) => s.href).join(', ');
-        throw new Error(`Source root not found for file: ${filePath.href} in sources: ${sourcesList}`);
+        throw new Error(`Source root not found for file: ${protocolAwareString(filePath)} in sources: ${sourcesList}`);
       }
       const baseFile = args.flatten
         ? filePath.pathname.split('/').slice(-1).join('/') // file name only
@@ -118,7 +118,7 @@ export function validatePaths(source: URL, target: URL): void {
   if (urlPathEndsWith(source, '/') === urlPathEndsWith(target, '/')) {
     return;
   }
-  throw new Error(`Path Mismatch - source: ${source.href}, target: ${target.href}`);
+  throw new Error(`Path Mismatch - source: ${protocolAwareString(source)}, target: ${protocolAwareString(target)}`);
 }
 
 export type CommandCreateManifestArgs = CommandArguments<typeof commandCreateManifest>;

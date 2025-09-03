@@ -163,7 +163,7 @@ export const commandMapSheetCoverage = command({
       // Capture area is the area where this layer has data for
       const captureAreaLink = collection.assets?.['capture_area'];
       if (captureAreaLink == null) {
-        throw new Error(`Missing capture area asset in collection "${targetCollection.href}"`);
+        throw new Error(`Missing capture area asset in collection "${protocolAwareString(targetCollection)}"`);
       }
       const targetCaptureAreaLocation = new URL(captureAreaLink.href, targetCollection);
 
@@ -234,7 +234,7 @@ export const commandMapSheetCoverage = command({
         const fileName = basename(url.pathname);
 
         const ms = MapSheet.getMapTileIndex(fileName);
-        if (ms == null) throw new Error('Unable to extract mapsheet from ' + url.href);
+        if (ms == null) throw new Error(`Unable to extract mapsheet from ${protocolAwareString(url)}`);
 
         // Limit the output to only the requested mapsheet
         if (args.mapSheet && args.mapSheet !== ms.mapSheet) continue;
