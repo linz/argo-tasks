@@ -19,10 +19,6 @@ import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.
 import { config, createTiff, forceOutput, registerCli, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 
-export function isTiff(x: URL): boolean {
-  return urlPathEndsWith(x, '.tiff') || urlPathEndsWith(x, '.tif');
-}
-
 export const TiffLoader = {
   /**
    * Concurrently load a collection of tiffs in the locations provided.
@@ -32,9 +28,9 @@ export const TiffLoader = {
    * @returns Initialized tiff
    */
   async load(locations: URL[], args?: FileFilter): Promise<Tiff[]> {
-    // Include 0 byte files and filter them out with {@see isTiff}
+    // Include 0 byte files and filter them out based on file extension
     const files = await getFiles(locations, { ...args, sizeMin: 0 });
-    const tiffLocations = files.flat().filter(isTiff);
+    const tiffLocations = files.flat().filter((f) => urlPathEndsWith(f, '.tiff') || urlPathEndsWith(f, '.tif'));
     const startTime = performance.now();
     logger.info({ count: tiffLocations.length }, 'Tiff:Load:Start');
     if (tiffLocations.length === 0) throw new Error('No Files found');

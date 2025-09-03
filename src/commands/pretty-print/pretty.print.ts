@@ -7,7 +7,7 @@ import { logger } from '../../log.ts';
 import { getFiles } from '../../utils/chunk.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
-import { config, isJson, registerCli, UrlFolder, UrlList, verbose } from '../common.ts';
+import { config, registerCli, UrlFolder, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 
 export const commandPrettyPrint = command({
   name: 'pretty-print',
@@ -33,7 +33,7 @@ export const commandPrettyPrint = command({
     }
 
     const files = await getFiles(args.path);
-    const jsonFiles = files.flat().filter(isJson);
+    const jsonFiles = files.flat().filter((f) => urlPathEndsWith(f, '.json'));
     if (jsonFiles.length === 0) throw new Error('No Files found');
 
     // test if can access one of the file

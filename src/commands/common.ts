@@ -263,11 +263,6 @@ export const S3Path: Type<string, URL> = {
   },
 };
 
-/** Does this URL point to a JSON file (based on extension) */
-export function isJson(location: URL): boolean {
-  return urlPathEndsWith(location, '.json');
-}
-
 /**
  * Guess the content-type of a STAC file
  *

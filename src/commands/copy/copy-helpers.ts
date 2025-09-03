@@ -5,8 +5,7 @@ import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import { HashKey, hashStream } from '../../utils/hash.ts';
-import { guessStacContentType, isJson, replaceUrlPathPattern, urlPathEndsWith } from '../common.ts';
-import { isTiff } from '../tileindex-validate/tileindex.validate.ts';
+import { guessStacContentType, replaceUrlPathPattern, urlPathEndsWith } from '../common.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
@@ -135,10 +134,11 @@ export function fixFileMetadata(location: URL, meta: FileInfo): FileInfo {
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
 
   // Assume our tiffs are cloud optimized
-  if (isTiff(location)) return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+  if (urlPathEndsWith(location, '.tiff') || urlPathEndsWith(location, '.tif'))
+    return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
 
   // Overwrite with application/json, or application/geo+json for geojson files
-  if (isJson(location)) return { ...meta, contentType: guessStacContentType(location) };
+  if (urlPathEndsWith(location, '.json')) return { ...meta, contentType: guessStacContentType(location) };
 
   return meta;
 }

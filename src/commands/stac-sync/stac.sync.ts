@@ -8,7 +8,7 @@ import { md } from '../../readme/markdown.ts';
 import { annotateExample } from '../../readme/readme.example.ts';
 import { makeRelative, protocolAwareString } from '../../utils/filelist.ts';
 import { hashBuffer, HashKey } from '../../utils/hash.ts';
-import { config, guessStacContentType, isJson, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
+import { config, guessStacContentType, registerCli, S3Path, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
 export const commandStacSync = command({
   name: 'stac-sync',
@@ -50,7 +50,7 @@ export async function synchroniseFiles(sourceLocation: URL, targetLocation: URL)
 
   await Promise.all(
     sourceFilesInfo.map(async (fileInfo) => {
-      if (!isJson(fileInfo.url)) return;
+      if (!urlPathEndsWith(fileInfo.url, '.json')) return;
 
       const key = new URL(makeRelative(sourceLocation, fileInfo.url), targetLocation);
       (await uploadFileToS3(fileInfo, key)) && count++;
