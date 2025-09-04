@@ -106,9 +106,11 @@ export function ensureTrailingSlash(location: URL): URL {
 }
 
 /**
- * Parse an input parameter as a URL.
+ * Parse a string into a URL type.
  *
- * If it looks like a file path, it will be converted using `pathToFileURL`.
+ * Input will be converted using {@link fsa.toUrl}, which falls back to {@link pathToFileURL}
+ * if parsing into `new URL()` fails.
+ * `pathToFileURL` converts paths relative to the current working directory.
  **/
 export const Url: Type<string, URL> = {
   from(str) {
