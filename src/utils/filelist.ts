@@ -1,4 +1,5 @@
-import { fsa } from '@chunkd/fs';
+import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import type { TiffLocation } from '../commands/tileindex-validate/tileindex.validate.ts';
 export const HttpProtocols = ['https:', 'http:'];
@@ -14,13 +15,17 @@ export const HttpProtocols = ['https:', 'http:'];
  * @returns string representation of the URL
  */
 export function protocolAwareString(targetLocation: URL): string {
-  return makeRelative(fsa.toUrl('./'), targetLocation, false);
+  if (HttpProtocols.includes(targetLocation.protocol)) {
+    return targetLocation.href;
+  }
+  if (targetLocation.protocol === 'file:') {
+    return fileURLToPath(targetLocation);
+  }
+  return decodeURIComponent(targetLocation.href);
 }
 
 /**
- * Crude URL to relative path converter.
- * Output from this function needs forward slashes to be compatible with URLs,
- * so this is not cross-platform safe.
+ * URL to relative path converter.
  *
  * https://foo.com + https://foo.com/bar.html => ./bar.html
  * s3://foo/ + s3://foo/bar/baz.html => ./bar/baz.html
@@ -37,14 +42,25 @@ export function makeRelative(baseLocation: URL, fileLocation: URL, strict = true
   // If the fileLocation starts with baseLocationFolder, we can return the relative path of fileLocation
   if (strict && !fileLocation.href.startsWith(baseLocationFolder.href)) {
     throw new Error(
-      `FilePaths are not relative base: ${protocolAwareString(baseLocationFolder)} file: ${protocolAwareString(fileLocation)}`,
+      `fileLocation is not a subfolder of baseLocation: ${protocolAwareString(baseLocationFolder)} file: ${protocolAwareString(fileLocation)}`,
     );
   }
-  const relativePath = fileLocation.href.replace(baseLocationFolder.href, './');
-  if (HttpProtocols.includes(fileLocation.protocol)) {
-    return relativePath;
+  if (fileLocation.protocol === 'file:') {
+    let relativeFilePath = path.relative(fileURLToPath(baseLocationFolder), fileURLToPath(fileLocation));
+    if (
+      !path.isAbsolute(relativeFilePath) &&
+      !relativeFilePath.startsWith('./') &&
+      !relativeFilePath.startsWith('../')
+    ) {
+      relativeFilePath = `./${relativeFilePath}`;
+    }
+    return relativeFilePath;
   }
-  return decodeURIComponent(relativePath);
+
+  if (HttpProtocols.includes(fileLocation.protocol)) {
+    return fileLocation.href.replace(baseLocationFolder.href, './');
+  }
+  return decodeURIComponent(fileLocation.href.replace(baseLocationFolder.href, './'));
 }
 
 export interface FileListEntry {
@@ -83,7 +99,7 @@ export class FileListEntryClass implements FileListEntry {
     return JSON.parse(this.toString()) as FileListJsonEntry;
   }
   toString(): string {
-    const stringUrls = this.input.map((url) => makeRelative(fsa.toUrl('./'), url, false));
+    const stringUrls = this.input.map((location) => makeRelative(pathToFileURL('./'), location, false));
     return JSON.stringify({
       output: this.output,
       input: stringUrls,

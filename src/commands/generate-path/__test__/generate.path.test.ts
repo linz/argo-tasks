@@ -220,7 +220,6 @@ describe('command.generatePath', () => {
   const mem = new FsMemory();
   beforeEach(() => {
     fsa.register('memory://', mem);
-    fsa.register('/tmp/generate-args', mem);
     fsa.register('file:///tmp/generate-args', mem);
     mem.files.clear();
   });

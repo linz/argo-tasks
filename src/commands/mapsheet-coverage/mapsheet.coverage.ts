@@ -10,11 +10,12 @@ import { command, number, option, optional, string } from 'cmd-ts';
 import pLimit from 'p-limit';
 import pc from 'polygon-clipping';
 import type { StacCollection, StacItem } from 'stac-ts';
+import { pathToFileURL } from 'url';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
-import { FileListEntryClass, protocolAwareString } from '../../utils/filelist.ts';
+import { FileListEntryClass, makeRelative, protocolAwareString } from '../../utils/filelist.ts';
 import { hashStream } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
 import { config, registerCli, replaceUrlPathPattern, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
@@ -335,7 +336,7 @@ async function compareCreation(
       logger.debug(
         {
           sheetCode: sheetCode,
-          sourceLocations: sourceFiles.map((loc) => protocolAwareString(loc)),
+          sourceLocations: sourceFiles.map((loc) => makeRelative(pathToFileURL('./'), loc, false)),
           oldLocations: derivedFrom.map((m) => m.href),
         },
         'MapSheetCoverage:difference',

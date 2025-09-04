@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { ActionCopy } from '../../../utils/actions.ts';
-import { protocolAwareString } from '../../../utils/filelist.ts';
+import { makeRelative } from '../../../utils/filelist.ts';
 import { Url, UrlFolder, UrlFolderList, UrlList } from '../../common.ts';
 import type { CommandCreateManifestArgs } from '../../create-manifest/create-manifest.ts';
 import { commandCreateManifest } from '../../create-manifest/create-manifest.ts';
@@ -18,7 +18,10 @@ const sourceLocation = pathToFileURL('./.test/');
  */
 async function getAllFiles(): Promise<[string, number][]> {
   const files = await fsa.toArray(fsa.details(sourceLocation));
-  const filesShort: [string, number][] = files.map((m) => [protocolAwareString(m.url), m.size ?? 0]);
+  const filesShort: [string, number][] = files.map((m) => [
+    makeRelative(pathToFileURL('./'), m.url, false),
+    m.size ?? 0,
+  ]);
   filesShort.sort((a, b) => a[0].localeCompare(b[0]));
 
   return filesShort;

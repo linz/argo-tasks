@@ -1,6 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
+import { pathToFileURL } from 'url';
 import { gzipSync } from 'zlib';
 
 import type { CommandArguments } from '../../__test__/type.util.ts';
@@ -103,7 +104,10 @@ export async function createManifest(
       const target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetLocation);
 
       validatePaths(filePath, target);
-      current.push({ source: protocolAwareString(filePath), target: protocolAwareString(target) });
+      current.push({
+        source: makeRelative(pathToFileURL('./'), filePath, false),
+        target: makeRelative(pathToFileURL('./'), target, false),
+      });
     }
     outputCopy.push(current);
   }
