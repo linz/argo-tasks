@@ -6,6 +6,7 @@ import { basemapsCreatePullRequest } from './basemaps-github/create-pr.ts';
 import { basemapsCreateMapSheet } from './basemaps-mapsheet/create-mapsheet.ts';
 import { commandCopy } from './copy/copy.ts';
 import { commandCreateManifest } from './create-manifest/create-manifest.ts';
+import { commandDeleteEmptyFolders } from './delete-empty-folders/delete.empty.folders.ts';
 import { commandGeneratePath } from './generate-path/path.generate.ts';
 import { commandGroup } from './group/group.ts';
 import { commandIdentifyUpdatedItems } from './identify-updated-items/identify.updated.items.ts';
@@ -25,6 +26,7 @@ export const AllCommands = {
   'archive-setup': archiveSetup,
   copy: commandCopy,
   'create-manifest': commandCreateManifest,
+  'delete-empty-folders': commandDeleteEmptyFolders,
   'identify-updated-items': commandIdentifyUpdatedItems,
   group: commandGroup,
   flatten: commandCreateManifest,
