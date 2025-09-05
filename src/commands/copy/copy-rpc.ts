@@ -4,12 +4,6 @@ export type CopyContract = {
   copy(args: CopyContractArgs): Promise<CopyStats>;
 };
 
-type RequestsOf<T> = {
-  [K in keyof T]: (req: unknown) => Promise<unknown>;
-};
-
-export type CopyContractForRpc = RequestsOf<CopyContract>;
-
 export interface CopyContractArgs {
   /** Copy ID for tracing */
   id: string;
