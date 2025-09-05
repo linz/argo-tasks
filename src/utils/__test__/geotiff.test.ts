@@ -36,7 +36,7 @@ describe('geotiff', () => {
     const source = new FsMemory();
     // Actual tiff file
     await source.write(
-      fsa.toUrl('memory:///BX20_500_023098.tif'),
+      fsa.toUrl('memory:///BX20_500_023098.tif'), // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
       Buffer.from(
         '49492a00080000001100000103000100' +
           '0000800c00000101030001000000c012' +
@@ -64,15 +64,15 @@ describe('geotiff', () => {
         'hex',
       ),
     );
-    fsa.register('memory://', source);
+    fsa.register('memory:///', source); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
 
-    const tiff = await createTiff(fsa.toUrl('memory:///BX20_500_023098.tif'));
+    const tiff = await createTiff(fsa.toUrl('memory:///BX20_500_023098.tif')); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
     const bbox = await findBoundingBox(tiff);
 
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
   });
 
-  const url = fsa.toUrl('memory:///BX20_500_023098.tif');
+  const url = fsa.toUrl('memory:///BX20_500_023098.tif'); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
   const fakeSource: Source = { url: url, fetch: () => Promise.resolve(new ArrayBuffer(1)) };
   it('should not parse a tiff with no information ', async () => {
     // tiff with no location information and no TFW
@@ -84,14 +84,14 @@ describe('geotiff', () => {
     fsa.register('memory://', source);
 
     // Write a sidecar tfw
-    await fsa.write(fsa.toUrl('memory:///BX20_500_023098.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
+    await fsa.write(fsa.toUrl('memory:///BX20_500_023098.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
     // tiff with no location information and no TFW
     const bbox = await findBoundingBox({
       source: fakeSource,
       images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
     } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
-    await fsa.delete(fsa.toUrl('memory:///BX20_500_023098.tfw'));
+    await fsa.delete(fsa.toUrl('memory:///BX20_500_023098.tfw')); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
   });
 
   it('should parse standard tiff', async () => {
