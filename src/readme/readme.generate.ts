@@ -3,8 +3,10 @@ import { writeFileSync } from 'node:fs';
 import { fsa } from '@chunkd/fs';
 import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.ts';
 import * as prettier from 'prettier';
+import { pathToFileURL } from 'url';
 
 import { AllCommands } from '../commands/index.ts';
+import { makeRelative } from '../utils/filelist.ts';
 import { commandHasExample, ExampleSymbol } from './readme.example.ts';
 const AnsiRemove = /\u001b\[.*?m/g;
 
@@ -30,8 +32,8 @@ async function generateReadme(): Promise<void> {
       continue;
     }
 
-    const targetPath = `./src/commands/${cmd.name}`;
-    const stat = await fsa.exists(targetPath);
+    const targetPath = `./src/commands/${cmd.name}/`;
+    const stat = await fsa.exists(fsa.toUrl(targetPath));
     if (stat === false) {
       console.log(`Command missing folder ${targetPath}`);
       continue;
@@ -91,10 +93,10 @@ async function generateReadme(): Promise<void> {
     const text = data.join('\n');
 
     const formatted = await prettier.format(text, { filepath: 'readme.md' });
-    const targetReadme = fsa.join(targetPath, 'README.md');
+    const targetReadme = new URL('README.md', fsa.toUrl(targetPath));
 
     writeFileSync(targetReadme, formatted);
-    const cmdHeader = [`[${cmd.name}](${targetReadme})`, cmd.description].join('|');
+    const cmdHeader = [`[${cmd.name}](${makeRelative(pathToFileURL('./'), targetReadme)})`, cmd.description].join('|');
     commandIndex.push(`|${cmdHeader}|`);
   }
 

@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import { command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 import { createHash } from 'crypto';
-import path from 'path';
+import { pathToFileURL } from 'url';
 import { gzipSync } from 'zlib';
 
 import type { CommandArguments } from '../../__test__/type.util.ts';
@@ -10,7 +10,8 @@ import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { config, registerCli, verbose } from '../common.ts';
+import { makeRelative, protocolAwareString } from '../../utils/filelist.ts';
+import { config, registerCli, Url, UrlFolder, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 
 export const commandCreateManifest = command({
   name: 'create-manifest',
@@ -39,32 +40,30 @@ export const commandCreateManifest = command({
       long: 'limit',
       description: 'Limit the file count to this amount, -1 is no limit',
     }),
-    output: option({ type: string, long: 'output', description: 'Output location for the listing' }),
-    target: option({ type: string, long: 'target', description: 'Copy destination' }),
-    source: restPositionals({ type: string, displayName: 'source', description: 'Where to list' }),
+    output: option({ type: Url, long: 'output', description: 'Output location for the listing' }),
+    target: option({ type: UrlFolder, long: 'target', description: 'Copy destination' }),
+    source: restPositionals({ type: UrlFolderList, displayName: 'source', description: 'Where to list' }),
   },
   async handler(args) {
     registerCli(this, args);
 
     const outputCopy: string[] = [];
 
-    const targetPath: string = args.target;
+    const targetLocation = args.target;
     const actionLocation = getActionLocation();
-    for (const source of args.source) {
-      const outputFiles = await createManifest(source, targetPath, args);
-      for (const current of outputFiles) {
-        const outBuf = Buffer.from(JSON.stringify(current));
-        const targetHash = createHash('sha256').update(outBuf).digest('base64url');
+    const outputFiles = await createManifest(args.source.flat(), targetLocation, args);
+    for (const current of outputFiles) {
+      const outBuf = Buffer.from(JSON.stringify(current));
+      const targetHash = createHash('sha256').update(outBuf).digest('base64url');
 
-        // Store the list of files to move in a bucket rather than the ARGO parameters
-        if (actionLocation) {
-          const targetLocation = fsa.join(actionLocation, `actions/manifest-${targetHash}.json`);
-          const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
-          await fsa.write(targetLocation, JSON.stringify(targetAction));
-          outputCopy.push(targetLocation);
-        } else {
-          outputCopy.push(gzipSync(outBuf).toString('base64url'));
-        }
+      // Store the list of files to move in a bucket rather than the ARGO parameters
+      if (actionLocation) {
+        const targetLocation = new URL(`actions/manifest-${targetHash}.json`, actionLocation);
+        const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
+        await fsa.write(targetLocation, JSON.stringify(targetAction));
+        outputCopy.push(protocolAwareString(targetLocation));
+      } else {
+        outputCopy.push(gzipSync(outBuf).toString('base64url'));
       }
     }
     await fsa.write(args.output, JSON.stringify(outputCopy));
@@ -82,26 +81,33 @@ function createTransformFunc(transform: string): (f: string) => string {
 }
 
 export async function createManifest(
-  source: string,
-  targetPath: string,
+  sources: URL[],
+  targetLocation: URL,
   args: ManifestFilter,
 ): Promise<SourceTarget[][]> {
-  const outputFiles = await getFiles([source], args);
+  const outputFiles = await getFiles(sources, args);
   const outputCopy: SourceTarget[][] = [];
 
   const transformFunc = args.transform ? createTransformFunc(args.transform) : null;
 
-  for (const chunk of outputFiles) {
+  for (const outputChunks of outputFiles) {
     const current: SourceTarget[] = [];
-
-    for (const filePath of chunk) {
-      const baseFile = args.flatten ? path.basename(filePath) : filePath.slice(source.length);
-      let target = targetPath;
-      if (baseFile) {
-        target = fsa.joinAll(targetPath, transformFunc ? transformFunc(baseFile) : baseFile);
+    for (const filePath of outputChunks) {
+      const sourceRoot = sources.find((src) => filePath.href.startsWith(src.href));
+      if (!sourceRoot) {
+        const sourcesList = sources.map((s) => s.href).join(', ');
+        throw new Error(`Source root not found for file: ${protocolAwareString(filePath)} in sources: ${sourcesList}`);
       }
+      const baseFile = args.flatten
+        ? filePath.pathname.split('/').slice(-1).join('/') // file name only
+        : makeRelative(sourceRoot, filePath);
+      const target = new URL(transformFunc ? transformFunc(baseFile) : baseFile, targetLocation);
+
       validatePaths(filePath, target);
-      current.push({ source: filePath, target });
+      current.push({
+        source: makeRelative(pathToFileURL('./'), filePath, false),
+        target: makeRelative(pathToFileURL('./'), target, false),
+      });
     }
     outputCopy.push(current);
   }
@@ -109,17 +115,14 @@ export async function createManifest(
   return outputCopy;
 }
 
-export function validatePaths(source: string, target: string): void {
+export function validatePaths(source: URL, target: URL): void {
   // Throws error if the source and target paths are not:
   // - both directories
   // - both paths
-  if (source.endsWith('/') && target.endsWith('/')) {
+  if (urlPathEndsWith(source, '/') === urlPathEndsWith(target, '/')) {
     return;
   }
-  if (!source.endsWith('/') && !target.endsWith('/')) {
-    return;
-  }
-  throw new Error(`Path Mismatch - source: ${source}, target: ${target}`);
+  throw new Error(`Path Mismatch - source: ${protocolAwareString(source)}, target: ${protocolAwareString(target)}`);
 }
 
 export type CommandCreateManifestArgs = CommandArguments<typeof commandCreateManifest>;

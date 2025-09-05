@@ -1,20 +1,15 @@
 import { fsa } from '@chunkd/fs';
-import type { Type } from 'cmd-ts';
 import { command, oneOf, option, string } from 'cmd-ts';
+import path from 'path';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { GithubApi } from '../../utils/github.ts';
-import { config, registerCli, verbose } from '../common.ts';
+import { config, registerCli, Url, verbose } from '../common.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
-
-const Url: Type<string, URL> = {
-  async from(str) {
-    return new URL(str);
-  },
-};
 
 const imageryRepo = 'linz/imagery';
 
@@ -75,15 +70,15 @@ export const commandStacGithubImport = command({
     const botEmail = BotEmails[args.repoName];
     if (botEmail == null) throw new Error(`${args.repoName} is not a valid GitHub repository`);
 
-    const basemapsConfigLinkURL = new URL('config-url', args.source);
+    const basemapsConfigLocation = new URL('config-url', args.source);
     const prBody: string[] = [];
-    const basemapsConfigLink = await fsa.read(basemapsConfigLinkURL.href);
+    const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
     prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
     prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
-    logger.info({ template: fsa.joinAll('template', 'catalog.json') }, 'Stac:ReadTemplate');
-    const catalogPath = fsa.joinAll('template', 'catalog.json');
+    logger.info({ template: path.join('template', 'catalog.json') }, 'Stac:ReadTemplate');
+    const catalogPath = path.join('template', 'catalog.json');
     const catalog = await gh.getContent(catalogPath);
     if (catalog == null) throw new Error(`Failed to get catalog.json from ${args.repoName} repo.`);
     const catalogJson = JSON.parse(catalog) as st.StacCatalog;
@@ -96,9 +91,9 @@ export const commandStacGithubImport = command({
 
     const sourceCollection = new URL('collection.json', args.source);
     const targetCollection = new URL('collection.json', args.target);
-    const targetCollectionPath = fsa.joinAll('stac', targetCollection.pathname);
+    const targetCollectionPath = path.join('stac', targetCollection.pathname);
 
-    const collection = await fsa.readJson<st.StacCollection>(sourceCollection.href);
+    const collection = await fsa.readJson<st.StacCollection>(sourceCollection);
 
     const rootLink = collection.links.find((f) => f.rel === 'root');
     if (rootLink) {
@@ -136,8 +131,8 @@ export const commandStacGithubImport = command({
     const pr = await gh.createPullRequest(branch, title, botEmail, [collectionFile, parametersFile], prBody.join('\n'));
     if (pr != null) {
       const prUrl = new URL(`https://github.com/${args.repoName}/pull/${pr}`);
-      logger.info({ prUrl: prUrl.href }, 'Git:PullRequestCreated');
-      await fsa.write('/tmp/pull-request/url', prUrl.href);
+      logger.info({ prUrl: protocolAwareString(prUrl) }, 'Git:PullRequestCreated');
+      await fsa.write(fsa.toUrl('/tmp/pull-request/url'), prUrl.href);
     }
   },
 });

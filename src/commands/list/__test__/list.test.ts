@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { CommandArguments } from '../../../__test__/type.util.ts';
 import { logger } from '../../../log.ts';
@@ -31,47 +30,75 @@ describe('command.list', () => {
     location: [],
   };
 
-  it('should list a folder', async () => {
-    await fsa.write(`memory://some-bucket/test/🦄 🌈.txt`, Buffer.alloc(1));
+  it('should list local filesystem folder as absolute paths and not as file URLs', async () => {
+    fsa.register(`file://${process.cwd()}/.listtest`, mem); // test on a subfolder of cwd()
+    fsa.register(`file:///other/path`, mem); // and an arbitrary file URL.
+    await fsa.write(fsa.toUrl(`${process.cwd()}/.listtest/a.txt`), Buffer.alloc(1));
+    await fsa.write(fsa.toUrl(`${process.cwd()}/.listtest/b.txt`), Buffer.alloc(1));
+    await fsa.write(fsa.toUrl(`file:///other/path/.listtest/c.txt`), Buffer.alloc(1));
+    await fsa.write(fsa.toUrl(`file:///other/path/.listtest/d.txt`), Buffer.alloc(1));
     await commandList.handler({
       ...baseArgs,
-      location: ['memory://some-bucket/test/'],
-      output: 'memory://🦄 🌈/output.json',
+      location: [[fsa.toUrl(`${process.cwd()}/.listtest/`), fsa.toUrl('file:///other/path/')]],
+      output: fsa.toUrl('memory://host/output.json'),
     });
 
-    const allFiles = [...mem.files.keys()];
-    assert.deepEqual(allFiles, ['memory://some-bucket/test/🦄 🌈.txt', 'memory://🦄 🌈/output.json']);
-    const fileList = JSON.parse((await mem.read('memory://🦄 🌈/output.json')).toString('utf-8')) as string[][];
+    const output = await fsa.readJson(fsa.toUrl('memory://host/output.json'));
+    assert.deepEqual(output, [
+      [
+        `${process.cwd()}/.listtest/a.txt`,
+        `${process.cwd()}/.listtest/b.txt`,
+        '/other/path/.listtest/c.txt',
+        '/other/path/.listtest/d.txt',
+      ],
+    ]);
+  });
+
+  it('should list a folder', async () => {
+    await fsa.write(fsa.toUrl(`memory://some-bucket/test/🦄 🌈.txt`), Buffer.alloc(1));
+    await commandList.handler({
+      ...baseArgs,
+      location: [[fsa.toUrl('memory://some-bucket/test/')]],
+      output: fsa.toUrl('memory://host/🦄 🌈/output.json'),
+    });
+
+    const allFiles = [...mem.files.keys()].map((f) => decodeURI(f));
+    assert.deepEqual(allFiles, ['memory://some-bucket/test/🦄 🌈.txt', 'memory://host/🦄 🌈/output.json']);
+    const fileList = JSON.parse(
+      (await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8'),
+    ) as string[][];
     assert.deepEqual(fileList, [[`memory://some-bucket/test/🦄 🌈.txt`]]);
   });
 
   it('should list folders from ; separated lists', async () => {
-    await fsa.write(`memory://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
-    await fsa.write(`memory://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(1));
+    await fsa.write(fsa.toUrl(`memory://some-bucket/🦄/🦄 🌈.txt`), Buffer.alloc(1));
+    await fsa.write(fsa.toUrl(`memory://some-bucket/🌈/🦄 🌈.txt`), Buffer.alloc(1));
 
     await commandList.handler({
       ...baseArgs,
-      location: ['memory://some-bucket/🦄/;memory://some-bucket/🌈/'],
-      output: 'memory://🦄 🌈/output.json',
+      location: [[fsa.toUrl('memory://some-bucket/🦄/'), fsa.toUrl('memory://some-bucket/🌈/')]],
+      output: fsa.toUrl('memory://host/🦄 🌈/output.json'),
       group: 1,
     });
 
-    const fileList = JSON.parse((await mem.read('memory://🦄 🌈/output.json')).toString('utf-8')) as string[][];
+    const fileList = JSON.parse(
+      (await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8'),
+    ) as string[][];
     assert.deepEqual(fileList, [['memory://some-bucket/🦄/🦄 🌈.txt'], ['memory://some-bucket/🌈/🦄 🌈.txt']]);
   });
 
   it('should ignore empty files from ; separated lists', async () => {
-    await fsa.write(`memory://some-bucket/🦄/🦄 🌈.txt`, Buffer.alloc(1));
-    await fsa.write(`memory://some-bucket/🌈/🦄 🌈.txt`, Buffer.alloc(0));
-
+    await fsa.write(fsa.toUrl(`memory://some-bucket/🦄/🦄 🌈.txt`), Buffer.alloc(1));
+    await fsa.write(fsa.toUrl(`memory://some-bucket/🌈/🦄 🌈.txt`), Buffer.alloc(0));
     await commandList.handler({
       ...baseArgs,
-      location: ['memory://some-bucket/🦄/;memory://some-bucket/🌈/'],
-      output: 'memory://🦄 🌈/output.json',
+      location: [[fsa.toUrl('memory://some-bucket/🦄/'), fsa.toUrl('memory://some-bucket/🌈/')]],
+      output: fsa.toUrl('memory://host/🦄 🌈/output.json'),
       group: 1,
     });
-
-    const fileList = JSON.parse((await mem.read('memory://🦄 🌈/output.json')).toString('utf-8')) as string[][];
-    assert.deepEqual(fileList, [['memory://some-bucket/🦄/🦄 🌈.txt']]);
+    const outputJsonFileContent = JSON.parse(
+      (await mem.read(fsa.toUrl('memory://host/🦄 🌈/output.json'))).toString('utf-8'),
+    ) as string[][];
+    assert.deepEqual(outputJsonFileContent, [['memory://some-bucket/🦄/🦄 🌈.txt']]);
   });
 });

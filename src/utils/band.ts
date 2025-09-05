@@ -1,6 +1,8 @@
 import type { Tiff, TiffImage } from '@cogeotiff/core';
 import { SampleFormat, TiffTag } from '@cogeotiff/core';
 
+import { protocolAwareString } from './filelist.ts';
+
 function getDataType(i: SampleFormat): string {
   switch (i) {
     case SampleFormat.Uint:
@@ -39,11 +41,11 @@ export async function extractBandInformation(tiff: Tiff): Promise<string[]> {
   ]);
 
   if (bitsPerSample == null) {
-    throw new Error(`Failed to extract band information from: ${tiff.source.url.href}`);
+    throw new Error(`Failed to extract band information from: ${protocolAwareString(tiff.source.url)}`);
   }
 
   if (dataType && dataType.length !== bitsPerSample.length) {
-    throw new Error(`Datatype and bits per sample miss match: ${tiff.source.url.href}`);
+    throw new Error(`Datatype and bits per sample miss match: ${protocolAwareString(tiff.source.url)}`);
   }
 
   const imageBands: string[] = [];

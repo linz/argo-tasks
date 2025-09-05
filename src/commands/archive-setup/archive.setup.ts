@@ -3,7 +3,8 @@ import { command, option, optional, positional } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { config, registerCli, S3Path, tryParseUrl, UrlFolder, urlToString, verbose } from '../common.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
+import { config, registerCli, S3Path, UrlFolder, verbose } from '../common.ts';
 
 export const archiveSetup = command({
   name: 'archive-setup',
@@ -17,7 +18,7 @@ export const archiveSetup = command({
       long: 'output',
       description: 'Where the archive location will be output',
       defaultValueIsSerializable: true,
-      defaultValue: () => tryParseUrl('/tmp/archive-setup/'),
+      defaultValue: () => fsa.toUrl('/tmp/archive-setup/'),
     }),
     path: positional({ type: S3Path, displayName: 'path', description: 'Path of the files to be archived' }),
   },
@@ -33,11 +34,14 @@ export const archiveSetup = command({
     }
 
     const archiveLocation = getArchiveLocation(args.path, archiveBucketName);
-    const archiveLocationOutputPath = new URL('archive-location', args.output);
+    const saveArchiveLocationTo = new URL('archive-location', args.output);
 
-    await fsa.write(urlToString(archiveLocationOutputPath), archiveLocation);
+    await fsa.write(saveArchiveLocationTo, protocolAwareString(archiveLocation));
 
-    logger.info({ duration: performance.now() - startTime, archiveLocation }, 'ArchiveSetup:Done');
+    logger.info(
+      { duration: performance.now() - startTime, archiveLocation: protocolAwareString(archiveLocation) },
+      'ArchiveSetup:Done',
+    );
   },
 });
 
@@ -68,27 +72,27 @@ export function getArchiveBucketName(sourceBucket: string): string {
 }
 
 /**
- * Check if a path is safe for archiving as the source files will be deleted.
+ * Check if a location is safe for archiving as the source files will be deleted.
  * Example: `s3://uploads/provider_a/dataset_1/supply_1/` - we would not like to archive the whole `provider_a` folder, or deleting everything in the bucket...
  *
- * @param path - The path to check.
+ * @param location - The location to check.
  * @param minDepth - The minimum depth required. Default is 2.
- * @returns True if the path is safe for archiving, false otherwise.
+ * @returns True if the location is safe for archiving, false otherwise.
  */
-export function isSafePath(path: URL, minDepth = 2): boolean {
-  const directories = path.pathname.split('/').filter(Boolean); // skip empty parts
+export function isSafePath(location: URL, minDepth = 2): boolean {
+  const directories = location.pathname.split('/').filter(Boolean); // skip empty parts
 
   return directories.length >= minDepth;
 }
 
 /** Get the archive location for a given source path and archive bucket name.
  *
- * @param sourcePath - The path where the files to archive are.
+ * @param sourceLocation - The location where the files to archive are.
  * @param archiveBucketName - The name of the bucket to use to archive the files.
- * @returns the path where the archived files should be stored.
+ * @returns the location where the archived files should be stored.
  */
-export function getArchiveLocation(sourcePath: URL, archiveBucketName: string): string {
-  const archiveLocation = new URL(sourcePath.toString());
+export function getArchiveLocation(sourceLocation: URL, archiveBucketName: string): URL {
+  const archiveLocation = new URL(sourceLocation);
   archiveLocation.hostname = archiveBucketName;
-  return archiveLocation.toString();
+  return archiveLocation;
 }

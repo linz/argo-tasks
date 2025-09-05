@@ -2,7 +2,8 @@ import { fsa } from '@chunkd/fs';
 import type { Tiff } from '@cogeotiff/core';
 import { RasterTypeKey, TiffTagGeo } from '@cogeotiff/core';
 
-import { urlToString } from '../commands/common.ts';
+import { replaceUrlPathPattern } from '../commands/common.ts';
+import { protocolAwareString } from './filelist.ts';
 
 /**
  * Attempt to parse a tiff world file
@@ -56,11 +57,13 @@ export const PixelIsPoint = 2;
 export async function findBoundingBox(tiff: Tiff): Promise<[number, number, number, number]> {
   const img = tiff.images[0];
   if (img == null) {
-    throw new Error(`Failed to find bounding box/origin - no images found in file: ${tiff.source.url.href}`);
+    throw new Error(
+      `Failed to find bounding box/origin - no images found in file: ${protocolAwareString(tiff.source.url)}`,
+    );
   }
   const size = img.size;
 
-  // If the tiff has geo location information just read it from the tiff
+  // If the tiff has geolocation information just read it from the tiff
   if (img.isGeoLocated) {
     const origin = img.origin;
     const resolution = img.resolution;
@@ -79,9 +82,22 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   }
 
   // Attempt to read a TFW next to the tiff
-  const sourcePath = urlToString(tiff.source.url);
-  const tfwPath = sourcePath.slice(0, sourcePath.lastIndexOf('.')) + '.tfw';
-  const tfwData = await fsa.read(tfwPath);
+  const baseLocation = replaceUrlPathPattern(tiff.source.url, new RegExp('\\.tiff?$', 'i'));
+
+  const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
+  let tfwData;
+  for (const tfwExtension of tfwVariants) {
+    const candidateTfwLocation = fsa.toUrl(baseLocation.href + tfwExtension);
+    try {
+      tfwData = await fsa.read(candidateTfwLocation);
+      break;
+    } catch (err) {}
+  }
+
+  if (!tfwData) {
+    throw new Error('No matching TFW variant found.');
+  }
+
   const tfw = parseTfw(String(tfwData));
 
   const x1 = tfw.origin.x;

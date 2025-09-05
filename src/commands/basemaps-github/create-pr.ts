@@ -8,7 +8,8 @@ import type { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
-import { registerCli, verbose } from '../common.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
+import { ensureTrailingSlash, registerCli, verbose } from '../common.ts';
 import type { Category } from './make.cog.github.ts';
 import { Categories, MakeCogGithub } from './make.cog.github.ts';
 
@@ -36,21 +37,21 @@ export interface targetInfo {
 }
 
 /**
- * Parse information from target url include raster, vector and elevation
+ * Parse information from target location include raster, vector and elevation
  * s3://linz-basemaps/3857/canterbury_rural_2014-2015_0-30m_RGBA/01HSF04SG9M1P3V667A4NZ1MN8/
  * s3://linz-basemaps/elevation/3857/bay-of-plenty_2019-2022_dem_1m/01HSF04SG9M1P3V667A4NZ1MN8/
  * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
  *
  * TODO: This should get from metadata instead of the parse string once we got the attributes in metadata
  *
- * @param target Target url to parse the information from
+ * @param location Target location to parse the information from
  * @param offset Adding index offset to exclude the `/vector/` or `/elevation/` in s3 path. 0 for raster, 1 for vector and elevation.
  */
-export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
-  // Parse target bucket, epsg and imagery name from the target url
-  const url = new URL(target);
-  const bucket = url.hostname;
-  const splits = url.pathname.split('/');
+export function parseTargetUrl(location: URL, offset: 0 | 1): targetInfo {
+  // Parse target bucket, epsg and imagery name from the target location
+  const target = location.href;
+  const bucket = location.hostname;
+  const splits = location.pathname.split('/');
   const epsg = Epsg.tryGet(Number(splits[1 + offset]));
   const name = splits[2 + offset];
 
@@ -79,34 +80,39 @@ export function parseTargetUrl(target: string, offset: 0 | 1): targetInfo {
  * s3://linz-basemaps-staging/3857/west-coast_rural_2015-16_0-3m/01ED83TT0ZHKXTPFXEGFJHP2M5/
  */
 async function parseRasterTargetInfo(
-  target: string,
+  target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined }> {
-  logger.info({ target }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: protocolAwareString(target) }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 0);
 
   assertValidBucket(bucket, ValidTargetBuckets);
 
-  const collectionPath = fsa.join(target, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const collectionLocation = new URL('collection.json', ensureTrailingSlash(target));
+
+  const collection = await fsa.readJson<StacCollection>(collectionLocation);
+  if (collection == null) {
+    throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
+  }
   const title = collection.title;
-  if (title == null) throw new Error(`Failed to get imagery title from collection.json: ${collectionPath}`);
+  if (title == null) {
+    throw new Error(`Failed to get imagery title from collection.json: ${collectionLocation.toString()}`);
+  }
 
   // Validate the source location
   const source = collection.links.find((f) => f.rel === LinzBasemapsSourceCollectionRel)?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
-  const sourceUrl = new URL(source);
-  const sourceBucket = sourceUrl.hostname;
+  const sourceLocation = fsa.toUrl(source);
+  const sourceBucket = sourceLocation.hostname;
   logger.info({ bucket: sourceBucket }, 'CreatePR: Validate the source s3 bucket');
   if (sourceBucket == null || !ValidSourceBuckets.has(sourceBucket)) {
-    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${sourceUrl.href}.`);
+    throw new Error(`Invalid s3 bucket ${sourceBucket} from the source ${protocolAwareString(sourceLocation)}.`);
   }
   // Try to get the region for individual layers
   let region;
   if (individual) {
     logger.info({ source }, 'CreatePR: Get region for individual imagery');
-    const regionValue = sourceUrl.pathname.split('/')[1];
+    const regionValue = sourceLocation.pathname.split('/')[1];
     if (regionValue) region = regionValue;
     else {
       logger.warn({ source }, 'CreatePR: Failed to find region and use individual instead.');
@@ -122,8 +128,8 @@ async function parseRasterTargetInfo(
  * s3://linz-basemaps-staging/vector/3857/53382-nz-roads-addressing/01HSF04SG9M1P3V667A4NZ1MN8/53382-nz-roads-addressing.tar.co
  * s3://linz-basemaps-staging/vector/3857/topographic/01HSF04SG9M1P3V667A4NZ1MN8/topographic.tar.co
  */
-async function parseVectorTargetInfo(target: string): Promise<{ name: string; title: string; epsg: EpsgCode }> {
-  logger.info({ target }, 'CreatePR: Get the layer information from target');
+async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title: string; epsg: EpsgCode }> {
+  logger.info({ target: protocolAwareString(target) }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name, filename } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
@@ -133,9 +139,11 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
   }
 
   // Try to get the title
-  const collectionPath = target.replace(filename, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const collectionLocation = new URL('collection.json', target);
+  const collection = await fsa.readJson<StacCollection>(collectionLocation);
+  if (collection == null) {
+    throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
+  }
   const ldsLayers = collection.links.filter((f) => f.rel === 'lds:layer');
   let title = collection.title;
   // Get title from lds:title for individual vector layer
@@ -153,32 +161,34 @@ async function parseVectorTargetInfo(target: string): Promise<{ name: string; ti
  * s3://linz-basemaps/elevation/3857/kapiti-coast_2021_dem_1m/01HZ5W74E8B1DF2B0MDSKSTSTV/
  */
 async function parseElevationTargetInfo(
-  target: string,
+  target: URL,
   individual: boolean,
 ): Promise<{ name: string; title: string; epsg: EpsgCode; region: string | undefined; source: string }> {
-  logger.info({ target }, 'CreatePR: Get the layer information from target');
+  logger.info({ target: protocolAwareString(target) }, 'CreatePR: Get the layer information from target');
   const { bucket, epsg, name } = parseTargetUrl(target, 1);
 
   assertValidBucket(bucket, ValidTargetBuckets);
+  const collectionLocation = new URL('collection.json', ensureTrailingSlash(target));
 
-  const collectionPath = fsa.join(target, 'collection.json');
-  const collection = await fsa.readJson<StacCollection>(collectionPath);
-  if (collection == null) throw new Error(`Failed to get target collection json from ${collectionPath}.`);
+  const collection = await fsa.readJson<StacCollection>(collectionLocation);
+  if (collection == null) {
+    throw new Error(`Failed to get target collection json from ${collectionLocation.toString()}.`);
+  }
   const title = collection.title;
   if (title == null) throw new Error(`Failed to get imagery title from collection.json.`);
 
   // Validate the source location
   const source = collection.links.find((f) => f.rel === 'linz_basemaps:source_collection')?.href;
   if (source == null) throw new Error(`Failed to get source url from collection.json.`);
-  const sourceUrl = new URL(source);
-  const sourceBucket = sourceUrl.hostname;
+  const sourceLocation = fsa.toUrl(source);
+  const sourceBucket = sourceLocation.hostname;
   assertValidBucket(sourceBucket, ValidSourceBuckets);
 
   // Try to get the region for individual layers
   let region;
   if (individual) {
     logger.info({ source }, 'CreatePR: Get region for individual imagery');
-    const regionValue = sourceUrl.pathname.split('/')[1];
+    const regionValue = sourceLocation.pathname.split('/')[1];
     if (regionValue) region = regionValue;
     else {
       logger.warn({ source }, 'CreatePR: Failed to find region and use individual instead.');
@@ -265,14 +275,14 @@ export const basemapsCreatePullRequest = command({
     const configType = args.vector ? 'vector' : args.configType;
     if (configType === 'vector') {
       for (const target of targets) {
-        const info = await parseVectorTargetInfo(target);
+        const info = await parseVectorTargetInfo(fsa.toUrl(target));
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;
       }
     } else if (configType === 'elevation') {
       for (const target of targets) {
-        const info = await parseElevationTargetInfo(target, args.individual);
+        const info = await parseElevationTargetInfo(fsa.toUrl(target), args.individual);
         layer.name = info.name;
         layer.title = info.title;
         layer[2193] = info.source;
@@ -281,7 +291,7 @@ export const basemapsCreatePullRequest = command({
       }
     } else {
       for (const target of targets) {
-        const info = await parseRasterTargetInfo(target, args.individual);
+        const info = await parseRasterTargetInfo(fsa.toUrl(target), args.individual);
         layer.name = info.name;
         layer.title = info.title;
         layer[info.epsg] = target;

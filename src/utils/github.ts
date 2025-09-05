@@ -189,7 +189,7 @@ export class GithubApi {
     await this.updateBranch(branch, commitSha);
 
     // git pr create
-    logger.info({ branch: branch }, 'GitHub: Create Pull Request');
+    logger.info({ branch }, 'GitHub: Create Pull Request');
 
     // Create pull request from the given head
     const response = await this.octokit.rest.pulls

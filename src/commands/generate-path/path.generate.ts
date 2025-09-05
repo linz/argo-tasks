@@ -6,9 +6,10 @@ import type { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import type { StacCollectionLinz } from '../../utils/metadata.ts';
 import { GeospatialDataCategories } from '../../utils/metadata.ts';
-import { config, createTiff, registerCli, verbose } from '../common.ts';
+import { config, createTiff, registerCli, UrlFolder, verbose } from '../common.ts';
 
 export interface PathMetadata {
   targetBucketName: string;
@@ -34,7 +35,7 @@ export const commandGeneratePath = command({
     }),
 
     source: positional({
-      type: string,
+      type: UrlFolder,
       displayName: 'path',
       description: 'path to source data where collection.json file is located',
     }),
@@ -44,12 +45,10 @@ export const commandGeneratePath = command({
     registerCli(this, args);
     const startTime = performance.now();
 
-    logger.info({ source: args.source }, 'GeneratePath:Start');
+    logger.info({ source: protocolAwareString(args.source) }, 'GeneratePath:Start');
 
-    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(
-      fsa.join(args.source, 'collection.json'),
-    );
-    if (collection == null) throw new Error(`Failed to get collection.json from ${args.source}.`);
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(new URL('collection.json', args.source));
+    if (collection == null) throw new Error(`Failed to get collection.json from ${protocolAwareString(args.source)}.`);
 
     const tiff = await loadFirstTiff(args.source, collection);
 
@@ -63,11 +62,10 @@ export const commandGeneratePath = command({
     };
 
     const target = generatePath(metadata);
-    logger.info({ duration: performance.now() - startTime, target: target }, 'GeneratePath:Done');
+    logger.info({ duration: performance.now() - startTime, target }, 'GeneratePath:Done');
 
-    // Path to where the target is located
-    await fsa.write('/tmp/generate-path/target', target);
-    logger.info({ location: '/tmp/generate-path/target', target: target }, 'GeneratePath:Written');
+    await fsa.write(fsa.toUrl('/tmp/generate-path/target'), target);
+    logger.info({ location: '/tmp/generate-path/target', target }, 'GeneratePath:Written');
   },
 });
 
@@ -120,20 +118,20 @@ function formatBucketName(bucketName: string): string {
  * @param collection
  * @returns
  */
-export async function loadFirstTiff(source: string, collection: StacCollection): Promise<Tiff> {
+export async function loadFirstTiff(source: URL, collection: StacCollection): Promise<Tiff> {
   const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
-  if (itemLink == null) throw new Error(`No items in collection from ${source}.`);
+  if (itemLink == null) throw new Error(`No items in collection from ${protocolAwareString(source)}.`);
 
-  const itemPath = new URL(itemLink, source).href;
-  const item = await fsa.readJson<StacItem>(itemPath);
-  if (item == null) throw new Error(`Failed to get item.json from ${itemPath}.`);
+  const itemLocation = new URL(itemLink, source);
+  const item = await fsa.readJson<StacItem>(itemLocation);
+  if (item == null) throw new Error(`Failed to get item.json from ${protocolAwareString(itemLocation)}.`);
 
   const tiffLink = item.assets['visual']?.href;
-  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${itemPath}`);
+  if (tiffLink == null) throw new Error(`No tiff assets in Item: ${protocolAwareString(itemLocation)}`);
 
-  const tiffPath = new URL(tiffLink, source).href;
-  const tiff = await createTiff(tiffPath);
-  if (tiff == null) throw new Error(`Failed to get tiff from ${tiffPath}.`);
+  const tiffLocation = new URL(tiffLink, source);
+  const tiff = await createTiff(tiffLocation);
+  if (tiff == null) throw new Error(`Failed to get tiff from ${protocolAwareString(tiffLocation)}.`);
   return tiff;
 }
 
@@ -147,7 +145,7 @@ export async function loadFirstTiff(source: string, collection: StacCollection):
  */
 export function extractGsd(tiff: Tiff): number {
   const gsd = tiff.images[0]?.resolution[0];
-  if (gsd == null) throw new Error(`Missing resolution tiff tag: ${tiff.source.url.href}`);
+  if (gsd == null) throw new Error(`Missing resolution tiff tag: ${protocolAwareString(tiff.source.url)}`);
   return gsd;
 }
 
@@ -162,9 +160,9 @@ export function extractGsd(tiff: Tiff): number {
 export function extractEpsg(tiff: Tiff): number {
   const epsg = tiff.images[0]?.epsg;
   if (epsg == null) {
-    throw new Error(`Missing epsg tiff tag: ${tiff.source.url.href}`);
+    throw new Error(`Missing epsg tiff tag: ${protocolAwareString(tiff.source.url)}`);
   } else if (!Epsg.Codes.has(epsg)) {
-    throw new Error(`Invalid EPSG code: ${epsg} on tiff: ${tiff.source.url.href}`);
+    throw new Error(`Invalid EPSG code: ${epsg} on tiff: ${protocolAwareString(tiff.source.url)}`);
   }
   return epsg;
 }

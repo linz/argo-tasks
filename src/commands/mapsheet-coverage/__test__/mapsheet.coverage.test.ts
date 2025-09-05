@@ -2,8 +2,7 @@ import assert from 'node:assert';
 import { afterEach, before, describe, it } from 'node:test';
 
 import { Nztm2000QuadTms, Projection } from '@basemaps/geo';
-import { fsa } from '@chunkd/fs';
-import { FsMemory } from '@chunkd/source-memory';
+import { fsa, FsMemory } from '@chunkd/fs';
 import { featuresToMultiPolygon } from '@linzjs/geojson';
 import type { StacCollection } from 'stac-ts';
 
@@ -54,8 +53,8 @@ describe('mapsheet-coverage', () => {
   const mem = new FsMemory();
   const baseArgs = {
     epsgCode: 2193,
-    location: new URL('ms://config.json'),
-    output: new URL('ms://output/'),
+    location: fsa.toUrl('ms://config.json'),
+    output: fsa.toUrl('ms://output/'),
     compare: undefined,
     verbose: false,
     mapSheet: undefined,
@@ -71,31 +70,36 @@ describe('mapsheet-coverage', () => {
   });
 
   it('should run with a empty config', async () => {
-    await fsa.write('ms://config.json', JSON.stringify({ layers: [] }));
+    await fsa.write(fsa.toUrl('ms://config.json'), JSON.stringify({ layers: [] }));
     await commandMapSheetCoverage.handler(baseArgs);
-
-    const files = await fsa.toArray(fsa.list('ms://output/'));
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('ms://output/')));
     files.sort();
     assert.deepEqual(files, [
-      'ms://output/capture-dates.geojson',
-      'ms://output/file-list.json',
-      'ms://output/layers-combined.geojson.gz',
-      'ms://output/layers-source.geojson.gz',
+      fsa.toUrl('ms://output/capture-dates.geojson'),
+      fsa.toUrl('ms://output/file-list.json'),
+      fsa.toUrl('ms://output/layers-combined.geojson.gz'),
+      fsa.toUrl('ms://output/layers-source.geojson.gz'),
     ]);
 
-    const fileList = await fsa.readJson('ms://output/file-list.json');
+    const fileList = await fsa.readJson(fsa.toUrl('ms://output/file-list.json'));
     assert.deepEqual(fileList, []);
   });
 
   it('should error if collection is missing', async () => {
-    await fsa.write('ms://config.json', JSON.stringify({ layers: [{ 2193: 'ms://layers/a/', name: 'layer-a' }] }));
+    await fsa.write(
+      fsa.toUrl('ms://config.json'),
+      JSON.stringify({ layers: [{ 2193: 'ms://layers/a/', name: 'layer-a' }] }),
+    );
     const out = await commandMapSheetCoverage.handler(baseArgs).catch((e) => e as Error);
-    assert.equal(String(out), 'CompositeError: Not found');
+    assert.equal(String(out), 'Error: Not found: ms://layers/a/collection.json');
   });
 
   it('should error if collection has no capture-area', async () => {
-    await fsa.write('ms://config.json', JSON.stringify({ layers: [{ 2193: 'ms://layers/a/', name: 'layer-a' }] }));
-    await fsa.write('ms://layers/a/collection.json', JSON.stringify({}));
+    await fsa.write(
+      fsa.toUrl('ms://config.json'),
+      JSON.stringify({ layers: [{ 2193: 'ms://layers/a/', name: 'layer-a' }] }),
+    );
+    await fsa.write(fsa.toUrl('ms://layers/a/collection.json'), JSON.stringify({}));
     const out = await commandMapSheetCoverage.handler(baseArgs).catch((e) => e as Error);
     assert.equal(String(out), 'Error: Missing capture area asset in collection "ms://layers/a/collection.json"');
   });
@@ -104,17 +108,20 @@ describe('mapsheet-coverage', () => {
     const colA = fakeCollection('a');
     colA.links.push({ rel: 'item', href: './BP27.json' });
 
-    await fsa.write('ms://config.json', JSON.stringify({ layers: [{ 2193: 'ms://layers/a/', name: 'layer-a' }] }));
-    await fsa.write('ms://layers/a/collection.json', JSON.stringify(colA));
-    await fsa.write('ms://layers/a/capture-area.json', JSON.stringify(mapSheetToGeoJson('BP27')));
+    await fsa.write(
+      fsa.toUrl('ms://config.json'),
+      JSON.stringify({ layers: [{ 2193: 'ms://layers/a/', name: 'layer-a' }] }),
+    );
+    await fsa.write(fsa.toUrl('ms://layers/a/collection.json'), JSON.stringify(colA));
+    await fsa.write(fsa.toUrl('ms://layers/a/capture-area.json'), JSON.stringify(mapSheetToGeoJson('BP27')));
 
     const out = await commandMapSheetCoverage.handler(baseArgs).catch((e) => e as Error);
     assert.equal(out, undefined);
 
-    const fileList = await fsa.readJson('ms://output/file-list.json');
+    const fileList = await fsa.readJson(fsa.toUrl('ms://output/file-list.json'));
     assert.deepEqual(fileList, [{ output: 'BP27', input: ['ms://layers/a/BP27.tiff'], includeDerived: true }]);
 
-    const captureDates = await fsa.readJson<GeoJSON.FeatureCollection>('ms://output/capture-dates.geojson');
+    const captureDates = await fsa.readJson<GeoJSON.FeatureCollection>(fsa.toUrl('ms://output/capture-dates.geojson'));
 
     assert.deepEqual(captureDates.features[0]?.properties, {
       title: 'Layer A Title',
@@ -138,7 +145,7 @@ describe('mapsheet-coverage', () => {
     colB.links.push({ rel: 'item', href: './BP27.json' });
 
     await fsa.write(
-      'ms://config.json',
+      fsa.toUrl('ms://config.json'),
       JSON.stringify({
         layers: [
           { 2193: 'ms://layers/a/', name: 'layer-a' },
@@ -146,21 +153,21 @@ describe('mapsheet-coverage', () => {
         ],
       }),
     );
-    await fsa.write('ms://layers/a/collection.json', JSON.stringify(colA));
-    await fsa.write('ms://layers/a/capture-area.json', JSON.stringify(collectionToCaptureArea(colA)));
-    await fsa.write('ms://layers/b/collection.json', JSON.stringify(colB));
-    await fsa.write('ms://layers/b/capture-area.json', JSON.stringify(collectionToCaptureArea(colB)));
+    await fsa.write(fsa.toUrl('ms://layers/a/collection.json'), JSON.stringify(colA));
+    await fsa.write(fsa.toUrl('ms://layers/a/capture-area.json'), JSON.stringify(collectionToCaptureArea(colA)));
+    await fsa.write(fsa.toUrl('ms://layers/b/collection.json'), JSON.stringify(colB));
+    await fsa.write(fsa.toUrl('ms://layers/b/capture-area.json'), JSON.stringify(collectionToCaptureArea(colB)));
 
     const out = await commandMapSheetCoverage.handler(baseArgs).catch((e) => e as Error);
     assert.equal(out, undefined);
 
-    const fileList = await fsa.readJson('ms://output/file-list.json');
+    const fileList = await fsa.readJson(fsa.toUrl('ms://output/file-list.json'));
     assert.deepEqual(fileList, [
       { output: 'BP27', input: ['ms://layers/a/BP27.tiff', 'ms://layers/b/BP27.tiff'], includeDerived: true },
       { output: 'BP28', input: ['ms://layers/a/BP28.tiff'], includeDerived: true },
     ]);
 
-    const captureDates = await fsa.readJson<GeoJSON.FeatureCollection>('ms://output/capture-dates.geojson');
+    const captureDates = await fsa.readJson<GeoJSON.FeatureCollection>(fsa.toUrl('ms://output/capture-dates.geojson'));
 
     assert.deepEqual(captureDates.features[0]?.properties?.['source'], 'ms://layers/b/collection.json');
     assert.deepEqual(captureDates.features[1]?.properties?.['source'], 'ms://layers/a/collection.json');
@@ -175,7 +182,7 @@ describe('mapsheet-coverage', () => {
     colB.links.push({ rel: 'item', href: './BP27.json' });
 
     await fsa.write(
-      'ms://config.json',
+      fsa.toUrl('ms://config.json'),
       JSON.stringify({
         layers: [
           { 2193: 'ms://layers/a/', name: 'layer-a' },
@@ -183,18 +190,18 @@ describe('mapsheet-coverage', () => {
         ],
       }),
     );
-    await fsa.write('ms://layers/a/collection.json', JSON.stringify(colA));
-    await fsa.write('ms://layers/a/capture-area.json', JSON.stringify(collectionToCaptureArea(colA)));
-    await fsa.write('ms://layers/b/collection.json', JSON.stringify(colB));
-    await fsa.write('ms://layers/b/capture-area.json', JSON.stringify(collectionToCaptureArea(colB)));
+    await fsa.write(fsa.toUrl('ms://layers/a/collection.json'), JSON.stringify(colA));
+    await fsa.write(fsa.toUrl('ms://layers/a/capture-area.json'), JSON.stringify(collectionToCaptureArea(colA)));
+    await fsa.write(fsa.toUrl('ms://layers/b/collection.json'), JSON.stringify(colB));
+    await fsa.write(fsa.toUrl('ms://layers/b/capture-area.json'), JSON.stringify(collectionToCaptureArea(colB)));
 
     const out = await commandMapSheetCoverage.handler(baseArgs).catch((e) => e as Error);
     assert.equal(out, undefined);
 
-    const fileList = await fsa.readJson('ms://output/file-list.json');
+    const fileList = await fsa.readJson(fsa.toUrl('ms://output/file-list.json'));
     assert.deepEqual(fileList, [{ output: 'BP27', input: ['ms://layers/b/BP27.tiff'], includeDerived: true }]);
 
-    const captureDates = await fsa.readJson<GeoJSON.FeatureCollection>('ms://output/capture-dates.geojson');
+    const captureDates = await fsa.readJson<GeoJSON.FeatureCollection>(fsa.toUrl('ms://output/capture-dates.geojson'));
 
     assert.deepEqual(captureDates.features[0]?.properties?.['source'], 'ms://layers/b/collection.json');
     assert.equal(captureDates.features.length, 1);

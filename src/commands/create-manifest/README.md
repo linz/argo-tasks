@@ -23,8 +23,8 @@ create-manifest <options> [...source]
 | --group-size <str> | Group files into this size per group, eg "5Gi" or "3TB" | optional |
 | --group <number>   | Group files into this number per group                  | optional |
 | --limit <number>   | Limit the file count to this amount, -1 is no limit     | optional |
-| --output <str>     | Output location for the listing                         |          |
-| --target <str>     | Copy destination                                        |          |
+| --output <value>   | Output location for the listing                         |          |
+| --target <value>   | Copy destination                                        |          |
 
 ### Flags
 

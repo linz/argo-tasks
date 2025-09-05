@@ -1,10 +1,11 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
+import { command, number, option, optional, restPositionals } from 'cmd-ts';
 
+import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
-import { config, forceOutput, registerCli, verbose } from '../common.ts';
+import { config, forceOutput, registerCli, StrList, Url, verbose } from '../common.ts';
 
 /** Chunk an array into a group size
  * @example
@@ -22,12 +23,6 @@ export function groupItems<T>(items: T[], groupSize: number): T[][] {
   return output;
 }
 
-/** Normalize an input as either a JSON array or just an array  */
-function loadInput(x: string): string[] {
-  if (x.startsWith('[')) return JSON.parse(x) as string[];
-  return [x];
-}
-
 export const CommandGroupArgs = {
   config,
   verbose,
@@ -40,12 +35,12 @@ export const CommandGroupArgs = {
     defaultValueIsSerializable: true,
   }),
   inputs: restPositionals({
-    type: string,
+    type: StrList,
     displayName: 'items',
     description: 'list of items to group, can be a JSON array',
   }),
   fromFile: option({
-    type: optional(string),
+    type: optional(Url),
     long: 'from-file',
     description: 'JSON file to load inputs from, must be a JSON Array',
   }),
@@ -59,11 +54,14 @@ export const commandGroup = command({
   async handler(args) {
     registerCli(this, args);
 
-    const inputs: unknown[] = [];
-    for (const input of args.inputs) inputs.push(...loadInput(input));
-    if (args.fromFile && (await fsa.exists(args.fromFile))) {
-      const input = await fsa.readJson<string[]>(args.fromFile);
-      if (Array.isArray(input)) inputs.push(...input);
+    const inputs: string[] = [];
+    inputs.push(...args.inputs.flat());
+
+    if (args.fromFile) {
+      if (await fsa.exists(args.fromFile)) {
+        const input = await fsa.readJson<string[]>(args.fromFile);
+        if (Array.isArray(input)) inputs.push(...input);
+      }
     }
 
     if (inputs.length === 0) {
@@ -86,13 +84,15 @@ export const commandGroup = command({
           },
           'Group:Output:File',
         );
-        await fsa.write(`/tmp/group/output/${groupId}.json`, JSON.stringify(grouped[i], null, 2));
+        await fsa.write(fsa.toUrl(`/tmp/group/output/${groupId}.json`), JSON.stringify(grouped[i], null, 2));
         items.push(groupId);
       }
 
       // output.json contains ["001","002","003","004","005","006","007"...]
       logger.debug({ target: '/tmp/group/output.json', groups: items }, 'Group:Output');
-      await fsa.write('/tmp/group/output.json', JSON.stringify(items));
+      await fsa.write(fsa.toUrl('/tmp/group/output.json'), JSON.stringify(items));
     }
   },
 });
+
+export type CommandGroupArgs = CommandArguments<typeof commandGroup>;

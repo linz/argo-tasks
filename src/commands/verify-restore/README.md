@@ -14,10 +14,10 @@ verify-restore <options> <report>
 
 ### Options
 
-| Usage          | Description                                 | Options  |
-| -------------- | ------------------------------------------- | -------- |
-| --config <str> | Location of role configuration file         | optional |
-| --output <str> | Output location to store the restore result |          |
+| Usage            | Description                                 | Options  |
+| ---------------- | ------------------------------------------- | -------- |
+| --config <str>   | Location of role configuration file         | optional |
+| --output <value> | Output location to store the restore result |          |
 
 ### Flags
 

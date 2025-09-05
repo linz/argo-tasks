@@ -12,17 +12,12 @@ import { isArgo } from '../../utils/argo.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { createFileList } from '../../utils/filelist.ts';
+import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
 import { findBoundingBox } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
-import { config, createTiff, forceOutput, registerCli, verbose } from '../common.ts';
+import { config, createTiff, forceOutput, registerCli, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
-
-export function isTiff(x: string): boolean {
-  const search = x.toLowerCase();
-  return search.endsWith('.tiff') || search.endsWith('.tif');
-}
 
 export const TiffLoader = {
   /**
@@ -32,10 +27,10 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: string[], args?: FileFilter): Promise<Tiff[]> {
-    // Include 0 byte files and filter them out with {@see isTiff}
+  async load(locations: URL[], args?: FileFilter): Promise<Tiff[]> {
+    // Include 0 byte files and filter them out based on file extension
     const files = await getFiles(locations, { ...args, sizeMin: 0 });
-    const tiffLocations = files.flat().filter(isTiff);
+    const tiffLocations = files.flat().filter((f) => urlPathEndsWith(f, '.tiff') || urlPathEndsWith(f, '.tif'));
     const startTime = performance.now();
     logger.info({ count: tiffLocations.length }, 'Tiff:Load:Start');
     if (tiffLocations.length === 0) throw new Error('No Files found');
@@ -43,10 +38,10 @@ export const TiffLoader = {
     if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
 
     const promises = await Promise.allSettled(
-      tiffLocations.map((loc: string) => {
+      tiffLocations.map((loc: URL) => {
         return createTiff(loc).catch((e: unknown) => {
           // Ensure tiff loading errors include the location of the tiff
-          logger.fatal({ source: loc, err: e }, 'Tiff:Load:Failed');
+          logger.fatal({ source: protocolAwareString(loc), err: e }, 'Tiff:Load:Failed');
           throw e;
         });
       }),
@@ -137,7 +132,10 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
   if (preset === 'webp') {
     const promises = tiffs.map((f) => {
       return validate8BitsTiff(f).catch((err) => {
-        logger.fatal({ reason: String(err), source: f.source.url.href, preset }, 'Tiff:ValidatePreset:failed');
+        logger.fatal(
+          { reason: String(err), source: protocolAwareString(f.source.url), preset },
+          'Tiff:ValidatePreset:failed',
+        );
         rejected = true;
       });
     });
@@ -214,7 +212,7 @@ export const commandTileIndexValidate = command({
       defaultValue: () => false,
     }),
     location: restPositionals({
-      type: string,
+      type: UrlFolderList,
       displayName: 'location',
       description: 'Location of the source files. Accepts multiple source paths.',
     }),
@@ -225,7 +223,8 @@ export const commandTileIndexValidate = command({
     logger.info('TileIndex:Start');
 
     const readTiffStartTime = performance.now();
-    const tiffs = await TiffLoader.load(args.location, args);
+    const tiffLocationsToLoad = args.location.flat();
+    const tiffs = await TiffLoader.load(tiffLocationsToLoad, args);
     await validatePreset(args.preset, tiffs);
 
     const projections = new Set(tiffs.map((t) => t.images[0]?.epsg));
@@ -257,12 +256,12 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await fsa.write('/tmp/tile-index-validate/input.geojson', {
+      const inputGeoJson = {
         type: 'FeatureCollection',
         features: tiffLocations.map((loc) => {
           const epsg = args.sourceEpsg ?? loc.epsg;
           if (epsg == null) {
-            logger.error({ source: loc.source }, 'TileIndex:Epsg:missing');
+            logger.error({ source: protocolAwareString(loc.source) }, 'TileIndex:Epsg:missing');
             return;
           }
           return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
@@ -270,10 +269,13 @@ export const commandTileIndexValidate = command({
             tileName: loc.tileNames.join(', '),
           });
         }),
-      });
-      logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:InputGeoJson');
-
-      await fsa.write('/tmp/tile-index-validate/output.geojson', {
+      };
+      const inputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/input.geojson');
+      const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
+      const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
+      await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
+      logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
+      const outputGeojson = {
         type: 'FeatureCollection',
         features: [...outputTiles.keys()].map((key) => {
           const mapTileIndex = MapSheet.getMapTileIndex(key);
@@ -283,11 +285,13 @@ export const commandTileIndexValidate = command({
             tileName: key,
           });
         }),
-      });
-      logger.info({ path: '/tmp/tile-index-validate/output.geojson' }, 'Write:OutputGeojson');
+      };
+      await fsa.write(outputGeoJsonFileName, JSON.stringify(outputGeojson));
+      logger.info({ path: protocolAwareString(outputGeoJsonFileName) }, 'Write:OutputGeojson');
 
-      await fsa.write('/tmp/tile-index-validate/file-list.json', createFileList(outputTiles, args.includeDerived));
-      logger.info({ path: '/tmp/tile-index-validate/file-list.json', count: outputTiles.size }, 'Write:FileList');
+      const fileList = createFileList(outputTiles, args.includeDerived);
+      await fsa.write(fileListFileName, JSON.stringify(fileList));
+      logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
     }
 
     let retileNeeded = false;
@@ -296,10 +300,13 @@ export const commandTileIndexValidate = command({
       if (tiffs.length === 1) continue;
       if (args.retile) {
         const bandType = validateConsistentBands(tiffs);
-        logger.info({ tileName, uris: tiffs.map((v) => v.source), bands: bandType }, 'TileIndex:Retile');
+        logger.info(
+          { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
+          'TileIndex:Retile',
+        );
       } else {
         retileNeeded = true;
-        logger.error({ tileName, uris: tiffs.map((v) => v.source) }, 'TileIndex:Duplicate');
+        logger.error({ tileName, uris: tiffs.map((v) => protocolAwareString(v.source)) }, 'TileIndex:Duplicate');
       }
     }
 
@@ -338,10 +345,12 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
     if (currentBands !== firstBand) {
       // Dump all the imagery and their band types into logs so it can be debugged later
       for (const v of locs) {
-        logger.error({ path: v.source, bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
+        logger.error({ path: protocolAwareString(v.source), bands: v.bands.join(',') }, 'TileIndex:Bands:Heterogenous');
       }
 
-      throw new Error(`heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0]?.source.href}`);
+      throw new Error(
+        `heterogenous bands: ${currentBands} vs ${firstBand} from: ${locs[0] ? protocolAwareString(locs[0]?.source) : undefined}`,
+      );
     }
   }
   return firstBands;
@@ -413,7 +422,10 @@ export async function extractTiffLocations(
 
         const sourceEpsg = forceSourceEpsg ?? tiff.images[0]?.epsg;
         if (sourceEpsg == null) {
-          logger.error({ reason: 'EPSG is missing', source: tiff.source }, 'MissingEPSG:ExtracTiffLocations:Failed');
+          logger.error(
+            { reason: 'EPSG is missing', source: protocolAwareString(tiff.source.url) },
+            'MissingEPSG:ExtracTiffLocations:Failed',
+          );
           return null;
         }
 
@@ -424,7 +436,7 @@ export async function extractTiffLocations(
 
         if (targetBbox === null) {
           logger.error(
-            { reason: 'Failed to reproject point', source: tiff.source },
+            { reason: 'Failed to reproject point', source: protocolAwareString(tiff.source.url) },
             'Reprojection:ExtracTiffLocations:Failed',
           );
           return null;
@@ -445,7 +457,7 @@ export async function extractTiffLocations(
           bands: await extractBandInformation(tiff),
         };
       } catch (e) {
-        logger.error({ reason: e, source: tiff.source }, 'ExtractTiffLocation:Failed');
+        logger.error({ reason: e, source: protocolAwareString(tiff.source.url) }, 'ExtractTiffLocation:Failed');
         return null;
       } finally {
         await tiff.source.close?.();
@@ -473,7 +485,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
   const mapTileIndex = MapSheet.getMapTileIndex(tileName);
   if (mapTileIndex == null) {
     logger.error(
-      { reason: `Failed to extract bounding box from: ${tileName}`, source: tiff.source },
+      { reason: `Failed to extract bounding box from: ${tileName}`, source: protocolAwareString(tiff.source) },
       'TileInvalid:Validation:Failed',
     );
     return false;
@@ -483,7 +495,10 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
   const errY = Math.abs(tiff.bbox[3] - mapTileIndex.bbox[3]);
   if (errX > allowedErrorMetres || errY > allowedErrorMetres) {
     logger.error(
-      { reason: `The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]}`, source: tiff.source },
+      {
+        reason: `The origin is invalid x:${tiff.bbox[0]}, y:${tiff.bbox[3]}`,
+        source: protocolAwareString(tiff.source),
+      },
       'TileInvalid:Validation:Failed',
     );
     return false;
@@ -492,7 +507,10 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
   const tiffSize = getSize(tiff.bbox);
   if (tiffSize.width !== mapTileIndex.width) {
     logger.error(
-      { reason: `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width}`, source: tiff.source },
+      {
+        reason: `Tiff size is invalid width:${tiffSize.width}, expected:${mapTileIndex.width}`,
+        source: protocolAwareString(tiff.source),
+      },
       'TileInvalid:Validation:Failed',
     );
     return false;
@@ -502,7 +520,7 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
     logger.error(
       {
         reason: `Tiff size is invalid height:${tiffSize.height}, expected:${mapTileIndex.height}`,
-        source: tiff.source,
+        source: protocolAwareString(tiff.source),
       },
       'TileInvalid:Validation:Failed',
     );
@@ -547,15 +565,15 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
  */
 export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
   const baseImage = tiff.images[0];
-  if (baseImage === undefined) throw new Error(`Can't get base image for ${tiff.source.url.href}`);
+  if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
 
   const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
   if (bitsPerSample == null) {
-    throw new Error(`Failed to extract band information from ${tiff.source.url.href}`);
+    throw new Error(`Failed to extract band information from ${protocolAwareString(tiff.source.url)}`);
   }
 
   if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8)) {
-    throw new Error(`${tiff.source.url.href} is not a 8 bits TIFF`);
+    throw new Error(`${protocolAwareString(tiff.source.url)} is not a 8 bits TIFF`);
   }
 }
 

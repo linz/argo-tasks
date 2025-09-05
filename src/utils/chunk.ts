@@ -1,21 +1,25 @@
+import { basename } from 'node:path/posix';
+
 import { fsa } from '@chunkd/fs';
 
 import { parseSize } from '../commands/common.ts';
 import { logger } from '../log.ts';
+import { protocolAwareString } from './filelist.ts';
 
 export interface FileSizeInfo {
-  path: string;
+  url: URL;
   size?: number;
 }
 
-export async function* asyncFilter<T extends { path: string; size?: number }>(
+/** Asynchronously filter a list of file URLs based on include/exclude regex */
+export async function* asyncFilter<T extends FileSizeInfo>(
   source: AsyncGenerator<T>,
   opts?: { include?: string; exclude?: string },
 ): AsyncGenerator<T> {
   const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
   const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
   for await (const f of source) {
-    const testPath = f.path.toLowerCase();
+    const testPath = basename(f.url.pathname.toLowerCase());
     if (exclude && exclude.test(testPath)) continue;
     if (include === true) yield f;
     else if (include.test(testPath)) yield f;
@@ -23,14 +27,14 @@ export async function* asyncFilter<T extends { path: string; size?: number }>(
 }
 
 /** Chunk files into a max size (eg 1GB chunks) or max count (eg 100 files) or what ever comes first when both are defined */
-export function chunkFiles(values: FileSizeInfo[], count: number, size: number): string[][] {
-  if (count == null && size == null) return [values.map((c) => c.path)];
+export function chunkFiles(values: FileSizeInfo[], count: number, size: number): URL[][] {
+  if (count == null && size == null) return [values.map((c) => c.url)];
 
-  const output: string[][] = [];
-  let current: string[] = [];
+  const output: URL[][] = [];
+  let current: URL[] = [];
   let totalSize = 0;
   for (const v of values) {
-    current.push(v.path);
+    current.push(v.url);
     if (v.size) totalSize += v.size;
     if ((count > 0 && current.length >= count) || (size > 0 && totalSize >= size)) {
       output.push(current);
@@ -40,25 +44,6 @@ export function chunkFiles(values: FileSizeInfo[], count: number, size: number):
   }
   if (current.length > 0) output.push(current);
   return output;
-}
-
-/** Characters to split paths on @see splitPaths */
-const PathSplitCharacters = /;|\n/;
-
-/**
- * Split `;` separated paths into separate paths
- *
- * Argo has a limitation that arguments to CLIs cannot easily be lists of paths, so users can add multiple paths by creating a string with either `\n` or `;`
- *
- * @example
- * ```typescript
- * splitPaths(["a;b"]) // ['a', 'b']
- * splitPaths(["a\nb"]) // ['a', 'b']
- *````
- * @param paths
- */
-export function splitPaths(paths: string[]): string[] {
-  return paths.map((m) => m.split(PathSplitCharacters)).flat();
 }
 
 export type FileFilter = {
@@ -103,20 +88,25 @@ export type FileFilter = {
    */
   sizeMin?: number;
 };
-export async function getFiles(paths: string[], args: FileFilter = {}): Promise<string[][]> {
+
+/**
+ * Get a list of files from a set of locations with filtering and limits
+ * @param locations to list files from
+ * @param args filtering and limits {@link FileFilter}
+ *
+ * @returns list of files chunked into groups (promise of array of array of URLs)
+ */
+export async function getFiles(locations: URL[], args: FileFilter = {}): Promise<URL[][]> {
   const limit = args.limit ?? -1; // no limit by default
   const minSize = args.sizeMin ?? 1; // ignore 0 byte files
   const groupSize = parseSize(args.groupSize ?? '-1');
   const maxLength = args.group ?? -1;
   const outputFiles: FileSizeInfo[] = [];
 
-  const fullPaths = splitPaths(paths);
-
-  for (const rawPath of fullPaths) {
-    const targetPath = rawPath.trim();
-    logger.debug({ path: targetPath }, 'List');
-    const fileList = await fsa.toArray(asyncFilter(fsa.details(targetPath), args));
-    logger.info({ path: targetPath, fileCount: fileList.length }, 'List:Count');
+  for (const location of locations) {
+    logger.debug({ location: protocolAwareString(location) }, 'List');
+    const fileList = await fsa.toArray(asyncFilter(fsa.details(location), args));
+    logger.info({ location: protocolAwareString(location), fileCount: fileList.length }, 'List:Count');
 
     let totalSize = 0;
     for (const file of fileList) {
@@ -129,29 +119,8 @@ export async function getFiles(paths: string[], args: FileFilter = {}): Promise<
     }
     if (limit > 0 && outputFiles.length >= limit) break;
 
-    logger.info({ path: targetPath, fileCount: fileList.length, totalSize }, 'List:Size');
+    logger.info({ location: protocolAwareString(location), fileCount: fileList.length, totalSize }, 'List:Size');
   }
 
   return chunkFiles(outputFiles, maxLength, groupSize);
-}
-
-/**
- * Combine a base path with a relative path, resolving them to a single path.
- *
- * @param basePath The base path (can be a URL or local file path). Anything after the final "/" (i.e. a file name) will be removed.
- * @param addPath The path to combine with the base path. If this is an absolute path, it will overwrite basePath. Anything after the final "/" (i.e. a file name) will remain in place.
- * @returns The combined absolute path.
- */
-export function combinePaths(basePath: string, addPath: string): string {
-  // If basePath is a local path, convert it to a `file://` URL for proper resolution
-  const isLocal = !basePath.includes('://');
-  const relativePrefix = isLocal ? basePath.substring(0, basePath.indexOf('/')) : '';
-
-  const baseURL = new URL(isLocal ? `file://${basePath}` : basePath);
-
-  // Resolve relative path against the base path
-  const combinedPath = new URL(addPath, baseURL).href;
-
-  // If the base path was a relative local path, convert the combined URL back to a local path
-  return isLocal ? relativePrefix + new URL(combinedPath).pathname : combinedPath;
 }

@@ -14,10 +14,10 @@ lds-fetch-layer <options> [...str]
 
 ### Options
 
-| Usage          | Description                         | Options  |
-| -------------- | ----------------------------------- | -------- |
-| --config <str> | Location of role configuration file | optional |
-| --target <str> | Target directory to save files      |          |
+| Usage            | Description                         | Options  |
+| ---------------- | ----------------------------------- | -------- |
+| --config <str>   | Location of role configuration file | optional |
+| --target <value> | Target directory to save files      |          |
 
 ### Flags
 
