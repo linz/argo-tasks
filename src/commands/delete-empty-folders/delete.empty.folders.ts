@@ -61,8 +61,7 @@ export async function deleteEmptyFolders(location: URL, dryRun: boolean = true):
       if (obj.href === location.href) continue;
       const subDeleted = await deleteEmptyFolders(obj, dryRun);
       deletedFolders.push(...subDeleted);
-      // if (subDeleted.some((item) => item.href === obj.href)) {
-      if (!subDeleted.includes(obj)) {
+      if (!subDeleted.some((item) => item.href === obj.href)) {
         allEmpty = false;
       }
     } else {
