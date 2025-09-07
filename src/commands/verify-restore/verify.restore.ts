@@ -72,7 +72,7 @@ export const commandVerifyRestore = command({
     Each report manifest links to multiple CSV files or "sub manifests"
       that contains the list of files that were triggered for restoration.
     */
-    let anyNotRestored = false;
+    let isAllRestored = true;
     for (const key of resultKeys) {
       logger.info({ key: protocolAwareString(key) }, 'VerifyRestore:ProcessingCSVResult');
       const resultPath = new URL(key, args.report);
@@ -85,15 +85,15 @@ export const commandVerifyRestore = command({
         limit(async () => {
           logger.info({ path: file }, 'VerifyRestore:CheckingFile');
           const headObjectOutput = await headS3Object(file);
-          let restoreCompleted = false;
+          let isObjectRestored = false;
           try {
-            restoreCompleted = isRestoreCompleted(headObjectOutput);
+            isObjectRestored = isRestoreCompleted(headObjectOutput);
           } catch (error: unknown) {
             logger.error({ path: file, error }, 'VerifyRestore:FailedToCheckRestoreStatus');
             throw new Error(`Failed to check restore status for s3://${file.Bucket}/${file.Key}: ${String(error)}`);
           }
-          if (!restoreCompleted) {
-            anyNotRestored = true;
+          if (!isObjectRestored) {
+            isAllRestored = false;
             logger.info({ path: file }, 'VerifyRestore:NotRestored');
             return;
           }
@@ -103,16 +103,12 @@ export const commandVerifyRestore = command({
       await Promise.all(restoreChecks);
     }
 
-    if (anyNotRestored) {
-      await fsa.write(args.output, Buffer.from('false'));
-    } else {
-      await fsa.write(args.output, Buffer.from('true'));
-      if (args.markDone) {
-        await markReportDone(args.report);
-      }
+    await fsa.write(args.output, Buffer.from(isAllRestored.toString()));
+    if (isAllRestored && args.markDone) {
+      await markReportDone(args.report);
     }
 
-    logger.info('VerifyRestore:Done');
+    logger.info({ restored: isAllRestored }, 'VerifyRestore:Done');
   },
 });
 
