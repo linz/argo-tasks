@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.19.0](https://github.com/linz/argo-tasks/compare/v4.18.0...v4.19.0) (2025-09-07)
+
+
+### Features
+
+* delete empty folders TDE-1627 ([#1256](https://github.com/linz/argo-tasks/issues/1256)) ([4dea9fb](https://github.com/linz/argo-tasks/commit/4dea9fb8fd79e2093cae81b995b44e8aaec021bb))
+
+
+### Bug Fixes
+
+* `ResultMessage` should be trimmed TDE-1554 ([#1248](https://github.com/linz/argo-tasks/issues/1248)) ([04d20b7](https://github.com/linz/argo-tasks/commit/04d20b78784d3449dce6de389c023ac9245143d0))
+* decode url passed from CSV report TDE-1603 ([#1246](https://github.com/linz/argo-tasks/issues/1246)) ([caa9ff3](https://github.com/linz/argo-tasks/commit/caa9ff3f0c96ec97ed3e9503d50ec68bfbf60da2))
+* ongoing-request=false is not parsed correctly TDE-1554 ([#1251](https://github.com/linz/argo-tasks/issues/1251)) ([5db2c75](https://github.com/linz/argo-tasks/commit/5db2c7528ec20c9c0b69db2dcd8830ac65e0edb0))
+
 ## [4.18.0](https://github.com/linz/argo-tasks/compare/v4.17.0...v4.18.0) (2025-08-07)
 
 
