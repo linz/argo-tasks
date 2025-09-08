@@ -28,7 +28,7 @@ describe('stac-setup', () => {
     startYear: undefined,
     config: undefined,
     surveyId: undefined,
-    odrUrl: '',
+    odrUrl: undefined,
     output: fsa.toUrl('memory://tmp/stac-setup/'),
     gsd: '1',
     region: 'gisborne',
@@ -39,7 +39,7 @@ describe('stac-setup', () => {
   it('should retrieve setup from collection', async () => {
     const baseArgs = {
       ...BaseArgs,
-      odrUrl: 'memory://collection.json',
+      odrUrl: fsa.toUrl('memory://collection.json'),
       output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '2013',
       endYear: '2014',
@@ -66,7 +66,7 @@ describe('stac-setup', () => {
   it('should retrieve setup from args', async () => {
     const baseArgs = {
       ...BaseArgs,
-      odrUrl: '',
+      odrUrl: undefined,
       output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '2013',
       endYear: '2014',
@@ -92,7 +92,7 @@ describe('stac-setup', () => {
   it('should not include the date in the slug', async () => {
     const baseArgs = {
       ...BaseArgs,
-      odrUrl: '',
+      odrUrl: undefined,
       output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '',
       endYear: '',
@@ -116,7 +116,7 @@ describe('stac-setup', () => {
   it('should generate a slug with a survey id', async () => {
     const baseArgs = {
       ...BaseArgs,
-      odrUrl: '',
+      odrUrl: undefined,
       output: fsa.toUrl('memory://tmp/stac-setup/'),
       startYear: '1982',
       endYear: '1983',
