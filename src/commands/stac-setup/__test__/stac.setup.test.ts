@@ -13,7 +13,7 @@ describe('stac-setup', () => {
   const mem = new FsMemory();
 
   before(() => {
-    fsa.register('memory://', mem);
+    fsa.register('memory:///', mem); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
   });
 
   afterEach(() => {
@@ -29,7 +29,7 @@ describe('stac-setup', () => {
     config: undefined,
     surveyId: undefined,
     odrUrl: undefined,
-    output: fsa.toUrl('memory://tmp/stac-setup/'),
+    output: fsa.toUrl('memory:///tmp/stac-setup/'),
     gsd: '1',
     region: 'gisborne',
     geographicDescription: 'Wairoa',
@@ -39,8 +39,8 @@ describe('stac-setup', () => {
   it('should retrieve setup from collection', async () => {
     const baseArgs = {
       ...BaseArgs,
-      odrUrl: fsa.toUrl('memory://collection.json'),
-      output: fsa.toUrl('memory://tmp/stac-setup/'),
+      odrUrl: fsa.toUrl('memory:///collection.json'),
+      output: fsa.toUrl('memory:///tmp/stac-setup/'),
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
@@ -48,18 +48,18 @@ describe('stac-setup', () => {
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
     } as const;
-    await fsa.write(fsa.toUrl('memory://collection.json'), JSON.stringify(SampleCollection));
+    await fsa.write(fsa.toUrl('memory:///collection.json'), JSON.stringify(SampleCollection));
     await commandStacSetup.handler(baseArgs);
 
-    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
     files.sort();
     assert.deepStrictEqual(files, [
-      fsa.toUrl('memory://tmp/stac-setup/collection-id'),
-      fsa.toUrl('memory://tmp/stac-setup/linz-slug'),
+      fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
     ]);
-    const slug = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/linz-slug'));
+    const slug = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/linz-slug'));
     assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
-    const collectionId = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/collection-id'));
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
@@ -67,7 +67,7 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
-      output: fsa.toUrl('memory://tmp/stac-setup/'),
+      output: fsa.toUrl('memory:///tmp/stac-setup/'),
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
@@ -77,15 +77,15 @@ describe('stac-setup', () => {
     } as const;
     await commandStacSetup.handler(baseArgs);
 
-    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
     files.sort();
     assert.deepStrictEqual(files, [
-      fsa.toUrl('memory://tmp/stac-setup/collection-id'),
-      fsa.toUrl('memory://tmp/stac-setup/linz-slug'),
+      fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
     ]);
-    const slug = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/linz-slug'));
+    const slug = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/linz-slug'));
     assert.strictEqual(slug.toString(), 'wairoa_2013-2014');
-    const collectionId = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/collection-id'));
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
     assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
@@ -93,7 +93,7 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
-      output: fsa.toUrl('memory://tmp/stac-setup/'),
+      output: fsa.toUrl('memory:///tmp/stac-setup/'),
       startYear: '',
       endYear: '',
       gsd: '10',
@@ -103,13 +103,13 @@ describe('stac-setup', () => {
     } as const;
     await commandStacSetup.handler(baseArgs);
 
-    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory://tmp/stac-setup/')));
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
     files.sort();
     assert.deepStrictEqual(files, [
-      fsa.toUrl('memory://tmp/stac-setup/collection-id'),
-      fsa.toUrl('memory://tmp/stac-setup/linz-slug'),
+      fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
     ]);
-    const slug = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/linz-slug'));
+    const slug = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/linz-slug'));
     assert.strictEqual(slug.toString(), 'new-zealand');
   });
 
@@ -117,7 +117,7 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
-      output: fsa.toUrl('memory://tmp/stac-setup/'),
+      output: fsa.toUrl('memory:///tmp/stac-setup/'),
       startYear: '1982',
       endYear: '1983',
       gsd: '0.375',
@@ -128,7 +128,7 @@ describe('stac-setup', () => {
     } as const;
     await commandStacSetup.handler(baseArgs);
 
-    const slug = await fsa.read(fsa.toUrl('memory://tmp/stac-setup/linz-slug'));
+    const slug = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/linz-slug'));
     assert.equal(String(slug), 'chatham-islands_sn8066_1982-1983_0.375m');
   });
 

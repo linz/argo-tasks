@@ -8,7 +8,7 @@ import { logger } from '../../log.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
-import { config, MeterAsString, registerCli, Url, UrlFolder, verbose } from '../common.ts';
+import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
@@ -103,8 +103,10 @@ export const commandStacSetup = command({
     const startTime = performance.now();
 
     logger.info('StacSetup:Start');
+    // console.log(args.odrUrl);
+    // console.log(urlPathEndsWith(args.odrUrl, 'collection.json'));
     if (args.odrUrl) {
-      const collectionLocation = args.odrUrl.href.endsWith('collection.json')
+      const collectionLocation = urlPathEndsWith(args.odrUrl, '/collection.json')
         ? args.odrUrl
         : new URL('collection.json', args.odrUrl);
       const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
