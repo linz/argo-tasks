@@ -1,8 +1,11 @@
+import { rmdir } from 'node:fs/promises';
+
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, restPositionals } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, UrlFolderList, verbose } from '../common.ts';
 
 export const CommandListArgs = {
@@ -48,10 +51,6 @@ export const commandDeleteEmptyFolders = command({
  */
 export async function deleteEmptyFolders(location: URL, dryRun: boolean = true): Promise<URL[]> {
   const subs = await fsa.toArray(fsa.list(location, { recursive: false }));
-  if (subs.length === 0) {
-    logger.info({ location }, 'DeleteEmptyFolder:NoFolders');
-    return [];
-  }
 
   let allEmpty = true;
   const deletedFolders: URL[] = [];
@@ -65,15 +64,24 @@ export async function deleteEmptyFolders(location: URL, dryRun: boolean = true):
         allEmpty = false;
       }
     } else {
-      logger.debug({ location: obj }, 'DeleteEmptyFolder:FileFound');
+      logger.debug({ location: protocolAwareString(obj) }, 'DeleteEmptyFolder:FileFound');
       allEmpty = false;
     }
   }
 
   if (allEmpty) {
-    logger.info({ location }, 'DeleteEmptyFolder:Empty');
+    logger.info({ location: protocolAwareString(location) }, 'DeleteEmptyFolder:Empty');
     if (!dryRun) {
-      await fsa.delete(location);
+      try {
+        await fsa.delete(location);
+      } catch (err: any) { // local FS folders cannot be deleted using `unlink`, so the above fails.
+        if (err.code === 500 && err.message.startsWith('Failed to delete:')) {
+          logger.warn({ location: protocolAwareString(location) }, 'DeleteEmptyFolder:FallbackRmdir');
+          await rmdir(location);
+        } else {
+          throw err;
+        }
+      }
     }
     deletedFolders.push(location);
   }
@@ -90,7 +98,9 @@ export async function deleteEmptyFolders(location: URL, dryRun: boolean = true):
 export async function isFolder(location: URL): Promise<boolean> {
   if (location.pathname.endsWith('/')) {
     const info = await fsa.head(location);
-    if (info?.size === 0) {
+    // For S3, a folder is a 0 byte object with a trailing slash.
+    // Local FS may report a non-zero size for directories but set isDirectory.
+    if (info?.size === 0 || info?.isDirectory === true) {
       return true;
     }
   }
