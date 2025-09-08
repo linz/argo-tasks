@@ -1,6 +1,6 @@
 import { rmdir } from 'node:fs/promises';
 
-import { fsa } from '@chunkd/fs';
+import { fsa, FsError } from '@chunkd/fs';
 import { boolean, command, flag, restPositionals } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -73,9 +73,9 @@ export async function deleteEmptyFolders(location: URL, dryRun: boolean = true):
     logger.info({ location: protocolAwareString(location) }, 'DeleteEmptyFolder:Empty');
     if (!dryRun) {
       try {
-        await fsa.delete(location);
-      } catch (err: any) { // local FS folders cannot be deleted using `unlink`, so the above fails.
-        if (err.code === 500 && err.message.startsWith('Failed to delete:')) {
+        await fsa.delete(location); // local FS folders cannot be deleted using `unlink`, so this fails in chunkd
+      } catch (err) {
+        if (err instanceof FsError && err.code === 500 && err.message.startsWith('Failed to delete:')) {
           logger.warn({ location: protocolAwareString(location) }, 'DeleteEmptyFolder:FallbackRmdir');
           await rmdir(location);
         } else {
