@@ -107,7 +107,7 @@ export const commandStacSetup = command({
         ? args.odrUrl
         : new URL('collection.json', args.odrUrl);
       const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionPath);
-      if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl.href}.`);
+      if (collection == null) throw new Error(`Failed to get collection.json from ${protocolAwareString(collectionLocation)}.`);
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) throw new Error(`Invalid slug: ${slug}.`);
 
