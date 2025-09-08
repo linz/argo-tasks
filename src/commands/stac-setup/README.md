@@ -20,7 +20,7 @@ stac-setup <options>
 | --geographic-description <str> | Geographic description of dataset                         | optional                         |
 | --survey-id <str>              | Associated survey id, eg SN8066 or SNC20505               | optional                         |
 | --geospatial-category <str>    | Geospatial category of dataset                            |                                  |
-| --odr-url <str>                | Open Data Registry URL of existing dataset                | optional                         |
+| --odr-url <value>              | Open Data Registry URL of existing dataset                | optional                         |
 | --output <value>               | Where to store output files                               | default: file:///tmp/stac-setup/ |
 
 ### Flags

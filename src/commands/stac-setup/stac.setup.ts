@@ -1,14 +1,14 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
-import path from 'path';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
-import { config, MeterAsString, registerCli, UrlFolder, verbose } from '../common.ts';
+import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
@@ -84,7 +84,7 @@ export const commandStacSetup = command({
     }),
 
     odrUrl: option({
-      type: optional(string),
+      type: optional(Url),
       long: 'odr-url',
       description: 'Open Data Registry URL of existing dataset',
     }),
@@ -104,11 +104,12 @@ export const commandStacSetup = command({
 
     logger.info('StacSetup:Start');
     if (args.odrUrl) {
-      const collectionPath = args.odrUrl.endsWith('collection.json')
+      const collectionLocation = urlPathEndsWith(args.odrUrl, '/collection.json')
         ? args.odrUrl
-        : path.join(args.odrUrl, 'collection.json');
-      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(fsa.toUrl(collectionPath));
-      if (collection == null) throw new Error(`Failed to get collection.json from ${args.odrUrl}.`);
+        : new URL('collection.json', args.odrUrl);
+      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
+      if (collection == null)
+        throw new Error(`Failed to get collection.json from ${protocolAwareString(collectionLocation)}.`);
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) throw new Error(`Invalid slug: ${slug}.`);
 
