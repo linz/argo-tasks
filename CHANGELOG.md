@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.19.2](https://github.com/linz/argo-tasks/compare/v4.19.1...v4.19.2) (2025-09-08)
+
+
+### Bug Fixes
+
+* register https and http FS for all commands. TDE-1637 ([#1260](https://github.com/linz/argo-tasks/issues/1260)) ([c69a972](https://github.com/linz/argo-tasks/commit/c69a97267687374120f2d340abbcac23b598eceb))
+
 ## [4.19.1](https://github.com/linz/argo-tasks/compare/v4.19.0...v4.19.1) (2025-09-08)
 
 
