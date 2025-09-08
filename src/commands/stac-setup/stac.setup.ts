@@ -103,8 +103,6 @@ export const commandStacSetup = command({
     const startTime = performance.now();
 
     logger.info('StacSetup:Start');
-    // console.log(args.odrUrl);
-    // console.log(urlPathEndsWith(args.odrUrl, 'collection.json'));
     if (args.odrUrl) {
       const collectionLocation = urlPathEndsWith(args.odrUrl, '/collection.json')
         ? args.odrUrl
