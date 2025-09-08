@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.19.1](https://github.com/linz/argo-tasks/compare/v4.19.0...v4.19.1) (2025-09-08)
+
+
+### Bug Fixes
+
+* local folders did not get deleted TDE-1627 ([#1257](https://github.com/linz/argo-tasks/issues/1257)) ([f89d972](https://github.com/linz/argo-tasks/commit/f89d972c69d2142e2e44620a3a06f17f77d71c92))
+* stac setup path join TDE-1634 ([#1258](https://github.com/linz/argo-tasks/issues/1258)) ([51c24ba](https://github.com/linz/argo-tasks/commit/51c24ba94bab14b1d633cef79e11be7fa067b97f))
+
 ## [4.19.0](https://github.com/linz/argo-tasks/compare/v4.18.0...v4.19.0) (2025-09-07)
 
 
