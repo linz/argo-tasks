@@ -351,7 +351,10 @@ async function compareCreation(
         if (needsToBeCreated) return;
 
         const sourceFile = sourceFiles[index];
-        if (sourceFile == null || item.href !== basename(sourceFile.pathname.replace('.tiff', '.json'))) {
+        if (
+          sourceFile == null ||
+          item.href !== replaceUrlPathPattern(sourceFile, RegExp('\\.tiff?$', 'i'), '.json').href
+        ) {
           logger.debug({ sheetCode, source: item.href }, 'MapSheetCoverage:Compare:source-difference');
           needsToBeCreated = true;
           return;
@@ -365,7 +368,7 @@ async function compareCreation(
         }
 
         // TODO: to improve performance further we could use the source collection.json as it contains all the item checksums
-        const sourceItemHash = await hashQueue(() => hashStream(fsa.readStream(sourceFile)));
+        const sourceItemHash = await hashQueue(() => hashStream(fsa.readStream(fsa.toUrl(item.href))));
         logger.trace(
           { source: item.href, hash: sourceItemHash, isOk: sourceItemHash === item['file:checksum'] },
           'MapSheetCoverage:Compare:checksum',
