@@ -17,7 +17,7 @@ export async function* asyncFilter<T extends FileSizeInfo>(
   const include = opts?.include ? new RegExp(opts.include.toLowerCase(), 'i') : true;
   const exclude = opts?.exclude ? new RegExp(opts.exclude.toLowerCase(), 'i') : undefined;
   for await (const f of source) {
-    const testPath = f.url.href.toLowerCase();  // using .href instead of .pathname to match full URL including hostname (bucket)
+    const testPath = f.url.href.toLowerCase(); // using url.href instead of url.pathname to match full URL including hostname (bucket)
     if (exclude && exclude.test(testPath)) continue;
     if (include === true) yield f;
     else if (include.test(testPath)) yield f;
