@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.19.3](https://github.com/linz/argo-tasks/compare/v4.19.2...v4.19.3) (2025-09-11)
+
+
+### Bug Fixes
+
+* file copy filter applies to filename only TDE-1642 ([#1264](https://github.com/linz/argo-tasks/issues/1264)) ([83cf57b](https://github.com/linz/argo-tasks/commit/83cf57b30b314bcba3ba7a89bb8d95653e826b49))
+* mapsheet coverage identifies all items as new TDE-1641 ([#1262](https://github.com/linz/argo-tasks/issues/1262)) ([3646e4f](https://github.com/linz/argo-tasks/commit/3646e4f1d97ea981477db4057eb4b726aae60324))
+
 ## [4.19.2](https://github.com/linz/argo-tasks/compare/v4.19.1...v4.19.2) (2025-09-08)
 
 
