@@ -1,4 +1,4 @@
-import { fsa } from '@chunkd/fs';
+import { fsa, FsHttp } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
 import Ajv from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
@@ -60,6 +60,7 @@ export const commandStacValidate = command({
   },
 
   async handler(args) {
+    fsa.register('https://', new FsHttp());
     registerCli(this, args);
 
     logger.info('StacValidation:Start');
