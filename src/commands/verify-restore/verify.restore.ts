@@ -87,8 +87,8 @@ export const commandVerifyRestore = command({
       const restoreChecks = files.map((file) =>
         limit(async () => {
           logger.info({ path: file }, 'VerifyRestore:CheckingFile');
-          const s3Fs = setupS3FileSystem(new FsAwsS3(new S3Client()));
-          fsa.register('s3://', s3Fs);
+          // const s3Fs = setupS3FileSystem(new FsAwsS3(new S3Client()));
+          // fsa.register('s3://', s3Fs);
           const headObjectOutput = await headS3Object(file);
           let isObjectRestored = false;
           try {
@@ -194,7 +194,7 @@ export function parseReportResult(result: string): ReportResult[] {
 async function headS3Object(path: { Bucket: string; Key: string }): Promise<FileInfo<HeadObjectCommandOutput>> {
   const objectKey = decodeFormUrlEncoded(path.Key);
   const objectPath = `s3://${path.Bucket}/${objectKey}`;
-  logger.info({ path: objectPath }, 'VerifyRestore:HeadS3Object:Start');
+  logger.info({ path: objectPath, url: fsa.toUrl(objectPath) }, 'VerifyRestore:HeadS3Object:Start');
   try {
     const fileInfo = (await fsa.head(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
     if (!fileInfo) {
