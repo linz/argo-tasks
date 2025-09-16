@@ -6,6 +6,7 @@ import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { tryHead } from '../../utils/file.head.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, S3Path, Url, verbose } from '../common.ts';
 
@@ -191,7 +192,8 @@ async function headS3Object(path: { Bucket: string; Key: string }): Promise<File
   const objectPath = `s3://${path.Bucket}/${objectKey}`;
   logger.info({ path: objectPath }, 'VerifyRestore:HeadS3Object:Start');
   try {
-    const fileInfo = (await fsa.head(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
+    const fileInfo = (await tryHead(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
+    // const fileInfo = (await fsa.head(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
     if (!fileInfo) {
       throw new Error('No info returned when trying to head the object');
     }
