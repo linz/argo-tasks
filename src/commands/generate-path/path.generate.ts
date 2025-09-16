@@ -77,6 +77,7 @@ export const commandGeneratePath = command({
  */
 export function generatePath(metadata: PathMetadata): string {
   if (
+    metadata.geospatialCategory === GeospatialDataCategories.AerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.RuralAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
