@@ -120,8 +120,8 @@ function splitConfig(x: string): string[] {
 /** Register the S3 file system with chunkd/fsa */
 export function registerFileSystem(opts: { config?: string }): FsAwsS3 {
   const s3Fs = setupS3FileSystem(new FsAwsS3(new S3Client()));
-  fsa.register('https://', new FsHttp());
-  fsa.register('http://', new FsHttp());
+  // fsa.register('https://', new FsHttp());
+  // fsa.register('http://', new FsHttp());
   fsa.register('s3://', s3Fs);
 
   const configPath = opts.config ?? process.env['AWS_ROLE_CONFIG_PATH'];
