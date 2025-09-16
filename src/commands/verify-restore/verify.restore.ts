@@ -1,12 +1,14 @@
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
+import { S3Client } from '@aws-sdk/client-s3';
 import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
+import { FsAwsS3 } from '@chunkd/fs-aws';
 import { boolean, command, flag, option, positional } from 'cmd-ts';
 import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
+import { setupS3FileSystem } from '../../fs.register.ts';
 import { logger } from '../../log.ts';
-import { tryHead } from '../../utils/file.head.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, S3Path, Url, verbose } from '../common.ts';
 
@@ -85,6 +87,8 @@ export const commandVerifyRestore = command({
       const restoreChecks = files.map((file) =>
         limit(async () => {
           logger.info({ path: file }, 'VerifyRestore:CheckingFile');
+          const s3Fs = setupS3FileSystem(new FsAwsS3(new S3Client()));
+          fsa.register('s3://', s3Fs);
           const headObjectOutput = await headS3Object(file);
           let isObjectRestored = false;
           try {
@@ -192,8 +196,7 @@ async function headS3Object(path: { Bucket: string; Key: string }): Promise<File
   const objectPath = `s3://${path.Bucket}/${objectKey}`;
   logger.info({ path: objectPath }, 'VerifyRestore:HeadS3Object:Start');
   try {
-    const fileInfo = (await tryHead(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
-    // const fileInfo = (await fsa.head(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
+    const fileInfo = (await fsa.head(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
     if (!fileInfo) {
       throw new Error('No info returned when trying to head the object');
     }
