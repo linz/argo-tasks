@@ -1,13 +1,10 @@
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
-import { S3Client } from '@aws-sdk/client-s3';
 import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
-import { FsAwsS3 } from '@chunkd/fs-aws';
 import { boolean, command, flag, option, positional } from 'cmd-ts';
 import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
-import { setupS3FileSystem } from '../../fs.register.ts';
 import { logger } from '../../log.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, S3Path, Url, verbose } from '../common.ts';
