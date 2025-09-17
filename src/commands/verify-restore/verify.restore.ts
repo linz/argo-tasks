@@ -191,7 +191,7 @@ export function parseReportResult(result: string): ReportResult[] {
 async function headS3Object(path: { Bucket: string; Key: string }): Promise<FileInfo<HeadObjectCommandOutput>> {
   const objectKey = decodeFormUrlEncoded(path.Key);
   const objectPath = `s3://${path.Bucket}/${objectKey}`;
-  logger.info({ path: objectPath, url: fsa.toUrl(objectPath) }, 'VerifyRestore:HeadS3Object:Start');
+  logger.info({ path: objectPath, url: fsa.toUrl(objectPath).href }, 'VerifyRestore:HeadS3Object:Start');
   try {
     const fileInfo = (await fsa.head(fsa.toUrl(objectPath))) as FileInfo<HeadObjectCommandOutput>;
     if (!fileInfo) {
