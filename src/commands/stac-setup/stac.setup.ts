@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, optional, string } from 'cmd-ts';
+import { boolean, command, flag, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
@@ -9,6 +9,7 @@ import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
+import { loadFirstTiff } from '../generate-path/path.generate.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
@@ -57,6 +58,14 @@ export const commandStacSetup = command({
       type: MeterAsString,
       long: 'gsd',
       description: 'GSD of dataset, e.g. 0.3',
+    }),
+
+    validate: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'validate',
+      description: 'Validate GSD of dataset if odr_url is supplied',
+      defaultValueIsSerializable: true,
     }),
 
     region: option({
@@ -112,6 +121,15 @@ export const commandStacSetup = command({
         throw new Error(`Failed to get collection.json from ${protocolAwareString(collectionLocation)}.`);
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) throw new Error(`Invalid slug: ${slug}.`);
+
+      const gsd =
+        Number(collection['gsd']) || (await loadFirstTiff(collectionLocation, collection)).images[0]?.resolution[0];
+      if (gsd !== Number(args.gsd)) {
+        logger.error({ gsd, expected: args.gsd }, 'StacSetup:Error:GSDMismatch');
+        if (args.validate) {
+          throw new Error(`GSD at ODR URL [${gsd}] does not match new TIFF GSD [${args.gsd}]`);
+        }
+      }
 
       const collectionId = collection['id'];
       await writeSetupFiles(slug, collectionId, args.output);
