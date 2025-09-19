@@ -227,11 +227,22 @@ export const commandTileIndexValidate = command({
     const tiffs = await TiffLoader.load(tiffLocationsToLoad, args);
     await validatePreset(args.preset, tiffs);
 
-    const projections = new Set(tiffs.map((t) => t.images[0]?.epsg));
+    const projections = new Set();
+    const gsds = new Set();
+    const roundedGsds = new Set();
+    tiffs.forEach((t) => {
+      const image = t.images[0];
+      if (image) {
+        projections.add(image.epsg);
+        gsds.add(image.resolution[0]);
+        roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
+      }
+    });
     logger.info(
       {
         tiffCount: tiffs.length,
         projections: [...projections],
+        gsds: [...gsds],
         duration: performance.now() - readTiffStartTime,
       },
       'TileIndex: All Files Read',
@@ -240,6 +251,18 @@ export const commandTileIndexValidate = command({
     if (projections.size > 1) {
       logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
     }
+    if (roundedGsds.size > 1) {
+      if (args.validate) {
+        logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
+        throw new Error(
+          `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${tiffLocationsToLoad.map(protocolAwareString).join(',')}`,
+        );
+      }
+      logger.warn({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
+    } else if (gsds.size > 1) {
+      logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
+    }
+    await fsa.write(fsa.toUrl('/tmp/tile-index-validate/gsd'), String([...roundedGsds][0]));
 
     const groupByTileNameStartTime = performance.now();
     const tiffLocations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
@@ -315,6 +338,12 @@ export const commandTileIndexValidate = command({
       let allValid = true;
       for (const tiffLocation of tiffLocations) {
         const currentValid = validateTiffAlignment(tiffLocation);
+        if (!currentValid) {
+          logger.error(
+            { source: protocolAwareString(tiffLocation.source), tileNames: tiffLocation.tileNames, tiffLocation },
+            'TileIndex:Misaligned',
+          );
+        }
         allValid = allValid && currentValid;
       }
       if (!allValid) {

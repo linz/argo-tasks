@@ -86,7 +86,6 @@ describe('getTileName', () => {
     }
   });
 });
-
 describe('tiffLocation', () => {
   it('get location from tiff', async () => {
     const TiffAs21 = FakeCogTiff.fromTileName('AS21_1000_0101');
@@ -144,7 +143,7 @@ describe('validate', () => {
   const memory = new FsMemory();
 
   before(() => {
-    fsa.register('/tmp', memory);
+    fsa.register('file:///tmp', memory);
     fsa.register('memory://', memory);
   });
   beforeEach(() => memory.files.clear());
@@ -157,6 +156,10 @@ describe('validate', () => {
     preset: 'none',
     sourceEpsg: undefined,
     includeDerived: false,
+    scale: 1000 as GridSize,
+    forceOutput: true,
+    retile: false,
+    location: [[fsa.toUrl('s3://test')]],
   };
 
   it('should set the includeDerived flag in file-list.json based on its input flag', async (t) => {
@@ -164,14 +167,11 @@ describe('validate', () => {
     for (const includeDerived of [true, false]) {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        location: [[await Url.from('s3://test')]],
         retile: true,
-        scale: 1000,
-        forceOutput: true,
         includeDerived: includeDerived,
       });
       const outputFileList: [FileListEntryClass] = await fsa.readJson(
-        fsa.toUrl('/tmp/tile-index-validate/file-list.json'),
+        fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
       );
       assert.strictEqual(outputFileList[0]?.includeDerived, includeDerived);
     }
@@ -199,11 +199,9 @@ describe('validate', () => {
       location: [[sourceLocation]],
       retile: false,
       validate: true,
-      scale: 1000,
-      forceOutput: true,
     });
 
-    const fileList: unknown[] = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
+    const fileList: unknown[] = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
 
     assert.deepEqual(fileList[0], {
       output: 'BQ32_1000_0101',
@@ -225,8 +223,6 @@ describe('validate', () => {
         location: [[fsa.toUrl('s3://test')]],
         retile: false,
         validate: true,
-        scale: 1000,
-        forceOutput: true,
       });
       assert.fail('Should throw exception');
     } catch (e) {
@@ -239,7 +235,9 @@ describe('validate', () => {
       ['s3://test'],
     );
 
-    const outputFileList: FeatureCollection = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/output.geojson'));
+    const outputFileList: FeatureCollection = await fsa.readJson(
+      fsa.toUrl('file:///tmp/tile-index-validate/output.geojson'),
+    );
     assert.equal(outputFileList.features.length, 1);
     const firstFeature = outputFileList.features[0];
     assert.equal(firstFeature?.properties?.['tileName'], 'AS21_1000_0101');
@@ -250,19 +248,16 @@ describe('validate', () => {
   });
 
   it('should fail with 0 byte tiffs', async () => {
-    await fsa.write(fsa.toUrl('/tmp/empty/foo.tiff'), Buffer.from(''));
+    await fsa.write(fsa.toUrl('file:///tmp/empty/foo.tiff'), Buffer.from(''));
     const ret = await commandTileIndexValidate
       .handler({
         ...baseArguments,
-        location: [[pathToFileURL('/tmp/empty/')]],
+        location: [[fsa.toUrl('file:///tmp/empty/')]],
         retile: false,
         validate: true,
-        scale: 1000,
-        forceOutput: true,
       })
       .catch((e: Error) => e);
-
-    assert.ok(String(ret).startsWith('Error: Tiff loading failed: '));
+    assert.equal(String(ret), 'Error: Tiff loading failed: RangeError: Offset is outside the bounds of the DataView');
   });
 
   it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
@@ -273,12 +268,10 @@ describe('validate', () => {
 
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      location: [[fsa.toUrl('s3://test')]],
       retile: true,
-      scale: 1000,
-      forceOutput: true,
+      validate: false,
     });
-    const outputFileList = await fsa.readJson(fsa.toUrl('/tmp/tile-index-validate/file-list.json'));
+    const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
     assert.deepEqual(outputFileList, [
       {
         output: 'AS21_1000_0101',
@@ -296,11 +289,8 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
-          scale: 1000,
-          forceOutput: true,
         });
         assert.fail('Should throw exception');
       } catch (e) {
@@ -314,11 +304,8 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
-          scale: 1000,
-          forceOutput: true,
         });
         assert.fail('Should throw exception');
       } catch (e) {
@@ -338,11 +325,8 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
-          scale: 1000,
-          forceOutput: true,
         });
         assert.fail('Should throw exception');
       } catch (e) {
@@ -356,11 +340,8 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          location: [[fsa.toUrl('s3://test')]],
           retile: true,
           validate: true,
-          scale: 1000,
-          forceOutput: true,
         });
         assert.fail('Should throw exception');
       } catch (e) {
@@ -456,5 +437,94 @@ describe('reprojectIfNeeded', () => {
     const reprojectedBbox = reprojectIfNeeded(bbox, sourceProjection, targetProjection);
 
     assert.deepEqual(reprojectedBbox, bbox);
+  });
+});
+
+describe('GSD handling', () => {
+  const memory = new FsMemory();
+
+  before(() => {
+    fsa.register('memory://', memory);
+    fsa.register('file:///tmp', memory);
+  });
+  beforeEach(() => {
+    memory.files.clear();
+  });
+
+  const baseArguments = {
+    config: undefined,
+    verbose: false,
+    include: undefined,
+    validate: false,
+    preset: 'none',
+    sourceEpsg: undefined,
+    includeDerived: false,
+    location: [[fsa.toUrl('s3://test')]],
+    retile: false,
+    scale: 1000 as GridSize,
+    forceOutput: true,
+  };
+  const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
+  const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
+  const fakeTiff3 = FakeCogTiff.fromTileName('AU21_1000_0101');
+
+  it('should fail if GSDs are inconsistent and --validate is used', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 1.23;
+    fakeTiff2.images[0].resolution[0] = 3.21;
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    const ret = await commandTileIndexValidate
+      .handler({
+        ...baseArguments,
+        validate: true,
+      })
+      .catch((e: Error) => e);
+    assert.ok(String(ret).startsWith('Error: Inconsistent GSDs found: '));
+  });
+
+  it('should output the first rounded GSD if GSDs are inconsistent and validate is not used', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 2.31051;
+    fakeTiff2.images[0].resolution[0] = 1.123;
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await commandTileIndexValidate.handler({
+      ...baseArguments,
+      validate: false,
+    });
+
+    const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
+    assert.deepEqual(outputGsd, '2.31');
+  });
+
+  it('should round the GSD to nearest 0.005', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 0.5;
+    fakeTiff2.images[0].resolution[0] = 0.502499; // within tolerance
+    fakeTiff3.images[0].resolution[0] = 0.4975; // within tolerance
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2, fakeTiff3]));
+
+    await commandTileIndexValidate.handler(baseArguments);
+
+    const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
+    assert.deepEqual(outputGsd, '0.5');
+  });
+
+  it(`should not output GSD with unnecessary 0s`, async (t) => {
+    for (const val of [1.002, 0.998, 0.9999999999999999, 1.0000000000001]) {
+      fakeTiff1.images[0].resolution[0] = Number(val);
+      fakeTiff2.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] + 0.000499; // within tolerance
+      fakeTiff3.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] - 0.0045; // within tolerance
+      console.log(
+        `Testing with ${val}`,
+        fakeTiff1.images[0].resolution[0],
+        fakeTiff2.images[0].resolution[0],
+        fakeTiff3.images[0].resolution[0],
+      );
+      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2, fakeTiff3]));
+
+      await commandTileIndexValidate.handler(baseArguments);
+
+      const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
+      assert.deepEqual(outputGsd, '1');
+    }
   });
 });
