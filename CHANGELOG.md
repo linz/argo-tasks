@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.20.0](https://github.com/linz/argo-tasks/compare/v4.19.3...v4.20.0) (2025-09-19)
+
+
+### Features
+
+* tileindex-validate to output GSD TDE-1655 ([#1268](https://github.com/linz/argo-tasks/issues/1268)) ([859ba6c](https://github.com/linz/argo-tasks/commit/859ba6cde5177a06704be973b3d6042208e27406))
+
+
+### Bug Fixes
+
+* accept aerial-photos as category TDE-1650 ([#1265](https://github.com/linz/argo-tasks/issues/1265)) ([80d73b6](https://github.com/linz/argo-tasks/commit/80d73b678e98dde39135db209c9fd68565a0b016))
+
 ## [4.19.3](https://github.com/linz/argo-tasks/compare/v4.19.2...v4.19.3) (2025-09-11)
 
 
