@@ -6,6 +6,7 @@ export interface StacCollectionLinz {
   'linz:security_classification': string;
   'linz:event_name'?: string;
   'linz:geographic_description'?: string;
+  gsd?: number;
 }
 
 export const GeospatialDataCategories = {
