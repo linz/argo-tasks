@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { afterEach, before, describe, it } from 'node:test';
+import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
@@ -7,13 +7,18 @@ import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
-import { SampleCollection } from './sample.ts';
+import { SampleCollection } from './stac.setup.data.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();
+  const collectionLocation = fsa.toUrl('memory:///collection.json');
 
   before(() => {
     fsa.register('memory:///', mem); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
+  });
+
+  beforeEach(async () => {
+    await fsa.write(collectionLocation, JSON.stringify(SampleCollection));
   });
 
   afterEach(() => {
@@ -29,6 +34,7 @@ describe('stac-setup', () => {
     config: undefined,
     surveyId: undefined,
     odrUrl: undefined,
+    validate: false,
     output: fsa.toUrl('memory:///tmp/stac-setup/'),
     gsd: '1',
     region: 'gisborne',
@@ -39,8 +45,7 @@ describe('stac-setup', () => {
   it('should retrieve setup from collection', async () => {
     const baseArgs = {
       ...BaseArgs,
-      odrUrl: fsa.toUrl('memory:///collection.json'),
-      output: fsa.toUrl('memory:///tmp/stac-setup/'),
+      odrUrl: collectionLocation,
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
@@ -48,7 +53,6 @@ describe('stac-setup', () => {
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
     } as const;
-    await fsa.write(fsa.toUrl('memory:///collection.json'), JSON.stringify(SampleCollection));
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
@@ -67,7 +71,6 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
-      output: fsa.toUrl('memory:///tmp/stac-setup/'),
       startYear: '2013',
       endYear: '2014',
       gsd: '1',
@@ -93,7 +96,6 @@ describe('stac-setup', () => {
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
-      output: fsa.toUrl('memory:///tmp/stac-setup/'),
       startYear: '',
       endYear: '',
       gsd: '10',
@@ -116,8 +118,6 @@ describe('stac-setup', () => {
   it('should generate a slug with a survey id', async () => {
     const baseArgs = {
       ...BaseArgs,
-      odrUrl: undefined,
-      output: fsa.toUrl('memory:///tmp/stac-setup/'),
       startYear: '1982',
       endYear: '1983',
       gsd: '0.375',
@@ -150,6 +150,29 @@ describe('stac-setup', () => {
     } as const;
     const ret = await commandStacSetup.handler(baseArgs).catch((e) => String(e));
     assert.equal(ret, 'Error: --end-date and --end-year are mutually exclusive');
+  });
+
+  it('should fail when validate is true and GSD does not match collection', async () => {
+    await assert.rejects(
+      commandStacSetup.handler({
+        ...BaseArgs,
+        odrUrl: collectionLocation,
+        gsd: '1', // different to collection which is 0.3
+        validate: true,
+      }),
+      { message: 'GSD at ODR URL [0.3] does not match new TIFF GSD [1]' },
+    );
+  });
+
+  it('should pass when validate is false and GSD does not match collection', async () => {
+    await assert.doesNotReject(
+      commandStacSetup.handler({
+        ...BaseArgs,
+        odrUrl: collectionLocation,
+        gsd: '1', // different to collection which is 0.3
+        validate: false,
+      }),
+    );
   });
 });
 
