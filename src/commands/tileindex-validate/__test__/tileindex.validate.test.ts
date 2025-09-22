@@ -468,7 +468,7 @@ describe('GSD handling', () => {
   const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
   const fakeTiff3 = FakeCogTiff.fromTileName('AU21_1000_0101');
 
-  it('should fail if GSDs are inconsistent and --validate is used', async (t) => {
+  it('should fail if GSDs / only X resolutions are inconsistent and --validate is used', async (t) => {
     fakeTiff1.images[0].resolution[0] = 1.23;
     fakeTiff2.images[0].resolution[0] = 3.21;
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
@@ -482,7 +482,99 @@ describe('GSD handling', () => {
     assert.ok(String(ret).startsWith('Error: Inconsistent GSDs found: '));
   });
 
-  it('should output the first rounded GSD if GSDs are inconsistent and validate is not used', async (t) => {
+  it('should fail if resolutions are inconsistent and --validate is used', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 0.31051;
+    fakeTiff1.images[0].resolution[1] = -0.31051;
+    fakeTiff2.images[0].resolution[0] = 0.923;
+    fakeTiff2.images[0].resolution[1] = -0.923;
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    const ret = await commandTileIndexValidate
+      .handler({
+        ...baseArguments,
+        validate: true,
+      })
+      .catch((e: Error) => e);
+    console.log(ret);
+    assert.ok(String(ret).startsWith('Error: Inconsistent GSDs found: '));
+  });
+
+  it('should output the first rounded resolution if resolutions are inconsistent and retile=true', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 0.31051;
+    fakeTiff1.images[0].resolution[1] = -0.31051;
+    fakeTiff2.images[0].resolution[0] = 0.923;
+    fakeTiff2.images[0].resolution[1] = -0.923;
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await commandTileIndexValidate.handler({
+      ...baseArguments,
+      validate: false,
+      retile: true,
+    });
+
+    const outputGsd = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/gsd')));
+    assert.deepEqual(outputGsd, '0.31');
+    const outputResolution = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/resolution')));
+    assert.deepEqual(outputResolution, '0.31,-0.31');
+  });
+
+  it('should not output a target resolution if resolutions are inconsistent and retile is not used', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 0.31051;
+    fakeTiff1.images[0].resolution[1] = -0.31051;
+    fakeTiff2.images[0].resolution[0] = 0.923;
+    fakeTiff2.images[0].resolution[1] = -0.923;
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await commandTileIndexValidate.handler({
+      ...baseArguments,
+      validate: false,
+      retile: false,
+    });
+
+    const outputGsd = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/gsd')));
+    assert.deepEqual(outputGsd, '0.31');
+    const outputResolution = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/resolution')));
+    assert.deepEqual(outputResolution, '');
+  });
+
+  it('should output a target resolution even if resolutions are near consistent and retile is used', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 0.31051;
+    fakeTiff1.images[0].resolution[1] = -0.31;
+    fakeTiff2.images[0].resolution[0] = 0.31;
+    fakeTiff2.images[0].resolution[1] = -0.31051;
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await commandTileIndexValidate.handler({
+      ...baseArguments,
+      retile: true,
+    });
+
+    const outputGsd = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/gsd')));
+    assert.deepEqual(outputGsd, '0.31');
+    const outputResolution = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/resolution')));
+    assert.deepEqual(outputResolution, '0.31,-0.31');
+  });
+
+  it('should not output a target resolution if resolutions are consistent even if retile is used', async (t) => {
+    fakeTiff1.images[0].resolution[0] = 0.31051;
+    fakeTiff1.images[0].resolution[1] = -0.31051;
+    fakeTiff2.images[0].resolution[0] = 0.31051;
+    fakeTiff2.images[0].resolution[1] = -0.31051;
+
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await commandTileIndexValidate.handler({
+      ...baseArguments,
+      retile: true,
+    });
+
+    const outputGsd = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/gsd')));
+    assert.deepEqual(outputGsd, '0.31');
+    const outputResolution = String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/resolution')));
+    assert.deepEqual(outputResolution, '');
+  });
+
+  it('should output the first rounded resolution if resolutions are inconsistent and retile is used', async (t) => {
     fakeTiff1.images[0].resolution[0] = 2.31051;
     fakeTiff2.images[0].resolution[0] = 1.123;
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));

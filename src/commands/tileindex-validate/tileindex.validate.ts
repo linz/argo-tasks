@@ -19,6 +19,10 @@ import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.
 import { config, createTiff, forceOutput, registerCli, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 
+const roundGsd = (gsd: number): number => {
+  return Math.round(gsd * 200) / 200; // Round to nearest 0.005
+};
+
 export const TiffLoader = {
   /**
    * Concurrently load a collection of tiffs in the locations provided.
@@ -227,22 +231,28 @@ export const commandTileIndexValidate = command({
     const tiffs = await TiffLoader.load(tiffLocationsToLoad, args);
     await validatePreset(args.preset, tiffs);
 
-    const projections = new Set();
-    const gsds = new Set();
-    const roundedGsds = new Set();
+    const projections: Set<number | null> = new Set();
+    const resolutions: Set<string> = new Set();
+    const roundedResolutions: Set<string> = new Set();
+    const roundedGsds: Set<number> = new Set();
+
     tiffs.forEach((t) => {
       const image = t.images[0];
       if (image) {
         projections.add(image.epsg);
-        gsds.add(image.resolution[0]);
-        roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
+        resolutions.add(image.resolution.slice(0, 2).join(',')); // not rounded for accurate counting of unique values
+        roundedResolutions.add(image.resolution.slice(0, 2).map(roundGsd).join(','));
+        roundedGsds.add(roundGsd(image.resolution[0]));
       }
     });
+    let targetResolution = args.retile ? String([...roundedResolutions][0]) : '';
+
     logger.info(
       {
         tiffCount: tiffs.length,
         projections: [...projections],
-        gsds: [...gsds],
+        resolutions: [...resolutions],
+        roundedResolutions: [...roundedResolutions],
         duration: performance.now() - readTiffStartTime,
       },
       'TileIndex: All Files Read',
@@ -251,17 +261,25 @@ export const commandTileIndexValidate = command({
     if (projections.size > 1) {
       logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
     }
-    if (roundedGsds.size > 1) {
-      if (args.validate) {
-        logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
-        throw new Error(
-          `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${tiffLocationsToLoad.map(protocolAwareString).join(',')}`,
-        );
-      }
-      logger.warn({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
-    } else if (gsds.size > 1) {
-      logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
+    if (roundedGsds.size > 1 && args.validate) {
+      logger.error(
+        { resolutions: [...resolutions], roundedGsds: [...roundedGsds] },
+        'TileIndex:InconsistentGSDs:Failed',
+      );
+      throw new Error(`Inconsistent GSDs found: [${[...roundedGsds].join('; ')}] [${[...resolutions].join('; ')}]`);
     }
+    if (resolutions.size > 1 && !args.retile) {
+      targetResolution = '';
+      logger.warn(
+        { resolutions: [...resolutions], roundedGsds: [...roundedGsds] },
+        'TileIndex:InconsistentResolutions:NotRetiling',
+      );
+    } else if (resolutions.size === 1) {
+      targetResolution = '';
+      logger.info({ resolutions: [...resolutions], roundedGsds: [...roundedGsds] }, 'TileIndex:Resolutions:Consistent');
+    }
+
+    await fsa.write(fsa.toUrl('/tmp/tile-index-validate/resolution'), targetResolution);
     await fsa.write(fsa.toUrl('/tmp/tile-index-validate/gsd'), String([...roundedGsds][0]));
 
     const groupByTileNameStartTime = performance.now();
@@ -508,9 +526,13 @@ export function getSize(extent: BBox): Size {
 }
 
 export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0.015): boolean {
-  if (tiff.tileNames.length !== 1) return false;
+  if (tiff.tileNames.length !== 1) {
+    return false;
+  }
   const tileName = tiff.tileNames[0];
-  if (tileName == null) return false;
+  if (tileName == null) {
+    return false;
+  }
   const mapTileIndex = MapSheet.getMapTileIndex(tileName);
   if (mapTileIndex == null) {
     logger.error(
