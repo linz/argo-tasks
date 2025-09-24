@@ -64,7 +64,7 @@ export const commandStacSetup = command({
       type: boolean,
       defaultValue: () => false,
       long: 'validate',
-      description: 'Validate GSD of dataset if odr_url is supplied',
+      description: 'Validate GSD of dataset if --odr-url is supplied',
       defaultValueIsSerializable: true,
     }),
 
