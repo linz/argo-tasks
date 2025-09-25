@@ -1,6 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
-import { createZstdCompress, createZstdDecompress } from 'node:zlib';
+import { constants, createZstdCompress, createZstdDecompress } from 'node:zlib';
 
 import { fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
@@ -82,7 +82,11 @@ export const worker = new WorkerRpc<CopyContract>({
               sourceStream = rawSourceStream.pipe(hashOriginal);
               break;
             case FileOperation.Compress:
-              const zstdCompress = createZstdCompress();
+              const zstdCompress = createZstdCompress({
+                params: {
+                  [constants.ZSTD_c_compressionLevel]: 17,
+                },
+              });
               sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstdCompress).pipe(hashCompressed);
               break;
             case FileOperation.Decompress:
