@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.21.0](https://github.com/linz/argo-tasks/compare/v4.20.0...v4.21.0) (2025-09-28)
+
+
+### Features
+
+* increase default zstd compression level TDE-1591 ([#1273](https://github.com/linz/argo-tasks/issues/1273)) ([7fe357e](https://github.com/linz/argo-tasks/commit/7fe357ebc9a94d0524bea008829b53377806e5de))
+
 ## [4.20.0](https://github.com/linz/argo-tasks/compare/v4.19.3...v4.20.0) (2025-09-21)
 
 
