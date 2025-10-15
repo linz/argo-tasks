@@ -230,14 +230,21 @@ export const commandTileIndexValidate = command({
     const projections = new Set();
     const gsds = new Set();
     const roundedGsds = new Set();
+    let canGetResolution = true;
     tiffs.forEach((t) => {
       const image = t.images[0];
       if (image) {
         projections.add(image.epsg);
-        gsds.add(image.resolution[0]);
-        roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
+        try {
+          gsds.add(image.resolution[0]);
+          roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
+        } catch (e) {
+          canGetResolution = false;
+          logger.error({ source: protocolAwareString(t.source.url), err: e }, 'TileIndex:GetResolution:Failed');
+        }
       }
     });
+    if (!canGetResolution) throw new Error('Failed to get resolution of all TIFFs');
     logger.info(
       {
         tiffCount: tiffs.length,
