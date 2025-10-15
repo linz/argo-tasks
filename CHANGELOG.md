@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.21.1](https://github.com/linz/argo-tasks/compare/v4.21.0...v4.21.1) (2025-10-15)
+
+
+### Bug Fixes
+
+* `tileindex-validate` log TIFF sources on get resolution error TDE-1677 ([#1275](https://github.com/linz/argo-tasks/issues/1275)) ([9f87ed7](https://github.com/linz/argo-tasks/commit/9f87ed733d47ada94d6b8a17cbaadb4f8919a566))
+
 ## [4.21.0](https://github.com/linz/argo-tasks/compare/v4.20.0...v4.21.0) (2025-09-28)
 
 
