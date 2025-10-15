@@ -16,6 +16,7 @@ import { createTiff, Url } from '../../common.ts';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
+  getSize,
   getTileName,
   GridSizeFromString,
   groupByTileName,
@@ -23,7 +24,6 @@ import {
   TiffLoader,
   validate8BitsTiff,
   validatePreset,
-  getSize,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
