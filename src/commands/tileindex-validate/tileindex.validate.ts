@@ -474,7 +474,7 @@ export interface TiffLocation {
    */
   bands: string[];
   /** Detected grid size/scale of the input tiff based on its dimensions */
-  scale: GridSize;
+  scale?: GridSize;
 }
 
 /**
