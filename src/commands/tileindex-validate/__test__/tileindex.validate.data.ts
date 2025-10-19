@@ -54,4 +54,27 @@ export class FakeCogTiff extends Tiff {
       epsg: 2193,
     });
   }
+
+  static fromTileNameWithCustomSize(tileName: string, size: Size): FakeCogTiff {
+    const mapTileIndex = MapSheet.getMapTileIndex(tileName);
+    if (mapTileIndex == null) throw new Error('invalid tile name: ' + tileName);
+
+    return new FakeCogTiff(`s3://path/${tileName}.tiff`, {
+      origin: [mapTileIndex.origin.x, mapTileIndex.origin.y],
+      size,
+      epsg: 2193,
+    });
+  }
+
+  static fromTileNameWithCustomGsd(tileName: string, gsd: number): FakeCogTiff {
+    const mapTileIndex = MapSheet.getMapTileIndex(tileName);
+    if (mapTileIndex == null) throw new Error('invalid tile name: ' + tileName);
+
+    return new FakeCogTiff(`s3://path/${tileName}.tiff`, {
+      origin: [mapTileIndex.origin.x, mapTileIndex.origin.y],
+      size: { width: mapTileIndex.width, height: mapTileIndex.height },
+      resolution: [gsd, -gsd, 0],
+      epsg: 2193,
+    });
+  }
 }

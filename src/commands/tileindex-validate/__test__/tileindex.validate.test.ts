@@ -15,6 +15,8 @@ import { MapSheet } from '../../../utils/mapsheet.ts';
 import { createTiff, Url } from '../../common.ts';
 import {
   commandTileIndexValidate,
+  determineGridSizeFromDimensions,
+  determineGridSizeFromGSDPreset,
   extractTiffLocations,
   getTileName,
   GridSizeFromString,
@@ -158,7 +160,7 @@ describe('validate', () => {
     includeDerived: false,
     scale: 1000 as GridSize,
     forceOutput: true,
-    retile: false,
+    mergeSources: false,
     location: [[fsa.toUrl('s3://test')]],
   };
 
@@ -167,7 +169,6 @@ describe('validate', () => {
     for (const includeDerived of [true, false]) {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        retile: true,
         includeDerived: includeDerived,
       });
       const outputFileList: [FileListEntryClass] = await fsa.readJson(
@@ -197,7 +198,6 @@ describe('validate', () => {
     await commandTileIndexValidate.handler({
       ...baseArguments,
       location: [[sourceLocation]],
-      retile: false,
       validate: true,
     });
 
@@ -221,7 +221,6 @@ describe('validate', () => {
       await commandTileIndexValidate.handler({
         ...baseArguments,
         location: [[fsa.toUrl('s3://test')]],
-        retile: false,
         validate: true,
       });
       assert.fail('Should throw exception');
@@ -253,14 +252,13 @@ describe('validate', () => {
       .handler({
         ...baseArguments,
         location: [[fsa.toUrl('file:///tmp/empty/')]],
-        retile: false,
         validate: true,
       })
       .catch((e: Error) => e);
     assert.equal(String(ret), 'Error: Tiff loading failed: RangeError: Offset is outside the bounds of the DataView');
   });
 
-  it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
+  it('should not fail if duplicate tiles are detected but --merge-sources is used', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     t.mock.method(TiffLoader, 'load', () =>
       Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
@@ -268,8 +266,8 @@ describe('validate', () => {
 
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      retile: true,
       validate: false,
+      mergeSources: true,
     });
     const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
     assert.deepEqual(outputFileList, [
@@ -289,7 +287,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -304,7 +301,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -325,7 +321,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -340,7 +335,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -358,7 +352,7 @@ describe('GridSizeFromString', () => {
   it('should throw error when converting invalid grid size', async () => {
     await assert.rejects(
       GridSizeFromString.from('-1'),
-      new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500"'),
+      new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500", or "auto"'),
     );
   });
 });
@@ -460,9 +454,9 @@ describe('GSD handling', () => {
     sourceEpsg: undefined,
     includeDerived: false,
     location: [[fsa.toUrl('s3://test')]],
-    retile: false,
     scale: 1000 as GridSize,
     forceOutput: true,
+    mergeSources: false,
   };
   const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
   const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
@@ -526,5 +520,265 @@ describe('GSD handling', () => {
       const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
       assert.deepEqual(outputGsd, '1');
     }
+  });
+});
+
+describe('determineGridSize', () => {
+  // Aerial Imagery (preset: 'webp')
+  it('returns 1000 for aerial imagery < 0.1m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.05, 'webp'), 1000);
+  });
+  it('returns 5000 for aerial imagery >= 0.1m and < 0.25m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'webp'), 5000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.249, 'webp'), 5000);
+  });
+  it('returns 10000 for aerial imagery >= 0.25m and < 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.25, 'webp'), 10000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.999, 'webp'), 10000);
+  });
+  it('returns 50000 for aerial imagery >= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'webp'), 50000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'webp'), 50000);
+  });
+
+  // DEM/DSM/Hillshade (preset: 'dem_lerc')
+  it('returns 1000 for elevation < 0.2m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'dem_lerc'), 1000);
+  });
+  it('returns 10000 for elevation >= 0.2m and <= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.2, 'dem_lerc'), 10000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'dem_lerc'), 10000);
+  });
+  it('returns 50000 for elevation > 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.01, 'dem_lerc'), 50000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'dem_lerc'), 50000);
+  });
+
+  it('throws error for unknown preset', () => {
+    assert.throws(() => determineGridSizeFromGSDPreset(0.5, 'unknown'), /Unknown preset/);
+  });
+});
+
+describe('determineGridSizeFromDimensions', () => {
+  it('should return 50000 for 50k map sheet dimensions', () => {
+    const width = 24000; // 50k map sheet width in meters
+    const height = 36000; // 50k map sheet height in meters
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), 50000);
+  });
+
+  it('should return 10000 for 10k tile dimensions', () => {
+    const width = 4800; // 10k tile width in meters (24000/5)
+    const height = 7200; // 10k tile height in meters (36000/5)
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), 10000);
+  });
+
+  it('should return 5000 for 5k tile dimensions', () => {
+    const width = 2400; // 5k tile width in meters (24000/10)
+    const height = 3600; // 5k tile height in meters (36000/10)
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), 5000);
+  });
+
+  it('should return 2000 for 2k tile dimensions', () => {
+    const width = 960; // 2k tile width in meters (24000/25)
+    const height = 1440; // 2k tile height in meters (36000/25)
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), 2000);
+  });
+
+  it('should return 1000 for 1k tile dimensions', () => {
+    const width = 480; // 1k tile width in meters (24000/50)
+    const height = 720; // 1k tile height in meters (36000/50)
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), 1000);
+  });
+
+  it('should return 500 for 500m tile dimensions', () => {
+    const width = 240; // 500m tile width in meters (24000/100)
+    const height = 360; // 500m tile height in meters (36000/100)
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), 500);
+  });
+
+  it('should allow small rounding errors (within 1 meter)', () => {
+    const width = 480.5; // 1k tile width + 0.5m
+    const height = 719.5; // 1k tile height - 0.5m
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), 1000);
+  });
+
+  it('should return null for dimensions that do not match any grid size', () => {
+    const width = 123.45;
+    const height = 678.9;
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), null);
+  });
+
+  it('should return null when rounding error exceeds 1 meter', () => {
+    const width = 201.5; // 1k tile width + 1.5m (exceeds tolerance)
+    const height = 300;
+    assert.strictEqual(determineGridSizeFromDimensions(width, height), null);
+  });
+});
+
+describe('mergeSources flag behavior', () => {
+  const memory = new FsMemory();
+
+  before(() => {
+    fsa.register('file:///tmp', memory);
+    fsa.register('memory://', memory);
+  });
+  beforeEach(() => memory.files.clear());
+
+  const baseArguments = {
+    config: undefined,
+    verbose: false,
+    include: undefined,
+    validate: true,
+    preset: 'none',
+    sourceEpsg: undefined,
+    includeDerived: false,
+    scale: 1000 as GridSize,
+    forceOutput: true,
+    mergeSources: false,
+    location: [[fsa.toUrl('s3://test')]],
+  };
+
+  it('should fail with duplicate same-scale tiles when --merge-sources is false', async (t) => {
+    const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    const fakeTiff2 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    try {
+      await commandTileIndexValidate.handler({
+        ...baseArguments,
+        mergeSources: false,
+        validate: true,
+      });
+      assert.fail('Should throw exception for same-scale duplicates');
+    } catch (e) {
+      assert.equal(String(e), 'Error: Duplicate files found, see output.geojson');
+    }
+  });
+});
+
+describe('automatic retiling based on scale comparison', () => {
+  const memory = new FsMemory();
+
+  before(() => {
+    fsa.register('file:///tmp', memory);
+    fsa.register('memory://', memory);
+  });
+  beforeEach(() => memory.files.clear());
+
+  const baseArguments = {
+    config: undefined,
+    verbose: false,
+    include: undefined,
+    validate: false,
+    preset: 'none',
+    sourceEpsg: undefined,
+    includeDerived: false,
+    scale: 5000 as GridSize, // Output scale is 5000
+    forceOutput: true,
+    mergeSources: false,
+    location: [[fsa.toUrl('s3://test')]],
+  };
+
+  it('should allow retiling when all input tiffs have different scale than output', async (t) => {
+    // Create tiffs with 1000m scale dimensions (different from output scale 5000)
+    const fakeTiff1 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 240, height: 360 });
+    const fakeTiff2 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 240, height: 360 });
+
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await commandTileIndexValidate.handler(baseArguments);
+
+    const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
+    assert.deepEqual(outputFileList, [
+      {
+        output: 'AS21_5000_0101', // Output scale is 5000
+        input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
+        includeDerived: false,
+      },
+    ]);
+  });
+  it('should fail when all input tiffs have same scale as output and mergeSources is false', async (t) => {
+    const fakeTiff1 = FakeCogTiff.fromTileName('AS21_5000_0101'); // Input scale matches output scale
+    const fakeTiff2 = FakeCogTiff.fromTileName('AS21_5000_0101'); // Duplicate with same scale
+
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    try {
+      await commandTileIndexValidate.handler({
+        ...baseArguments,
+        validate: true,
+      });
+      assert.fail('Should throw exception for same-scale duplicates');
+    } catch (e) {
+      assert.equal(String(e), 'Error: Duplicate files found, see output.geojson');
+    }
+  });
+
+  it('should allow retiling when input tiffs have mixed scales', async (t) => {
+    // Create tiffs with different scales - one 1000m and one 5000m
+    const fakeTiff1000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 240, height: 360 });
+    const fakeTiff5000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_5000_0101', { width: 1200, height: 1800 });
+
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1000, fakeTiff5000]));
+
+    await commandTileIndexValidate.handler(baseArguments);
+
+    const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
+    assert.deepEqual(outputFileList, [
+      {
+        output: 'AS21_5000_0101',
+        input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_5000_0101.tiff'],
+        includeDerived: false,
+      },
+    ]);
+  });
+});
+
+describe('TiffLocation scale attribute', () => {
+  it('should populate scale attribute from detected grid size', async () => {
+    const fakeTiff1000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 480, height: 720 });
+    const fakeTiff5000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_5000_0101', { width: 2400, height: 3600 });
+
+    const locations = await extractTiffLocations([fakeTiff1000, fakeTiff5000], 10000);
+
+    assert.strictEqual(locations[0]?.scale, 1000);
+    assert.strictEqual(locations[1]?.scale, 5000);
+  });
+
+  it('should fall back to output grid size when scale cannot be detected', async () => {
+    const fakeTiff = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 123, height: 456 });
+
+    const locations = await extractTiffLocations([fakeTiff], 2000);
+
+    assert.strictEqual(locations[0]?.scale, 2000); // Falls back to output grid size
+  });
+
+  it('should handle auto scale detection correctly', async (t) => {
+    const memory = new FsMemory();
+    fsa.register('file:///tmp', memory);
+    fsa.register('memory://', memory);
+
+    const fakeTiff = FakeCogTiff.fromTileNameWithCustomGsd('AS21_1000_0101', 0.15);
+
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+
+    await commandTileIndexValidate.handler({
+      config: undefined,
+      verbose: false,
+      include: undefined,
+      validate: false,
+      preset: 'webp',
+      sourceEpsg: undefined,
+      includeDerived: false,
+      scale: 'auto',
+      forceOutput: true,
+      mergeSources: false,
+      location: [[fsa.toUrl('s3://test')]],
+    });
+
+    const outputFileList: [FileListEntryClass] = await fsa.readJson(
+      fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
+    );
+    assert.strictEqual(outputFileList?.[0]?.output, 'AS21_5000_0101'); // Should auto-select 5000 scale
   });
 });
