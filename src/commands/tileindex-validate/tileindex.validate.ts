@@ -234,7 +234,11 @@ export const commandTileIndexValidate = command({
     config,
     verbose,
     include: CommandListArgs.include,
-    scale: option({ type: GridSizeFromString, long: 'scale', description: 'Tile grid scale to align output tile to' }),
+    scale: option({
+      type: GridSizeFromString,
+      long: 'scale',
+      description: 'Tile grid scale to align output tile to. Default is "auto"',
+    }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
     validate: flag({
       type: boolean,
@@ -261,7 +265,8 @@ export const commandTileIndexValidate = command({
     retile: option({
       type: RetileFromString,
       long: 'retile',
-      description: 'Retiling behavior: "auto" (default) enables intelligent retiling, "true" forces retiling.',
+      description:
+        'Re-tile input TIFFs to an output tile. Default to "auto" to enable intelligent re-tiling based on input vs output scales.',
       defaultValueIsSerializable: true,
       defaultValue: () => 'auto' as const,
     }),
