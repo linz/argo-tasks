@@ -238,6 +238,8 @@ export const commandTileIndexValidate = command({
       type: GridSizeFromString,
       long: 'scale',
       description: 'Tile grid scale to align output tile to. Default is "auto"',
+      defaultValueIsSerializable: true,
+      defaultValue: () => 'auto' as const,
     }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
     validate: flag({
