@@ -160,7 +160,7 @@ describe('validate', () => {
     includeDerived: false,
     scale: 1000 as GridSize,
     forceOutput: true,
-    mergeSources: false,
+    retile: 'auto' as const,
     location: [[fsa.toUrl('s3://test')]],
   };
 
@@ -258,7 +258,7 @@ describe('validate', () => {
     assert.equal(String(ret), 'Error: Tiff loading failed: RangeError: Offset is outside the bounds of the DataView');
   });
 
-  it('should not fail if duplicate tiles are detected but --merge-sources is used', async (t) => {
+  it('should not fail if duplicate tiles are detected but --retile true is used', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     t.mock.method(TiffLoader, 'load', () =>
       Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
@@ -267,7 +267,7 @@ describe('validate', () => {
     await commandTileIndexValidate.handler({
       ...baseArguments,
       validate: false,
-      mergeSources: true,
+      retile: true,
     });
     const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
     assert.deepEqual(outputFileList, [
@@ -456,7 +456,7 @@ describe('GSD handling', () => {
     location: [[fsa.toUrl('s3://test')]],
     scale: 1000 as GridSize,
     forceOutput: true,
-    mergeSources: false,
+    retile: 'auto' as const,
   };
   const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
   const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
@@ -615,7 +615,7 @@ describe('determineGridSizeFromDimensions', () => {
   });
 });
 
-describe('mergeSources flag behavior', () => {
+describe('retile flag behavior', () => {
   const memory = new FsMemory();
 
   before(() => {
@@ -634,11 +634,11 @@ describe('mergeSources flag behavior', () => {
     includeDerived: false,
     scale: 1000 as GridSize,
     forceOutput: true,
-    mergeSources: false,
+    retile: 'auto' as const,
     location: [[fsa.toUrl('s3://test')]],
   };
 
-  it('should fail with duplicate same-scale tiles when --merge-sources is false', async (t) => {
+  it('should fail with duplicate same-scale tiles when --retile auto (default)', async (t) => {
     const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
     const fakeTiff2 = FakeCogTiff.fromTileName('AS21_1000_0101');
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
@@ -646,7 +646,7 @@ describe('mergeSources flag behavior', () => {
     try {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        mergeSources: false,
+        retile: 'auto',
         validate: true,
       });
       assert.fail('Should throw exception for same-scale duplicates');
@@ -675,7 +675,7 @@ describe('automatic retiling based on scale comparison', () => {
     includeDerived: false,
     scale: 5000 as GridSize, // Output scale is 5000
     forceOutput: true,
-    mergeSources: false,
+    retile: 'auto' as const,
     location: [[fsa.toUrl('s3://test')]],
   };
 
@@ -697,7 +697,7 @@ describe('automatic retiling based on scale comparison', () => {
       },
     ]);
   });
-  it('should fail when all input tiffs have same scale as output and mergeSources is false', async (t) => {
+  it('should fail when all input tiffs have same scale as output and retile is auto', async (t) => {
     const fakeTiff1 = FakeCogTiff.fromTileName('AS21_5000_0101'); // Input scale matches output scale
     const fakeTiff2 = FakeCogTiff.fromTileName('AS21_5000_0101'); // Duplicate with same scale
 
@@ -772,7 +772,7 @@ describe('TiffLocation scale attribute', () => {
       includeDerived: false,
       scale: 'auto',
       forceOutput: true,
-      mergeSources: false,
+      retile: 'auto' as const,
       location: [[fsa.toUrl('s3://test')]],
     });
 

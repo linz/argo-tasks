@@ -70,6 +70,15 @@ export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
   },
 };
 
+export const RetileFromString: Type<string, 'auto' | boolean> = {
+  async from(value) {
+    if (value === 'auto') return value;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    throw new Error(`Invalid retile value "${value}"; valid values: "auto", "true", "false"`);
+  },
+};
+
 /**
  * Determine the grid size from tiff dimensions
  *
@@ -145,12 +154,12 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
  * Validate list of tiffs match a LINZ map sheet tile index
  *
  * If --validate
- * Asserts that there will be no duplicates (when tiffs have same scale as output scale and --merge-sources not set)
+ * Asserts that there will be no duplicates (when tiffs have same scale as output scale and --retile is auto)
  *
- * Automatic retiling behavior:
- * - If --merge-sources flag is set: duplicates are always processed for retiling
- * - If multiple tiffs have the same scale as output scale AND --merge-sources not set: duplicates cause an error
- * - If tiffs have different scales than output scale: duplicates are processed for retiling
+ * Automatic retiling behavior (--retile):
+ * - "auto" (default): Intelligent retiling - only retiles when tiffs have different scales than output scale
+ * - true: Always processes duplicates for retiling regardless of scale matching
+ * - false: Never retiles duplicates
  *
  * If --includeDerived
  * Sets includeDerived in file-list.json (determines whether to create derived_from links in STAC)
@@ -193,25 +202,25 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
  * tileindex-validate --scale 5000 ./path/to/imagery/
  * ```
  *
- * Force merging of duplicate sources regardless of grid size matching
+ * Force retiling of duplicate sources regardless of grid size matching
  * ```bash
- * tileindex-validate --scale 1000 --merge-sources ./path/to/imagery/
+ * tileindex-validate --scale 1000 --retile true ./path/to/imagery/
  * ```
  */
 /**
  * Retiling behavior based on tiff scale vs output scale:
  *
- * Case 1: Duplicate tiffs have same scale as output scale + --merge-sources not set
+ * Case 1: Duplicate tiffs have same scale as output scale + --retile auto (default)
  * → Reports duplicates as errors (no retiling)
  *
- * Case 2: --merge-sources flag set OR duplicate tiffs have different scale than output scale
+ * Case 2: --retile true OR duplicate tiffs have different scale than output scale
  * → Creates retiling output with duplicate tiffs merged
  *
  * Examples:
- * input: 1:1000 tiffs, scale: 1:1000 → error on duplicates (same scale)
- * input: 1:1000 tiffs, scale: 1:1000, --merge-sources → create retiling output
- * input: 1:1000 tiffs, scale: 1:5000 → create retiling output (different scale)
- * input: mixed 1:1000 + 1:5000 tiffs, scale: 1:1000 → create retiling output (mixed scales)
+ * input: 1:1000 tiffs, scale: 1:1000 → error on duplicates (same scale, auto retiling)
+ * input: 1:1000 tiffs, scale: 1:1000, --retile true → create retiling output
+ * input: 1:1000 tiffs, scale: 1:5000 → create retiling output (different scale, auto retiling)
+ * input: mixed 1:1000 + 1:5000 tiffs, scale: 1:1000 → create retiling output (mixed scales, auto retiling)
  *
  * -- Not handled (yet!)
  * input: 1:10_000, scale: 1:1000 → split input tiff into multiple output tiles
@@ -249,12 +258,12 @@ export const commandTileIndexValidate = command({
       defaultValueIsSerializable: true,
       defaultValue: () => false,
     }),
-    mergeSources: flag({
-      type: boolean,
-      long: 'merge-sources',
-      description: 'Allow merging duplicate input files for output tiles (force retiling)',
+    retile: option({
+      type: RetileFromString,
+      long: 'retile',
+      description: 'Retiling behavior: "auto" (default) enables intelligent retiling, "true" forces retiling.',
       defaultValueIsSerializable: true,
-      defaultValue: () => false,
+      defaultValue: () => 'auto' as const,
     }),
     location: restPositionals({
       type: UrlFolderList,
@@ -381,7 +390,10 @@ export const commandTileIndexValidate = command({
       // Check if all of the duplicate tiffs have the same scale as the output grid size
       const allHaveSameScaleAsOutput = tiffs.every((tiff) => tiff.scale === gridSize);
 
-      if (args.mergeSources || !allHaveSameScaleAsOutput) {
+      // Determine retiling behavior based on --retile flag
+      const shouldRetile = args.retile === true || (args.retile === 'auto' && !allHaveSameScaleAsOutput);
+
+      if (shouldRetile) {
         const bandType = validateConsistentBands(tiffs);
         logger.info(
           { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
