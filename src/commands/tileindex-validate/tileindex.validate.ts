@@ -237,7 +237,8 @@ export const commandTileIndexValidate = command({
     scale: option({
       type: GridSizeFromString,
       long: 'scale',
-      description: 'Tile grid scale to align output tile to. Default is "auto"',
+      description:
+        'Tile grid scale to align output tile to. "auto" determines the appropriate scale based on input TIFFs GSD and preset.',
       defaultValueIsSerializable: true,
       defaultValue: () => 'auto' as const,
     }),
@@ -268,7 +269,7 @@ export const commandTileIndexValidate = command({
       type: RetileFromString,
       long: 'retile',
       description:
-        'Re-tile input TIFFs to an output tile. Default to "auto" to enable intelligent re-tiling based on input vs output scales.',
+        'Re-tile input TIFFs to an output tile. "auto" enables intelligent re-tiling based on input vs output scales.',
       defaultValueIsSerializable: true,
       defaultValue: () => 'auto' as const,
     }),
