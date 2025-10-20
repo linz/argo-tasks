@@ -16,6 +16,7 @@ import { commandMapSheetCoverage } from './mapsheet-coverage/mapsheet.coverage.t
 import { commandPrettyPrint } from './pretty-print/pretty.print.ts';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.ts';
 import { commandStacGithubImport } from './stac-github-import/stac.github.import.ts';
+import { commandStacReadCollection } from './stac-read-collection/stac.read.collection.ts';
 import { commandStacSetup } from './stac-setup/stac.setup.ts';
 import { commandStacSync } from './stac-sync/stac.sync.ts';
 import { commandStacValidate } from './stac-validate/stac.validate.ts';
@@ -36,6 +37,7 @@ export const AllCommands = {
   'mapsheet-coverage': commandMapSheetCoverage,
   'stac-catalog': commandStacCatalog,
   'stac-github-import': commandStacGithubImport,
+  'stac-read-collection': commandStacReadCollection,
   'stac-setup': commandStacSetup,
   'stac-sync': commandStacSync,
   'stac-validate': commandStacValidate,
@@ -45,6 +47,7 @@ export const AllCommands = {
     cmds: {
       catalog: commandStacCatalog,
       'github-import': commandStacGithubImport,
+      'read-collection': commandStacReadCollection,
       setup: commandStacSetup,
       sync: commandStacSync,
       validate: commandStacValidate,
