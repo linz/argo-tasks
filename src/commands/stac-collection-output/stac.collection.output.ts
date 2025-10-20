@@ -8,8 +8,8 @@ import { protocolAwareString } from '../../utils/filelist.ts';
 import type { StacCollectionLinz } from '../../utils/metadata.ts';
 import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
-export const commandStacReadCollection = command({
-  name: 'stac-read-collection',
+export const commandStacCollectionOutput = command({
+  name: 'stac-collection-output',
   description: 'Read a STAC collection. Outputs implemented field(s): scale.',
   version: CliInfo.version,
   args: {
@@ -25,7 +25,7 @@ export const commandStacReadCollection = command({
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,
-      defaultValue: () => fsa.toUrl('file:///tmp/stac-collection-fields/'),
+      defaultValue: () => fsa.toUrl('file:///tmp/stac-collection-output/'),
     }),
   },
 
@@ -33,7 +33,7 @@ export const commandStacReadCollection = command({
     registerCli(this, args);
     const startTime = performance.now();
 
-    logger.info('StacReadCollection:Start');
+    logger.info('StacCollectionOutput:Start');
 
     if (args.odrUrl) {
       const collectionLocation = urlPathEndsWith(args.odrUrl, '/collection.json')
@@ -50,7 +50,7 @@ export const commandStacReadCollection = command({
           await writeSetupFiles(scale, args.output);
           logger.info(
             { duration: performance.now() - startTime, args: { odrUrl: args.odrUrl, scale } },
-            'StacReadCollection:Done',
+            'StacCollectionOutput:Done',
           );
         }
       }

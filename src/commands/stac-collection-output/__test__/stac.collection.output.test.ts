@@ -3,8 +3,8 @@ import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
-import { commandStacReadCollection } from '../stac.read.collection.ts';
-import { SampleCollection } from './stac.read.collection.data.ts';
+import { commandStacCollectionOutput } from '../stac.collection.output.ts';
+import { SampleCollection } from './stac.collection.output.data.ts';
 
 describe('stac-read-collection', () => {
   const mem = new FsMemory();
@@ -26,16 +26,16 @@ describe('stac-read-collection', () => {
     config: undefined,
     verbose: false,
     odrUrl: collectionLocation,
-    output: fsa.toUrl('memory:///tmp/stac-read-collection/'),
+    output: fsa.toUrl('memory:///tmp/stac-collection-output/'),
   };
 
   it('should retrieve scale from collection', async () => {
-    await commandStacReadCollection.handler(BaseArgs);
+    await commandStacCollectionOutput.handler(BaseArgs);
 
-    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-read-collection/')));
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-collection-output/')));
     files.sort();
-    assert.deepStrictEqual(files, [fsa.toUrl('memory:///tmp/stac-read-collection/scale')]);
-    const scale = await fsa.read(fsa.toUrl('memory:///tmp/stac-read-collection/scale'));
+    assert.deepStrictEqual(files, [fsa.toUrl('memory:///tmp/stac-collection-output/scale')]);
+    const scale = await fsa.read(fsa.toUrl('memory:///tmp/stac-collection-output/scale'));
     assert.strictEqual(scale.toString(), '1000');
   });
 });

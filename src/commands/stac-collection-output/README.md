@@ -1,10 +1,10 @@
-# stac-read-collection
+# stac-collection-output
 
 Read a STAC collection. Outputs implemented field(s): scale.
 
 ## Usage
 
-stac-read-collection <options>
+stac-collection-output <options>
 
 ### Options
 
@@ -12,7 +12,7 @@ stac-read-collection <options>
 | ----------------- | ------------------------------------------ | -------------------------------------------- |
 | --config <str>    | Location of role configuration file        | optional                                     |
 | --odr-url <value> | Open Data Registry URL of existing dataset |                                              |
-| --output <value>  | Where to store output files                | default: file:///tmp/stac-collection-fields/ |
+| --output <value>  | Where to store output files                | default: file:///tmp/stac-collection-output/ |
 
 ### Flags
 
