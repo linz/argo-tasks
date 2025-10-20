@@ -86,7 +86,6 @@ export function determineGridSizeFromDimensions(width: number, height: number): 
 
     // Allow for small rounding errors (within 1 meter)
     if (Math.abs(width - expectedWidth) < 1 && Math.abs(height - expectedHeight) < 1) {
-      logger.info({ width, height, gridSize }, 'DetermineGridSize:Matched');
       return gridSize;
     }
   }
