@@ -10,7 +10,7 @@ import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '.
 
 export const commandStacReadCollection = command({
   name: 'stac-read-collection',
-  description: 'Read a STAC collection. Outputs requested STAC fields.',
+  description: 'Read a STAC collection. Outputs implemented field(s): scale.',
   version: CliInfo.version,
   args: {
     config,

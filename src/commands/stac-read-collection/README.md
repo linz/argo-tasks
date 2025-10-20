@@ -1,6 +1,6 @@
 # stac-read-collection
 
-Read a STAC collection. Outputs requested STAC fields.
+Read a STAC collection. Outputs implemented field(s): scale.
 
 ## Usage
 
