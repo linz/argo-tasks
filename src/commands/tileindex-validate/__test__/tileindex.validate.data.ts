@@ -44,36 +44,17 @@ export class FakeCogTiff extends Tiff {
     ];
   }
 
-  static fromTileName(tileName: string): FakeCogTiff {
+  static fromTileName(tileName: string, options?: { size?: Size; gsd?: number }): FakeCogTiff {
     const mapTileIndex = MapSheet.getMapTileIndex(tileName);
     if (mapTileIndex == null) throw new Error('invalid tile name: ' + tileName);
 
-    return new FakeCogTiff(`s3://path/${tileName}.tiff`, {
-      origin: [mapTileIndex.origin.x, mapTileIndex.origin.y],
-      size: { width: mapTileIndex.width, height: mapTileIndex.height },
-      epsg: 2193,
-    });
-  }
-
-  static fromTileNameWithCustomSize(tileName: string, size: Size): FakeCogTiff {
-    const mapTileIndex = MapSheet.getMapTileIndex(tileName);
-    if (mapTileIndex == null) throw new Error('invalid tile name: ' + tileName);
+    const size = options?.size ?? { width: mapTileIndex.width, height: mapTileIndex.height };
+    const resolution = options?.gsd ? [options.gsd, -options.gsd, 0] : [1, -1, 0];
 
     return new FakeCogTiff(`s3://path/${tileName}.tiff`, {
       origin: [mapTileIndex.origin.x, mapTileIndex.origin.y],
       size,
-      epsg: 2193,
-    });
-  }
-
-  static fromTileNameWithCustomGsd(tileName: string, gsd: number): FakeCogTiff {
-    const mapTileIndex = MapSheet.getMapTileIndex(tileName);
-    if (mapTileIndex == null) throw new Error('invalid tile name: ' + tileName);
-
-    return new FakeCogTiff(`s3://path/${tileName}.tiff`, {
-      origin: [mapTileIndex.origin.x, mapTileIndex.origin.y],
-      size: { width: mapTileIndex.width, height: mapTileIndex.height },
-      resolution: [gsd, -gsd, 0],
+      resolution,
       epsg: 2193,
     });
   }

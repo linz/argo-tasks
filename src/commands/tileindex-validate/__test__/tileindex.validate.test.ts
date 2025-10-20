@@ -681,8 +681,8 @@ describe('automatic retiling based on scale comparison', () => {
 
   it('should allow retiling when all input tiffs have different scale than output', async (t) => {
     // Create tiffs with 1000m scale dimensions (different from output scale 5000)
-    const fakeTiff1 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 240, height: 360 });
-    const fakeTiff2 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 240, height: 360 });
+    const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101', { size: { width: 240, height: 360 } });
+    const fakeTiff2 = FakeCogTiff.fromTileName('AS21_1000_0101', { size: { width: 240, height: 360 } });
 
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
 
@@ -716,8 +716,8 @@ describe('automatic retiling based on scale comparison', () => {
 
   it('should allow retiling when input tiffs have mixed scales', async (t) => {
     // Create tiffs with different scales - one 1000m and one 5000m
-    const fakeTiff1000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 240, height: 360 });
-    const fakeTiff5000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_5000_0101', { width: 1200, height: 1800 });
+    const fakeTiff1000 = FakeCogTiff.fromTileName('AS21_1000_0101', { size: { width: 240, height: 360 } });
+    const fakeTiff5000 = FakeCogTiff.fromTileName('AS21_5000_0101', { size: { width: 1200, height: 1800 } });
 
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1000, fakeTiff5000]));
 
@@ -736,8 +736,8 @@ describe('automatic retiling based on scale comparison', () => {
 
 describe('TiffLocation scale attribute', () => {
   it('should populate scale attribute from detected grid size', async () => {
-    const fakeTiff1000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 480, height: 720 });
-    const fakeTiff5000 = FakeCogTiff.fromTileNameWithCustomSize('AS21_5000_0101', { width: 2400, height: 3600 });
+    const fakeTiff1000 = FakeCogTiff.fromTileName('AS21_1000_0101', { size: { width: 480, height: 720 } });
+    const fakeTiff5000 = FakeCogTiff.fromTileName('AS21_5000_0101', { size: { width: 2400, height: 3600 } });
 
     const locations = await extractTiffLocations([fakeTiff1000, fakeTiff5000], 10000);
 
@@ -746,7 +746,7 @@ describe('TiffLocation scale attribute', () => {
   });
 
   it('should fall back to output grid size when scale cannot be detected', async () => {
-    const fakeTiff = FakeCogTiff.fromTileNameWithCustomSize('AS21_1000_0101', { width: 123, height: 456 });
+    const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101', { size: { width: 123, height: 456 } });
 
     const locations = await extractTiffLocations([fakeTiff], 2000);
 
@@ -758,7 +758,7 @@ describe('TiffLocation scale attribute', () => {
     fsa.register('file:///tmp', memory);
     fsa.register('memory://', memory);
 
-    const fakeTiff = FakeCogTiff.fromTileNameWithCustomGsd('AS21_1000_0101', 0.15);
+    const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101', { gsd: 0.15 });
 
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
 
