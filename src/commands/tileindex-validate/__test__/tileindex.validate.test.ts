@@ -160,6 +160,7 @@ describe('validate', () => {
     forceOutput: true,
     retile: false,
     location: [[fsa.toUrl('s3://test')]],
+    concurrency: 1,
   };
 
   it('should set the includeDerived flag in file-list.json based on its input flag', async (t) => {
@@ -463,6 +464,7 @@ describe('GSD handling', () => {
     retile: false,
     scale: 1000 as GridSize,
     forceOutput: true,
+    concurrency: 1,
   };
   const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
   const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');

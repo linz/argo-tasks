@@ -4,7 +4,7 @@ import pLimit from 'p-limit';
 export class ConcurrentQueue {
   Q: LimitFunction;
   todo = new Map<number, Promise<unknown>>();
-  taskCount = 0;
+  taskId = 0;
 
   constructor(limit: number) {
     this.Q = pLimit(limit);
@@ -12,7 +12,7 @@ export class ConcurrentQueue {
 
   /** Add a task to the queue */
   push(cb: () => Promise<unknown>): void {
-    const taskId = this.taskCount++;
+    const taskId = this.taskId++;
     this.todo.set(
       taskId,
       this.Q(cb).finally(() => this.todo.delete(taskId)),
@@ -22,5 +22,9 @@ export class ConcurrentQueue {
   /** Wait for all tasks to finish */
   async join(): Promise<void> {
     while (this.todo.size > 0) await Promise.all([...this.todo.values()]);
+  }
+
+  async joinSettled(): Promise<void> {
+    while (this.todo.size > 0) await Promise.allSettled([...this.todo.values()]);
   }
 }

@@ -1,7 +1,7 @@
 import { Bounds, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
-import type { Size, Tiff } from '@cogeotiff/core';
-import { TiffTag } from '@cogeotiff/core';
+import type { Size } from '@cogeotiff/core';
+import { Tiff, TiffTag } from '@cogeotiff/core';
 import type { BBox } from '@linzjs/geojson';
 import type { Type } from 'cmd-ts';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
@@ -11,13 +11,19 @@ import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
-import { getFiles } from '../../utils/chunk.ts';
+import { asyncFilter } from '../../utils/chunk.ts';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
 import { findBoundingBox } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
-import { config, createTiff, forceOutput, registerCli, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
+import { config, forceOutput, registerCli, UrlFolderList, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
+
+function isTiff(url: URL): boolean {
+  const fileName = url.pathname.toLowerCase();
+  return fileName.endsWith('.tiff') || fileName.endsWith('.tif');
+}
 
 export const TiffLoader = {
   /**
@@ -27,34 +33,68 @@ export const TiffLoader = {
    * @param args filter the tiffs
    * @returns Initialized tiff
    */
-  async load(locations: URL[], args?: FileFilter): Promise<Tiff[]> {
-    // Include 0 byte files and filter them out based on file extension
-    const files = await getFiles(locations, { ...args, sizeMin: 0 });
-    const tiffLocations = files.flat().filter((f) => urlPathEndsWith(f, '.tiff') || urlPathEndsWith(f, '.tif'));
-    const startTime = performance.now();
-    logger.info({ count: tiffLocations.length }, 'Tiff:Load:Start');
-    if (tiffLocations.length === 0) throw new Error('No Files found');
-    // Ensure credentials are loaded before concurrently loading tiffs
-    if (tiffLocations[0]) await fsa.head(tiffLocations[0]);
+  async load(locations: URL[], q: ConcurrentQueue, args?: FileFilter): Promise<Tiff[]> {
+    const filterArgs = { ...args, sizeMin: 0 };
+    const hosts = new Set<string>();
 
-    const promises = await Promise.allSettled(
-      tiffLocations.map((loc: URL) => {
-        return createTiff(loc).catch((e: unknown) => {
-          // Ensure tiff loading errors include the location of the tiff
-          logger.fatal({ source: protocolAwareString(loc), err: e }, 'Tiff:Load:Failed');
-          throw e;
+    const totalTime = performance.now();
+    let progressTime = totalTime;
+
+    /** Number of tiff files processed */
+    let tiffLoaded = 0;
+    /** Number of tiffs that filed to load */
+    let failedCount = 0;
+    const output: Tiff[] = [];
+    let lastError: unknown = null;
+
+    for (const loc of locations) {
+      for await (const file of asyncFilter(fsa.details(loc), filterArgs)) {
+        if (!isTiff(file.url)) continue;
+        // ensure credentials have been loaded
+        if (!hosts.has(file.url.hostname)) {
+          await fsa.head(file.url);
+          hosts.add(file.url.hostname);
+        }
+
+        q.push(() => {
+          return Tiff.create(fsa.source(file.url))
+            .then((tiff) => {
+              tiffLoaded++;
+              if (tiffLoaded % 1_000 === 0) {
+                logger.info(
+                  {
+                    source: protocolAwareString(file.url),
+                    tiffLoaded,
+                    duration: performance.now() - progressTime,
+                  },
+                  'Tiff:Load:Progress',
+                );
+                progressTime = performance.now();
+              }
+              output.push(tiff);
+            })
+            .catch((e: unknown) => {
+              logger.fatal({ lastFile: protocolAwareString(file.url), err: e }, 'Tiff:Load:Failed');
+              failedCount++;
+              tiffLoaded++;
+              lastError = e;
+            });
         });
-      }),
-    );
-    // Ensure all the tiffs loaded successfully
-    const output = [];
-    for (const prom of promises) {
-      // All the errors are logged above so just throw the first error
-      if (prom.status === 'rejected') throw new Error('Tiff loading failed: ' + String(prom.reason));
-      // We are processing only 8 bits Tiff for now
-      output.push(prom.value);
+
+        if (q.todo.size > 2_500) await q.joinSettled();
+      }
     }
-    logger.info({ count: output.length, duration: performance.now() - startTime }, 'Tiffs:Loaded');
+
+    await q.joinSettled();
+
+    if (failedCount > 0) {
+      logger.fatal({ failedCount }, 'Tiff:Load:Failed');
+      throw Error('Tiff loading failed: ' + String(lastError));
+    }
+
+    if (output.length === 0) throw new Error('No Files found');
+
+    logger.info({ count: output.length, duration: performance.now() - totalTime }, 'Tiffs:Loaded');
     return output;
   },
 };
@@ -216,15 +256,22 @@ export const commandTileIndexValidate = command({
       displayName: 'location',
       description: 'Location of the source files. Accepts multiple source paths.',
     }),
+    concurrency: option({
+      type: number,
+      defaultValue: () => 25,
+      long: 'concurrency',
+      description: 'Number of TIFF files to read concurrently',
+    }),
   },
   async handler(args) {
     const startTime = performance.now();
     registerCli(this, args);
     logger.info('TileIndex:Start');
 
+    const q = new ConcurrentQueue(args.concurrency);
     const readTiffStartTime = performance.now();
     const tiffLocationsToLoad = args.location.flat();
-    const tiffs = await TiffLoader.load(tiffLocationsToLoad, args);
+    const tiffs = await TiffLoader.load(tiffLocationsToLoad, q, args);
     await validatePreset(args.preset, tiffs);
 
     const projections = new Set();
