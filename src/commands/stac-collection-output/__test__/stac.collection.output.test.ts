@@ -3,10 +3,10 @@ import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
-import { commandStacCollectionOutput } from '../stac.collection.output.ts';
+import { commandStacCollectionOutput, getScale, isValidGridSize } from '../stac.collection.output.ts';
 import { SampleCollection } from './stac.collection.output.data.ts';
 
-describe('stac-read-collection', () => {
+describe('stac-collection-output', () => {
   const mem = new FsMemory();
   const collectionLocation = fsa.toUrl('memory:///collection.json');
 
@@ -29,7 +29,7 @@ describe('stac-read-collection', () => {
     output: fsa.toUrl('memory:///tmp/stac-collection-output/'),
   };
 
-  it('should retrieve scale from collection', async () => {
+  it('should retrieve output from collection', async () => {
     await commandStacCollectionOutput.handler(BaseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-collection-output/')));
@@ -37,5 +37,24 @@ describe('stac-read-collection', () => {
     assert.deepStrictEqual(files, [fsa.toUrl('memory:///tmp/stac-collection-output/scale')]);
     const scale = await fsa.read(fsa.toUrl('memory:///tmp/stac-collection-output/scale'));
     assert.strictEqual(scale.toString(), '1000');
+  });
+  it('Should return true for a valid scale', async () => {
+    assert.equal(getScale(SampleCollection, collectionLocation), '1000');
+  });
+  it('Should throw an error if scale not found', async () => {
+    SampleCollection.links = [];
+    assert.throws(
+      () => getScale(SampleCollection, collectionLocation),
+      Error('Failed to get scale from memory:///collection.json.'),
+    );
+  });
+});
+
+describe('isValidGridSize', () => {
+  it('Should return true for a valid scale', async () => {
+    assert.equal(isValidGridSize('1000'), true);
+  });
+  it('Should return false for an invalid scale', async () => {
+    assert.equal(isValidGridSize('750'), false);
   });
 });
