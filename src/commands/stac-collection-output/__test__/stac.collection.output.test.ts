@@ -57,4 +57,7 @@ describe('isValidGridSize', () => {
   it('Should return false for an invalid scale', async () => {
     assert.equal(isValidGridSize('750'), false);
   });
+  it('Should return false for an scale that is not a number', async () => {
+    assert.equal(isValidGridSize('foo'), false);
+  });
 });
