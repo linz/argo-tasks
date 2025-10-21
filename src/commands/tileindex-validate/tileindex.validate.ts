@@ -70,14 +70,14 @@ export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
   },
 };
 
-export const RetileFromString: Type<string, 'auto' | boolean> = {
-  async from(value) {
+const autoBooleanFromString = (parameterName: string): Type<string, 'auto' | boolean> => ({
+  async from(value): Promise<'auto' | boolean> {
     if (value === 'auto') return value;
     if (value === 'true') return true;
     if (value === 'false') return false;
-    throw new Error(`Invalid retile value "${value}"; valid values: "auto", "true", "false"`);
+    throw new Error(`Invalid ${parameterName} value "${value}"; valid values: "auto", "true", "false"`);
   },
-};
+});
 
 /**
  * Determine the grid size from tiff dimensions
@@ -243,11 +243,11 @@ export const commandTileIndexValidate = command({
       defaultValue: () => 'auto' as const,
     }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
-    validate: flag({
-      type: boolean,
-      defaultValue: () => true,
+    validate: option({
+      type: autoBooleanFromString('validate'),
+      defaultValue: () => 'auto' as const,
       long: 'validate',
-      description: 'Validate that all input tiffs perfectly align to tile grid',
+      description: 'Validate that all input tiffs perfectly align to tile grid. "auto" skips validation when retiling.',
       defaultValueIsSerializable: true,
     }),
     forceOutput,
@@ -266,7 +266,7 @@ export const commandTileIndexValidate = command({
       defaultValue: () => false,
     }),
     retile: option({
-      type: RetileFromString,
+      type: autoBooleanFromString('retile'),
       long: 'retile',
       description:
         'Re-tile input TIFFs to an output tile. "auto" enables intelligent re-tiling based on input vs output scales.',
@@ -314,7 +314,7 @@ export const commandTileIndexValidate = command({
       logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
     }
     if (roundedGsds.size > 1) {
-      if (args.validate) {
+      if (args.validate === true) {
         logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
         throw new Error(
           `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${tiffLocationsToLoad.map(protocolAwareString).join(',')}`,
@@ -391,9 +391,24 @@ export const commandTileIndexValidate = command({
     }
 
     let retileNeeded = false;
+    let allValid = true;
     for (const [tileName, tiffs] of outputTiles.entries()) {
       if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
-      if (tiffs.length === 1) continue;
+      if (tiffs.length === 1) {
+        // For single tiles, validate only if --validate in 'auto' mode
+        if (args.validate === 'auto') {
+          const tiffLocation = tiffs[0]!;
+          const currentValid = validateTiffAlignment(tiffLocation);
+          if (!currentValid) {
+            logger.error(
+              { source: protocolAwareString(tiffLocation.source), tileNames: tiffLocation.tileNames, tiffLocation },
+              'TileIndex:Misaligned',
+            );
+            allValid = false;
+          }
+        }
+        continue;
+      }
 
       // Check if all of the duplicate tiffs have the same scale as the output grid size
       const allHaveSameScaleAsOutput = tiffs.every((tiff) => tiff.scale === gridSize);
@@ -414,8 +429,7 @@ export const commandTileIndexValidate = command({
     }
 
     // Validate that all tiffs align to tile grid
-    if (args.validate) {
-      let allValid = true;
+    if (args.validate === true) {
       for (const tiffLocation of tiffLocations) {
         const currentValid = validateTiffAlignment(tiffLocation);
         if (!currentValid) {
@@ -426,11 +440,9 @@ export const commandTileIndexValidate = command({
         }
         allValid = allValid && currentValid;
       }
-      if (!allValid) {
-        throw new Error(`Tile alignment validation failed`);
-      }
     }
 
+    if (!allValid) throw new Error(`Tile alignment validation failed`);
     if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
     // TODO do we care if no files are left?
 

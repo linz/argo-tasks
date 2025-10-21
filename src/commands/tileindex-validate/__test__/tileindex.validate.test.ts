@@ -342,6 +342,42 @@ describe('validate', () => {
         assert.equal(String(e), 'Error: Tile alignment validation failed');
       }
     });
+    it('should validate single tile when validate=auto', async (t) => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+      // Offset to make it misaligned
+      fakeTiff.images[0].origin[0] = fakeTiff.images[0].origin[0] + 0.05;
+      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+
+      try {
+        await commandTileIndexValidate.handler({
+          ...baseArguments,
+          validate: 'auto',
+          retile: false,
+        });
+        assert.fail('Should throw exception due to misalignment with auto validation');
+      } catch (e) {
+        assert.equal(String(e), 'Error: Tile alignment validation failed');
+      }
+    });
+    it('should pass validation for aligned tile with validate=auto', async (t) => {
+      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+
+      await commandTileIndexValidate.handler({
+        ...baseArguments,
+        validate: 'auto',
+        retile: false,
+      });
+
+      const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
+      assert.deepEqual(outputFileList, [
+        {
+          output: 'AS21_1000_0101',
+          input: ['s3://path/AS21_1000_0101.tiff'],
+          includeDerived: false,
+        },
+      ]);
+    });
   }
 });
 
