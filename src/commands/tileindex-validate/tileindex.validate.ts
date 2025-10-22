@@ -81,11 +81,11 @@ export const TiffLoader = {
             });
         });
 
-        if (q.todo.size > 2_500) await q.joinSettled();
+        if (q.todo.size > 2_500) await q.join();
       }
     }
 
-    await q.joinSettled();
+    await q.join();
 
     if (failedCount > 0) {
       logger.fatal({ failedCount }, 'Tiff:Load:Failed');

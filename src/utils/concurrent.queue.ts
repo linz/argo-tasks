@@ -23,8 +23,4 @@ export class ConcurrentQueue {
   async join(): Promise<void> {
     while (this.todo.size > 0) await Promise.all([...this.todo.values()]);
   }
-
-  async joinSettled(): Promise<void> {
-    while (this.todo.size > 0) await Promise.allSettled([...this.todo.values()]);
-  }
 }
