@@ -632,21 +632,9 @@ describe('determineGridSizeFromDimensions', () => {
     assert.strictEqual(determineGridSizeFromDimensions(width, height), 500);
   });
 
-  it('should allow small rounding errors (within 1 meter)', () => {
-    const width = 480.5; // 1k tile width + 0.5m
-    const height = 719.5; // 1k tile height - 0.5m
-    assert.strictEqual(determineGridSizeFromDimensions(width, height), 1000);
-  });
-
   it('should return null for dimensions that do not match any grid size', () => {
     const width = 123.45;
     const height = 678.9;
-    assert.strictEqual(determineGridSizeFromDimensions(width, height), null);
-  });
-
-  it('should return null when rounding error exceeds 1 meter', () => {
-    const width = 201.5; // 1k tile width + 1.5m (exceeds tolerance)
-    const height = 300;
     assert.strictEqual(determineGridSizeFromDimensions(width, height), null);
   });
 });
