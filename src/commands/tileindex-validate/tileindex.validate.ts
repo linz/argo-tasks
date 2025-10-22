@@ -389,7 +389,7 @@ export const commandTileIndexValidate = command({
       logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
     }
 
-    let retileNeeded = false;
+    let mergeNeeded = false;
     let allValid = true;
     for (const [tileName, tiffs] of outputTiles.entries()) {
       if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
@@ -422,7 +422,7 @@ export const commandTileIndexValidate = command({
           'TileIndex:Retile',
         );
       } else {
-        retileNeeded = true;
+        mergeNeeded = true;
         logger.error({ tileName, uris: tiffs.map((v) => protocolAwareString(v.source)) }, 'TileIndex:Duplicate');
       }
     }
@@ -442,7 +442,7 @@ export const commandTileIndexValidate = command({
     }
 
     if (!allValid) throw new Error(`Tile alignment validation failed`);
-    if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
+    if (mergeNeeded) throw new Error(`Duplicate files found, see output.geojson`);
     // TODO do we care if no files are left?
 
     logger.info({ duration: performance.now() - startTime }, 'TileIndex:Done');
