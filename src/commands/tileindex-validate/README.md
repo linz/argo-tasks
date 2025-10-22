@@ -14,15 +14,15 @@ tileindex-validate <options> [...location]
 
 ### Options
 
-| Usage                  | Description                                                                                                           | Options       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------- |
-| --config <str>         | Location of role configuration file                                                                                   | optional      |
-| --include <str>        | Include files eg ".\*.tiff?$"                                                                                         | optional      |
-| --scale <value>        | Tile grid scale to align output tile to. "auto" determines the appropriate scale based on input TIFFs GSD and preset. | default: auto |
-| --source-epsg <number> | Force epsg code for input tiffs                                                                                       | optional      |
-| --validate <value>     | Validate that all input tiffs perfectly align to tile grid. "auto" skips validation when retiling.                    | default: auto |
-| --preset <str>         | Validate the input tiffs with a configuration preset                                                                  | default: none |
-| --retile <value>       | Re-tile input TIFFs to an output tile. "auto" enables intelligent re-tiling based on input vs output scales.          | default: auto |
+| Usage                  | Description                                                                                                                         | Options       |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| --config <str>         | Location of role configuration file                                                                                                 | optional      |
+| --include <str>        | Include files eg ".\*.tiff?$"                                                                                                       | optional      |
+| --scale <value>        | Tile grid scale to align output tile to. "auto" determines the appropriate scale based on input TIFFs GSD and preset.               | default: auto |
+| --source-epsg <number> | Force epsg code for input tiffs                                                                                                     | optional      |
+| --validate <value>     | Validate that all input tiffs perfectly align to tile grid. "auto" skips validation when retiling.                                  | default: auto |
+| --preset <str>         | Validate the input tiffs with a configuration preset                                                                                | default: none |
+| --retile <value>       | Re-tile input TIFFs to an output tile. "auto" enables re-tiling when the output tile scale is different from the input tiles scale. | default: auto |
 
 ### Flags
 

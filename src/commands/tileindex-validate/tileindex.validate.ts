@@ -268,7 +268,7 @@ export const commandTileIndexValidate = command({
       type: autoBooleanFromString('retile'),
       long: 'retile',
       description:
-        'Re-tile input TIFFs to an output tile. "auto" enables intelligent re-tiling based on input vs output scales.',
+        'Re-tile input TIFFs to an output tile. "auto" enables re-tiling when the output tile scale is different from the input tiles scale.',
       defaultValueIsSerializable: true,
       defaultValue: () => 'auto' as const,
     }),
