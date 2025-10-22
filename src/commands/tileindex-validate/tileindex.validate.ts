@@ -93,8 +93,7 @@ export function determineGridSizeFromDimensions(width: number, height: number): 
     const expectedWidth = MapSheet.width / scale;
     const expectedHeight = MapSheet.height / scale;
 
-    // Allow for small rounding errors (within 1 meter)
-    if (Math.abs(width - expectedWidth) < 1 && Math.abs(height - expectedHeight) < 1) {
+    if (width === expectedWidth && height === expectedHeight) {
       return gridSize;
     }
   }
@@ -571,11 +570,6 @@ export async function extractTiffLocations(
         const tiffSize = getSize(targetBbox);
         const detectedScale = determineGridSizeFromDimensions(tiffSize.width, tiffSize.height);
 
-        // if (shouldValidate) {
-        //   Is the tiff bounding box the same as the map sheet bounding box!
-        //   Also need to allow for ~1.5cm of error between bounding boxes.
-        //   assert bbox == MapSheet.getMapTileIndex(tileName).bbox
-        // }
         return {
           bbox: targetBbox,
           source: tiff.source.url,
