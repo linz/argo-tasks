@@ -21,6 +21,7 @@ tileindex-validate <options> [...location]
 | --scale <value>        | Tile grid scale to align output tile to              |               |
 | --source-epsg <number> | Force epsg code for input tiffs                      | optional      |
 | --preset <str>         | Validate the input tiffs with a configuration preset | default: none |
+| --concurrency <number> | Number of TIFF files to read concurrently            | optional      |
 
 ### Flags
 
