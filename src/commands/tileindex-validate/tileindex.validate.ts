@@ -59,14 +59,106 @@ export const TiffLoader = {
   },
 };
 
+export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
+  async from(value) {
+    if (value === 'auto') return value;
+    const gridSize = Number(value) as GridSize;
+    if (!GridSizes.includes(gridSize)) {
+      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}", or "auto"`);
+    }
+    return gridSize;
+  },
+};
+
+const autoBooleanFromString = (parameterName: string): Type<string, 'auto' | boolean> => ({
+  async from(value): Promise<'auto' | boolean> {
+    if (value === 'auto') return value;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    throw new Error(`Invalid ${parameterName} value "${value}"; valid values: "auto", "true", "false"`);
+  },
+});
+
+/**
+ * Determine the grid size from tiff dimensions
+ *
+ * @param width Width of the tiff in meters
+ * @param height Height of the tiff in meters
+ * @returns GridSize if dimensions match a known tile size, null otherwise
+ */
+export function determineGridSizeFromDimensions(width: number, height: number): GridSize | null {
+  for (const gridSize of GridSizes) {
+    // MapSheet has base dimensions at 50k scale, smaller scales divide by the ratio
+    const scale = MapSheet.scale / gridSize;
+    const expectedWidth = MapSheet.width / scale;
+    const expectedHeight = MapSheet.height / scale;
+
+    if (width === expectedWidth && height === expectedHeight) {
+      return gridSize;
+    }
+  }
+  return null;
+}
+
+/**
+ * Determine the grid size from the GSD and preset (datatype)
+ *
+ * @param gsd Ground Sample Distance in meters
+ * @param preset 'webp' for aerial imagery, 'dem_lerc' for DEM/DSM/Hillshade
+ */
+export function determineGridSizeFromGSDPreset(gsd: number, preset: string): GridSize {
+  // Aerial Imagery
+  if (preset === 'webp') {
+    if (gsd < 0.1) return 1000;
+    if (gsd >= 0.1 && gsd < 0.25) return 5000;
+    if (gsd >= 0.25 && gsd < 1.0) return 10000;
+    if (gsd >= 1.0) return 50000;
+  }
+  // DEM/DSM/Hillshade
+  if (preset === 'dem_lerc') {
+    if (gsd < 0.2) return 1000;
+    if (gsd >= 0.2 && gsd <= 1.0) return 10000;
+    if (gsd > 1.0) return 50000;
+  }
+
+  throw new Error(`Unknown preset: ${preset}`);
+}
+
+/**
+ * Validate the tiffs against a validation preset
+ *
+ * @param preset preset to validate against
+ * @param tiffs tiffs to validate.
+ */
+export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
+  let rejected = false;
+
+  if (preset === 'webp') {
+    const promises = tiffs.map((f) => {
+      return validate8BitsTiff(f).catch((err) => {
+        logger.fatal(
+          { reason: String(err), source: protocolAwareString(f.source.url), preset },
+          'Tiff:ValidatePreset:failed',
+        );
+        rejected = true;
+      });
+    });
+    await Promise.allSettled(promises);
+  }
+
+  if (rejected) throw new Error(`Tiff preset:"${preset}" validation failed`);
+}
+
 /**
  * Validate list of tiffs match a LINZ map sheet tile index
  *
  * If --validate
- * Asserts that there will be no duplicates
+ * Asserts that there will be no duplicates (when tiffs have same scale as output scale and --retile is auto)
  *
- * If --retile
- * The script will not error as it is assumed the 'duplicate' tiffs are to be retiled and merged.
+ * Automatic retiling behavior (--retile):
+ * - "auto" (default): Intelligent retiling - only retiles when tiffs have different scales than output scale
+ * - true: Always processes duplicates for retiling regardless of scale matching
+ * - false: Never retiles duplicates
  *
  * If --includeDerived
  * Sets includeDerived in file-list.json (determines whether to create derived_from links in STAC)
@@ -104,72 +196,33 @@ export const TiffLoader = {
  * tileindex-validate --scale 5000 --validate s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
  * ```
  *
- * Create a list of files that need to be retiled
+ * Create a list of files for retiling (automatically determined based on input vs output grid size)
  * ```bash
- * tileindex-validate --scale 5000 --retile ./path/to/imagery/
+ * tileindex-validate --scale 5000 ./path/to/imagery/
+ * ```
+ *
+ * Force retiling of duplicate sources regardless of grid size matching
+ * ```bash
+ * tileindex-validate --scale 1000 --retile true ./path/to/imagery/
  * ```
  */
-
-export const GridSizeFromString: Type<string, GridSize> = {
-  async from(value) {
-    const gridSize = Number(value) as GridSize;
-    if (!GridSizes.includes(gridSize)) {
-      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}"`);
-    }
-    return gridSize;
-  },
-};
-
 /**
- * Validate the tiffs against a validation preset
+ * Retiling behavior based on tiff scale vs output scale:
  *
- * @param preset preset to validate against
- * @param tiffs tiffs to validate.
- */
-export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
-  let rejected = false;
-
-  if (preset === 'webp') {
-    const promises = tiffs.map((f) => {
-      return validate8BitsTiff(f).catch((err) => {
-        logger.fatal(
-          { reason: String(err), source: protocolAwareString(f.source.url), preset },
-          'Tiff:ValidatePreset:failed',
-        );
-        rejected = true;
-      });
-    });
-    await Promise.allSettled(promises);
-  }
-
-  if (rejected) throw new Error(`Tiff preset:"${preset}" validation failed`);
-}
-
-/**
+ * Case 1: Duplicate tiffs have same scale as output scale + --retile auto (default)
+ * → Reports duplicates as errors (no retiling)
  *
- * --validate // Validates all inputs align to output grid
- * --retile // Creates a list of files that need to be retiled
+ * Case 2: --retile true OR duplicate tiffs have different scale than output scale
+ * → Creates retiling output with duplicate tiffs merged
  *
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=false --validate=true
- * // Validate the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=true --validate=true
- * // Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:5000, 1:10_000
- * // --retile=true --validate=false
- * // create a re-tiling output of {tileName, input: string[] }
+ * Examples:
+ * input: 1:1000 tiffs, scale: 1:1000 → error on duplicates (same scale, auto retiling)
+ * input: 1:1000 tiffs, scale: 1:1000, --retile true → create retiling output
+ * input: 1:1000 tiffs, scale: 1:5000 → create retiling output (different scale, auto retiling)
+ * input: mixed 1:1000 + 1:5000 tiffs, scale: 1:1000 → create retiling output (mixed scales, auto retiling)
  *
  * -- Not handled (yet!)
- * input: 1:10_000
- * scale: 1:1000
- * // create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
+ * input: 1:10_000, scale: 1:1000 → split input tiff into multiple output tiles
  *
  */
 export const commandTileIndexValidate = command({
@@ -180,20 +233,20 @@ export const commandTileIndexValidate = command({
     config,
     verbose,
     include: CommandListArgs.include,
-    scale: option({ type: GridSizeFromString, long: 'scale', description: 'Tile grid scale to align output tile to' }),
-    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
-    retile: flag({
-      type: boolean,
-      defaultValue: () => false,
-      long: 'retile',
-      description: 'Output tile configuration for retiling',
+    scale: option({
+      type: GridSizeFromString,
+      long: 'scale',
+      description:
+        'Tile grid scale to align output tile to. "auto" determines the appropriate scale based on input TIFFs GSD and preset.',
       defaultValueIsSerializable: true,
+      defaultValue: () => 'auto' as const,
     }),
-    validate: flag({
-      type: boolean,
-      defaultValue: () => true,
+    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
+    validate: option({
+      type: autoBooleanFromString('validate'),
+      defaultValue: () => 'auto' as const,
       long: 'validate',
-      description: 'Validate that all input tiffs perfectly align to tile grid',
+      description: 'Validate that all input tiffs perfectly align to tile grid. "auto" skips validation when retiling.',
       defaultValueIsSerializable: true,
     }),
     forceOutput,
@@ -210,6 +263,14 @@ export const commandTileIndexValidate = command({
       description: 'Include input tiles as STAC `derived_from` links',
       defaultValueIsSerializable: true,
       defaultValue: () => false,
+    }),
+    retile: option({
+      type: autoBooleanFromString('retile'),
+      long: 'retile',
+      description:
+        'Re-tile input TIFFs to an output tile. "auto" enables re-tiling when the output tile scale is different from the input tiles scale.',
+      defaultValueIsSerializable: true,
+      defaultValue: () => 'auto' as const,
     }),
     location: restPositionals({
       type: UrlFolderList,
@@ -259,7 +320,7 @@ export const commandTileIndexValidate = command({
       logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
     }
     if (roundedGsds.size > 1) {
-      if (args.validate) {
+      if (args.validate === true) {
         logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
         throw new Error(
           `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${tiffLocationsToLoad.map(protocolAwareString).join(',')}`,
@@ -272,7 +333,18 @@ export const commandTileIndexValidate = command({
     await fsa.write(fsa.toUrl('/tmp/tile-index-validate/gsd'), String([...roundedGsds][0]));
 
     const groupByTileNameStartTime = performance.now();
-    const tiffLocations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
+
+    // Determine gridSize for retiling if not specified or set to 'auto'
+    let gridSize = args.scale;
+    if (gridSize === 'auto') {
+      // Use the common rounded GSD for auto grid size selection
+      const roundedGsdStr = [...roundedGsds][0];
+      const roundedGsd = Number(roundedGsdStr);
+      gridSize = determineGridSizeFromGSDPreset(roundedGsd, args.preset);
+      logger.info({ gsd: roundedGsd, preset: args.preset, gridSize }, 'TileIndex:AutoSelectedGridSize');
+    }
+
+    const tiffLocations = await extractTiffLocations(tiffs, gridSize, args.sourceEpsg);
 
     const outputTiles = groupByTileName(tiffLocations);
 
@@ -324,25 +396,46 @@ export const commandTileIndexValidate = command({
       logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
     }
 
-    let retileNeeded = false;
+    let mergeNeeded = false;
+    let allValid = true;
     for (const [tileName, tiffs] of outputTiles.entries()) {
       if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
-      if (tiffs.length === 1) continue;
-      if (args.retile) {
+      if (tiffs.length === 1) {
+        // For single tiles, validate only if --validate in 'auto' mode
+        if (args.validate === 'auto') {
+          const tiffLocation = tiffs[0]!;
+          const currentValid = validateTiffAlignment(tiffLocation);
+          if (!currentValid) {
+            logger.error(
+              { source: protocolAwareString(tiffLocation.source), tileNames: tiffLocation.tileNames, tiffLocation },
+              'TileIndex:Misaligned',
+            );
+            allValid = false;
+          }
+        }
+        continue;
+      }
+
+      // Check if all of the duplicate tiffs have the same scale as the output grid size
+      const allHaveSameScaleAsOutput = tiffs.every((tiff) => tiff.scale === gridSize);
+
+      // Determine retiling behavior based on --retile flag
+      const shouldRetile = args.retile === true || (args.retile === 'auto' && !allHaveSameScaleAsOutput);
+
+      if (shouldRetile) {
         const bandType = validateConsistentBands(tiffs);
         logger.info(
           { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
           'TileIndex:Retile',
         );
       } else {
-        retileNeeded = true;
+        mergeNeeded = true;
         logger.error({ tileName, uris: tiffs.map((v) => protocolAwareString(v.source)) }, 'TileIndex:Duplicate');
       }
     }
 
     // Validate that all tiffs align to tile grid
-    if (args.validate) {
-      let allValid = true;
+    if (args.validate === true) {
       for (const tiffLocation of tiffLocations) {
         const currentValid = validateTiffAlignment(tiffLocation);
         if (!currentValid) {
@@ -353,12 +446,10 @@ export const commandTileIndexValidate = command({
         }
         allValid = allValid && currentValid;
       }
-      if (!allValid) {
-        throw new Error(`Tile alignment validation failed`);
-      }
     }
 
-    if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
+    if (!allValid) throw new Error(`Tile alignment validation failed`);
+    if (mergeNeeded) throw new Error(`Duplicate files found, see output.geojson`);
     // TODO do we care if no files are left?
 
     logger.info({ duration: performance.now() - startTime }, 'TileIndex:Done');
@@ -419,6 +510,8 @@ export interface TiffLocation {
    * @see {@link extractBandInformation} for more information on bad types
    */
   bands: string[];
+  /** Detected grid size/scale of the input tiff based on its dimensions */
+  scale?: GridSize;
 }
 
 /**
@@ -480,17 +573,17 @@ export async function extractTiffLocations(
 
         const covering = getCovering(targetBbox, gridSize);
 
-        // if (shouldValidate) {
-        //   // Is the tiff bounding box the same as the map sheet bounding box!
-        //   // Also need to allow for ~1.5cm of error between bounding boxes.
-        //   // assert bbox == MapSheet.getMapTileIndex(tileName).bbox
-        // }
+        // Determine the scale/grid size of this input tiff from its dimensions
+        const tiffSize = getSize(targetBbox);
+        const detectedScale = determineGridSizeFromDimensions(tiffSize.width, tiffSize.height);
+
         return {
           bbox: targetBbox,
           source: tiff.source.url,
           tileNames: covering,
           epsg: tiff.images[0]?.epsg,
           bands: await extractBandInformation(tiff),
+          scale: detectedScale ?? gridSize, // Use detected scale or fall back to output grid size
         };
       } catch (e) {
         logger.error({ reason: e, source: protocolAwareString(tiff.source.url) }, 'ExtractTiffLocation:Failed');
