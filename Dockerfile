@@ -1,6 +1,6 @@
 FROM node:24.5.0-slim@sha256:7c1ef8ffc4ac39763375af7619df88c07a791dd83ba0743e738edce83b183139
 
-RUN apt-get update && apt-get install openssh-client git -y
+RUN apt-get update && apt-get install openssh-client git jq -y
 
 WORKDIR /app
 
