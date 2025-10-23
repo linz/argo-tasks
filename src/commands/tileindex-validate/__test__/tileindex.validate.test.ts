@@ -23,10 +23,10 @@ import {
   isTiff,
   reprojectIfNeeded,
   TiffLoader,
+  type TiffLocation,
   validate8BitsTiff,
   validatePreset,
   validateTiffAlignment,
-  type TiffLocation,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
