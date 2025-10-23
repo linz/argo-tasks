@@ -72,7 +72,7 @@ export function getScale(collection: StacCollection & StacCollectionLinz, collec
   if (!scale) {
     throw new Error(`Failed to get scale from ${protocolAwareString(collectionLocation)}.`);
   }
-  return scale.toString();
+  return scale;
 }
 
 /**
