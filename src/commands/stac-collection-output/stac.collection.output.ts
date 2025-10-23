@@ -54,7 +54,7 @@ export const commandStacCollectionOutput = command({
 });
 
 /**
- * Get the scale from a STAC Collection
+ * Get the scale from a STAC Collection. 1:50K mapsheets are not covered by this function.
  *
  * @param collection STAC Collection
  * @param collectionLocation Location of the STAC Collection
@@ -63,6 +63,9 @@ export const commandStacCollectionOutput = command({
  */
 export function getScale(collection: StacCollection & StacCollectionLinz, collectionLocation: URL): string {
   const itemLink = collection.links.find((f) => f.rel === 'item');
+  if (!itemLink?.href) {
+    throw new Error(`No valid item link href found in collection at ${protocolAwareString(collectionLocation)}.`);
+  }
   const scaleResults = itemLink?.href.match(/_(\d+)_/);
   const scale = scaleResults?.[1];
   if (!scale) {
