@@ -16,13 +16,17 @@ import { createTiff, Url } from '../../common.ts';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
+  getSize,
   getTileName,
   GridSizeFromString,
   groupByTileName,
+  isTiff,
   reprojectIfNeeded,
   TiffLoader,
   validate8BitsTiff,
   validatePreset,
+  validateTiffAlignment,
+  type TiffLocation,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
@@ -528,5 +532,154 @@ describe('GSD handling', () => {
       const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
       assert.deepEqual(outputGsd, '1');
     }
+  });
+});
+
+describe('getSize', () => {
+  it('should calculate width and height from bounding box', () => {
+    const bbox: BBox = [1000, 2000, 1500, 2800];
+    const size = getSize(bbox);
+    assert.equal(size.width, 500);
+    assert.equal(size.height, 800);
+  });
+
+  it('should handle negative coordinates', () => {
+    const bbox: BBox = [-1500, -2800, -1000, -2000];
+    const size = getSize(bbox);
+    assert.equal(size.width, 500);
+    assert.equal(size.height, 800);
+  });
+
+  it('should handle zero-sized bounding boxes', () => {
+    const bbox: BBox = [100, 200, 100, 200];
+    const size = getSize(bbox);
+    assert.equal(size.width, 0);
+    assert.equal(size.height, 0);
+  });
+});
+
+describe('validateTiffAlignment', () => {
+  it('should validate correctly aligned tiff', () => {
+    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
+    assert.ok(mapTileIndex);
+
+    const tiffLocation: TiffLocation = {
+      source: new URL('s3://test/AS21_1000_0101.tiff'),
+      bbox: mapTileIndex.bbox,
+      epsg: 2193,
+      tileNames: ['AS21_1000_0101'],
+      bands: ['uint8', 'uint8', 'uint8'],
+    };
+
+    const isValid = validateTiffAlignment(tiffLocation);
+    assert.equal(isValid, true);
+  });
+
+  it('should fail validation for misaligned tiff origin', () => {
+    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
+    assert.ok(mapTileIndex);
+
+    const tiffLocation: TiffLocation = {
+      source: new URL('s3://test/AS21_1000_0101.tiff'),
+      bbox: [
+        mapTileIndex.bbox[0] + 0.02, // 2cm > 1.5cm tolerance
+        mapTileIndex.bbox[1],
+        mapTileIndex.bbox[2] + 0.02,
+        mapTileIndex.bbox[3],
+      ],
+      epsg: 2193,
+      tileNames: ['AS21_1000_0101'],
+      bands: ['uint8', 'uint8', 'uint8'],
+    };
+
+    const isValid = validateTiffAlignment(tiffLocation);
+    assert.equal(isValid, false);
+  });
+
+  it('should fail validation for tiff covering multiple tiles', () => {
+    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
+    assert.ok(mapTileIndex);
+
+    const tiffLocation: TiffLocation = {
+      source: new URL('s3://test/multiTile.tiff'),
+      bbox: mapTileIndex.bbox,
+      epsg: 2193,
+      tileNames: ['AS21_1000_0101', 'AS21_1000_0102'],
+      bands: ['uint8', 'uint8', 'uint8'],
+    };
+
+    const isValid = validateTiffAlignment(tiffLocation);
+    assert.equal(isValid, false);
+  });
+
+  it('should pass validation with allowed error tolerance', () => {
+    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
+    assert.ok(mapTileIndex);
+
+    const tiffLocation: TiffLocation = {
+      source: new URL('s3://test/AS21_1000_0101.tiff'),
+      bbox: [
+        mapTileIndex.bbox[0] + 0.01, // 1cm < 1.5cm tolerance
+        mapTileIndex.bbox[1] + 0.01,
+        mapTileIndex.bbox[2] + 0.01,
+        mapTileIndex.bbox[3] + 0.01,
+      ],
+      epsg: 2193,
+      tileNames: ['AS21_1000_0101'],
+      bands: ['uint8', 'uint8', 'uint8'],
+    };
+
+    const isValid = validateTiffAlignment(tiffLocation);
+    assert.equal(isValid, true);
+  });
+
+  it('should fail validation for tiff with invalid tile name', () => {
+    const tiffLocation: TiffLocation = {
+      source: new URL('s3://test/invalid.tiff'),
+      bbox: [1000, 2000, 1500, 2800],
+      epsg: 2193,
+      tileNames: ['INVALID_TILE_NAME'],
+      bands: ['uint8', 'uint8', 'uint8'],
+    };
+
+    const isValid = validateTiffAlignment(tiffLocation);
+    assert.equal(isValid, false);
+  });
+});
+
+describe('isTiff', () => {
+  it('should return true for .tiff extension', () => {
+    const url = new URL('file:///path/to/image.tiff');
+    assert.equal(isTiff(url), true);
+  });
+
+  it('should return true for .tif extension', () => {
+    const url = new URL('file:///path/to/image.tif');
+    assert.equal(isTiff(url), true);
+  });
+
+  it('should return true for .TIFF extension (case insensitive)', () => {
+    const url = new URL('file:///path/to/image.TIFF');
+    assert.equal(isTiff(url), true);
+  });
+
+  it('should return true for .TIF extension (case insensitive)', () => {
+    const url = new URL('file:///path/to/image.TIF');
+    assert.equal(isTiff(url), true);
+  });
+
+  it('should return false for not a TIFF type extension', () => {
+    const url = new URL('file:///path/to/image.ext');
+    assert.equal(isTiff(url), false);
+  });
+
+  it('should return false for files without extension', () => {
+    const url = new URL('file:///path/to/file');
+    assert.equal(isTiff(url), false);
+  });
+
+  it('should return false for .tiff substring in filename but different extension', () => {
+    const url = new URL('file:///path/to/not-a-tiff.jpg');
+    assert.equal(isTiff(url), false);
   });
 });

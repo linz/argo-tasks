@@ -6,6 +6,7 @@ import type { BBox } from '@linzjs/geojson';
 import type { Type } from 'cmd-ts';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 
+import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
@@ -20,10 +21,214 @@ import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.
 import { config, forceOutput, registerCli, UrlFolderList, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 
-function isTiff(url: URL): boolean {
-  const fileName = url.pathname.toLowerCase();
-  return fileName.endsWith('.tiff') || fileName.endsWith('.tif');
+export interface TiffLocation {
+  /** Location to the image */
+  source: URL;
+  /** bbox, [minX, minY, maxX, maxY] */
+  bbox: BBox;
+  /** EPSG code of the tiff if found */
+  epsg?: number | null;
+  /** Output tile name */
+  tileNames: string[];
+  /**
+   * List of bands inside the tiff in the format `uint8` `uint16`
+   *
+   * @see {@link extractBandInformation} for more information on bad types
+   */
+  bands: string[];
 }
+
+interface TiffsMetadata {
+  projections: Set<number>;
+  gsds: Set<number>;
+  roundedGsds: Set<string>;
+  canGetResolution: boolean;
+  tiffCount: number;
+}
+
+export type CommandTileIndexValidateArgs = CommandArguments<typeof commandTileIndexValidate>;
+
+export const GridSizeFromString: Type<string, GridSize> = {
+  async from(value) {
+    const gridSize = Number(value) as GridSize;
+    if (!GridSizes.includes(gridSize)) {
+      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}"`);
+    }
+    return gridSize;
+  },
+};
+
+export const commandTileIndexValidate = command({
+  name: 'tileindex-validate',
+  description: 'List input files and validate there are no duplicates.',
+  version: CliInfo.version,
+  args: {
+    config,
+    verbose,
+    include: CommandListArgs.include,
+    scale: option({ type: GridSizeFromString, long: 'scale', description: 'Tile grid scale to align output tile to' }),
+    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
+    retile: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'retile',
+      description: 'Output tile configuration for retiling',
+      defaultValueIsSerializable: true,
+    }),
+    validate: flag({
+      type: boolean,
+      defaultValue: () => true,
+      long: 'validate',
+      description: 'Validate that all input tiffs perfectly align to tile grid',
+      defaultValueIsSerializable: true,
+    }),
+    forceOutput,
+    preset: option({
+      type: string,
+      long: 'preset',
+      description: 'Validate the input tiffs with a configuration preset',
+      defaultValueIsSerializable: true,
+      defaultValue: () => 'none',
+    }),
+    includeDerived: flag({
+      type: boolean,
+      long: 'includeDerived',
+      description: 'Include input tiles as STAC `derived_from` links',
+      defaultValueIsSerializable: true,
+      defaultValue: () => false,
+    }),
+    location: restPositionals({
+      type: UrlFolderList,
+      displayName: 'location',
+      description: 'Location of the source files. Accepts multiple source paths.',
+    }),
+    concurrency: option({
+      type: number,
+      defaultValue: () => 25,
+      long: 'concurrency',
+      description: 'Number of TIFF files to read concurrently',
+    }),
+  },
+  /**
+   * Validate list of tiffs match a LINZ map sheet tile index
+   *
+   * If --validate
+   * Asserts that there will be no duplicates
+   * Validates all inputs align to output grid
+   *
+   * If --retile
+   * Creates a list of files that need to be retiled
+   * The script will not error as it is assumed the 'duplicate' tiffs are to be retiled and merged.
+   *
+   * Examples:
+   * input: 1:1000
+   * scale: 1:1000
+   * retile=false --validate=true
+   * Validate the top left points of every input align to the 1:1000 grid and no duplicates
+   *
+   * input: 1:1000
+   * scale: 1:1000
+   * --retile=true --validate=true
+   * Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
+   *
+   * input: 1:1000
+   * scale: 1:5000, 1:10_000
+   * --retile=true --validate=false
+   * create a re-tiling output of {tileName, input: string[] }
+   *
+   * -- Not handled (yet!)
+   * input: 1:10_000
+   * scale: 1:1000
+   * create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
+   *
+   * If --includeDerived
+   * Sets includeDerived in file-list.json (determines whether to create derived_from links in STAC)
+   *
+   * @output
+   * /tmp/tile-index-validate/input.geojson
+   * Geometry:
+   *  bounding boxes of the input tiff files.
+   *
+   * Attributes:
+   * - source (string): path to source tiff
+   * - tileName (string): calculated target tileName
+   * - isDuplicate (boolean): true if source tiffs with duplicate tilenames exist
+   *
+   * /tmp/tile-index-validate/output.geojson
+   * Geometry:
+   *  bounding boxes of the target tiff files
+   *
+   * Attributes:
+   * - source (string[]): paths to source tiffs
+   * - tileName (string): target tileName for target tile index
+   *
+   * /tmp/tile-index-validate/file-list.json
+   * Filelist grouped by target tileNames with includeDerived flag
+   *
+   * Attributes:
+   * - input (string[]): paths to source tiffs
+   * - output (string): target tileName for target tile index
+   * - includeDerived (boolean): include input tiles as STAC `derived_from` links
+   *
+   * @example
+   * Validate all source tiffs align to scale grid
+   *
+   * ```bash
+   * tileindex-validate --scale 5000 --validate s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
+   * ```
+   *
+   * Create a list of files that need to be retiled
+   * ```bash
+   * tileindex-validate --scale 5000 --retile ./path/to/imagery/
+   * ```
+   */
+  async handler(args) {
+    const startTime = performance.now();
+    registerCli(this, args);
+    logger.info('TileIndex:Start');
+
+    const readTiffStartTime = performance.now();
+    const { tiffs, locations } = await loadTiffs(args);
+    await validatePreset(args.preset, tiffs);
+    const tiffsMetadata = await getTiffsMetadata(tiffs, locations, args.validate);
+    const readDuration = performance.now() - readTiffStartTime;
+    logger.info(
+      {
+        tiffCount: tiffs.length,
+        projections: [...tiffsMetadata.projections],
+        gsds: [...tiffsMetadata.gsds],
+        duration: readDuration,
+      },
+      'TileIndex: All Files Read',
+    );
+
+    const groupByTileNameStartTime = performance.now();
+    const tiffLocations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
+    const outputTiles = groupByTileName(tiffLocations);
+    logger.info(
+      {
+        duration: performance.now() - groupByTileNameStartTime,
+        files: tiffLocations.length,
+        outputs: outputTiles.size,
+      },
+      'TileIndex: Manifest Assessed for Duplicates',
+    );
+
+    if (args.forceOutput || isArgo()) {
+      await generateOutputFiles(
+        tiffLocations,
+        outputTiles,
+        args.sourceEpsg,
+        args.includeDerived,
+        String([...tiffsMetadata.roundedGsds][0]),
+      );
+    }
+
+    validateTiling(outputTiles, tiffLocations, args.retile, args.validate);
+
+    logger.info({ duration: performance.now() - startTime }, 'TileIndex:Done');
+  },
+});
 
 export const TiffLoader = {
   /**
@@ -100,65 +305,184 @@ export const TiffLoader = {
 };
 
 /**
- * Validate list of tiffs match a LINZ map sheet tile index
+ * Load TIFF files from the specified locations.
  *
- * If --validate
- * Asserts that there will be no duplicates
- *
- * If --retile
- * The script will not error as it is assumed the 'duplicate' tiffs are to be retiled and merged.
- *
- * If --includeDerived
- * Sets includeDerived in file-list.json (determines whether to create derived_from links in STAC)
- *
- * @output
- * /tmp/tile-index-validate/input.geojson
- * Geometry:
- *  bounding boxes of the input tiff files.
- *
- * Attributes:
- * - source (string): path to source tiff
- * - tileName (string): calculated target tileName
- * - isDuplicate (boolean): true if source tiffs with duplicate tilenames exist
- *
- * /tmp/tile-index-validate/output.geojson
- * Geometry:
- *  bounding boxes of the target tiff files
- *
- * Attributes:
- * - source (string[]): paths to source tiffs
- * - tileName (string): target tileName for target tile index
- *
- * /tmp/tile-index-validate/file-list.json
- * Filelist grouped by target tileNames with includeDerived flag
- *
- * Attributes:
- * - input (string[]): paths to source tiffs
- * - output (string): target tileName for target tile index
- * - includeDerived (boolean): include input tiles as STAC `derived_from` links
- *
- * @example
- * Validate all source tiffs align to scale grid
- *
- * ```bash
- * tileindex-validate --scale 5000 --validate s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
- * ```
- *
- * Create a list of files that need to be retiled
- * ```bash
- * tileindex-validate --scale 5000 --retile ./path/to/imagery/
- * ```
+ * @param args The command arguments containing location and concurrency settings.
+ * @returns A promise that resolves to an object containing the loaded TIFFs and their locations.
  */
+async function loadTiffs(args: CommandTileIndexValidateArgs): Promise<{ tiffs: Tiff[]; locations: URL[] }> {
+  const q = new ConcurrentQueue(args.concurrency);
+  const tiffLocationsToLoad = args.location.flat();
+  const tiffs = await TiffLoader.load(tiffLocationsToLoad, q, args);
+  return { tiffs, locations: tiffLocationsToLoad };
+}
 
-export const GridSizeFromString: Type<string, GridSize> = {
-  async from(value) {
-    const gridSize = Number(value) as GridSize;
-    if (!GridSizes.includes(gridSize)) {
-      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}"`);
+/**
+ * Get metadata from the list of tiffs
+ *
+ * @param tiffs
+ * @param locations
+ * @param validate
+ * @returns
+ */
+async function getTiffsMetadata(tiffs: Tiff[], locations: URL[], validate: boolean): Promise<TiffsMetadata> {
+  const projections = new Set<number>();
+  const gsds = new Set<number>();
+  const roundedGsds = new Set<string>();
+  let canGetResolution = true;
+
+  tiffs.forEach((t) => {
+    const image = t.images[0];
+    if (image) {
+      if (image.epsg != null) projections.add(image.epsg);
+      try {
+        gsds.add(image.resolution[0]);
+        roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
+      } catch (e) {
+        canGetResolution = false;
+        logger.error({ source: protocolAwareString(t.source.url), err: e }, 'TileIndex:GetResolution:Failed');
+      }
     }
-    return gridSize;
-  },
-};
+  });
+
+  if (!canGetResolution) throw new Error('Failed to get resolution of all TIFFs');
+
+  if (projections.size > 1) {
+    logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
+  }
+  if (roundedGsds.size > 1) {
+    if (validate) {
+      logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
+      throw new Error(
+        `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${locations.map(protocolAwareString).join(',')}`,
+      );
+    }
+    logger.warn({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
+  } else if (gsds.size > 1) {
+    logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
+  }
+
+  return {
+    projections,
+    gsds,
+    roundedGsds,
+    canGetResolution,
+    tiffCount: tiffs.length,
+  };
+}
+
+/**
+ * Generate output files as result of the tile index validation
+ *
+ * @param tiffLocations The list of source TIFF locations.
+ * @param outputTiles The map of output tiles to their source TIFFs.
+ * @param sourceEpsg The EPSG code of the source TIFFs.
+ * @param includeDerived Whether to include derived TIFFs in the output.
+ * @param gsd The ground sample distance to use for the output.
+ */
+async function generateOutputFiles(
+  tiffLocations: TiffLocation[],
+  outputTiles: Map<string, TiffLocation[]>,
+  sourceEpsg: number | undefined,
+  includeDerived: boolean,
+  gsd: string,
+): Promise<void> {
+  const inputGeoJson = {
+    type: 'FeatureCollection',
+    features: tiffLocations.map((loc) => {
+      const epsg = sourceEpsg ?? loc.epsg;
+      if (epsg == null) {
+        logger.error({ source: protocolAwareString(loc.source) }, 'TileIndex:Epsg:missing');
+        return;
+      }
+      return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
+        source: loc.source,
+        tileName: loc.tileNames.join(', '),
+      });
+    }),
+  };
+
+  const outputGeojson = {
+    type: 'FeatureCollection',
+    features: [...outputTiles.keys()].map((key) => {
+      const mapTileIndex = MapSheet.getMapTileIndex(key);
+      if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + key);
+      return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
+        source: outputTiles.get(key)?.map((l) => l.source),
+        tileName: key,
+      });
+    }),
+  };
+
+  const inputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/input.geojson');
+  const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
+  const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
+  const gsdFileName = fsa.toUrl('/tmp/tile-index-validate/gsd');
+
+  await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
+  logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
+
+  await fsa.write(outputGeoJsonFileName, JSON.stringify(outputGeojson));
+  logger.info({ path: protocolAwareString(outputGeoJsonFileName) }, 'Write:OutputGeojson');
+
+  const fileList = createFileList(outputTiles, includeDerived);
+  await fsa.write(fileListFileName, JSON.stringify(fileList));
+  logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
+
+  await fsa.write(gsdFileName, gsd);
+  logger.info({ path: protocolAwareString(gsdFileName), gsd }, 'Write:GSD');
+}
+
+/**
+ * Validate the tiling of the output tiles against the input TIFFs.
+ *
+ * @param outputTiles Map of output tiles to their source TIFFs.
+ * @param tiffLocations List of source TIFFs.
+ * @param retile Whether to allow retiling of the input TIFFs to output tiles.
+ * @param validateAlignment Whether to validate the alignment of source TIFFs.
+ */
+function validateTiling(
+  outputTiles: Map<string, TiffLocation[]>,
+  tiffLocations: TiffLocation[],
+  retile: boolean,
+  validateAlignment: boolean,
+): void {
+  let retileNeeded = false;
+
+  for (const [tileName, tiffs] of outputTiles.entries()) {
+    if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
+    if (tiffs.length === 1) continue;
+    if (retile) {
+      const bandType = validateConsistentBands(tiffs);
+      logger.info(
+        { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
+        'TileIndex:Retile',
+      );
+    } else {
+      retileNeeded = true;
+      logger.error({ tileName, uris: tiffs.map((v) => protocolAwareString(v.source)) }, 'TileIndex:Duplicate');
+    }
+  }
+
+  if (validateAlignment) {
+    let allValid = true;
+    for (const tiffLocation of tiffLocations) {
+      const currentValid = validateTiffAlignment(tiffLocation);
+      if (!currentValid) {
+        logger.error(
+          { source: protocolAwareString(tiffLocation.source), tileNames: tiffLocation.tileNames, tiffLocation },
+          'TileIndex:Misaligned',
+        );
+      }
+      allValid = allValid && currentValid;
+    }
+    if (!allValid) {
+      throw new Error(`Tile alignment validation failed`);
+    }
+  }
+
+  if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
+}
 
 /**
  * Validate the tiffs against a validation preset
@@ -186,234 +510,8 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
 }
 
 /**
- *
- * --validate // Validates all inputs align to output grid
- * --retile // Creates a list of files that need to be retiled
- *
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=false --validate=true
- * // Validate the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:1000
- * // --retile=true --validate=true
- * // Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
- *
- * input: 1:1000
- * scale: 1:5000, 1:10_000
- * // --retile=true --validate=false
- * // create a re-tiling output of {tileName, input: string[] }
- *
- * -- Not handled (yet!)
- * input: 1:10_000
- * scale: 1:1000
- * // create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
- *
- */
-export const commandTileIndexValidate = command({
-  name: 'tileindex-validate',
-  description: 'List input files and validate there are no duplicates.',
-  version: CliInfo.version,
-  args: {
-    config,
-    verbose,
-    include: CommandListArgs.include,
-    scale: option({ type: GridSizeFromString, long: 'scale', description: 'Tile grid scale to align output tile to' }),
-    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
-    retile: flag({
-      type: boolean,
-      defaultValue: () => false,
-      long: 'retile',
-      description: 'Output tile configuration for retiling',
-      defaultValueIsSerializable: true,
-    }),
-    validate: flag({
-      type: boolean,
-      defaultValue: () => true,
-      long: 'validate',
-      description: 'Validate that all input tiffs perfectly align to tile grid',
-      defaultValueIsSerializable: true,
-    }),
-    forceOutput,
-    preset: option({
-      type: string,
-      long: 'preset',
-      description: 'Validate the input tiffs with a configuration preset',
-      defaultValueIsSerializable: true,
-      defaultValue: () => 'none',
-    }),
-    includeDerived: flag({
-      type: boolean,
-      long: 'includeDerived',
-      description: 'Include input tiles as STAC `derived_from` links',
-      defaultValueIsSerializable: true,
-      defaultValue: () => false,
-    }),
-    location: restPositionals({
-      type: UrlFolderList,
-      displayName: 'location',
-      description: 'Location of the source files. Accepts multiple source paths.',
-    }),
-    concurrency: option({
-      type: number,
-      defaultValue: () => 25,
-      long: 'concurrency',
-      description: 'Number of TIFF files to read concurrently',
-    }),
-  },
-  async handler(args) {
-    const startTime = performance.now();
-    registerCli(this, args);
-    logger.info('TileIndex:Start');
-
-    const q = new ConcurrentQueue(args.concurrency);
-    const readTiffStartTime = performance.now();
-    const tiffLocationsToLoad = args.location.flat();
-    const tiffs = await TiffLoader.load(tiffLocationsToLoad, q, args);
-    await validatePreset(args.preset, tiffs);
-
-    const projections = new Set();
-    const gsds = new Set();
-    const roundedGsds = new Set();
-    let canGetResolution = true;
-    tiffs.forEach((t) => {
-      const image = t.images[0];
-      if (image) {
-        projections.add(image.epsg);
-        try {
-          gsds.add(image.resolution[0]);
-          roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
-        } catch (e) {
-          canGetResolution = false;
-          logger.error({ source: protocolAwareString(t.source.url), err: e }, 'TileIndex:GetResolution:Failed');
-        }
-      }
-    });
-    if (!canGetResolution) throw new Error('Failed to get resolution of all TIFFs');
-    logger.info(
-      {
-        tiffCount: tiffs.length,
-        projections: [...projections],
-        gsds: [...gsds],
-        duration: performance.now() - readTiffStartTime,
-      },
-      'TileIndex: All Files Read',
-    );
-
-    if (projections.size > 1) {
-      logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
-    }
-    if (roundedGsds.size > 1) {
-      if (args.validate) {
-        logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
-        throw new Error(
-          `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${tiffLocationsToLoad.map(protocolAwareString).join(',')}`,
-        );
-      }
-      logger.warn({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
-    } else if (gsds.size > 1) {
-      logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
-    }
-    await fsa.write(fsa.toUrl('/tmp/tile-index-validate/gsd'), String([...roundedGsds][0]));
-
-    const groupByTileNameStartTime = performance.now();
-    const tiffLocations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
-
-    const outputTiles = groupByTileName(tiffLocations);
-
-    logger.info(
-      {
-        duration: performance.now() - groupByTileNameStartTime,
-        files: tiffLocations.length,
-        outputs: outputTiles.size,
-      },
-      'TileIndex: Manifest Assessed for Duplicates',
-    );
-
-    if (args.forceOutput || isArgo()) {
-      const inputGeoJson = {
-        type: 'FeatureCollection',
-        features: tiffLocations.map((loc) => {
-          const epsg = args.sourceEpsg ?? loc.epsg;
-          if (epsg == null) {
-            logger.error({ source: protocolAwareString(loc.source) }, 'TileIndex:Epsg:missing');
-            return;
-          }
-          return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
-            source: loc.source,
-            tileName: loc.tileNames.join(', '),
-          });
-        }),
-      };
-      const inputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/input.geojson');
-      const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
-      const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
-      await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
-      logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
-      const outputGeojson = {
-        type: 'FeatureCollection',
-        features: [...outputTiles.keys()].map((key) => {
-          const mapTileIndex = MapSheet.getMapTileIndex(key);
-          if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + key);
-          return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
-            source: outputTiles.get(key)?.map((l) => l.source),
-            tileName: key,
-          });
-        }),
-      };
-      await fsa.write(outputGeoJsonFileName, JSON.stringify(outputGeojson));
-      logger.info({ path: protocolAwareString(outputGeoJsonFileName) }, 'Write:OutputGeojson');
-
-      const fileList = createFileList(outputTiles, args.includeDerived);
-      await fsa.write(fileListFileName, JSON.stringify(fileList));
-      logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
-    }
-
-    let retileNeeded = false;
-    for (const [tileName, tiffs] of outputTiles.entries()) {
-      if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
-      if (tiffs.length === 1) continue;
-      if (args.retile) {
-        const bandType = validateConsistentBands(tiffs);
-        logger.info(
-          { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
-          'TileIndex:Retile',
-        );
-      } else {
-        retileNeeded = true;
-        logger.error({ tileName, uris: tiffs.map((v) => protocolAwareString(v.source)) }, 'TileIndex:Duplicate');
-      }
-    }
-
-    // Validate that all tiffs align to tile grid
-    if (args.validate) {
-      let allValid = true;
-      for (const tiffLocation of tiffLocations) {
-        const currentValid = validateTiffAlignment(tiffLocation);
-        if (!currentValid) {
-          logger.error(
-            { source: protocolAwareString(tiffLocation.source), tileNames: tiffLocation.tileNames, tiffLocation },
-            'TileIndex:Misaligned',
-          );
-        }
-        allValid = allValid && currentValid;
-      }
-      if (!allValid) {
-        throw new Error(`Tile alignment validation failed`);
-      }
-    }
-
-    if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
-    // TODO do we care if no files are left?
-
-    logger.info({ duration: performance.now() - startTime }, 'TileIndex:Done');
-  },
-});
-
-/**
  * Validate all tiffs have consistent band information
+ *
  * @returns list of bands in the first image if consistent with the other images
  * @throws if one image does not have consistent band information
  */
@@ -439,6 +537,12 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
   return firstBands;
 }
 
+/**
+ * Group input TIFFs by their output tile names.
+ *
+ * @param tiffs List of input TIFFs to group.
+ * @returns Map of tile names to their corresponding input TIFFs.
+ */
 export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
   const duplicates: Map<string, TiffLocation[]> = new Map();
   for (const loc of tiffs) {
@@ -449,23 +553,6 @@ export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation
     }
   }
   return duplicates;
-}
-
-export interface TiffLocation {
-  /** Location to the image */
-  source: URL;
-  /** bbox, [minX, minY, maxX, maxY] */
-  bbox: BBox;
-  /** EPSG code of the tiff if found */
-  epsg?: number | null;
-  /** Output tile name */
-  tileNames: string[];
-  /**
-   * List of bands inside the tiff in the format `uint8` `uint16`
-   *
-   * @see {@link extractBandInformation} for more information on bad types
-   */
-  bands: string[];
 }
 
 /**
@@ -527,11 +614,6 @@ export async function extractTiffLocations(
 
         const covering = getCovering(targetBbox, gridSize);
 
-        // if (shouldValidate) {
-        //   // Is the tiff bounding box the same as the map sheet bounding box!
-        //   // Also need to allow for ~1.5cm of error between bounding boxes.
-        //   // assert bbox == MapSheet.getMapTileIndex(tileName).bbox
-        // }
         return {
           bbox: targetBbox,
           source: tiff.source.url,
@@ -557,10 +639,34 @@ export async function extractTiffLocations(
   return output;
 }
 
+/**
+ * Get a tile size from its bounding box.
+ *
+ * @param extent The bounding box coordinates.
+ * @returns The width and height of the bounding box.
+ */
 export function getSize(extent: BBox): Size {
   return { width: extent[2] - extent[0], height: extent[3] - extent[1] };
 }
 
+/**
+ * Check if a URL points to a TIFF file.
+ *
+ * @param url The URL to check.
+ * @returns True if the URL points to a TIFF file, false otherwise.
+ */
+export function isTiff(url: URL): boolean {
+  const fileName = url.pathname.toLowerCase();
+  return fileName.endsWith('.tiff') || fileName.endsWith('.tif');
+}
+
+/**
+ * Validate the alignment of a TIFF against its expected output tile.
+ *
+ * @param tiff The TIFF to validate.
+ * @param allowedErrorMetres The allowed error in metres for the alignment.
+ * @returns True if the TIFF is correctly aligned, false otherwise.
+ */
 export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0.015): boolean {
   if (tiff.tileNames.length !== 1) return false;
   const tileName = tiff.tileNames[0];
@@ -613,6 +719,14 @@ export function validateTiffAlignment(tiff: TiffLocation, allowedErrorMetres = 0
   return true;
 }
 
+/**
+ * Get the tile name for a given position and grid size.
+ *
+ * @param x The x coordinate of the tile.
+ * @param y The y coordinate of the tile.
+ * @param gridSize The grid size of the tile.
+ * @returns The tile name.
+ */
 export function getTileName(x: number, y: number, gridSize: GridSize): string {
   const sheetCode = MapSheet.sheetCode(x, y);
   if (!MapSheet.isKnown(sheetCode)) {
