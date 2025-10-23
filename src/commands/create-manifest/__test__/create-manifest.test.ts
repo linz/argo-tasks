@@ -5,7 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import { fsa, FsMemory } from '@chunkd/fs';
 import { parse } from 'cmd-ts';
 
-import type { CommandArguments } from '../../../__test__/type.util.ts';
+import type { CommandArguments } from '../../../utils/type.util.ts';
 import { Url, UrlFolder, UrlFolderList } from '../../common.ts';
 import type { SourceTarget } from '../create-manifest.ts';
 import { commandCreateManifest } from '../create-manifest.ts';

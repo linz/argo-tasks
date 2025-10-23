@@ -3,8 +3,8 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
-import type { CommandArguments } from '../../../__test__/type.util.ts';
 import { logger } from '../../../log.ts';
+import type { CommandArguments } from '../../../utils/type.util.ts';
 import { commandList } from '../list.ts';
 
 type CommandListArgs = CommandArguments<typeof commandList>;
