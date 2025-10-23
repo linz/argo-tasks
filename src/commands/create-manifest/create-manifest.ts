@@ -4,13 +4,13 @@ import { createHash } from 'crypto';
 import { pathToFileURL } from 'url';
 import { gzipSync } from 'zlib';
 
-import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
 import { makeRelative, protocolAwareString } from '../../utils/filelist.ts';
+import type { CommandArguments } from '../../utils/type.util.ts';
 import { config, registerCli, Url, UrlFolder, UrlFolderList, urlPathEndsWith, verbose } from '../common.ts';
 
 export const commandCreateManifest = command({

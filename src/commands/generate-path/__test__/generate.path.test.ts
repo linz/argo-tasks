@@ -4,7 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { fsa, FsMemory } from '@chunkd/fs';
 
 import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
-import type { CommandArguments } from '../../../__test__/type.util.ts';
+import type { CommandArguments } from '../../../utils/type.util.ts';
 import { UrlFolder } from '../../common.ts';
 import { SampleCollection } from '../../generate-path/__test__/sample.ts';
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.ts';

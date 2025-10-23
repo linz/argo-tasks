@@ -4,11 +4,11 @@ import { boolean, command, flag, number, option, restPositionals } from 'cmd-ts'
 import { performance } from 'perf_hooks';
 import * as z from 'zod';
 
-import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger, logId } from '../../log.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
+import type { CommandArguments } from '../../utils/type.util.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 import { mergeStats } from './copy-helpers.ts';
 import type { CopyContract, CopyStats } from './copy-rpc.ts';

@@ -6,7 +6,6 @@ import type { BBox } from '@linzjs/geojson';
 import type { Type } from 'cmd-ts';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
 
-import type { CommandArguments } from '../../__test__/type.util.ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
@@ -18,6 +17,7 @@ import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
 import { findBoundingBox } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
+import type { CommandArguments } from '../../utils/type.util.ts';
 import { config, forceOutput, registerCli, UrlFolderList, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 
