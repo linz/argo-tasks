@@ -13,6 +13,7 @@ import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { MapSheet } from '../../../utils/mapsheet.ts';
 import { createTiff, Url } from '../../common.ts';
+import type { TiffLocation } from '../tileindex.validate.ts';
 import {
   commandTileIndexValidate,
   extractTiffLocations,
@@ -23,7 +24,6 @@ import {
   isTiff,
   reprojectIfNeeded,
   TiffLoader,
-  type TiffLocation,
   validate8BitsTiff,
   validatePreset,
   validateTiffAlignment,
