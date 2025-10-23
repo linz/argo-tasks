@@ -3,7 +3,7 @@ import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
-import { commandStacCollectionOutput, getScale, isValidGridSize } from '../stac.collection.output.ts';
+import { commandStacCollectionOutput, getScale } from '../stac.collection.output.ts';
 import { SampleCollection } from './stac.collection.output.data.ts';
 
 describe('stac-collection-output', () => {
@@ -61,17 +61,5 @@ describe('stac-collection-output', () => {
       () => getScale(SampleCollection, collectionLocation),
       Error('Failed to get scale from memory:///collection.json.'),
     );
-  });
-});
-
-describe('isValidGridSize', () => {
-  it('Should return true for a valid scale', async () => {
-    assert.equal(isValidGridSize('1000'), true);
-  });
-  it('Should return false for an invalid scale', async () => {
-    assert.equal(isValidGridSize('750'), false);
-  });
-  it('Should return false for an scale that is not a number', async () => {
-    assert.equal(isValidGridSize('foo'), false);
   });
 });

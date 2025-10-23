@@ -5,7 +5,7 @@ import type { StacCollection } from 'stac-ts';
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
-import { type GridSize, GridSizes } from '../../utils/mapsheet.ts';
+import { MapSheet } from '../../utils/mapsheet.ts';
 import type { StacCollectionLinz } from '../../utils/metadata.ts';
 import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
@@ -63,29 +63,30 @@ export const commandStacCollectionOutput = command({
  * @throws Will throw an error if the scale is not retrieved
  * @returns scale as a string
  */
+// export function getScale(collection: StacCollection & StacCollectionLinz, collectionLocation: URL): string {
+//   const itemLink = collection.links.find((f) => f.rel === 'item');
+//   if (!itemLink?.href) {
+//     throw new Error(`No valid item link href found in collection at ${protocolAwareString(collectionLocation)}.`);
+//   }
+//   const scaleResults = itemLink?.href.match(/_(\d+)_/);
+//   const scale = scaleResults?.[1];
+//   if (!scale) {
+//     throw new Error(`Failed to get scale from ${protocolAwareString(collectionLocation)}.`);
+//   }
+//   return scale;
+// }
+
 export function getScale(collection: StacCollection & StacCollectionLinz, collectionLocation: URL): string {
   const itemLink = collection.links.find((f) => f.rel === 'item');
   if (!itemLink?.href) {
     throw new Error(`No valid item link href found in collection at ${protocolAwareString(collectionLocation)}.`);
   }
-  const scaleResults = itemLink?.href.match(/_(\d+)_/);
-  const scale = scaleResults?.[1];
+  const mapTileIndex = MapSheet.getMapTileIndex(itemLink.href);
+  const scale = mapTileIndex?.gridSize.toString();
   if (!scale) {
     throw new Error(`Failed to get scale from ${protocolAwareString(collectionLocation)}.`);
   }
-  return scale;
-}
-
-/**
- * Check the Collection scale is a valid mapsheet scale
- *
- * @param scale the scale string from the STAC collection
- * @return true if scale is valid and a number, false otherwise
- */
-
-export function isValidGridSize(scale: string): boolean {
-  const gridSize = Number(scale);
-  return !isNaN(gridSize) && GridSizes.includes(gridSize as GridSize);
+  return scale.toString();
 }
 
 /**
