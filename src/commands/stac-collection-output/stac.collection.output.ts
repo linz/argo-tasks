@@ -54,7 +54,9 @@ export const commandStacCollectionOutput = command({
 });
 
 /**
- * Get the scale from a STAC Collection. 1:50K mapsheets are not covered by this function.
+ * Get the scale from the first item link in a STAC Collection.
+ * Example item link format is CM01_5000_0305.json with the scale being '5000'.
+ * 1:50K mapsheets are not covered by this function.
  *
  * @param collection STAC Collection
  * @param collectionLocation Location of the STAC Collection

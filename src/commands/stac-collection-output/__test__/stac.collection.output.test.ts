@@ -41,6 +41,13 @@ describe('stac-collection-output', () => {
   it('Should return true for a valid scale', async () => {
     assert.equal(getScale(SampleCollection, collectionLocation), '1000');
   });
+  it('Should throw an error if item link href is an empty string', async () => {
+    SampleCollection.links = [{ rel: 'item', href: '' }];
+    assert.throws(
+      () => getScale(SampleCollection, collectionLocation),
+      Error('No valid item link href found in collection at memory:///collection.json.'),
+    );
+  });
   it('Should throw an error if no item link', async () => {
     SampleCollection.links = [];
     assert.throws(
@@ -49,7 +56,6 @@ describe('stac-collection-output', () => {
     );
   });
   it('Should throw an error if item link href does not contain a scale', async () => {
-    // Restore a valid item link but with no scale in the href
     SampleCollection.links = [{ rel: 'item', href: 'item-without-scale.json' }];
     assert.throws(
       () => getScale(SampleCollection, collectionLocation),
