@@ -277,7 +277,7 @@ tileindex-validate --validate --scale 5000 s3://linz-imagery/auckland/auckland_2
 Output a list of tiles to be retiled to the scale specified, and which tilename they should receive when merged. Example:
 
 ```bash
-tileindex-validate --retile --scale 10000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
+tileindex-validate --scale 10000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
 ```
 
 ### `bm-create-pr`

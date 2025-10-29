@@ -16,6 +16,7 @@ import { createTiff, Url } from '../../common.ts';
 import type { TiffLocation } from '../tileindex.validate.ts';
 import {
   commandTileIndexValidate,
+  determineGridSizeFromGSDPreset,
   extractTiffLocations,
   getSize,
   getTileName,
@@ -162,7 +163,6 @@ describe('validate', () => {
     includeDerived: false,
     scale: 1000 as GridSize,
     forceOutput: true,
-    retile: false,
     location: [[fsa.toUrl('s3://test')]],
     concurrency: 1,
   };
@@ -172,7 +172,6 @@ describe('validate', () => {
     for (const includeDerived of [true, false]) {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        retile: true,
         includeDerived: includeDerived,
       });
       const outputFileList: [FileListEntryClass] = await fsa.readJson(
@@ -202,7 +201,6 @@ describe('validate', () => {
     await commandTileIndexValidate.handler({
       ...baseArguments,
       location: [[sourceLocation]],
-      retile: false,
       validate: true,
     });
 
@@ -226,7 +224,6 @@ describe('validate', () => {
       await commandTileIndexValidate.handler({
         ...baseArguments,
         location: [[fsa.toUrl('s3://test')]],
-        retile: false,
         validate: true,
       });
       assert.fail('Should throw exception');
@@ -258,14 +255,13 @@ describe('validate', () => {
       .handler({
         ...baseArguments,
         location: [[fsa.toUrl('file:///tmp/empty/')]],
-        retile: false,
         validate: true,
       })
       .catch((e: Error) => e);
     assert.equal(String(ret), 'Error: Tiff loading failed: RangeError: Offset is outside the bounds of the DataView');
   });
 
-  it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
+  it('should not fail if there are duplicate tiles when --validate is not used', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     t.mock.method(TiffLoader, 'load', () =>
       Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
@@ -273,7 +269,6 @@ describe('validate', () => {
 
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      retile: true,
       validate: false,
     });
     const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
@@ -294,7 +289,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -309,7 +303,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -330,7 +323,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -345,7 +337,6 @@ describe('validate', () => {
       try {
         await commandTileIndexValidate.handler({
           ...baseArguments,
-          retile: true,
           validate: true,
         });
         assert.fail('Should throw exception');
@@ -363,7 +354,7 @@ describe('GridSizeFromString', () => {
   it('should throw error when converting invalid grid size', async () => {
     await assert.rejects(
       GridSizeFromString.from('-1'),
-      new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500"'),
+      new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500", or "auto"'),
     );
   });
 });
@@ -465,7 +456,6 @@ describe('GSD handling', () => {
     sourceEpsg: undefined,
     includeDerived: false,
     location: [[fsa.toUrl('s3://test')]],
-    retile: false,
     scale: 1000 as GridSize,
     forceOutput: true,
     concurrency: 1,
@@ -474,7 +464,7 @@ describe('GSD handling', () => {
   const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
   const fakeTiff3 = FakeCogTiff.fromTileName('AU21_1000_0101');
 
-  it('should fail if GSDs are inconsistent and --validate is used', async (t) => {
+  it('should fail if GSDs are inconsistent', async (t) => {
     fakeTiff1.images[0].resolution[0] = 1.23;
     fakeTiff2.images[0].resolution[0] = 3.21;
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
@@ -482,24 +472,9 @@ describe('GSD handling', () => {
     const ret = await commandTileIndexValidate
       .handler({
         ...baseArguments,
-        validate: true,
       })
       .catch((e: Error) => e);
     assert.ok(String(ret).startsWith('Error: Inconsistent GSDs found: '));
-  });
-
-  it('should output the first rounded GSD if GSDs are inconsistent and validate is not used', async (t) => {
-    fakeTiff1.images[0].resolution[0] = 2.31051;
-    fakeTiff2.images[0].resolution[0] = 1.123;
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
-
-    await commandTileIndexValidate.handler({
-      ...baseArguments,
-      validate: false,
-    });
-
-    const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
-    assert.deepEqual(outputGsd, '2.31');
   });
 
   it('should round the GSD to nearest 0.005', async (t) => {
@@ -517,8 +492,8 @@ describe('GSD handling', () => {
   it(`should not output GSD with unnecessary 0s`, async (t) => {
     for (const val of [1.002, 0.998, 0.9999999999999999, 1.0000000000001]) {
       fakeTiff1.images[0].resolution[0] = Number(val);
-      fakeTiff2.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] + 0.000499; // within tolerance
-      fakeTiff3.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] - 0.0045; // within tolerance
+      fakeTiff2.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] + 0.0001; // within tolerance
+      fakeTiff3.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] - 0.0001; // within tolerance
       console.log(
         `Testing with ${val}`,
         fakeTiff1.images[0].resolution[0],
@@ -681,5 +656,41 @@ describe('isTiff', () => {
   it('should return false for .tiff substring in filename but different extension', () => {
     const url = new URL('file:///path/to/not-a-tiff.jpg');
     assert.equal(isTiff(url), false);
+  });
+});
+
+describe('determineGridSizeFromGSDPreset', () => {
+  // Aerial Imagery (preset: 'webp')
+  it('returns 1000 for aerial imagery < 0.1m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.05, 'webp'), 1000);
+  });
+  it('returns 5000 for aerial imagery >= 0.1m and < 0.25m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'webp'), 5000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.249, 'webp'), 5000);
+  });
+  it('returns 10000 for aerial imagery >= 0.25m and < 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.25, 'webp'), 10000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.999, 'webp'), 10000);
+  });
+  it('returns 50000 for aerial imagery >= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'webp'), 50000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'webp'), 50000);
+  });
+
+  // DEM/DSM/Hillshade (preset: 'dem_lerc')
+  it('returns 1000 for elevation < 0.2m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'dem_lerc'), 1000);
+  });
+  it('returns 10000 for elevation >= 0.2m and <= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.2, 'dem_lerc'), 10000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'dem_lerc'), 10000);
+  });
+  it('returns 50000 for elevation > 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.01, 'dem_lerc'), 50000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'dem_lerc'), 50000);
+  });
+
+  it('throws error for unknown preset', () => {
+    assert.throws(() => determineGridSizeFromGSDPreset(0.5, 'unknown'), /Unknown preset/);
   });
 });

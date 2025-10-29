@@ -48,11 +48,17 @@ interface TiffsMetadata {
 
 export type CommandTileIndexValidateArgs = CommandArguments<typeof commandTileIndexValidate>;
 
-export const GridSizeFromString: Type<string, GridSize> = {
+export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
+  /**
+   * Convert an input string to a GridSize or return 'auto' if 'auto' is the input value.
+   * @param value The input string.
+   * @returns The corresponding GridSize or 'auto'.
+   */
   async from(value) {
+    if (value === 'auto') return value;
     const gridSize = Number(value) as GridSize;
     if (!GridSizes.includes(gridSize)) {
-      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}"`);
+      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}", or "auto"`);
     }
     return gridSize;
   },
@@ -60,27 +66,26 @@ export const GridSizeFromString: Type<string, GridSize> = {
 
 export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
-  description: 'List input files and validate there are no duplicates.',
+  description: 'Map input files to their output tile and optionally validate them.',
   version: CliInfo.version,
   args: {
     config,
     verbose,
     include: CommandListArgs.include,
-    scale: option({ type: GridSizeFromString, long: 'scale', description: 'Tile grid scale to align output tile to' }),
-    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
-    retile: flag({
-      type: boolean,
-      defaultValue: () => false,
-      long: 'retile',
-      description: 'Output tile configuration for retiling',
-      defaultValueIsSerializable: true,
+    scale: option({
+      type: GridSizeFromString,
+      long: 'scale',
+      description:
+        'Tile grid scale to align output tile to. If set to "auto ", the system will determine the appropriate scale based on the imagery type (`--preset`) and its GSD',
+      defaultValue: (): 'auto' => 'auto',
     }),
+    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
     validate: flag({
       type: boolean,
-      defaultValue: () => true,
       long: 'validate',
-      description: 'Validate that all input tiffs perfectly align to tile grid',
+      description: 'Validate input TIFFs align to grid and only one input TIFF per output tile',
       defaultValueIsSerializable: true,
+      defaultValue: () => false,
     }),
     forceOutput,
     preset: option({
@@ -104,9 +109,9 @@ export const commandTileIndexValidate = command({
     }),
     concurrency: option({
       type: number,
-      defaultValue: () => 25,
       long: 'concurrency',
       description: 'Number of TIFF files to read concurrently',
+      defaultValue: () => 25,
     }),
   },
   /**
@@ -116,20 +121,13 @@ export const commandTileIndexValidate = command({
    * Asserts that there will be no duplicates
    * Validates all inputs align to output grid
    *
-   * If --retile
-   * Creates a list of files that need to be retiled
-   * The script will not error as it is assumed the 'duplicate' tiffs are to be retiled and merged.
    *
    * Examples:
    * input: 1:1000
    * scale: 1:1000
-   * retile=false --validate=true
+   * --validate=true
    * Validate the top left points of every input align to the 1:1000 grid and no duplicates
    *
-   * input: 1:1000
-   * scale: 1:1000
-   * --retile=true --validate=true
-   * Merges duplicate tiffs together the top left points of every input align to the 1:1000 grid and no duplicates
    *
    * input: 1:1000
    * scale: 1:5000, 1:10_000
@@ -179,7 +177,7 @@ export const commandTileIndexValidate = command({
    *
    * Create a list of files that need to be retiled
    * ```bash
-   * tileindex-validate --scale 5000 --retile ./path/to/imagery/
+   * tileindex-validate --scale 5000 ./path/to/imagery/
    * ```
    */
   async handler(args) {
@@ -190,7 +188,7 @@ export const commandTileIndexValidate = command({
     const readTiffStartTime = performance.now();
     const { tiffs, locations } = await loadTiffs(args);
     await validatePreset(args.preset, tiffs);
-    const tiffsMetadata = await getTiffsMetadata(tiffs, locations, args.validate);
+    const tiffsMetadata = await getTiffsMetadata(tiffs, locations);
     const readDuration = performance.now() - readTiffStartTime;
     logger.info(
       {
@@ -203,7 +201,14 @@ export const commandTileIndexValidate = command({
     );
 
     const groupByTileNameStartTime = performance.now();
-    const tiffLocations = await extractTiffLocations(tiffs, args.scale, args.sourceEpsg);
+    let gridSize = args.scale;
+    if (gridSize === 'auto') {
+      const roundedGsd = Number([...tiffsMetadata.roundedGsds][0]);
+      gridSize = determineGridSizeFromGSDPreset(roundedGsd, args.preset);
+      logger.info({ gsd: roundedGsd, preset: args.preset, gridSize }, 'TileIndex:AutoSelectedGridSize');
+    }
+
+    const tiffLocations = await extractTiffLocations(tiffs, gridSize, args.sourceEpsg);
     const outputTiles = groupByTileName(tiffLocations);
     logger.info(
       {
@@ -224,7 +229,7 @@ export const commandTileIndexValidate = command({
       );
     }
 
-    validateTiling(outputTiles, tiffLocations, args.retile, args.validate);
+    validateTiling(outputTiles, tiffLocations, args.validate);
 
     logger.info({ duration: performance.now() - startTime }, 'TileIndex:Done');
   },
@@ -322,10 +327,9 @@ async function loadTiffs(args: CommandTileIndexValidateArgs): Promise<{ tiffs: T
  *
  * @param tiffs
  * @param locations
- * @param validate
- * @returns
+ * @returns TiffsMetadata
  */
-async function getTiffsMetadata(tiffs: Tiff[], locations: URL[], validate: boolean): Promise<TiffsMetadata> {
+async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsMetadata> {
   const projections = new Set<number>();
   const gsds = new Set<number>();
   const roundedGsds = new Set<string>();
@@ -351,13 +355,10 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[], validate: boole
     logger.warn({ projections: [...projections] }, 'TileIndex:InconsistentProjections');
   }
   if (roundedGsds.size > 1) {
-    if (validate) {
-      logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
-      throw new Error(
-        `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${locations.map(protocolAwareString).join(',')}`,
-      );
-    }
-    logger.warn({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
+    logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
+    throw new Error(
+      `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${locations.map(protocolAwareString).join(',')}`,
+    );
   } else if (gsds.size > 1) {
     logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
   }
@@ -438,21 +439,19 @@ async function generateOutputFiles(
  *
  * @param outputTiles Map of output tiles to their source TIFFs.
  * @param tiffLocations List of source TIFFs.
- * @param retile Whether to allow retiling of the input TIFFs to output tiles.
- * @param validateAlignment Whether to validate the alignment of source TIFFs.
+ * @param validate Whether to validate the alignment of source TIFFs and if there are duplicates.
  */
 function validateTiling(
   outputTiles: Map<string, TiffLocation[]>,
   tiffLocations: TiffLocation[],
-  retile: boolean,
-  validateAlignment: boolean,
+  validate: boolean,
 ): void {
   let retileNeeded = false;
 
   for (const [tileName, tiffs] of outputTiles.entries()) {
     if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
     if (tiffs.length === 1) continue;
-    if (retile) {
+    if (!validate) {
       const bandType = validateConsistentBands(tiffs);
       logger.info(
         { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
@@ -464,7 +463,7 @@ function validateTiling(
     }
   }
 
-  if (validateAlignment) {
+  if (validate) {
     let allValid = true;
     for (const tiffLocation of tiffLocations) {
       const currentValid = validateTiffAlignment(tiffLocation);
@@ -482,6 +481,30 @@ function validateTiling(
   }
 
   if (retileNeeded) throw new Error(`Duplicate files found, see output.geojson`);
+}
+
+/**
+ * Determine the grid size from the GSD and preset (datatype)
+ *
+ * @param gsd Ground Sample Distance in meters
+ * @param preset 'webp' for aerial imagery, 'dem_lerc' for DEM/DSM/Hillshade
+ */
+export function determineGridSizeFromGSDPreset(gsd: number, preset: string): GridSize {
+  // Aerial Imagery
+  if (preset === 'webp') {
+    if (gsd < 0.1) return 1000;
+    if (gsd >= 0.1 && gsd < 0.25) return 5000;
+    if (gsd >= 0.25 && gsd < 1.0) return 10000;
+    if (gsd >= 1.0) return 50000;
+  }
+  // DEM/DSM/Hillshade
+  if (preset === 'dem_lerc') {
+    if (gsd < 0.2) return 1000;
+    if (gsd >= 0.2 && gsd <= 1.0) return 10000;
+    if (gsd > 1.0) return 50000;
+  }
+
+  throw new Error(`Unknown preset: ${preset}`);
 }
 
 /**
