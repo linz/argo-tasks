@@ -3,14 +3,13 @@ import { describe, it } from 'node:test';
 
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
 import type { FileInfo } from '@chunkd/fs';
-import { fsa, FsMemory } from '@chunkd/fs';
+import { fsa } from '@chunkd/fs';
 
 import {
   decodeFormUrlEncoded,
   fetchPendingRestoredObjectPaths,
   fetchResultKeysFromReport,
   isRestoreCompleted,
-  markReportDone,
   parseReportResult,
 } from '../verify.restore.ts';
 
@@ -190,22 +189,5 @@ describe('decodeFormUrlEncoded', () => {
       decodeFormUrlEncoded('%2Fpath%2Fto%2Bfile+with+spaces%2Band%2Bplus'),
       '/path/to+file with spaces+and+plus',
     );
-  });
-});
-
-describe('markReportDone', () => {
-  const memory = new FsMemory();
-  fsa.register('memory://', memory);
-  memory.files.clear();
-
-  it('should rename the report file by adding a .done suffix', async () => {
-    const reportfile = fsa.toUrl('memory://fake/report.csv');
-    await fsa.write(reportfile, 'report content');
-    await markReportDone(reportfile);
-    const doneFile = fsa.toUrl('memory://fake/report.csv.done');
-    const doneContent = (await fsa.read(doneFile)).toString();
-    assert.strictEqual(doneContent, 'report content');
-    const exists = await fsa.exists(reportfile);
-    assert.strictEqual(exists, false);
   });
 });

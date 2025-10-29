@@ -1,7 +1,7 @@
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
 import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, option, positional } from 'cmd-ts';
+import { command, option, positional } from 'cmd-ts';
 import pLimit from 'p-limit';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -41,13 +41,6 @@ export const commandVerifyRestore = command({
   args: {
     config,
     verbose,
-    markDone: flag({
-      type: boolean,
-      defaultValue: () => true,
-      long: 'mark-done',
-      description:
-        'Rename the restore report file to `*.done` if restore is successful to indicate it has been processed',
-    }),
     output: option({ type: Url, long: 'output', description: 'Output location to store the restore result' }),
     report: positional({
       type: S3Path,
@@ -104,9 +97,6 @@ export const commandVerifyRestore = command({
     }
 
     await fsa.write(args.output, Buffer.from(isAllRestored.toString()));
-    if (isAllRestored && args.markDone) {
-      await markReportDone(args.report);
-    }
 
     logger.info({ restored: isAllRestored }, 'VerifyRestore:Done');
   },
@@ -220,22 +210,6 @@ export function isRestoreCompleted(fileInfo: FileInfo<HeadObjectCommandOutput>):
   return restoreStatus.includes('ongoing-request="false"');
 }
 
-/**
- * Renames the report file adding a `.done` suffix to indicate it has been processed.
- * This is useful to avoid reprocessing the same report file.
- *
- * @param reportLocation - The path to the report file.
- */
-export async function markReportDone(reportLocation: URL): Promise<void> {
-  const doneLocation = new URL(reportLocation);
-  doneLocation.pathname += '.done';
-  await fsa.write(doneLocation, await fsa.read(reportLocation));
-  await fsa.delete(reportLocation);
-  logger.info(
-    { reportLocation: protocolAwareString(reportLocation), doneLocation: protocolAwareString(doneLocation) },
-    'VerifyRestore:MarkedReportDone',
-  );
-}
 /**
  * Decodes a URL-encoded string.
  *
