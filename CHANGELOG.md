@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.21.2](https://github.com/linz/argo-tasks/compare/v4.21.1...v4.21.2) (2025-10-29)
+
+
+### Bug Fixes
+
+* **verify-restore:** should not mark restore manifest done TDE-1703 ([#1286](https://github.com/linz/argo-tasks/issues/1286)) ([266e8e5](https://github.com/linz/argo-tasks/commit/266e8e50def18f619e86bed0b931ae1fa6763978))
+
+
+### Performance Improvements
+
+* load and process the tiffs in a concurrent queue TDE-1681 ([#1283](https://github.com/linz/argo-tasks/issues/1283)) ([fc7e2fa](https://github.com/linz/argo-tasks/commit/fc7e2fa9970e3ca1d94f132aa5439838b8e6db7d))
+
 ## [4.21.1](https://github.com/linz/argo-tasks/compare/v4.21.0...v4.21.1) (2025-10-15)
 
 
