@@ -81,7 +81,7 @@ export function getScale(collection: StacCollection & StacCollectionLinz, collec
  * @param scale the scale of the ODR dataset
  * @param output the output path for the setup files
  */
-export async function writeSetupFiles(scale: string, output?: URL): Promise<void> {
+async function writeSetupFiles(scale: string, output?: URL): Promise<void> {
   const scalePath = new URL('scale', output);
   await fsa.write(scalePath, scale);
 }
