@@ -99,7 +99,7 @@ export const commandStacSetup = command({
     }),
 
     output: option({
-      type: optional(UrlFolder),
+      type: UrlFolder,
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,

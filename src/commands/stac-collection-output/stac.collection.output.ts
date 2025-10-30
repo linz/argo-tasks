@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { command, option, optional } from 'cmd-ts';
+import { command, option } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -22,7 +22,7 @@ export const commandStacCollectionOutput = command({
       description: 'Open Data Registry URL of existing dataset',
     }),
     output: option({
-      type: optional(UrlFolder),
+      type: UrlFolder,
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,
