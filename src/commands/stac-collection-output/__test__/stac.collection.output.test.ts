@@ -59,7 +59,7 @@ describe('stac-collection-output', () => {
     SampleCollection.links = [{ rel: 'item', href: 'item-without-scale.json' }];
     assert.throws(
       () => getScale(SampleCollection, collectionLocation),
-      Error('Failed to get scale from memory:///collection.json.'),
+      Error('Failed to get scale from collection memory:///collection.json itemLink item-without-scale.json.'),
     );
   });
 });

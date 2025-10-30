@@ -65,12 +65,16 @@ export const commandStacCollectionOutput = command({
 export function getScale(collection: StacCollection & StacCollectionLinz, collectionLocation: URL): string {
   const itemLink = collection.links.find((f) => f.rel === 'item');
   if (!itemLink?.href) {
+    logger.error({ collection: protocolAwareString(collectionLocation) }, 'GetScale:Failed:ItemLinkRefMissing');
     throw new Error(`No valid item link href found in collection at ${protocolAwareString(collectionLocation)}.`);
   }
   const mapTileIndex = MapSheet.getMapTileIndex(itemLink.href);
   const scale = mapTileIndex?.gridSize.toString();
   if (!scale) {
-    throw new Error(`Failed to get scale from ${protocolAwareString(collectionLocation)}.`);
+    logger.error({ collection: protocolAwareString(collectionLocation), itemLink: itemLink.href }, 'GetScale:Failed');
+    throw new Error(
+      `Failed to get scale from collection ${protocolAwareString(collectionLocation)} itemLink ${itemLink.href}.`,
+    );
   }
   return scale;
 }
