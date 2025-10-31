@@ -14,14 +14,14 @@ tileindex-validate <options> [...location]
 
 ### Options
 
-| Usage                  | Description                                                                                                                                                    | Options       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| --config <str>         | Location of role configuration file                                                                                                                            | optional      |
-| --include <str>        | Include files eg ".\*.tiff?$"                                                                                                                                  | optional      |
-| --scale <value>        | Tile grid scale to align output tile to. If set to "auto ", the system will determine the appropriate scale based on the imagery type (`--preset`) and its GSD | optional      |
-| --source-epsg <number> | Force epsg code for input tiffs                                                                                                                                | optional      |
-| --preset <str>         | Validate the input tiffs with a configuration preset                                                                                                           | default: none |
-| --concurrency <number> | Number of TIFF files to read concurrently                                                                                                                      | optional      |
+| Usage                  | Description                                                                                                                                                   | Options       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| --config <str>         | Location of role configuration file                                                                                                                           | optional      |
+| --include <str>        | Include files eg ".\*.tiff?$"                                                                                                                                 | optional      |
+| --scale <value>        | Tile grid scale to align output tile to. If set to "auto", the system will determine the appropriate scale based on the imagery type (`--preset`) and its GSD | optional      |
+| --source-epsg <number> | Force epsg code for input tiffs                                                                                                                               | optional      |
+| --preset <str>         | Validate the input tiffs with a configuration preset                                                                                                          | default: none |
+| --concurrency <number> | Number of TIFF files to read concurrently                                                                                                                     | optional      |
 
 ### Flags
 

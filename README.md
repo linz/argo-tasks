@@ -266,19 +266,20 @@ Outputs files for visualisation of the tiles and as an list for [topo-imagery](h
 - `output.geojson` GeoJSON file containing the bounding boxes of the requested target files. Example: [output.geojson](docs/output.geojson)
 - `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
 
-`--validate`
-Validate list of tiffs match a LINZ map sheet tile index and assert that there will be no duplicates. Example:
+Command examples:
 
-```bash
-tileindex-validate --validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
-```
+- Output a list of tiles to be automatically retiled to an appropriate scale determined by the system, and which tilename they should receive when merged. Example:
 
-`--retile`
-Output a list of tiles to be retiled to the scale specified, and which tilename they should receive when merged. Example:
+   ```bash
+   tileindex-validate --scale=auto s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
+   ```
 
-```bash
-tileindex-validate --scale 10000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
-```
+- `--validate`
+   Validate list of tiffs match a LINZ map sheet tile index and assert that there will be no duplicates. Example:
+
+   ```bash
+   tileindex-validate --validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
+   ```
 
 ### `bm-create-pr`
 

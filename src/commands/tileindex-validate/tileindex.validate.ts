@@ -76,7 +76,7 @@ export const commandTileIndexValidate = command({
       type: GridSizeFromString,
       long: 'scale',
       description:
-        'Tile grid scale to align output tile to. If set to "auto ", the system will determine the appropriate scale based on the imagery type (`--preset`) and its GSD',
+        'Tile grid scale to align output tile to. If set to "auto", the system will determine the appropriate scale based on the imagery type (`--preset`) and its GSD',
       defaultValue: (): 'auto' => 'auto',
     }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
@@ -131,7 +131,7 @@ export const commandTileIndexValidate = command({
    *
    * input: 1:1000
    * scale: 1:5000, 1:10_000
-   * --retile=true --validate=false
+   * --validate=false
    * create a re-tiling output of {tileName, input: string[] }
    *
    * -- Not handled (yet!)
@@ -617,7 +617,7 @@ export async function extractTiffLocations(
         if (sourceEpsg == null) {
           logger.error(
             { reason: 'EPSG is missing', source: protocolAwareString(tiff.source.url) },
-            'MissingEPSG:ExtracTiffLocations:Failed',
+            'MissingEPSG:ExtractTiffLocations:Failed',
           );
           return null;
         }
