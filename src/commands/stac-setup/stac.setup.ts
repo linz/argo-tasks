@@ -99,7 +99,7 @@ export const commandStacSetup = command({
     }),
 
     output: option({
-      type: optional(UrlFolder),
+      type: UrlFolder,
       long: 'output',
       description: 'Where to store output files',
       defaultValueIsSerializable: true,
@@ -224,7 +224,7 @@ export function formatDate(startDate?: string, endDate?: string): string {
  * @param collectionId the STAC collection ID value to write
  * @param output the output path for the setup files
  */
-export async function writeSetupFiles(slug: string, collectionId: string, output?: URL): Promise<void> {
+async function writeSetupFiles(slug: string, collectionId: string, output: URL): Promise<void> {
   const slugPath = new URL('linz-slug', output);
   const collectionIdPath = new URL('collection-id', output);
   await fsa.write(slugPath, slug);
