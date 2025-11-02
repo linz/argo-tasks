@@ -258,27 +258,20 @@ stac validate --checksum-assets --checksum-links --recursive s3://linz-imagery-s
 
 ### `tileindex-validate`
 
-Validate or create retiling information for a list of tiffs.
+Map input TIFF files to output tiles based on their location. Validate their alignment to the tile grid and output retiling information.
 
-Outputs files for visualisation of the tiles and as an list for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for retiling with GDAL.
+Outputs files for visualisation of the tiles and a list of output tiles with their input TIFF files for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for creating the tiles with GDAL.
 
 - `input.geojson` GeoJSON file containing the bounding boxes of the source files. Example: [input.geojson](docs/input.geojson)
 - `output.geojson` GeoJSON file containing the bounding boxes of the requested target files. Example: [output.geojson](docs/output.geojson)
 - `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
 
-Command examples:
+#### Example
 
-- Output a list of tiles to be automatically retiled to an appropriate scale determined by the system, and which tilename they should receive when merged. Example:
+Output a list of tiles to be automatically tiled to an appropriate scale determined by the system, and which tile name they should receive when merged. Example:
 
    ```bash
    tileindex-validate --scale=auto s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
-   ```
-
-- `--validate`
-   Validate list of tiffs match a LINZ map sheet tile index and assert that there will be no duplicates. Example:
-
-   ```bash
-   tileindex-validate --validate --scale 5000 s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
    ```
 
 ### `bm-create-pr`
