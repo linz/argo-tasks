@@ -4,7 +4,6 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { Projection } from '@basemaps/geo';
 import { fsa, FsMemory } from '@chunkd/fs';
 import type { BBox } from '@linzjs/geojson';
-import type { FeatureCollection } from 'geojson';
 import { pathToFileURL } from 'url';
 
 import { logger } from '../../../log.ts';
@@ -13,9 +12,9 @@ import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { MapSheet } from '../../../utils/mapsheet.ts';
 import { createTiff, Url } from '../../common.ts';
-import type { TiffLocation } from '../tileindex.validate.ts';
 import {
   commandTileIndexValidate,
+  determineGridSizeFromGSDPreset,
   extractTiffLocations,
   getSize,
   getTileName,
@@ -26,7 +25,6 @@ import {
   TiffLoader,
   validate8BitsTiff,
   validatePreset,
-  validateTiffAlignment,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
@@ -156,13 +154,11 @@ describe('validate', () => {
     config: undefined,
     verbose: false,
     include: undefined,
-    validate: true,
     preset: 'none',
     sourceEpsg: undefined,
     includeDerived: false,
     scale: 1000 as GridSize,
     forceOutput: true,
-    retile: false,
     location: [[fsa.toUrl('s3://test')]],
     concurrency: 1,
   };
@@ -172,7 +168,6 @@ describe('validate', () => {
     for (const includeDerived of [true, false]) {
       await commandTileIndexValidate.handler({
         ...baseArguments,
-        retile: true,
         includeDerived: includeDerived,
       });
       const outputFileList: [FileListEntryClass] = await fsa.readJson(
@@ -202,8 +197,6 @@ describe('validate', () => {
     await commandTileIndexValidate.handler({
       ...baseArguments,
       location: [[sourceLocation]],
-      retile: false,
-      validate: true,
     });
 
     const fileList: unknown[] = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
@@ -216,56 +209,18 @@ describe('validate', () => {
     assert.equal(stub.mock.callCount(), 1);
   });
 
-  it('should fail if duplicate tiles are detected', async (t) => {
-    // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
-    const stub = t.mock.method(TiffLoader, 'load', () =>
-      Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
-    );
-
-    try {
-      await commandTileIndexValidate.handler({
-        ...baseArguments,
-        location: [[fsa.toUrl('s3://test')]],
-        retile: false,
-        validate: true,
-      });
-      assert.fail('Should throw exception');
-    } catch (e) {
-      assert.equal(String(e), 'Error: Duplicate files found, see output.geojson');
-    }
-
-    assert.equal(stub.mock.callCount(), 1);
-    assert.deepEqual(
-      stub.mock.calls[0]?.arguments[0]?.map((url) => url.href),
-      ['s3://test'],
-    );
-
-    const outputFileList: FeatureCollection = await fsa.readJson(
-      fsa.toUrl('file:///tmp/tile-index-validate/output.geojson'),
-    );
-    assert.equal(outputFileList.features.length, 1);
-    const firstFeature = outputFileList.features[0];
-    assert.equal(firstFeature?.properties?.['tileName'], 'AS21_1000_0101');
-    assert.deepEqual(firstFeature?.properties?.['source'], [
-      's3://path/AS21_1000_0101.tiff',
-      's3://path/AS21_1000_0101.tiff',
-    ]);
-  });
-
   it('should fail with 0 byte tiffs', async () => {
     await fsa.write(fsa.toUrl('file:///tmp/empty/foo.tiff'), Buffer.from(''));
     const ret = await commandTileIndexValidate
       .handler({
         ...baseArguments,
         location: [[fsa.toUrl('file:///tmp/empty/')]],
-        retile: false,
-        validate: true,
       })
       .catch((e: Error) => e);
     assert.equal(String(ret), 'Error: Tiff loading failed: RangeError: Offset is outside the bounds of the DataView');
   });
 
-  it('should not fail if duplicate tiles are detected but --retile is used', async (t) => {
+  it('should not fail if there are duplicate tiles', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
     t.mock.method(TiffLoader, 'load', () =>
       Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
@@ -273,8 +228,6 @@ describe('validate', () => {
 
     await commandTileIndexValidate.handler({
       ...baseArguments,
-      retile: true,
-      validate: false,
     });
     const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
     assert.deepEqual(outputFileList, [
@@ -285,75 +238,6 @@ describe('validate', () => {
       },
     ]);
   });
-
-  for (const offset of [0.05, -0.05]) {
-    it(`should fail if input tiff origin X is offset by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
-      fakeTiff.images[0].origin[0] = fakeTiff.images[0].origin[0] + offset;
-      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
-      try {
-        await commandTileIndexValidate.handler({
-          ...baseArguments,
-          retile: true,
-          validate: true,
-        });
-        assert.fail('Should throw exception');
-      } catch (e) {
-        assert.equal(String(e), 'Error: Tile alignment validation failed');
-      }
-    });
-    it(`should fail if input tiff origin Y is offset by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
-      fakeTiff.images[0].origin[1] = fakeTiff.images[0].origin[1] + offset;
-      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
-      try {
-        await commandTileIndexValidate.handler({
-          ...baseArguments,
-          retile: true,
-          validate: true,
-        });
-        assert.fail('Should throw exception');
-      } catch (e) {
-        assert.equal(String(e), 'Error: Tile alignment validation failed');
-      }
-    });
-  }
-  for (const offset of [0.1, -0.1]) {
-    // Input AS21_1000_0101.tiff width/height by +1m, -1m =>
-    // 720x480 => 721x480
-    // 720x481 => 720x481
-    // 721x481 => 721x481
-    it(`should fail if input tiff width is off by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
-      fakeTiff.images[0].size.width = fakeTiff.images[0].size.width + offset;
-      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
-      try {
-        await commandTileIndexValidate.handler({
-          ...baseArguments,
-          retile: true,
-          validate: true,
-        });
-        assert.fail('Should throw exception');
-      } catch (e) {
-        assert.equal(String(e), 'Error: Tile alignment validation failed');
-      }
-    });
-    it(`should fail if input tiff height is off by ${offset}m`, async (t) => {
-      const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
-      fakeTiff.images[0].size.height = fakeTiff.images[0].size.height + offset;
-      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
-      try {
-        await commandTileIndexValidate.handler({
-          ...baseArguments,
-          retile: true,
-          validate: true,
-        });
-        assert.fail('Should throw exception');
-      } catch (e) {
-        assert.equal(String(e), 'Error: Tile alignment validation failed');
-      }
-    });
-  }
 });
 
 describe('GridSizeFromString', () => {
@@ -363,7 +247,7 @@ describe('GridSizeFromString', () => {
   it('should throw error when converting invalid grid size', async () => {
     await assert.rejects(
       GridSizeFromString.from('-1'),
-      new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500"'),
+      new Error('Invalid grid size "-1"; valid values: "50000", "10000", "5000", "2000", "1000", "500", or "auto"'),
     );
   });
 });
@@ -465,7 +349,6 @@ describe('GSD handling', () => {
     sourceEpsg: undefined,
     includeDerived: false,
     location: [[fsa.toUrl('s3://test')]],
-    retile: false,
     scale: 1000 as GridSize,
     forceOutput: true,
     concurrency: 1,
@@ -474,7 +357,7 @@ describe('GSD handling', () => {
   const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
   const fakeTiff3 = FakeCogTiff.fromTileName('AU21_1000_0101');
 
-  it('should fail if GSDs are inconsistent and --validate is used', async (t) => {
+  it('should fail if GSDs are inconsistent', async (t) => {
     fakeTiff1.images[0].resolution[0] = 1.23;
     fakeTiff2.images[0].resolution[0] = 3.21;
     t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
@@ -482,24 +365,9 @@ describe('GSD handling', () => {
     const ret = await commandTileIndexValidate
       .handler({
         ...baseArguments,
-        validate: true,
       })
       .catch((e: Error) => e);
     assert.ok(String(ret).startsWith('Error: Inconsistent GSDs found: '));
-  });
-
-  it('should output the first rounded GSD if GSDs are inconsistent and validate is not used', async (t) => {
-    fakeTiff1.images[0].resolution[0] = 2.31051;
-    fakeTiff2.images[0].resolution[0] = 1.123;
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
-
-    await commandTileIndexValidate.handler({
-      ...baseArguments,
-      validate: false,
-    });
-
-    const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
-    assert.deepEqual(outputGsd, '2.31');
   });
 
   it('should round the GSD to nearest 0.005', async (t) => {
@@ -517,8 +385,8 @@ describe('GSD handling', () => {
   it(`should not output GSD with unnecessary 0s`, async (t) => {
     for (const val of [1.002, 0.998, 0.9999999999999999, 1.0000000000001]) {
       fakeTiff1.images[0].resolution[0] = Number(val);
-      fakeTiff2.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] + 0.000499; // within tolerance
-      fakeTiff3.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] - 0.0045; // within tolerance
+      fakeTiff2.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] + 0.0001; // within tolerance
+      fakeTiff3.images[0].resolution[0] = fakeTiff1.images[0].resolution[0] - 0.0001; // within tolerance
       console.log(
         `Testing with ${val}`,
         fakeTiff1.images[0].resolution[0],
@@ -558,95 +426,6 @@ describe('getSize', () => {
   });
 });
 
-describe('validateTiffAlignment', () => {
-  it('should validate correctly aligned tiff', () => {
-    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
-    assert.ok(mapTileIndex);
-
-    const tiffLocation: TiffLocation = {
-      source: new URL('s3://test/AS21_1000_0101.tiff'),
-      bbox: mapTileIndex.bbox,
-      epsg: 2193,
-      tileNames: ['AS21_1000_0101'],
-      bands: ['uint8', 'uint8', 'uint8'],
-    };
-
-    const isValid = validateTiffAlignment(tiffLocation);
-    assert.equal(isValid, true);
-  });
-
-  it('should fail validation for misaligned tiff origin', () => {
-    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
-    assert.ok(mapTileIndex);
-
-    const tiffLocation: TiffLocation = {
-      source: new URL('s3://test/AS21_1000_0101.tiff'),
-      bbox: [
-        mapTileIndex.bbox[0] + 0.02, // 2cm > 1.5cm tolerance
-        mapTileIndex.bbox[1],
-        mapTileIndex.bbox[2] + 0.02,
-        mapTileIndex.bbox[3],
-      ],
-      epsg: 2193,
-      tileNames: ['AS21_1000_0101'],
-      bands: ['uint8', 'uint8', 'uint8'],
-    };
-
-    const isValid = validateTiffAlignment(tiffLocation);
-    assert.equal(isValid, false);
-  });
-
-  it('should fail validation for tiff covering multiple tiles', () => {
-    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
-    assert.ok(mapTileIndex);
-
-    const tiffLocation: TiffLocation = {
-      source: new URL('s3://test/multiTile.tiff'),
-      bbox: mapTileIndex.bbox,
-      epsg: 2193,
-      tileNames: ['AS21_1000_0101', 'AS21_1000_0102'],
-      bands: ['uint8', 'uint8', 'uint8'],
-    };
-
-    const isValid = validateTiffAlignment(tiffLocation);
-    assert.equal(isValid, false);
-  });
-
-  it('should pass validation with allowed error tolerance', () => {
-    const mapTileIndex = MapSheet.getMapTileIndex('AS21_1000_0101');
-    assert.ok(mapTileIndex);
-
-    const tiffLocation: TiffLocation = {
-      source: new URL('s3://test/AS21_1000_0101.tiff'),
-      bbox: [
-        mapTileIndex.bbox[0] + 0.01, // 1cm < 1.5cm tolerance
-        mapTileIndex.bbox[1] + 0.01,
-        mapTileIndex.bbox[2] + 0.01,
-        mapTileIndex.bbox[3] + 0.01,
-      ],
-      epsg: 2193,
-      tileNames: ['AS21_1000_0101'],
-      bands: ['uint8', 'uint8', 'uint8'],
-    };
-
-    const isValid = validateTiffAlignment(tiffLocation);
-    assert.equal(isValid, true);
-  });
-
-  it('should fail validation for tiff with invalid tile name', () => {
-    const tiffLocation: TiffLocation = {
-      source: new URL('s3://test/invalid.tiff'),
-      bbox: [1000, 2000, 1500, 2800],
-      epsg: 2193,
-      tileNames: ['INVALID_TILE_NAME'],
-      bands: ['uint8', 'uint8', 'uint8'],
-    };
-
-    const isValid = validateTiffAlignment(tiffLocation);
-    assert.equal(isValid, false);
-  });
-});
-
 describe('isTiff', () => {
   it('should return true for .tiff extension', () => {
     const url = new URL('file:///path/to/image.tiff');
@@ -681,5 +460,41 @@ describe('isTiff', () => {
   it('should return false for .tiff substring in filename but different extension', () => {
     const url = new URL('file:///path/to/not-a-tiff.jpg');
     assert.equal(isTiff(url), false);
+  });
+});
+
+describe('determineGridSizeFromGSDPreset', () => {
+  // Aerial Imagery (preset: 'webp')
+  it('returns 1000 for aerial imagery < 0.1m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.05, 'webp'), 1000);
+  });
+  it('returns 5000 for aerial imagery >= 0.1m and < 0.25m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'webp'), 5000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.249, 'webp'), 5000);
+  });
+  it('returns 10000 for aerial imagery >= 0.25m and < 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.25, 'webp'), 10000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.999, 'webp'), 10000);
+  });
+  it('returns 50000 for aerial imagery >= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'webp'), 50000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'webp'), 50000);
+  });
+
+  // DEM/DSM/Hillshade (preset: 'dem_lerc')
+  it('returns 1000 for elevation < 0.2m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'dem_lerc'), 1000);
+  });
+  it('returns 10000 for elevation >= 0.2m and <= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.2, 'dem_lerc'), 10000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'dem_lerc'), 10000);
+  });
+  it('returns 50000 for elevation > 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.01, 'dem_lerc'), 50000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'dem_lerc'), 50000);
+  });
+
+  it('throws error for unknown preset', () => {
+    assert.throws(() => determineGridSizeFromGSDPreset(0.5, 'unknown'), /Unknown preset/);
   });
 });
