@@ -36,20 +36,18 @@ export const commandStacCollectionOutput = command({
 
     logger.info('StacCollectionOutput:Start');
 
-    if (args.odrUrl) {
-      const collectionLocation = urlPathEndsWith(args.odrUrl, '/collection.json')
-        ? args.odrUrl
-        : new URL('collection.json', args.odrUrl);
-      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
-      if (collection == null)
-        throw new Error(`Failed to get collection.json from ${protocolAwareString(collectionLocation)}.`);
-      const scale = getScale(collection, collectionLocation);
-      await writeSetupFiles(scale, args.output);
-      logger.info(
-        { duration: performance.now() - startTime, args: { odrUrl: args.odrUrl, scale } },
-        'StacCollectionOutput:Done',
-      );
-    }
+    const collectionLocation = urlPathEndsWith(args.odrUrl, '/collection.json')
+      ? args.odrUrl
+      : new URL('collection.json', args.odrUrl);
+    const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
+    if (collection == null)
+      throw new Error(`Failed to get collection.json from ${protocolAwareString(collectionLocation)}.`);
+    const scale = getScale(collection, collectionLocation);
+    await writeSetupFiles(scale, args.output);
+    logger.info(
+      { duration: performance.now() - startTime, args: { odrUrl: args.odrUrl, scale } },
+      'StacCollectionOutput:Done',
+    );
   },
 });
 
