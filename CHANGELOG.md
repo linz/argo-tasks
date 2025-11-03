@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.0.0](https://github.com/linz/argo-tasks/compare/v4.21.2...v5.0.0) (2025-11-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **tileindex-validate:** automatically select scale of output tiles TDE-1674 ([#1287](https://github.com/linz/argo-tasks/issues/1287))
+
+### Features
+
+* **stac-collection-output:** get scale from ODR dataset TDE-1673 ([#1282](https://github.com/linz/argo-tasks/issues/1282)) ([73361b5](https://github.com/linz/argo-tasks/commit/73361b51321e219b99d5e3afa8fdf7774e2fe07f))
+* **tileindex-validate:** automatically select scale of output tiles TDE-1674 ([#1287](https://github.com/linz/argo-tasks/issues/1287)) ([e2228f8](https://github.com/linz/argo-tasks/commit/e2228f8c2e967de3a8b32e30985f0ff2e28f048d))
+
 ## [4.21.2](https://github.com/linz/argo-tasks/compare/v4.21.1...v4.21.2) (2025-10-29)
 
 
