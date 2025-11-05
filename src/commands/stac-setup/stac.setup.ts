@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, option, optional, string } from 'cmd-ts';
+import { command, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
@@ -60,14 +60,6 @@ export const commandStacSetup = command({
       description: 'GSD of dataset, e.g. 0.3',
     }),
 
-    validate: flag({
-      type: boolean,
-      defaultValue: () => false,
-      long: 'validate',
-      description: 'Validate GSD of dataset if --odr-url is supplied',
-      defaultValueIsSerializable: true,
-    }),
-
     region: option({
       type: string,
       long: 'region',
@@ -126,9 +118,7 @@ export const commandStacSetup = command({
         Number(collection['gsd']) || (await loadFirstTiff(collectionLocation, collection)).images[0]?.resolution[0];
       if (gsd !== Number(args.gsd)) {
         logger.error({ gsd, expected: args.gsd }, 'StacSetup:Error:GSDMismatch');
-        if (args.validate) {
-          throw new Error(`GSD at ODR URL [${gsd}] does not match new TIFF GSD [${args.gsd}]`);
-        }
+        throw new Error(`GSD at ODR URL [${gsd}] does not match new TIFF GSD [${args.gsd}]`);
       }
 
       const collectionId = collection['id'];
