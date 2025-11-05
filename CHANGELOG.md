@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.0](https://github.com/linz/argo-tasks/compare/v5.0.0...v5.1.0) (2025-11-05)
+
+
+### Features
+
+* **stac-setup:** always validate gsd TDE-1675 ([#1289](https://github.com/linz/argo-tasks/issues/1289)) ([959b407](https://github.com/linz/argo-tasks/commit/959b407b64060f5a62e33b09759b37bab2d65b82))
+
 ## [5.0.0](https://github.com/linz/argo-tasks/compare/v4.21.2...v5.0.0) (2025-11-02)
 
 
