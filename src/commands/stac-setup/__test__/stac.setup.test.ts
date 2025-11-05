@@ -34,7 +34,6 @@ describe('stac-setup', () => {
     config: undefined,
     surveyId: undefined,
     odrUrl: undefined,
-    validate: false,
     output: fsa.toUrl('memory:///tmp/stac-setup/'),
     gsd: '1',
     region: 'gisborne',
@@ -48,7 +47,7 @@ describe('stac-setup', () => {
       odrUrl: collectionLocation,
       startYear: '2013',
       endYear: '2014',
-      gsd: '1',
+      gsd: '0.3',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
@@ -152,26 +151,14 @@ describe('stac-setup', () => {
     assert.equal(ret, 'Error: --end-date and --end-year are mutually exclusive');
   });
 
-  it('should fail when validate is true and GSD does not match collection', async () => {
+  it('should fail when GSD does not match collection', async () => {
     await assert.rejects(
       commandStacSetup.handler({
         ...BaseArgs,
         odrUrl: collectionLocation,
         gsd: '1', // different to collection which is 0.3
-        validate: true,
       }),
       { message: 'GSD at ODR URL [0.3] does not match new TIFF GSD [1]' },
-    );
-  });
-
-  it('should pass when validate is false and GSD does not match collection', async () => {
-    await assert.doesNotReject(
-      commandStacSetup.handler({
-        ...BaseArgs,
-        odrUrl: collectionLocation,
-        gsd: '1', // different to collection which is 0.3
-        validate: false,
-      }),
     );
   });
 });
