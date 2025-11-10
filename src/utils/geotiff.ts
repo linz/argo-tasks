@@ -5,8 +5,9 @@ import { RasterTypeKey, TiffTagGeo } from '@cogeotiff/core';
 import { replaceUrlPathPattern } from '../commands/common.ts';
 import { protocolAwareString } from './filelist.ts';
 
+
 /**
- * Attempt to parse a tiff world file
+ * Type for parsed TFW values
  *
  * https://en.wikipedia.org/wiki/World_file
  *
@@ -19,11 +20,48 @@ import { protocolAwareString } from './filelist.ts';
  * 1460800.0375 // X Offset of center of top left pixel
  * 5079479.9625 // Y offset of center of top left pixel
  * ```
+ */
+export type TfwParseResult = {
+  scale: { x: number; y: number };
+  origin: { x: number; y: number };
+};
+
+/**
+ * Attempt to load a tiff world file and return parsed values
+ *
+ *
+ * @param imageLoc Location of TIFF file
+ * @returns
+ */
+export async function loadTfw(imageLoc: URL): Promise<TfwParseResult> {
+  // Attempt to read a TFW next to the tiff
+  const baseLocation = replaceUrlPathPattern(imageLoc, new RegExp('\\.tiff?$', 'i'));
+
+  const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
+  let tfwData;
+  for (const tfwExtension of tfwVariants) {
+    const candidateTfwLocation = fsa.toUrl(baseLocation.href + tfwExtension);
+    try {
+      tfwData = await fsa.read(candidateTfwLocation);
+      break;
+    } catch (err) {}
+  }
+
+  if (!tfwData) {
+    throw new Error('No matching TFW variant found.');
+  }
+
+  return parseTfw(String(tfwData));
+}
+
+/**
+ * Attempt to parse a tiff world file
+ *
  *
  * @param data Raw TFW file
  * @returns
  */
-export function parseTfw(data: string): { scale: { x: number; y: number }; origin: { x: number; y: number } } {
+export function parseTfw(data: string): TfwParseResult {
   const parts = data.split('\n');
   if (parts.length < 6) throw new Error('TFW: Not enough points');
   const scaleX = Number(parts[0]);
@@ -82,23 +120,24 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   }
 
   // Attempt to read a TFW next to the tiff
-  const baseLocation = replaceUrlPathPattern(tiff.source.url, new RegExp('\\.tiff?$', 'i'));
-
-  const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
-  let tfwData;
-  for (const tfwExtension of tfwVariants) {
-    const candidateTfwLocation = fsa.toUrl(baseLocation.href + tfwExtension);
-    try {
-      tfwData = await fsa.read(candidateTfwLocation);
-      break;
-    } catch (err) {}
-  }
-
-  if (!tfwData) {
-    throw new Error('No matching TFW variant found.');
-  }
-
-  const tfw = parseTfw(String(tfwData));
+  // const baseLocation = replaceUrlPathPattern(tiff.source.url, new RegExp('\\.tiff?$', 'i'));
+  //
+  // const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
+  // let tfwData;
+  // for (const tfwExtension of tfwVariants) {
+  //   const candidateTfwLocation = fsa.toUrl(baseLocation.href + tfwExtension);
+  //   try {
+  //     tfwData = await fsa.read(candidateTfwLocation);
+  //     break;
+  //   } catch (err) {}
+  // }
+  //
+  // if (!tfwData) {
+  //   throw new Error('No matching TFW variant found.');
+  // }
+  //
+  // const tfw = parseTfw(String(tfwData));
+  const tfw = await loadTfw(tiff.source.url);
 
   const x1 = tfw.origin.x;
   const y1 = tfw.origin.y;
@@ -107,4 +146,19 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   const y2 = y1 + tfw.scale.y * size.height;
 
   return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
+}
+
+export async function findGsd(tiff: Tiff): Promise<number> {
+  const img = tiff.images[0];
+  if (img == null) {
+    throw new Error(`Failed to find GSD - no images found in file: ${protocolAwareString(tiff.source.url)}`);
+  }
+  let gsd: number;
+  const tfw = await loadTfw(tiff.source.url);
+  if (tfw.scale.x === tfw.scale.y) {
+    gsd = tfw.scale.x;
+  } else {
+    throw new Error('X and Y resolutions in TFW sidecar file do not match.');
+  }
+  return gsd;
 }

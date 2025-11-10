@@ -14,7 +14,7 @@ import type { FileFilter } from '../../utils/chunk.ts';
 import { asyncFilter } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
-import { findBoundingBox } from '../../utils/geotiff.ts';
+import { findBoundingBox, findGsd } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
 import type { CommandArguments } from '../../utils/type.util.ts';
@@ -321,13 +321,13 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   const gsds = new Set<number>();
   const roundedGsds = new Set<string>();
   let canGetResolution = true;
-
   tiffs.forEach((t) => {
     const image = t.images[0];
     if (image) {
       if (image.epsg != null) projections.add(image.epsg);
       try {
-        gsds.add(image.resolution[0]);
+        const gsd = await findGsd(image);
+        gsds.add(gsd);
         roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
       } catch (e) {
         canGetResolution = false;
@@ -402,7 +402,8 @@ async function generateOutputFiles(
     }),
   };
 
-  const inputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/input.geojson');
+  const inputGeoJsonFileName =
+    fsa.toUrl('/tmp/tile-index-validate/input.geojson');
   const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
   const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
   const gsdFileName = fsa.toUrl('/tmp/tile-index-validate/gsd');
@@ -414,6 +415,7 @@ async function generateOutputFiles(
   logger.info({ path: protocolAwareString(outputGeoJsonFileName) }, 'Write:OutputGeojson');
 
   const fileList = createFileList(outputTiles, includeDerived);
+
   await fsa.write(fileListFileName, JSON.stringify(fileList));
   logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
 
