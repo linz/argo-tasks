@@ -217,7 +217,7 @@ describe('validate', () => {
         location: [[fsa.toUrl('file:///tmp/empty/')]],
       })
       .catch((e: Error) => e);
-    assert.equal(String(ret), 'Error: Tiff loading failed: RangeError: Offset is outside the bounds of the DataView');
+    assert.equal(String(ret), 'Error: Tiff loading failed: Error: Unable to read empty tiff');
   });
 
   it('should not fail if there are duplicate tiles', async (t) => {
