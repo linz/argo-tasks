@@ -78,42 +78,51 @@ describe('geotiff', () => {
     // tiff with no location information and no TFW
     await assert.rejects(() => findBoundingBox({ source: fakeSource, images: [] } as unknown as Tiff));
   });
-
-  it('should parse a tiff with TFW', async () => {
+  const fakeTiff = {
+    source: fakeSource,
+    images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
+  };
+  it('should get bounding box from TFW', async () => {
     const source = new FsMemory();
     fsa.register('memory://', source);
-    const fakeTiff = {
-      source: fakeSource,
-      images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
-    };
     // Write a sidecar tfw
     await fsa.write(fsa.toUrl('memory:///BX20_500_023098.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
     // tiff with no location information and no TFW
     const bbox = await findBoundingBox(fakeTiff as unknown as Tiff);
-    const gsd = await findResolution(fakeTiff as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
+    await fsa.delete(fsa.toUrl('memory:///BX20_500_023098.tfw')); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
+  });
+  it('should get gsd from TFW', async () => {
+    const source = new FsMemory();
+    fsa.register('memory://', source);
+    // Write a sidecar tfw
+    await fsa.write(fsa.toUrl('memory:///BX20_500_023098.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
+    // tiff with no location information and no TFW
+    const gsd = await findResolution(fakeTiff as unknown as Tiff);
     assert.equal(gsd, 0.075);
     await fsa.delete(fsa.toUrl('memory:///BX20_500_023098.tfw')); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
   });
-  it('should parse standard tiff', async () => {
-    const fakeTiff = {
-      source: fakeSource,
-      images: [
-        {
-          isGeoLocated: true,
-          size: { width: 3200, height: 4800 },
-          resolution: [0.075, -0.075],
-          origin: [1460800, 5079480],
-          valueGeo(): number {
-            return 1; // PixelIsArea
-          },
-        } as unknown as TiffImage,
-      ],
-    };
-    const bbox = await findBoundingBox(fakeTiff as unknown as Tiff);
-    const gsd = await findResolution(fakeTiff as unknown as Tiff);
+  const fakeGeoTiff = {
+    source: fakeSource,
+    images: [
+      {
+        isGeoLocated: true,
+        size: { width: 3200, height: 4800 },
+        resolution: [0.075, -0.075],
+        origin: [1460800, 5079480],
+        valueGeo(): number {
+          return 1; // PixelIsArea
+        },
+      } as unknown as TiffImage,
+    ],
+  };
+  it('should get bounding box from a standard tiff', async () => {
+    const bbox = await findBoundingBox(fakeGeoTiff as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
-    assert.equal(gsd, 0.075);
+  });
+  it('should get gsd from a standard tiff', async () => {
+    const gsd = await findResolution(fakeGeoTiff as unknown as Tiff);
+    assert.deepEqual(gsd, 0.075);
   });
   it('should parse with pixel offset', async () => {
     const bbox = await findBoundingBox({
