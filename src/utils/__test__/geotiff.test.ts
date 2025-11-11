@@ -82,23 +82,19 @@ describe('geotiff', () => {
   it('should parse a tiff with TFW', async () => {
     const source = new FsMemory();
     fsa.register('memory://', source);
-
+    const fakeTiff = {
+      source: fakeSource,
+      images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
+    };
     // Write a sidecar tfw
     await fsa.write(fsa.toUrl('memory:///BX20_500_023098.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
     // tiff with no location information and no TFW
-    const bbox = await findBoundingBox({
-      source: fakeSource,
-      images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
-    } as unknown as Tiff);
-    const gsd = await findResolution({
-      source: fakeSource,
-      images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
-    } as unknown as Tiff);
+    const bbox = await findBoundingBox(fakeTiff as unknown as Tiff);
+    const gsd = await findResolution(fakeTiff as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
     assert.equal(gsd, 0.075);
     await fsa.delete(fsa.toUrl('memory:///BX20_500_023098.tfw')); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
   });
-
   it('should parse standard tiff', async () => {
     const fakeTiff = {
       source: fakeSource,
@@ -135,5 +131,21 @@ describe('geotiff', () => {
       ],
     } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
+  });
+  it('loadTfw should parse a valid TFW file', async () => {
+    const source = new FsMemory();
+    fsa.register('memory:///', source);
+    const url = fsa.toUrl('memory:///test.tif');
+    // Write a valid TFW file
+    await fsa.write(fsa.toUrl('memory:///test.tfw'), `0.075\n0\n0\n-0.075\n1460800.0375\n5079479.9625`);
+    const result = await loadTfw(url);
+    assert.deepEqual(result, { scale: { x: 0.075, y: -0.075 }, origin: { x: 1460800, y: 5079480 } });
+    await fsa.delete(fsa.toUrl('memory:///test.tfw'));
+  });
+  it('loadTfw should throw if no TFW file is present', async () => {
+    const source = new FsMemory();
+    fsa.register('memory:///', source);
+    const url = fsa.toUrl('memory:///missing.tif');
+    await assert.rejects(() => loadTfw(url), /No matching TFW variant found/);
   });
 });
