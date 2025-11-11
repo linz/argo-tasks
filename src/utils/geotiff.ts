@@ -5,7 +5,6 @@ import { RasterTypeKey, TiffTagGeo } from '@cogeotiff/core';
 import { replaceUrlPathPattern } from '../commands/common.ts';
 import { protocolAwareString } from './filelist.ts';
 
-
 /**
  * Type for parsed TFW values
  *

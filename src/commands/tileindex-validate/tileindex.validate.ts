@@ -321,20 +321,22 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   const gsds = new Set<number>();
   const roundedGsds = new Set<string>();
   let canGetResolution = true;
-  if (image) {
-    if (image.epsg != null) projections.add(image.epsg);
-  }
-  const result = await: Promise.all(
-    tiffs.map(async (tiff): Promise<TiffsMetadata> => {
+
+  await Promise.all(
+    tiffs.map(async (tiff): Promise<void> => {
       try {
+        const image = tiff.images[0];
+        if (image) {
+          if (image.epsg != null) projections.add(image.epsg);
+        }
         const gsd = await findResolution(tiff);
         gsds.add(gsd);
-        roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
+        roundedGsds.add((Math.round(gsd * 200) / 200).toString()); // Round to nearest 0.005
       } catch (e) {
         canGetResolution = false;
-        logger.error({ source: protocolAwareString(t.source.url), err: e }, 'TileIndex:GetResolution:Failed');
+        logger.error({ source: protocolAwareString(tiff.source.url), err: e }, 'TileIndex:GetResolution:Failed');
       }
-    })
+    }),
   );
 
   if (!canGetResolution) throw new Error('Failed to get resolution of all TIFFs');
@@ -350,7 +352,6 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   } else if (gsds.size > 1) {
     logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
   }
-
   return {
     projections,
     gsds,
@@ -403,8 +404,7 @@ async function generateOutputFiles(
     }),
   };
 
-  const inputGeoJsonFileName =
-    fsa.toUrl('/tmp/tile-index-validate/input.geojson');
+  const inputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/input.geojson');
   const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
   const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
   const gsdFileName = fsa.toUrl('/tmp/tile-index-validate/gsd');
