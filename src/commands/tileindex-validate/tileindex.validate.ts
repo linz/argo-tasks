@@ -14,7 +14,7 @@ import type { FileFilter } from '../../utils/chunk.ts';
 import { asyncFilter } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
-import { findBoundingBox, findGsd } from '../../utils/geotiff.ts';
+import { findBoundingBox, findResolution } from '../../utils/geotiff.ts';
 import type { GridSize } from '../../utils/mapsheet.ts';
 import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
 import type { CommandArguments } from '../../utils/type.util.ts';
@@ -321,20 +321,21 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   const gsds = new Set<number>();
   const roundedGsds = new Set<string>();
   let canGetResolution = true;
-  tiffs.forEach((t) => {
-    const image = t.images[0];
-    if (image) {
-      if (image.epsg != null) projections.add(image.epsg);
+  if (image) {
+    if (image.epsg != null) projections.add(image.epsg);
+  }
+  const result = await: Promise.all(
+    tiffs.map(async (tiff): Promise<TiffsMetadata> => {
       try {
-        const gsd = await findGsd(image);
+        const gsd = await findResolution(tiff);
         gsds.add(gsd);
         roundedGsds.add((Math.round(image.resolution[0] * 200) / 200).toString()); // Round to nearest 0.005
       } catch (e) {
         canGetResolution = false;
         logger.error({ source: protocolAwareString(t.source.url), err: e }, 'TileIndex:GetResolution:Failed');
       }
-    }
-  });
+    })
+  );
 
   if (!canGetResolution) throw new Error('Failed to get resolution of all TIFFs');
 

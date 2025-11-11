@@ -118,25 +118,6 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
     const y2 = y1 + resolution[1] * size.height;
     return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
   }
-
-  // Attempt to read a TFW next to the tiff
-  // const baseLocation = replaceUrlPathPattern(tiff.source.url, new RegExp('\\.tiff?$', 'i'));
-  //
-  // const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
-  // let tfwData;
-  // for (const tfwExtension of tfwVariants) {
-  //   const candidateTfwLocation = fsa.toUrl(baseLocation.href + tfwExtension);
-  //   try {
-  //     tfwData = await fsa.read(candidateTfwLocation);
-  //     break;
-  //   } catch (err) {}
-  // }
-  //
-  // if (!tfwData) {
-  //   throw new Error('No matching TFW variant found.');
-  // }
-  //
-  // const tfw = parseTfw(String(tfwData));
   const tfw = await loadTfw(tiff.source.url);
 
   const x1 = tfw.origin.x;
@@ -148,17 +129,28 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
   return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
 }
 
-export async function findGsd(tiff: Tiff): Promise<number> {
+/**
+ * Attempt to find the resolution for a tiff
+ *
+ * Will attempt to read a sidecar `.tfw` if the tiff does not contain the resolution
+ *
+ * @returns resolution
+ */
+export async function findResolution(tiff: Tiff): Promise<number> {
   const img = tiff.images[0];
   if (img == null) {
     throw new Error(`Failed to find GSD - no images found in file: ${protocolAwareString(tiff.source.url)}`);
   }
-  let gsd: number;
+  let resolution: number;
+  if (img.isGeoLocated) {
+    resolution = img.resolution[0];
+    return resolution;
+  }
   const tfw = await loadTfw(tiff.source.url);
   if (tfw.scale.x === tfw.scale.y) {
-    gsd = tfw.scale.x;
+    resolution = tfw.scale.x;
   } else {
     throw new Error('X and Y resolutions in TFW sidecar file do not match.');
   }
-  return gsd;
+  return resolution;
 }
