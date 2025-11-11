@@ -155,6 +155,6 @@ describe('geotiff', () => {
     const source = new FsMemory();
     fsa.register('memory:///', source);
     const url = fsa.toUrl('memory:///missing.tif');
-    await assert.rejects(() => loadTfw(url), /No matching TFW variant found/);
+    await assert.rejects(() => loadTfw(url), /Error: No matching \.tfw\/\.TFW\/\.Tfw file found/);
   });
 });

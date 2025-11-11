@@ -3,6 +3,7 @@ import type { Tiff } from '@cogeotiff/core';
 import { RasterTypeKey, TiffTagGeo } from '@cogeotiff/core';
 
 import { replaceUrlPathPattern } from '../commands/common.ts';
+import { logger } from '../log.ts';
 import { protocolAwareString } from './filelist.ts';
 
 /**
@@ -33,7 +34,8 @@ export type TfwParseResult = {
  * @returns
  */
 export async function loadTfw(imageLoc: URL): Promise<TfwParseResult> {
-  // Attempt to read a TFW next to the tiff
+  logger.info({ location: protocolAwareString(imageLoc) }, 'LoadTFW:TIFF not geolocated, try to load sidecar file');
+
   const baseLocation = replaceUrlPathPattern(imageLoc, new RegExp('\\.tiff?$', 'i'));
 
   const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
@@ -42,14 +44,14 @@ export async function loadTfw(imageLoc: URL): Promise<TfwParseResult> {
     const candidateTfwLocation = fsa.toUrl(baseLocation.href + tfwExtension);
     try {
       tfwData = await fsa.read(candidateTfwLocation);
+      logger.info({ sidecar: `${protocolAwareString(baseLocation)}${tfwExtension}` }, 'LoadTFW:SidecarFileFound');
       break;
     } catch (err) {}
   }
 
   if (!tfwData) {
-    throw new Error('No matching TFW variant found.');
+    throw new Error(`No matching .tfw/.TFW/.Tfw file found for ${protocolAwareString(baseLocation)}`);
   }
-
   return parseTfw(String(tfwData));
 }
 
@@ -117,6 +119,7 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
     const y2 = y1 + resolution[1] * size.height;
     return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
   }
+  // If the tiff is not geolocated, try to read it from a TFW variant file
   const tfw = await loadTfw(tiff.source.url);
 
   const x1 = tfw.origin.x;
@@ -141,10 +144,12 @@ export async function findResolution(tiff: Tiff): Promise<number> {
     throw new Error(`Failed to find GSD - no images found in file: ${protocolAwareString(tiff.source.url)}`);
   }
   let resolution: number;
+  // If the tiff has geolocation information just read it from the tiff
   if (img.isGeoLocated) {
     resolution = img.resolution[0];
     return resolution;
   }
+  // If the tiff is not geolocated, try to read it from a TFW variant file
   const tfw = await loadTfw(tiff.source.url);
   return tfw.scale.x;
 }
