@@ -270,9 +270,9 @@ Outputs files for visualisation of the tiles and a list of output tiles with the
 
 Output a list of tiles to be automatically tiled to an appropriate scale determined by the system, and which tile name they should receive when merged. Example:
 
-   ```bash
-   tileindex-validate --scale=auto s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
-   ```
+```bash
+tileindex-validate --scale=auto s3://linz-imagery/auckland/auckland_2010-2012_0.5m/rgb/2193/
+```
 
 ### `bm-create-pr`
 
