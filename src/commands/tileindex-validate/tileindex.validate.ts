@@ -416,7 +416,6 @@ async function generateOutputFiles(
   logger.info({ path: protocolAwareString(outputGeoJsonFileName) }, 'Write:OutputGeojson');
 
   const fileList = createFileList(outputTiles, includeDerived);
-
   await fsa.write(fileListFileName, JSON.stringify(fileList));
   logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
 
