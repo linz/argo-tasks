@@ -146,10 +146,5 @@ export async function findResolution(tiff: Tiff): Promise<number> {
     return resolution;
   }
   const tfw = await loadTfw(tiff.source.url);
-  if (tfw.scale.x === tfw.scale.y) {
-    resolution = tfw.scale.x;
-  } else {
-    throw new Error('X and Y resolutions in TFW sidecar file do not match.');
-  }
-  return resolution;
+  return tfw.scale.x;
 }

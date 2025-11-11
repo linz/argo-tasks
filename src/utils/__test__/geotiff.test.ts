@@ -5,7 +5,7 @@ import { fsa, FsMemory } from '@chunkd/fs';
 import type { Source, Tiff, TiffImage } from '@cogeotiff/core';
 
 import { createTiff } from '../../commands/common.ts';
-import { findBoundingBox, parseTfw, PixelIsPoint } from '../geotiff.ts';
+import { findBoundingBox, findResolution, loadTfw, parseTfw, PixelIsPoint } from '../geotiff.ts';
 
 describe('geotiff', () => {
   describe('parseTfw', () => {
@@ -90,12 +90,17 @@ describe('geotiff', () => {
       source: fakeSource,
       images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
     } as unknown as Tiff);
+    const gsd = await findResolution({
+      source: fakeSource,
+      images: [{ size: { width: 3200, height: 4800 } }] as unknown as TiffImage,
+    } as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
+    assert.equal(gsd, 0.075);
     await fsa.delete(fsa.toUrl('memory:///BX20_500_023098.tfw')); // use 3 slashes to ensure URL is correct (otherwise filename is used as the host)
   });
 
   it('should parse standard tiff', async () => {
-    const bbox = await findBoundingBox({
+    const fakeTiff = {
       source: fakeSource,
       images: [
         {
@@ -108,8 +113,11 @@ describe('geotiff', () => {
           },
         } as unknown as TiffImage,
       ],
-    } as unknown as Tiff);
+    };
+    const bbox = await findBoundingBox(fakeTiff as unknown as Tiff);
+    const gsd = await findResolution(fakeTiff as unknown as Tiff);
     assert.deepEqual(bbox, [1460800, 5079120, 1461040, 5079480]);
+    assert.equal(gsd, 0.075);
   });
   it('should parse with pixel offset', async () => {
     const bbox = await findBoundingBox({
