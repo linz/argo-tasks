@@ -50,7 +50,7 @@ export async function loadTfw(imageLoc: URL): Promise<TfwParseResult> {
   }
 
   if (!tfwData) {
-    throw new Error(`No matching .tfw/.TFW/.Tfw file found for ${protocolAwareString(baseLocation)}`);
+    throw new Error(`No matching ${tfwVariants.join('/')} file found for ${protocolAwareString(baseLocation)}`);
   }
   return parseTfw(String(tfwData));
 }
@@ -143,11 +143,9 @@ export async function findResolution(tiff: Tiff): Promise<number> {
   if (img == null) {
     throw new Error(`Failed to find GSD - no images found in file: ${protocolAwareString(tiff.source.url)}`);
   }
-  let resolution: number;
   // If the tiff has geolocation information just read it from the tiff
   if (img.isGeoLocated) {
-    resolution = img.resolution[0];
-    return resolution;
+    return img.resolution[0];
   }
   // If the tiff is not geolocated, try to read it from a TFW variant file
   const tfw = await loadTfw(tiff.source.url);
