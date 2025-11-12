@@ -93,9 +93,10 @@ export const PixelIsPoint = 2;
  */
 export async function findBoundingBox(tiff: Tiff): Promise<[number, number, number, number]> {
   const img = tiff.images[0];
+  const tiffLocation = tiff.source.url;
   if (img == null) {
     throw new Error(
-      `Failed to find bounding box/origin - no images found in file: ${protocolAwareString(tiff.source.url)}`,
+      `Failed to find bounding box/origin - no images found in file: ${protocolAwareString(tiffLocation)}`,
     );
   }
   const size = img.size;
@@ -118,7 +119,6 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
     return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
   }
   // If the tiff is not geolocated, try to read it from a TFW variant file
-  const tiffLocation = tiff.source.url;
   logger.info(
     { location: protocolAwareString(tiffLocation) },
     'FindBoundingBox:TIFF not geolocated, try to get from TFW sidecar file',
@@ -143,15 +143,15 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
  */
 export async function findResolution(tiff: Tiff): Promise<number> {
   const img = tiff.images[0];
+  const tiffLocation = tiff.source.url;
   if (img == null) {
-    throw new Error(`Failed to find GSD - no images found in file: ${protocolAwareString(tiff.source.url)}`);
+    throw new Error(`Failed to find GSD - no images found in file: ${protocolAwareString(tiffLocation)}`);
   }
   // If the tiff has geolocation information just read it from the tiff
   if (img.isGeoLocated) {
     return img.resolution[0];
   }
   // If the tiff is not geolocated, try to read it from a TFW variant file
-  const tiffLocation = tiff.source.url;
   logger.info(
     { location: protocolAwareString(tiffLocation) },
     'FindResolution:TIFF not geolocated, try to get from TFW sidecar file',
