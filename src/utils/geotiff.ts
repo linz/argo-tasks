@@ -48,7 +48,7 @@ export async function loadTfw(imageLoc: URL): Promise<TfwParseResult> {
   }
 
   if (!tfwData) {
-    throw new Error(`No matching ${tfwVariants.join('/')} file found for ${protocolAwareString(baseLocation)}`);
+    throw new Error(`No matching ${tfwVariants.join('/')} file found for ${protocolAwareString(imageLoc)}`);
   }
   return parseTfw(String(tfwData));
 }
