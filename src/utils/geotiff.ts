@@ -34,8 +34,6 @@ export type TfwParseResult = {
  * @returns
  */
 export async function loadTfw(imageLoc: URL): Promise<TfwParseResult> {
-  logger.info({ location: protocolAwareString(imageLoc) }, 'LoadTFW:TIFF not geolocated, try to load sidecar file');
-
   const baseLocation = replaceUrlPathPattern(imageLoc, new RegExp('\\.tiff?$', 'i'));
 
   const tfwVariants = ['.tfw', '.TFW', '.Tfw']; // add more if needed
@@ -120,7 +118,12 @@ export async function findBoundingBox(tiff: Tiff): Promise<[number, number, numb
     return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
   }
   // If the tiff is not geolocated, try to read it from a TFW variant file
-  const tfw = await loadTfw(tiff.source.url);
+  const tiffLocation = tiff.source.url;
+  logger.info(
+    { location: protocolAwareString(tiffLocation) },
+    'FindBoundingBox:TIFF not geolocated, try to get from TFW sidecar file',
+  );
+  const tfw = await loadTfw(tiffLocation);
 
   const x1 = tfw.origin.x;
   const y1 = tfw.origin.y;
@@ -148,6 +151,11 @@ export async function findResolution(tiff: Tiff): Promise<number> {
     return img.resolution[0];
   }
   // If the tiff is not geolocated, try to read it from a TFW variant file
-  const tfw = await loadTfw(tiff.source.url);
+  const tiffLocation = tiff.source.url;
+  logger.info(
+    { location: protocolAwareString(tiffLocation) },
+    'FindResolution:TIFF not geolocated, try to get from TFW sidecar file',
+  );
+  const tfw = await loadTfw(tiffLocation);
   return tfw.scale.x;
 }
