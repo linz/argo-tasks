@@ -5,7 +5,6 @@ import { pathToFileURL } from 'url';
 import { gzipSync } from 'zlib';
 
 import { CliInfo } from '../../cli.info.ts';
-import { getActionLocation } from '../../utils/action.storage.ts';
 import type { ActionCopy } from '../../utils/actions.ts';
 import type { FileFilter } from '../../utils/chunk.ts';
 import { getFiles } from '../../utils/chunk.ts';
@@ -42,6 +41,11 @@ export const commandCreateManifest = command({
     }),
     output: option({ type: Url, long: 'output', description: 'Output location for the listing' }),
     target: option({ type: UrlFolder, long: 'target', description: 'Copy destination' }),
+    actionLocation: option({
+      type: optional(Url),
+      long: 'action-location',
+      description: 'Location where the action manifest has to be saved',
+    }),
     source: restPositionals({ type: UrlFolderList, displayName: 'source', description: 'Where to list' }),
   },
   async handler(args) {
@@ -50,7 +54,7 @@ export const commandCreateManifest = command({
     const outputCopy: string[] = [];
 
     const targetLocation = args.target;
-    const actionLocation = getActionLocation();
+    const actionLocation = args.actionLocation;
     const outputFiles = await createManifest(args.source.flat(), targetLocation, args);
     for (const current of outputFiles) {
       const outBuf = Buffer.from(JSON.stringify(current));

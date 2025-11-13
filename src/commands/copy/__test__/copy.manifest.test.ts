@@ -36,12 +36,7 @@ describe('createManifest.Copy.E2E', () => {
   const memory = new FsMemory();
   beforeEach(() => {
     fsa.register('memory://', memory);
-    // action-location assumes s3
-    fsa.register('s3://', memory);
-
     memory.files.clear();
-    // FIXME do we need a "action" logic and a compressed file logic?
-    process.env['ACTION_PATH'] = `memory://actions/🟥/actions/`;
   });
 
   afterEach(async () => {
@@ -60,6 +55,7 @@ describe('createManifest.Copy.E2E', () => {
     limit: undefined,
     output: fsa.toUrl('manifest.json'),
     target: fsa.toUrl('./'),
+    actionLocation: fsa.toUrl('memory://actions/🟥/actions/'),
     source: [],
   };
   const baseCopyArgs: CommandCopyArgs = {
