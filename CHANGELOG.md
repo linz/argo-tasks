@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.1](https://github.com/linz/argo-tasks/compare/v5.1.0...v5.1.1) (2025-11-13)
+
+
+### Bug Fixes
+
+* get GSD from TFW sidecar files TDE-1715 ([#1292](https://github.com/linz/argo-tasks/issues/1292)) ([43a9ad7](https://github.com/linz/argo-tasks/commit/43a9ad7da4e996a6043017a7147aa6d755160289))
+
 ## [5.1.0](https://github.com/linz/argo-tasks/compare/v5.0.0...v5.1.0) (2025-11-05)
 
 
