@@ -95,8 +95,6 @@ pretty-print source/ --target output/
 
 Generate a manifest of files that need to be copied and their target paths.
 
-If $ACTION_PATH is set, store the resulting manifest files as json documents.
-
 #### Example
 
 ```bash

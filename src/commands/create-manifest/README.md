@@ -14,17 +14,18 @@ create-manifest <options> [...source]
 
 ### Options
 
-| Usage              | Description                                             | Options  |
-| ------------------ | ------------------------------------------------------- | -------- |
-| --config <str>     | Location of role configuration file                     | optional |
-| --transform <str>  | Transform/rename files                                  | optional |
-| --include <str>    | Include files eg ".\*.tiff?$"                           | optional |
-| --exclude <str>    | Exclude files eg ".\*.prj$"                             | optional |
-| --group-size <str> | Group files into this size per group, eg "5Gi" or "3TB" | optional |
-| --group <number>   | Group files into this number per group                  | optional |
-| --limit <number>   | Limit the file count to this amount, -1 is no limit     | optional |
-| --output <value>   | Output location for the listing                         |          |
-| --target <value>   | Copy destination                                        |          |
+| Usage                     | Description                                             | Options  |
+| ------------------------- | ------------------------------------------------------- | -------- |
+| --config <str>            | Location of role configuration file                     | optional |
+| --transform <str>         | Transform/rename files                                  | optional |
+| --include <str>           | Include files eg ".\*.tiff?$"                           | optional |
+| --exclude <str>           | Exclude files eg ".\*.prj$"                             | optional |
+| --group-size <str>        | Group files into this size per group, eg "5Gi" or "3TB" | optional |
+| --group <number>          | Group files into this number per group                  | optional |
+| --limit <number>          | Limit the file count to this amount, -1 is no limit     | optional |
+| --output <value>          | Output location for the listing                         |          |
+| --target <value>          | Copy destination                                        |          |
+| --action-location <value> | Location where the action manifest has to be saved      | optional |
 
 ### Flags
 
