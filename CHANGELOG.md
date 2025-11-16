@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.2.0](https://github.com/linz/argo-tasks/compare/v5.1.1...v5.2.0) (2025-11-16)
+
+
+### Features
+
+* **create-manifest:** remove Argo Workflows environment variables usage TDE-1693 ([#1294](https://github.com/linz/argo-tasks/issues/1294)) ([547d512](https://github.com/linz/argo-tasks/commit/547d512a191a3e5c2d0e2523b1842b49f6a98a9d))
+
+
+### Bug Fixes
+
+* should not register an empy string as FS TDE-1652 ([#1295](https://github.com/linz/argo-tasks/issues/1295)) ([f315db5](https://github.com/linz/argo-tasks/commit/f315db54f7765716aa3070e7276d51b83a18bce5))
+
 ## [5.1.1](https://github.com/linz/argo-tasks/compare/v5.1.0...v5.1.1) (2025-11-13)
 
 
