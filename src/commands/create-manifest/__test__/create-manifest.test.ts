@@ -126,12 +126,14 @@ describe('createManifest', () => {
       [
         ['--output', 'memory://output/🦄 🌈.json'],
         ['--target', 'memory://target/🟪/🦄 🌈'],
+        ['--action-location', 'memory://actions/🟥/actions/'],
         'memory://source/🟥/',
       ].flat(),
     )) as { _tag: 'ok'; value: CommandCreateManifestArgs };
     assert.equal(parsed._tag, 'ok');
     assert.deepEqual(parsed.value.source, [[fsa.toUrl('memory://source/🟥/')]]);
     assert.deepEqual(parsed.value.target, fsa.toUrl('memory://target/🟪/🦄 🌈/')); // adds trailing slash
+    assert.deepEqual(parsed.value.actionLocation, fsa.toUrl('memory://actions/🟥/actions/'));
     assert.deepEqual(parsed.value.output, fsa.toUrl('memory://output/🦄 🌈.json'));
   });
 
@@ -147,6 +149,7 @@ describe('createManifest', () => {
     limit: undefined,
     output: fsa.toUrl('memory://manifest.json'),
     target: fsa.toUrl('memory://target/'),
+    actionLocation: undefined,
     source: [],
   };
 
