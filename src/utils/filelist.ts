@@ -10,6 +10,8 @@ export const HttpProtocols = ['https:', 'http:'];
  * For http(s):// URLs it returns the full URL (with encoded characters)
  * For other protocols it decodes the characters and
  * for file:// URL it creates a relative path from the current working directory
+ * For non-HTTP URLs, # characters are kept encoded as %23 to prevent
+ * them from being interpreted as URL fragments.
  *
  * @param targetLocation URL to convert to string
  * @returns string representation of the URL
@@ -21,7 +23,10 @@ export function protocolAwareString(targetLocation: URL): string {
   if (targetLocation.protocol === 'file:') {
     return fileURLToPath(targetLocation);
   }
-  return decodeURIComponent(targetLocation.href);
+
+  // Decode URI components but keep # characters encoded to prevent
+  // them from being interpreted as URL fragments
+  return decodeURIComponent(targetLocation.href).replace(/#/g, '%23');
 }
 
 /**
