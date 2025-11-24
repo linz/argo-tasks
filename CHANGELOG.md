@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.1](https://github.com/linz/argo-tasks/compare/v5.2.0...v5.2.1) (2025-11-24)
+
+
+### Bug Fixes
+
+* handle special char # in file paths for copy operations TDE-1647 ([#1297](https://github.com/linz/argo-tasks/issues/1297)) ([e3ac200](https://github.com/linz/argo-tasks/commit/e3ac200951c60788b5fbb720aa55db2565ec19f1))
+
 ## [5.2.0](https://github.com/linz/argo-tasks/compare/v5.1.1...v5.2.0) (2025-11-16)
 
 
