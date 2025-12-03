@@ -85,7 +85,12 @@ export function generatePath(metadata: PathMetadata): string {
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
-
+  if (
+    metadata.geospatialCategory === GeospatialDataCategories.NearInfraredAerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.NearInfraredSatelliteImagery
+  ) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgbnir/${metadata.epsg}/`;
+  }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.Dem ||
     metadata.geospatialCategory === GeospatialDataCategories.Dsm ||
