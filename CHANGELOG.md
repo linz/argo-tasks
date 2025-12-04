@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.0](https://github.com/linz/argo-tasks/compare/v5.2.1...v5.3.0) (2025-12-04)
+
+
+### Features
+
+* **stac-setup:** add RGBNIR categories TDE-1737 ([#1299](https://github.com/linz/argo-tasks/issues/1299)) ([71db708](https://github.com/linz/argo-tasks/commit/71db708d9aa1feeffd3c9ce34e8ade764686e769))
+
 ## [5.2.1](https://github.com/linz/argo-tasks/compare/v5.2.0...v5.2.1) (2025-11-24)
 
 
