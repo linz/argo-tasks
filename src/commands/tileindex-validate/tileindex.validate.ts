@@ -444,11 +444,11 @@ function validateTiling(outputTiles: Map<string, TiffLocation[]>): void {
  * Determine the grid size from the GSD and preset (datatype)
  *
  * @param gsd Ground Sample Distance in meters
- * @param preset 'webp' for aerial imagery, 'rgbnir_zstd_17' for near-infrared aerial imagery, 'dem_lerc' for DEM/DSM/Hillshade
+ * @param preset 'webp' for aerial imagery, 'rgbnir_zstd' for near-infrared aerial imagery, 'dem_lerc' for DEM/DSM/Hillshade
  */
 export function determineGridSizeFromGSDPreset(gsd: number, preset: string): GridSize {
   // Aerial Imagery and Near-Infrared Aerial Imagery
-  if (preset === 'webp' || preset === 'rgbnir_zstd_17') {
+  if (preset === 'webp' || preset === 'rgbnir_zstd') {
     if (gsd < 0.1) return 1000;
     if (gsd >= 0.1 && gsd < 0.25) return 5000;
     if (gsd >= 0.25 && gsd < 1.0) return 10000;
