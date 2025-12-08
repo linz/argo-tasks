@@ -481,6 +481,23 @@ describe('determineGridSizeFromGSDPreset', () => {
     assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'webp'), 50000);
   });
 
+  // Near-Infrared Aerial Imagery (preset: 'rgbnir_zstd')
+  it('returns 1000 for near-infrared aerial imagery < 0.1m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.05, 'rgbnir_zstd'), 1000);
+  });
+  it('returns 5000 for near-infrared aerial imagery >= 0.1m and < 0.25m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'rgbnir_zstd'), 5000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.249, 'rgbnir_zstd'), 5000);
+  });
+  it('returns 10000 for near-infrared aerial imagery >= 0.25m and < 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.25, 'rgbnir_zstd'), 10000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(0.999, 'rgbnir_zstd'), 10000);
+  });
+  it('returns 50000 for near-infrared near-infrared aerial imagery >= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'rgbnir_zstd'), 50000);
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'rgbnir_zstd'), 50000);
+  });
+
   // DEM/DSM/Hillshade (preset: 'dem_lerc')
   it('returns 1000 for elevation < 0.2m', () => {
     assert.strictEqual(determineGridSizeFromGSDPreset(0.1, 'dem_lerc'), 1000);
