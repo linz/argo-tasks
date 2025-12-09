@@ -48,7 +48,17 @@ describe('GeneratePathImagery', () => {
     assert.equal(generatePath(metadata), 's3://nz-imagery/waikato/waikato_sn11978_1992-1995_0.4m/rgb/2193/');
   });
 });
-
+it('Should match - near-infrared aerial photos from slug', () => {
+  const metadata: PathMetadata = {
+    targetBucketName: 'nz-imagery',
+    geospatialCategory: 'near-infrared-aerial-photos',
+    region: 'auckland',
+    slug: 'auckland_2023_0.3m',
+    gsd: 0.3,
+    epsg: 2193,
+  };
+  assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgbnir/2193/');
+});
 describe('GeneratePathHillshade', () => {
   it('Should match - DEM hillshade 8m igor', () => {
     const metadata: PathMetadata = {
