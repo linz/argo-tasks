@@ -1,5 +1,14 @@
 # Changelog
 
+## [5.3.0](https://github.com/linz/argo-tasks/compare/v5.2.1...v5.3.0) (2025-12-09)
+
+
+### Features
+
+* **generate-path:** use RGBNIR categories TDE-1738 ([#1300](https://github.com/linz/argo-tasks/issues/1300)) ([2a6787b](https://github.com/linz/argo-tasks/commit/2a6787b863f46358c381d419e1bdd09a4e93f09b))
+* **stac-setup:** add RGBNIR categories TDE-1737 ([#1299](https://github.com/linz/argo-tasks/issues/1299)) ([71db708](https://github.com/linz/argo-tasks/commit/71db708d9aa1feeffd3c9ce34e8ade764686e769))
+* **tileindex-validate:** add support for rgbnir TDE-1737 ([#1302](https://github.com/linz/argo-tasks/issues/1302)) ([d5208b3](https://github.com/linz/argo-tasks/commit/d5208b39bf2366abd5cbc9b149f84d65acb67b62))
+
 ## [5.2.1](https://github.com/linz/argo-tasks/compare/v5.2.0...v5.2.1) (2025-11-24)
 
 
