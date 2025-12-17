@@ -267,7 +267,7 @@ describe('is8BitsTiff', () => {
 });
 
 describe('validatePreset', () => {
-  it('should validate multiple tiffs', async (t) => {
+  it('should validate multiple tiffs for webp', async (t) => {
     const test16bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
     const test8bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
     const fatalStub = t.mock.method(logger, 'fatal');
@@ -278,7 +278,21 @@ describe('validatePreset', () => {
 
     assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
     const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
-    assert.equal(opts['preset'], 'webp');
+    assert.equal(opts['preset'], 'rgb');
+    assert.ok(opts['reason']?.includes('is not a 8 bits TIFF'));
+  });
+  it('should validate multiple tiffs for rgbnir_zstd', async (t) => {
+    const test16bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
+    const test8bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
+    const fatalStub = t.mock.method(logger, 'fatal');
+    await assert.rejects(validatePreset('rgbnir_zstd', [test16bTiff, test16bTiff, test8bTiff]), {
+      name: 'Error',
+      message: `Tiff preset:"rgbnir_zstd" validation failed`,
+    });
+
+    assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
+    const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+    assert.equal(opts['preset'], 'rgbnir_zstd');
     assert.ok(opts['reason']?.includes('is not a 8 bits TIFF'));
   });
 });
