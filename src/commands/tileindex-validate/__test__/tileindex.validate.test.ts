@@ -278,7 +278,7 @@ describe('validatePreset', () => {
 
     assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
     const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
-    assert.equal(opts['preset'], 'rgb');
+    assert.equal(opts['preset'], 'webp');
     assert.ok(opts['reason']?.includes('is not a 8 bits TIFF'));
   });
   it('should validate multiple tiffs for rgbnir_zstd', async (t) => {
