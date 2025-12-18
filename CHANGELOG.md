@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.1](https://github.com/linz/argo-tasks/compare/v5.3.0...v5.3.1) (2025-12-18)
+
+
+### Bug Fixes
+
+* check TIFFs are 8-bit for rgbnir_zstd preset TDE-1739 ([#1303](https://github.com/linz/argo-tasks/issues/1303)) ([b474d8e](https://github.com/linz/argo-tasks/commit/b474d8e41170185c3bb670487b2e175331ec54a0))
+
 ## [5.3.0](https://github.com/linz/argo-tasks/compare/v5.2.1...v5.3.0) (2025-12-09)
 
 
