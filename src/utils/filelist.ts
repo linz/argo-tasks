@@ -43,7 +43,6 @@ export function protocolAwareString(targetLocation: URL): string {
  * @returns relative path to file
  */
 export function makeRelative(baseLocation: URL, fileLocation: URL, strict = true): string {
-  console.log({ baseLocation: baseLocation.href, fileLocation: fileLocation.href, strict });
   const baseLocationFolder = new URL('./', baseLocation); // Ensure baseLocation ends with "/" (cuts off anything after the final "/", i.e. a file name)
   // If the fileLocation starts with baseLocationFolder, we can return the relative path of fileLocation
   if (strict && !fileLocation.href.startsWith(baseLocationFolder.href)) {
