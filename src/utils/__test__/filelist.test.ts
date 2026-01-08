@@ -1,10 +1,12 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
+import { pathToFileURL } from 'node:url';
 
 import { fsa } from '@chunkd/fs';
 
 import type { TiffLocation } from '../../commands/tileindex-validate/tileindex.validate.ts';
 import type { FileListEntryClass } from '../filelist.ts';
+import { makeRelative } from '../filelist.ts';
 import { createFileList, protocolAwareString } from '../filelist.ts';
 
 describe('createFileList', () => {
@@ -119,5 +121,55 @@ describe('URL handling with special characters', () => {
         `URL re-parsing failed. Original: ${testCase.original}, Final URL: ${url2.href}, Expected: ${expectedFinalUrl}`,
       );
     }
+  });
+});
+
+describe('makeRelative', () => {
+  it('should make relative urls', () => {
+    assert.equal(
+      makeRelative(fsa.toUrl('s3://linz-imagery/'), fsa.toUrl('s3://linz-imagery/catalog.json')),
+      './catalog.json',
+    );
+  });
+
+  it('should make relative from absolute paths', () => {
+    assert.equal(
+      makeRelative(pathToFileURL('/home/blacha/'), pathToFileURL('/home/blacha/catalog.json')),
+      './catalog.json',
+    );
+  });
+
+  it('should make relative relative paths', () => {
+    assert.equal(makeRelative(pathToFileURL(process.cwd() + '/'), pathToFileURL('./catalog.json')), './catalog.json');
+  });
+
+  it('should not make relative on different paths', () => {
+    assert.throws(() => makeRelative(pathToFileURL('/home/blacha/'), pathToFileURL('/home/test/catalog.json')), Error);
+  });
+
+  it('should handle URLs with spaces', () => {
+    const base = new URL('s3://bucket/path/');
+    const fileWithSpace = new URL('s3://bucket/path/with%20space/file.txt');
+    assert.equal(makeRelative(base, fileWithSpace), './with space/file.txt');
+  });
+
+  it('should handle URLs with special characters', () => {
+    const base = new URL('memory://bucket/path/');
+    const fileWithHash = new URL('memory://bucket/path/file%23hash.txt');
+    const fileWithBracket = new URL('memory://bucket/path/file[bracket].txt');
+    assert.equal(makeRelative(base, fileWithHash), './file#hash.txt');
+    assert.equal(makeRelative(base, fileWithBracket), './file[bracket].txt');
+  });
+
+  it('should handle file with percent sign (not followed by two hex digits)', () => {
+    const base = new URL('s3://bucket/path/');
+    const tricky = new URL('s3://bucket/path/95%_C.I_4m_40-110m.sd');
+    assert.equal(makeRelative(base, tricky), './95%_C.I_4m_40-110m.sd');
+  });
+
+  it('should throw if strict and not a subfolder', () => {
+    const base = new URL('s3://bucket/path/');
+    const outside = new URL('s3://bucket/other/file.txt');
+    assert.throws(() => makeRelative(base, outside, true));
   });
 });
