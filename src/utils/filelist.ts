@@ -24,9 +24,10 @@ export function protocolAwareString(targetLocation: URL): string {
     return fileURLToPath(targetLocation);
   }
 
+  const targetLocationWithEncodedPercents = encodePercentSigns(targetLocation.href);
   // Decode URI components but keep # characters encoded to prevent
   // them from being interpreted as URL fragments
-  return decodeURIComponent(targetLocation.href).replace(/#/g, '%23');
+  return decodeURIComponent(targetLocationWithEncodedPercents).replace(/#/g, '%23');
 }
 
 /**
@@ -65,9 +66,19 @@ export function makeRelative(baseLocation: URL, fileLocation: URL, strict = true
   if (HttpProtocols.includes(fileLocation.protocol)) {
     return fileLocation.href.replace(baseLocationFolder.href, './');
   }
-  // Before decoding, we need to ensure that any percent signs (%) not followed by two hex digits are encoded as %25
-  const encodedSignsFileLocation = fileLocation.href.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
-  return decodeURIComponent(encodedSignsFileLocation.replace(baseLocationFolder.href, './'));
+
+  const fileLocationWithEncodedPercents = encodePercentSigns(fileLocation.href);
+  return decodeURIComponent(fileLocationWithEncodedPercents.replace(baseLocationFolder.href, './'));
+}
+
+/**
+ * Encode percent signs (%) not followed by two hex digits as %25
+ *
+ * @param input string to encode
+ * @returns encoded string
+ */
+export function encodePercentSigns(input: string): string {
+  return input.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
 }
 
 export interface FileListEntry {

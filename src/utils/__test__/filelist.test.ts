@@ -6,6 +6,7 @@ import { fsa } from '@chunkd/fs';
 
 import type { TiffLocation } from '../../commands/tileindex-validate/tileindex.validate.ts';
 import type { FileListEntryClass } from '../filelist.ts';
+import { encodePercentSigns } from '../filelist.ts';
 import { makeRelative } from '../filelist.ts';
 import { createFileList, protocolAwareString } from '../filelist.ts';
 
@@ -66,6 +67,12 @@ describe('URL handling with special characters', () => {
           's3://linz-topographic-upload/landpro/Gisborne_2023/Non_Priority_3/VECTOR/EP#462_Gisborne_LOT_15-16-17.dgn',
         expectedTransformed:
           's3://linz-topographic-upload/landpro/Gisborne_2023/Non_Priority_3/VECTOR/EP%23462_Gisborne_LOT_15-16-17.dgn',
+      },
+      {
+        original:
+          's3://linz-hydrographic-archive/Authoritative_Surveys/HS72_Taranaki/Processed_Data/3_Processed/1_GSF_PROJECTS/HS72_Block M_GSF Project/SD/HS72_M_95%_C.I_4m_39-110m.sd',
+        expectedTransformed:
+          's3://linz-hydrographic-archive/Authoritative_Surveys/HS72_Taranaki/Processed_Data/3_Processed/1_GSF_PROJECTS/HS72_Block M_GSF Project/SD/HS72_M_95%_C.I_4m_39-110m.sd',
       },
       {
         original:
@@ -171,5 +178,22 @@ describe('makeRelative', () => {
     const base = new URL('s3://bucket/path/');
     const outside = new URL('s3://bucket/other/file.txt');
     assert.throws(() => makeRelative(base, outside, true));
+  });
+});
+
+describe('encodePercentSigns', () => {
+  it('should encode lone percent signs', () => {
+    assert.equal(encodePercentSigns('HS72_M_95%_C.I_4m_39-110m.sd'), 'HS72_M_95%25_C.I_4m_39-110m.sd');
+    assert.equal(encodePercentSigns('%foo%'), '%25foo%25');
+  });
+
+  it('should not encode percent signs followed by two hex digits', () => {
+    assert.equal(encodePercentSigns('foo%20bar'), 'foo%20bar');
+    assert.equal(encodePercentSigns('%41%42%43'), '%41%42%43');
+  });
+
+  it('should encode percent signs not followed by two hex digits', () => {
+    assert.equal(encodePercentSigns('foo%2Gbar'), 'foo%252Gbar');
+    assert.equal(encodePercentSigns('foo%'), 'foo%25');
   });
 });
