@@ -24,10 +24,14 @@ export function protocolAwareString(targetLocation: URL): string {
     return fileURLToPath(targetLocation);
   }
 
+  // Encode % signs to avoid decodeURIComponent errors
   const targetLocationWithEncodedPercents = encodePercentSigns(targetLocation.href);
-  // Decode URI components but keep # characters encoded to prevent
-  // them from being interpreted as URL fragments
-  return decodeURIComponent(targetLocationWithEncodedPercents).replace(/#/g, '%23');
+  // Decode URI components
+  const targetLocationDecodedURI = decodeURIComponent(targetLocationWithEncodedPercents);
+  // Encode % signs again to avoid issues using the decoded URI with fsa
+  // Encode # characters to prevent them from being interpreted as URL fragments
+  const targetLocationWithEncodedHashesAndPercents = encodePercentSigns(targetLocationDecodedURI).replace(/#/g, '%23');
+  return targetLocationWithEncodedHashesAndPercents;
 }
 
 /**

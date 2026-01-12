@@ -72,7 +72,7 @@ describe('URL handling with special characters', () => {
         original:
           's3://linz-hydrographic-archive/Authoritative_Surveys/HS72_Taranaki/Processed_Data/3_Processed/1_GSF_PROJECTS/HS72_Block M_GSF Project/SD/HS72_M_95%_C.I_4m_39-110m.sd',
         expectedTransformed:
-          's3://linz-hydrographic-archive/Authoritative_Surveys/HS72_Taranaki/Processed_Data/3_Processed/1_GSF_PROJECTS/HS72_Block M_GSF Project/SD/HS72_M_95%_C.I_4m_39-110m.sd',
+          's3://linz-hydrographic-archive/Authoritative_Surveys/HS72_Taranaki/Processed_Data/3_Processed/1_GSF_PROJECTS/HS72_Block M_GSF Project/SD/HS72_M_95%25_C.I_4m_39-110m.sd',
       },
       {
         original:
