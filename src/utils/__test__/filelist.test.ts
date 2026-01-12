@@ -109,7 +109,7 @@ describe('URL handling with special characters', () => {
     for (const testCase of testCases) {
       // This is what happens in the CopyValidator
       const url1 = fsa.toUrl(testCase.original);
-      const transformedPath = protocolAwareString(url1);
+      const transformedPath = protocolAwareString(url1, true);
 
       // This is what happens in the copy worker
       const url2 = fsa.toUrl(transformedPath);

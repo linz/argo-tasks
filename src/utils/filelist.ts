@@ -10,20 +10,23 @@ export const HttpProtocols = ['https:', 'http:'];
  * For http(s):// URLs it returns the full URL (with encoded characters)
  * For other protocols it decodes the characters and
  * for file:// URL it creates a relative path from the current working directory
- * For non-HTTP URLs, # characters are kept encoded as %23 to prevent
- * them from being interpreted as URL fragments.
+ * For non-HTTP URLs, if encodeSpecialChars is true, # characters and % signs are kept encoded as %23 and %25 respectively  to prevent
+ * them from being interpreted as URL fragments or special characters.
  *
  * @param targetLocation URL to convert to string
+ * @param encodeSpecialChars whether to encode special characters (#, %) for non-HTTP URLs
  * @returns string representation of the URL
  */
-export function protocolAwareString(targetLocation: URL): string {
+export function protocolAwareString(targetLocation: URL, encodeSpecialChars = false): string {
   if (HttpProtocols.includes(targetLocation.protocol)) {
     return targetLocation.href;
   }
   if (targetLocation.protocol === 'file:') {
     return fileURLToPath(targetLocation);
   }
-
+  if (!encodeSpecialChars) {
+    return decodeURIComponent(targetLocation.href);
+  }
   // Encode % signs to avoid decodeURIComponent errors
   const targetLocationWithEncodedPercents = encodePercentSigns(targetLocation.href);
   // Decode URI components
