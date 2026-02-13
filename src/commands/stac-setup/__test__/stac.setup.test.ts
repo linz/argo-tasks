@@ -66,6 +66,31 @@ describe('stac-setup', () => {
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
+  it('should retrieve slug from alternate ODR collection and generate new collection ID', async () => {
+    const baseArgs = {
+      ...BaseArgs,
+      alternateOdrUrl: collectionLocation,
+      startYear: '2013',
+      endYear: '2014',
+      gsd: '0.3',
+      region: 'gisborne',
+      geographicDescription: 'Wairoa',
+      geospatialCategory: 'dem',
+    } as const;
+    await commandStacSetup.handler(baseArgs);
+
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
+    files.sort();
+    assert.deepStrictEqual(files, [
+      fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
+    ]);
+    const slug = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/linz-slug'));
+    assert.strictEqual(slug.toString(), 'palmerston-north_2024_0.3m');
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
+    assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
+  });
+
   it('should retrieve setup from args', async () => {
     const baseArgs = {
       ...BaseArgs,
