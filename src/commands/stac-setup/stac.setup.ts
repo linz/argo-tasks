@@ -90,6 +90,13 @@ export const commandStacSetup = command({
       description: 'Open Data Registry URL of existing dataset',
     }),
 
+    alternateOdrUrl: option({
+      type: optional(Url),
+      long: 'alternate-odr-url',
+      description:
+        'Open Data Registry URL of existing dataset, used for RGBNIR imagery that has an existing RGB counterpart',
+    }),
+
     output: option({
       type: UrlFolder,
       long: 'output',
@@ -104,7 +111,19 @@ export const commandStacSetup = command({
     const startTime = performance.now();
 
     logger.info('StacSetup:Start');
-    if (args.odrUrl) {
+
+    if (args.alternateOdrUrl && !args.odrUrl) {
+      const collectionLocation = urlPathEndsWith(args.alternateOdrUrl, '/collection.json')
+        ? args.alternateOdrUrl
+        : new URL('collection.json', args.alternateOdrUrl);
+      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
+      if (collection == null)
+        throw new Error(`Failed to get collection.json from ${protocolAwareString(collectionLocation)}.`);
+      const slug = collection['linz:slug'];
+      if (slug !== slugify(slug)) throw new Error(`Invalid slug: ${slug}.`);
+      const collectionId = ulid.ulid();
+      await writeSetupFiles(slug, collectionId, args.output);
+    } else if (args.odrUrl) {
       const collectionLocation = urlPathEndsWith(args.odrUrl, '/collection.json')
         ? args.odrUrl
         : new URL('collection.json', args.odrUrl);
