@@ -34,6 +34,7 @@ describe('stac-setup', () => {
     config: undefined,
     surveyId: undefined,
     odrUrl: undefined,
+    alternateOdrUrl: undefined,
     output: fsa.toUrl('memory:///tmp/stac-setup/'),
     gsd: '1',
     region: 'gisborne',
