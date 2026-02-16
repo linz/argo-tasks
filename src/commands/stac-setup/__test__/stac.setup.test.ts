@@ -76,7 +76,7 @@ describe('stac-setup', () => {
       gsd: '0.3',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
-      geospatialCategory: 'NearInfraredSatelliteImagery',
+      geospatialCategory: 'near-infrared-aerial-photos',
     } as const;
     await commandStacSetup.handler(baseArgs);
 

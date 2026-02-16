@@ -112,7 +112,7 @@ export const commandStacSetup = command({
 
     logger.info('StacSetup:Start');
 
-    if (args.alternateOdrUrl && args.geospatialCategory === 'NearInfraredSatelliteImagery' && !args.odrUrl) {
+    if (args.alternateOdrUrl && args.geospatialCategory === 'near-infrared-aerial-photos' && !args.odrUrl) {
       const collectionLocation = urlPathEndsWith(args.alternateOdrUrl, '/collection.json')
         ? args.alternateOdrUrl
         : new URL('collection.json', args.alternateOdrUrl);
