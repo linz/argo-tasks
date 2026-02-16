@@ -67,7 +67,7 @@ describe('stac-setup', () => {
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should retrieve slug from alternate ODR collection and generate new collection ID', async () => {
+  it('should retrieve slug from RGB ODR collection and generate new collection ID', async () => {
     const baseArgs = {
       ...BaseArgs,
       alternateOdrUrl: collectionLocation,
@@ -76,7 +76,7 @@ describe('stac-setup', () => {
       gsd: '0.3',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
-      geospatialCategory: 'dem',
+      geospatialCategory: 'NearInfraredSatelliteImagery',
     } as const;
     await commandStacSetup.handler(baseArgs);
 

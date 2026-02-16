@@ -92,9 +92,9 @@ export const commandStacSetup = command({
 
     alternateOdrUrl: option({
       type: optional(Url),
-      long: 'alternate-odr-url',
+      long: 'rgb-odr-url',
       description:
-        'Open Data Registry URL of existing dataset, used for RGBNIR imagery that has an existing RGB counterpart',
+        'Open Data Registry URL of existing RGB dataset, used for RGBNIR imagery that has an RGB counterpart',
     }),
 
     output: option({
@@ -112,7 +112,7 @@ export const commandStacSetup = command({
 
     logger.info('StacSetup:Start');
 
-    if (args.alternateOdrUrl && !args.odrUrl) {
+    if (args.alternateOdrUrl && args.geospatialCategory === 'NearInfraredSatelliteImagery' && !args.odrUrl) {
       const collectionLocation = urlPathEndsWith(args.alternateOdrUrl, '/collection.json')
         ? args.alternateOdrUrl
         : new URL('collection.json', args.alternateOdrUrl);
