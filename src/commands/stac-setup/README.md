@@ -8,21 +8,21 @@ stac-setup <options>
 
 ### Options
 
-| Usage                          | Description                                                                                              | Options                          |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| --config <str>                 | Location of role configuration file                                                                      | optional                         |
-| --start-date <str>             | End date of survey capture (YYYY-MM-DD), eg 2023-01-01                                                   | optional                         |
-| --start-year <str>             | Start year of survey capture, deprecated use --start-date                                                | optional                         |
-| --end-date <str>               | End date of survey capture (YYYY-MM-DD), eg 2024-05-23                                                   | optional                         |
-| --end-year <str>               | End year of survey capture, deprecated use --end-date                                                    | optional                         |
-| --gsd <value>                  | GSD of dataset, e.g. 0.3                                                                                 |                                  |
-| --region <str>                 | Region of dataset                                                                                        |                                  |
-| --geographic-description <str> | Geographic description of dataset                                                                        | optional                         |
-| --survey-id <str>              | Associated survey id, eg SN8066 or SNC20505                                                              | optional                         |
-| --geospatial-category <str>    | Geospatial category of dataset                                                                           |                                  |
-| --odr-url <value>              | Open Data Registry URL of existing dataset                                                               | optional                         |
-| --alternate-odr-url <value>    | Open Data Registry URL of existing dataset, used for RGBNIR imagery that has an existing RGB counterpart | optional                         |
-| --output <value>               | Where to store output files                                                                              | default: file:///tmp/stac-setup/ |
+| Usage                          | Description                                                                                         | Options                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| --config <str>                 | Location of role configuration file                                                                 | optional                         |
+| --start-date <str>             | End date of survey capture (YYYY-MM-DD), eg 2023-01-01                                              | optional                         |
+| --start-year <str>             | Start year of survey capture, deprecated use --start-date                                           | optional                         |
+| --end-date <str>               | End date of survey capture (YYYY-MM-DD), eg 2024-05-23                                              | optional                         |
+| --end-year <str>               | End year of survey capture, deprecated use --end-date                                               | optional                         |
+| --gsd <value>                  | GSD of dataset, e.g. 0.3                                                                            |                                  |
+| --region <str>                 | Region of dataset                                                                                   |                                  |
+| --geographic-description <str> | Geographic description of dataset                                                                   | optional                         |
+| --survey-id <str>              | Associated survey id, eg SN8066 or SNC20505                                                         | optional                         |
+| --geospatial-category <str>    | Geospatial category of dataset                                                                      |                                  |
+| --odr-url <value>              | Open Data Registry URL of existing dataset                                                          | optional                         |
+| --rgb-odr-url <value>          | Open Data Registry URL of existing RGB dataset, used for RGBNIR imagery that has an RGB counterpart | optional                         |
+| --output <value>               | Where to store output files                                                                         | default: file:///tmp/stac-setup/ |
 
 ### Flags
 
