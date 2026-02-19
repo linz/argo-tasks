@@ -13,6 +13,7 @@ import { commandIdentifyUpdatedItems } from './identify-updated-items/identify.u
 import { commandLdsFetch } from './lds-fetch-layer/lds.fetch.layer.ts';
 import { commandList } from './list/list.ts';
 import { commandMapSheetCoverage } from './mapsheet-coverage/mapsheet.coverage.ts';
+import { commandParseOdrCopyConfig } from './parse-odr-copy-config/parse.odr.copy.config.ts';
 import { commandPrettyPrint } from './pretty-print/pretty.print.ts';
 import { commandStacCatalog } from './stac-catalog/stac.catalog.ts';
 import { commandStacCollectionOutput } from './stac-collection-output/stac.collection.output.ts';
@@ -35,6 +36,7 @@ export const AllCommands = {
   list: commandList,
   ls: commandList,
   'mapsheet-coverage': commandMapSheetCoverage,
+  'parse-odr-copy-config': commandParseOdrCopyConfig,
   'stac-catalog': commandStacCatalog,
   'stac-collection-output': commandStacCollectionOutput,
   'stac-github-import': commandStacGithubImport,
