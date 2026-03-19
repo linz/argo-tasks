@@ -30,6 +30,32 @@ import { FakeCogTiff } from './tileindex.validate.data.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+describe('getSize', () => {
+  it('should return correct width and height for positive extent', () => {
+    const extent: [number, number, number, number] = [10, 20, 30, 40];
+    const size = getSize(extent);
+    assert.deepEqual(size, { width: 20, height: 20 });
+  });
+
+  it('should return zero width and height for zero-size extent', () => {
+    const extent: [number, number, number, number] = [5, 5, 5, 5];
+    const size = getSize(extent);
+    assert.deepEqual(size, { width: 0, height: 0 });
+  });
+
+  it('should handle negative coordinates correctly', () => {
+    const extent: [number, number, number, number] = [-10, -20, 10, 20];
+    const size = getSize(extent);
+    assert.deepEqual(size, { width: 20, height: 40 });
+  });
+
+  it('should handle reversed coordinates (min > max)', () => {
+    const extent: [number, number, number, number] = [30, 40, 10, 20];
+    const size = getSize(extent);
+    assert.deepEqual(size, { width: -20, height: -20 });
+  });
+});
+
 function convertTileName(fileName: string, gridSize: GridSize): string | null {
   const mapTileIndex = MapSheet.getMapTileIndex(fileName);
   if (mapTileIndex == null) return null;
