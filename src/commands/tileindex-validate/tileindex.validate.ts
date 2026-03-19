@@ -347,7 +347,7 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   if (roundedGsds.size > 1) {
     logger.error({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:Failed');
     throw new Error(
-      `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${locations.map(protocolAwareString).join(',')}`,
+      `Inconsistent GSDs found: ${[...roundedGsds].join(', ')} ${[...gsds].join(',')}, ${locations.map((loc) => protocolAwareString(loc)).join(',')}`,
     );
   } else if (gsds.size > 1) {
     logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
