@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.2](https://github.com/linz/argo-tasks/compare/v5.3.1...v5.3.2) (2026-03-19)
+
+
+### Reverts
+
+* "build: stop publishing containers to ECR" TDE-1861 ([#1309](https://github.com/linz/argo-tasks/issues/1309)) ([f1712ab](https://github.com/linz/argo-tasks/commit/f1712abfa03cbd77f466ba97bf7f11b4e0342b2e))
+
 ## [5.3.1](https://github.com/linz/argo-tasks/compare/v5.3.0...v5.3.1) (2025-12-18)
 
 
