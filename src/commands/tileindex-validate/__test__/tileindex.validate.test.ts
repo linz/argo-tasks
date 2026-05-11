@@ -262,10 +262,11 @@ describe('is8BitsTiff', () => {
     const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
     await assert.rejects(validate8BitsTiff(testTiff), {
       name: 'Error',
-      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff is not a 8 bits TIFF`,
+      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported bit depth: 16, 16, 16. Expected: 8`,
     });
 
-    assert.ok(await validateTiffSamples(testTiff, new Set([16])));
+    const ret = await validateTiffSamples(testTiff, new Set([16]));
+    assert.equal(ret, 16);
   });
 });
 
@@ -274,7 +275,7 @@ describe('validatePreset', () => {
     const test16bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
     const test8bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
     const fatalStub = t.mock.method(logger, 'fatal');
-    await assert.rejects(validatePreset(preset, [test16bTiff, test16bTiff, test8bTiff]), {
+    await assert.rejects(validatePreset(preset, [test8bTiff, test16bTiff, test16bTiff]), {
       name: 'Error',
       message: `Tiff preset:"${preset}" validation failed`,
     });
@@ -282,7 +283,7 @@ describe('validatePreset', () => {
     assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
     const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
     assert.equal(opts['preset'], preset);
-    assert.ok(opts['reason']?.includes('is not a 8 bits TIFF'));
+    assert.ok(opts['reason']?.includes('bit depth'));
   }
   it('should validate multiple tiffs for webp', async (t) => {
     await testValidatePresetTiffs(t, 'webp');

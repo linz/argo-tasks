@@ -482,14 +482,29 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
   const bitSet = allowedBitsForPreset(preset);
   if (bitSet == null) return;
 
-  const promises = tiffs.map((f) => {
-    return validateTiffSamples(f, bitSet).catch((err) => {
+  let bitCount: number | null = null;
+
+  const promises = tiffs.map(async (t) => {
+    const value = await validateTiffSamples(t, bitSet).catch((err) => {
       logger.fatal(
-        { reason: String(err), source: protocolAwareString(f.source.url), preset },
+        { reason: String(err), source: protocolAwareString(t.source.url), preset },
         'Tiff:ValidatePreset:failed',
       );
       rejected = true;
     });
+    if (value == null) return;
+    if (bitCount == null) bitCount = value;
+    if (bitCount !== value) {
+      logger.fatal(
+        {
+          reason: `${protocolAwareString(t.source.url)} Inconsistent bit depth across bands: ${bitCount} vs ${value}}`,
+          source: protocolAwareString(t.source.url),
+          preset,
+        },
+        'Tiff:ValidatePreset:failed',
+      );
+      rejected = true;
+    }
   });
   await Promise.allSettled(promises);
 
@@ -691,7 +706,7 @@ export const BitSet8 = new Set([8]);
  * @param tiff
  */
 export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
-  return validateTiffSamples(tiff, BitSet8);
+  await validateTiffSamples(tiff, BitSet8);
 }
 
 /**
@@ -700,7 +715,7 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
  * @param tiff
  * @param allowedBitCount
  */
-export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<number>): Promise<void> {
+export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<number>): Promise<number> {
   const baseImage = tiff.images[0];
   if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
 
@@ -723,6 +738,8 @@ export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<numbe
       );
     }
   }
+
+  return firstSample;
 }
 
 /**
