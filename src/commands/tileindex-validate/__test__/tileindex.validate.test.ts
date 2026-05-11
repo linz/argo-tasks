@@ -25,6 +25,7 @@ import {
   TiffLoader,
   validate8BitsTiff,
   validatePreset,
+  validateTiffSamples,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
@@ -263,6 +264,8 @@ describe('is8BitsTiff', () => {
       name: 'Error',
       message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff is not a 8 bits TIFF`,
     });
+
+    assert.ok(await validateTiffSamples(testTiff, new Set([16])));
   });
 });
 

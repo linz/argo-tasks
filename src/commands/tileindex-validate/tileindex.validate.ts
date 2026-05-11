@@ -464,6 +464,12 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
   throw new Error(`Unknown preset: ${preset}`);
 }
 
+function allowedBitsForPreset(preset: string): Set<number> | null {
+  if (preset === 'webp') return new Set([8]);
+  if (preset === 'rgbnir_zstd') return new Set([8, 16]);
+  return null;
+}
+
 /**
  * Validate the tiffs against a validation preset
  *
@@ -473,18 +479,19 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
 export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
   let rejected = false;
 
-  if (preset === 'webp' || preset === 'rgbnir_zstd') {
-    const promises = tiffs.map((f) => {
-      return validate8BitsTiff(f).catch((err) => {
-        logger.fatal(
-          { reason: String(err), source: protocolAwareString(f.source.url), preset },
-          'Tiff:ValidatePreset:failed',
-        );
-        rejected = true;
-      });
+  const bitSet = allowedBitsForPreset(preset);
+  if (bitSet == null) return;
+
+  const promises = tiffs.map((f) => {
+    return validateTiffSamples(f, bitSet).catch((err) => {
+      logger.fatal(
+        { reason: String(err), source: protocolAwareString(f.source.url), preset },
+        'Tiff:ValidatePreset:failed',
+      );
+      rejected = true;
     });
-    await Promise.allSettled(promises);
-  }
+  });
+  await Promise.allSettled(promises);
 
   if (rejected) throw new Error(`Tiff preset:"${preset}" validation failed`);
 }
@@ -677,22 +684,44 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
   return `${sheetCode}_${gridSize}_${tileId}`;
 }
 
+export const BitSet8 = new Set([8]);
 /**
  * Validate if a TIFF contains only 8 bits bands.
  *
  * @param tiff
  */
 export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
+  return validateTiffSamples(tiff, BitSet8);
+}
+
+/**
+ * Ensure the tiff contains only bands with the specified bit count (e.g. 8 bits for webp preset).
+ *
+ * @param tiff
+ * @param allowedBitCount
+ */
+export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<number>): Promise<void> {
   const baseImage = tiff.images[0];
   if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
 
   const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
-  if (bitsPerSample == null) {
+  if (bitsPerSample == null || bitsPerSample.length < 1) {
     throw new Error(`Failed to extract band information from ${protocolAwareString(tiff.source.url)}`);
   }
 
-  if (!bitsPerSample.every((currentNumberBits) => currentNumberBits === 8)) {
-    throw new Error(`${protocolAwareString(tiff.source.url)} is not a 8 bits TIFF`);
+  const firstSample = bitsPerSample[0] as number;
+  if (!allowedBitCount.has(firstSample)) {
+    throw new Error(
+      `${protocolAwareString(tiff.source.url)} has unsupported bit depth: ${bitsPerSample.join(', ')}. Expected: ${[...allowedBitCount].join(', ')}`,
+    );
+  }
+
+  for (let i = 1; i < bitsPerSample.length; i++) {
+    if (bitsPerSample[i] !== firstSample) {
+      throw new Error(
+        `${protocolAwareString(tiff.source.url)} Inconsistent bit depth across bands: ${bitsPerSample.join(', ')}`,
+      );
+    }
   }
 }
 
