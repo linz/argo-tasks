@@ -117,6 +117,7 @@ export const commandStacSetup = command({
       const gsd =
         Number(collection['gsd']) || (await loadFirstTiff(collectionLocation, collection)).images[0]?.resolution[0];
       if (gsd == null) throw new Error('Could not determine GSD from collection or TIFF');
+      console.log(gsd.toString);
       const roundedGsd = Number(Math.round(gsd * 200) / 200);
       if (roundedGsd !== Number(args.gsd)) {
         logger.error({ roundedGsd, expected: args.gsd }, 'StacSetup:Error:GSDMismatch');
