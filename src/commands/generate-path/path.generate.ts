@@ -140,6 +140,7 @@ export async function loadFirstTiff(source: URL, collection: StacCollection): Pr
   const tiffLocation = new URL(tiffLink, source);
   const tiff = await createTiff(tiffLocation);
   if (tiff == null) throw new Error(`Failed to get tiff from ${protocolAwareString(tiffLocation)}.`);
+  console.log(tiff.images[0]?.resolution[0]);
   return tiff;
 }
 
