@@ -159,6 +159,7 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
 
   switch (metadata.geospatialCategory) {
     case 'ancillary-aerial-photos':
+    case 'ancillary-near-infrared-aerial-photos':
     case 'near-infrared-aerial-photos':
     case 'near-infrared-satellite-imagery':
     case 'rural-aerial-photos':

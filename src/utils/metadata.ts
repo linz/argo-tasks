@@ -10,7 +10,8 @@ export interface StacCollectionLinz {
 }
 
 export const GeospatialDataCategories = {
-  AerialPhotos: 'ancillary-aerial-photos',
+  AncillaryAerialPhotos: 'ancillary-aerial-photos',
+  AncillaryNearInfraredAerialPhotos: 'ancillary-near-infrared-aerial-photos',
   NearInfraredAerialPhotos: 'near-infrared-aerial-photos',
   NearInfraredSatelliteImagery: 'near-infrared-satellite-imagery',
   RuralAerialPhotos: 'rural-aerial-photos',

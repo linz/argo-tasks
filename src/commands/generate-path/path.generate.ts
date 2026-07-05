@@ -77,7 +77,7 @@ export const commandGeneratePath = command({
  */
 export function generatePath(metadata: PathMetadata): string {
   if (
-    metadata.geospatialCategory === GeospatialDataCategories.AerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.AncillaryAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.RuralAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
@@ -87,7 +87,8 @@ export function generatePath(metadata: PathMetadata): string {
   }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.NearInfraredAerialPhotos ||
-    metadata.geospatialCategory === GeospatialDataCategories.NearInfraredSatelliteImagery
+    metadata.geospatialCategory === GeospatialDataCategories.NearInfraredSatelliteImagery ||
+    metadata.geospatialCategory === GeospatialDataCategories.AncillaryNearInfraredAerialPhotos
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgbnir/${metadata.epsg}/`;
   }

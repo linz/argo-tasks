@@ -24,7 +24,7 @@ describe('GeneratePathImagery', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgb/2193/');
   });
-  it('Should match - generic aerial photos from slug', () => {
+  it('Should match - generic ancillary aerial photos from slug', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',
       geospatialCategory: 'ancillary-aerial-photos',
@@ -34,6 +34,18 @@ describe('GeneratePathImagery', () => {
       epsg: 2193,
     };
     assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgb/2193/');
+  });
+
+  it('Should match - generic ancillary near infrared aerial photos from slug', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-imagery',
+      geospatialCategory: 'ancillary-near-infrared-aerial-photos',
+      region: 'auckland',
+      slug: 'auckland_2023_0.3m',
+      gsd: 0.3,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgbnir/2193/'); 
   });
 
   it('Should match - scanned aerial photos from slug', () => {
