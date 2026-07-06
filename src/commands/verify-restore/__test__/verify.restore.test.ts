@@ -74,21 +74,21 @@ describe('fetchPendingRestoredObjectPaths', () => {
       },
       {
         Bucket: 'b',
-        Key: 'k',
+        Key: 'k-failed',
         VersionId: '',
-        TaskStatus: '',
-        ErrorCode: '',
-        HTTPStatusCode: '',
-        ResultMessage: 'Failed',
+        TaskStatus: 'failed',
+        ErrorCode: 'InvalidObjectState',
+        HTTPStatusCode: '403',
+        ResultMessage: 'Object is not eligible for restore',
       },
       {
         Bucket: 'b',
-        Key: 'k',
+        Key: 'k-in-progress',
         VersionId: '',
-        TaskStatus: '',
-        ErrorCode: 'Failed',
-        HTTPStatusCode: '',
-        ResultMessage: 'RestoreAlreadyInProgress',
+        TaskStatus: 'failed',
+        ErrorCode: 'RestoreAlreadyInProgress',
+        HTTPStatusCode: '409',
+        ResultMessage: 'Object restore is already in progress (Service: Amazon S3; Status Code: 409)',
       },
       {
         Bucket: 'b',
@@ -100,7 +100,7 @@ describe('fetchPendingRestoredObjectPaths', () => {
         ResultMessage: 'Successful',
       },
     ];
-    assert.throws(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful/ });
+    assert.throws(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful: k-failed$/ });
   });
 
   it('treats RestoreAlreadyInProgress as successful', () => {
@@ -118,10 +118,10 @@ describe('fetchPendingRestoredObjectPaths', () => {
         Bucket: 'b',
         Key: 'k2',
         VersionId: '',
-        TaskStatus: '',
-        ErrorCode: 'Failed',
-        HTTPStatusCode: '',
-        ResultMessage: 'RestoreAlreadyInProgress',
+        TaskStatus: 'failed',
+        ErrorCode: 'RestoreAlreadyInProgress',
+        HTTPStatusCode: '409',
+        ResultMessage: 'Object restore is already in progress (Service: Amazon S3; Status Code: 409)',
       },
     ];
     assert.deepEqual(fetchPendingRestoredObjectPaths(entries), [

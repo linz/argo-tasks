@@ -132,8 +132,7 @@ export function fetchResultKeysFromReport(report: ManifestReport): URL[] {
  */
 export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): { Bucket: string; Key: string }[] {
   const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => {
-    const message = row.ResultMessage.trim();
-    return message !== 'Successful' && message !== 'RestoreAlreadyInProgress';
+    return row.ResultMessage.trim() !== 'Successful' && row.ErrorCode.trim() !== 'RestoreAlreadyInProgress';
   });
   if (notSuccessfulRequests.length) {
     throw new Error(
