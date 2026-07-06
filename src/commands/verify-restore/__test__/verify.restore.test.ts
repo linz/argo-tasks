@@ -5,6 +5,7 @@ import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
 import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
 
+import { logger } from '../../../log.ts';
 import {
   decodeFormUrlEncoded,
   fetchPendingRestoredObjectPaths,
@@ -25,15 +26,21 @@ describe('fetchResultKeysFromReport', () => {
     assert.deepEqual(keys, [fsa.toUrl('s3://b/k'), fsa.toUrl('s3://b2/k2')]);
   });
 
-  it('throws if any result is not succeeded', async () => {
+  it('returns all keys and logs a warning if any result is not succeeded', async (t) => {
+    const warnStub = t.mock.method(logger, 'warn');
     const report = {
       Results: [
         { TaskExecutionStatus: 'succeeded', Bucket: 'b', Key: 'k', MD5Checksum: 'm' },
-        { TaskExecutionStatus: 'failed', Bucket: 'b', Key: 'k', MD5Checksum: 'm' },
-        { TaskExecutionStatus: 'succeeded', Bucket: 'b2', Key: 'k2', MD5Checksum: 'm2' },
+        { TaskExecutionStatus: 'failed', Bucket: 'b', Key: 'k2', MD5Checksum: 'm' },
+        { TaskExecutionStatus: 'succeeded', Bucket: 'b2', Key: 'k3', MD5Checksum: 'm2' },
       ],
     };
-    assert.throws(() => fetchResultKeysFromReport(report), { message: /not succeeded/ });
+    const keys = fetchResultKeysFromReport(report);
+    assert.deepEqual(keys, [fsa.toUrl('s3://b/k'), fsa.toUrl('s3://b/k2'), fsa.toUrl('s3://b2/k3')]);
+
+    assert.equal(warnStub.mock.callCount(), 1);
+    const opts = warnStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string[]>;
+    assert.deepEqual(opts['results'], ['s3://b/k2']);
   });
 });
 
@@ -54,7 +61,7 @@ describe('fetchPendingRestoredObjectPaths', () => {
     assert.deepEqual(files, [{ Bucket: 'b', Key: 'k' }]);
   });
 
-  it('throws if any request is not successful', async () => {
+  it('throws if any request is not successful except RestoreAlreadyInProgress', async () => {
     const entries = [
       {
         Bucket: 'b',
@@ -79,12 +86,48 @@ describe('fetchPendingRestoredObjectPaths', () => {
         Key: 'k',
         VersionId: '',
         TaskStatus: '',
+        ErrorCode: 'Failed',
+        HTTPStatusCode: '',
+        ResultMessage: 'RestoreAlreadyInProgress',
+      },
+      {
+        Bucket: 'b',
+        Key: 'k',
+        VersionId: '',
+        TaskStatus: '',
         ErrorCode: '',
         HTTPStatusCode: '',
         ResultMessage: 'Successful',
       },
     ];
     assert.throws(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful/ });
+  });
+
+  it('treats RestoreAlreadyInProgress as successful', () => {
+    const entries = [
+      {
+        Bucket: 'b',
+        Key: 'k',
+        VersionId: '',
+        TaskStatus: '',
+        ErrorCode: '',
+        HTTPStatusCode: '',
+        ResultMessage: 'Successful',
+      },
+      {
+        Bucket: 'b',
+        Key: 'k2',
+        VersionId: '',
+        TaskStatus: '',
+        ErrorCode: 'Failed',
+        HTTPStatusCode: '',
+        ResultMessage: 'RestoreAlreadyInProgress',
+      },
+    ];
+    assert.deepEqual(fetchPendingRestoredObjectPaths(entries), [
+      { Bucket: 'b', Key: 'k' },
+      { Bucket: 'b', Key: 'k2' },
+    ]);
   });
 
   it('treats ResultMessage with trailing \\r as successful', () => {
