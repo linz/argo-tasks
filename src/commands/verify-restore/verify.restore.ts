@@ -131,6 +131,11 @@ export function fetchResultKeysFromReport(report: ManifestReport): URL[] {
  * @returns An array of objects containing the Bucket and Key of each restored object.
  */
 export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): { Bucket: string; Key: string }[] {
+  const alreadyInProgressRequests = resultEntries.filter((row) => row.ErrorCode.trim() === 'RestoreAlreadyInProgress');
+  if (alreadyInProgressRequests.length) {
+    logger.warn({ keys: alreadyInProgressRequests.map((row) => row.Key) }, 'VerifyRestore:RestoreAlreadyInProgress');
+  }
+
   const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => {
     return row.ResultMessage.trim() !== 'Successful' && row.ErrorCode.trim() !== 'RestoreAlreadyInProgress';
   });

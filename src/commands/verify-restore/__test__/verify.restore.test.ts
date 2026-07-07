@@ -103,7 +103,8 @@ describe('fetchPendingRestoredObjectPaths', () => {
     assert.throws(() => fetchPendingRestoredObjectPaths(entries), { message: /not successful: k-failed$/ });
   });
 
-  it('treats RestoreAlreadyInProgress as successful', () => {
+  it('treats RestoreAlreadyInProgress as successful and logs a warning', (t) => {
+    const warnStub = t.mock.method(logger, 'warn');
     const entries = [
       {
         Bucket: 'b',
@@ -128,6 +129,10 @@ describe('fetchPendingRestoredObjectPaths', () => {
       { Bucket: 'b', Key: 'k' },
       { Bucket: 'b', Key: 'k2' },
     ]);
+
+    assert.equal(warnStub.mock.callCount(), 1);
+    const opts = warnStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string[]>;
+    assert.deepEqual(opts['keys'], ['k2']);
   });
 
   it('treats ResultMessage with trailing \\r as successful', () => {
