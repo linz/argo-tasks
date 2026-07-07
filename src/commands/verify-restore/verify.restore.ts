@@ -104,7 +104,8 @@ export const commandVerifyRestore = command({
 
 /**
  * Fetches the result keys from the manifest report.
- * Throws an error if any of the results did not succeed.
+ * Logs a warning if any of the results did not succeed, as the individual
+ * restore failures are caught when inspecting the result CSV files.
  *
  * @param report - The manifest report containing results.
  * @returns An array of S3 paths for the restored files.
@@ -113,8 +114,9 @@ export function fetchResultKeysFromReport(report: ManifestReport): URL[] {
   const { Results } = report;
   const notSucceeded = Results.filter((r) => r.TaskExecutionStatus?.toLowerCase() !== 'succeeded');
   if (notSucceeded.length) {
-    throw new Error(
-      `Some report results have not succeeded: ${notSucceeded.map((r) => `s3://${r.Bucket}/${r.Key}`).join(', ')}`,
+    logger.warn(
+      { results: notSucceeded.map((r) => `s3://${r.Bucket}/${r.Key}`) },
+      'VerifyRestore:ReportResultsNotSucceeded',
     );
   }
 
@@ -122,13 +124,21 @@ export function fetchResultKeysFromReport(report: ManifestReport): URL[] {
 }
 
 /** Fetches the paths of pending restored objects from the report results.
- * Throws an error if any restore requests are not successful.
+ * Throws an error if any restore requests are not successful, ignoring requests
+ * that are already in progress.
  *
  * @param resultEntries - The report results containing object paths and statuses.
  * @returns An array of objects containing the Bucket and Key of each restored object.
  */
 export function fetchPendingRestoredObjectPaths(resultEntries: ReportResult[]): { Bucket: string; Key: string }[] {
-  const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => row.ResultMessage.trim() !== 'Successful');
+  const alreadyInProgressRequests = resultEntries.filter((row) => row.ErrorCode.trim() === 'RestoreAlreadyInProgress');
+  if (alreadyInProgressRequests.length) {
+    logger.warn({ keys: alreadyInProgressRequests.map((row) => row.Key) }, 'VerifyRestore:RestoreAlreadyInProgress');
+  }
+
+  const notSuccessfulRequests = resultEntries.filter((row: ReportResult) => {
+    return row.ResultMessage.trim() !== 'Successful' && row.ErrorCode.trim() !== 'RestoreAlreadyInProgress';
+  });
   if (notSuccessfulRequests.length) {
     throw new Error(
       `Some restore requests are not successful: ${notSuccessfulRequests.map((row) => row.Key).join(', ')}`,
