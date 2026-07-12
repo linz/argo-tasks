@@ -45,7 +45,7 @@ describe('GeneratePathImagery', () => {
       gsd: 0.3,
       epsg: 2193,
     };
-    assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgbnir/2193/'); 
+    assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgbnir/2193/');
   });
 
   it('Should match - scanned aerial photos from slug', () => {
