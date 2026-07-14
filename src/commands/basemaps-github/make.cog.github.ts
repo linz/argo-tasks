@@ -34,7 +34,7 @@ export interface CategorySetting {
 export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   'Urban Aerial Photos': { minZoom: 14 },
   'Rural Aerial Photos': { minZoom: 13 },
-  'Satellite Imagery': { minZoom: 5 },
+  'Satellite Imagery': {},
   Elevation: { minZoom: 9 },
   'Scanned Aerial Imagery': { minZoom: 0, maxZoom: 32 },
   'New Aerial Photos': {},
