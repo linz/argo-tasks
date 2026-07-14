@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.0](https://github.com/linz/argo-tasks/compare/v5.3.2...v5.4.0) (2026-07-14)
+
+
+### Features
+
+* change and add ancillary aerial photos  TDE-1924 ([#1326](https://github.com/linz/argo-tasks/issues/1326)) ([d737194](https://github.com/linz/argo-tasks/commit/d737194788d1fb1226e6250b87b1a0dd856583f2))
+
 ## [5.3.2](https://github.com/linz/argo-tasks/compare/v5.3.1...v5.3.2) (2026-07-07)
 
 
