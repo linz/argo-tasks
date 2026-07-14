@@ -448,7 +448,7 @@ function validateTiling(outputTiles: Map<string, TiffLocation[]>): void {
  */
 export function determineGridSizeFromGSDPreset(gsd: number, preset: string): GridSize {
   // Near-Infrared Aerial Imagery, Ancillary Aerial Imagery and Ancillary Near-Infrared Aerial Imagery
-    if (preset === 'webp' || preset === 'rgbnir_zstd') {
+  if (preset === 'webp' || preset === 'rgbnir_zstd') {
     if (gsd < 0.1) return 1000;
     if (gsd >= 0.1 && gsd < 0.25) return 5000;
     if (gsd >= 0.25 && gsd < 1.0) return 10000;
