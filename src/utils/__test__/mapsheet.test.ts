@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 import type { MapTileIndex } from '../mapsheet.ts';
-import { MapSheet, SheetRanges } from '../mapsheet.ts';
+import { ChathamMapSheet, ChathamMapSheetData, getMapSheet, MapSheet, SheetRanges } from '../mapsheet.ts';
 import { MapSheetData } from './mapsheet.data.ts';
 
 describe('MapSheets', () => {
@@ -104,4 +104,75 @@ describe('MapSheets', () => {
       assert.equal(String(mapTileIndex.bbox), String(test.bbox));
     });
   }
+});
+
+describe('ChathamMapSheet', () => {
+  // Values sourced from nz-chatham-island-linz-map-sheets-topo-150k.shp (EPSG:3793)
+  it('should extract MapTileIndex from 1:50k tile filename', () => {
+    assert.deepEqual(ChathamMapSheet.getMapTileIndex('CI06.tiff'), {
+      mapSheet: 'CI06',
+      gridSize: 50_000,
+      x: 3_506_000,
+      y: 5_104_000,
+      name: 'CI06',
+      origin: { x: 3_506_000, y: 5_104_000 },
+      width: 24_000,
+      height: 36_000,
+      bbox: [3_506_000, 5_068_000, 3_530_000, 5_104_000],
+    });
+  });
+
+  it('should extract MapTileIndex from a sub-tiled filename', () => {
+    // Regression test for a real production incident: this file genuinely exists at
+    // s3://nz-imagery/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/3793/CI06_5000_0507.tiff
+    // but tileindex-validate mis-tiled it against the mainland NZTM50 grid instead.
+    assert.deepEqual(ChathamMapSheet.getMapTileIndex('CI06_5000_0507'), {
+      mapSheet: 'CI06',
+      gridSize: 5000,
+      x: 7,
+      y: 5,
+      name: 'CI06_5000_0507',
+      origin: { x: 3_520_400, y: 5_089_600 },
+      width: 2400,
+      height: 3600,
+      bbox: [3_520_400, 5_086_000, 3_522_800, 5_089_600],
+    });
+  });
+
+  it('should calculate offsets for all six known sheets', () => {
+    for (const ms of ChathamMapSheetData) {
+      assert.deepEqual(ChathamMapSheet.offset(ms.code), ms.origin);
+      assert.equal(ChathamMapSheet.isKnown(ms.code), true);
+    }
+  });
+
+  it('should round trip all six known sheets', () => {
+    for (const ms of ChathamMapSheetData) {
+      assert.equal(ChathamMapSheet.sheetCode(ms.origin.x, ms.origin.y), ms.code);
+    }
+  });
+
+  it('should not know invalid or out-of-range sheets', () => {
+    assert.equal(ChathamMapSheet.isKnown('CI99'), false);
+    assert.equal(ChathamMapSheet.isKnown('CI00'), false); // grid cell exists but has no real sheet
+    assert.equal(ChathamMapSheet.isKnown('AS21'), false); // a real mainland sheet code
+  });
+
+  it('should not be confused with the mainland grid at the same raw x/y', () => {
+    // The mainland MapSheet formula still "works" (produces *a* answer) for Chatham Islands
+    // coordinates reprojected into NZTM2000 - it must never be mistaken for a Chatham sheet code.
+    const mainlandSheetCode = MapSheet.sheetCode(3_506_000, 5_104_000);
+    assert.notEqual(mainlandSheetCode.slice(0, 2), 'CI');
+  });
+});
+
+describe('getMapSheet', () => {
+  it('should resolve the mainland and Chatham Islands grids by EPSG code', () => {
+    assert.equal(getMapSheet(2193), MapSheet);
+    assert.equal(getMapSheet(3793), ChathamMapSheet);
+  });
+
+  it('should throw for an unsupported target EPSG', () => {
+    assert.throws(() => getMapSheet(4326), /Unsupported target EPSG:4326/);
+  });
 });
