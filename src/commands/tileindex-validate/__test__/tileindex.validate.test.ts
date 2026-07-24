@@ -10,7 +10,7 @@ import { logger } from '../../../log.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
 import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
-import { MapSheet } from '../../../utils/mapsheet.ts';
+import { ChathamMapSheet, MapSheet } from '../../../utils/mapsheet.ts';
 import { createTiff, Url } from '../../common.ts';
 import {
   commandTileIndexValidate,
@@ -120,13 +120,24 @@ describe('tiffLocation', () => {
     );
   });
 
-  it('should find tiles from 3857', async () => {
+  it('should find tiles from 3857 when explicitly reprojecting to 2193', async () => {
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
     TiffAy29.images[0].epsg = 3857;
     TiffAy29.images[0].origin[0] = 19128043.69337794;
     TiffAy29.images[0].origin[1] = -4032710.6009459053;
-    const location = await extractTiffLocations([TiffAy29], 1000);
+    const location = await extractTiffLocations([TiffAy29], 1000, undefined, 2193);
     assert.deepEqual(location[0]?.tileNames, ['AS21_1000_0101']);
+  });
+
+  it('should fail for a source EPSG with no known map sheet grid when no target-epsg is given', async () => {
+    // 3857 has no map sheet grid of its own, and with no explicit target-epsg there is nothing to
+    // reproject into - this must fail loudly rather than silently mis-tiling (as previously happened
+    // for Chatham Islands imagery, see the "Chatham Islands" test below).
+    const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
+    TiffAy29.images[0].epsg = 3857;
+    TiffAy29.images[0].origin[0] = 19128043.69337794;
+    TiffAy29.images[0].origin[1] = -4032710.6009459053;
+    await assert.rejects(extractTiffLocations([TiffAy29], 1000));
   });
 
   it('should fail if one location is not extracted', async () => {
@@ -138,6 +149,40 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[1] = 6018000;
     TiffAy29.images[0].epsg = 0; // make the projection failing
     await assert.rejects(extractTiffLocations([TiffAs21, TiffAy29], 1000));
+  });
+
+  it('should tile Chatham Islands (EPSG:3793) imagery against the Chatham grid when explicitly requested', async () => {
+    // Regression test: this exact file caused a real production incident where tileindex-validate
+    // reprojected it into NZTM2000 and mis-tiled it against the mainland grid (as "BZ59"/"CB61"
+    // etc.) instead of recognising it as Chatham Islands (CI06) imagery.
+    const chathamTileIndex = ChathamMapSheet.getMapTileIndex('CI06_5000_0507');
+    if (chathamTileIndex == null) throw new Error('Failed to compute test fixture tile index');
+
+    const TiffCI06 = new FakeCogTiff('s3://path/CI06_5000_0507.tiff', {
+      origin: [chathamTileIndex.origin.x, chathamTileIndex.origin.y],
+      size: { width: chathamTileIndex.width, height: chathamTileIndex.height },
+      epsg: 3793,
+    });
+
+    const location = await extractTiffLocations([TiffCI06], 5000, undefined, 3793);
+    assert.deepEqual(location[0]?.tileNames, ['CI06_5000_0507']);
+  });
+
+  it('should tile Chatham Islands (EPSG:3793) imagery against the Chatham grid by default, with no target-epsg given', async () => {
+    // Same fixture as above, but relying entirely on the default (no --target-epsg / 4th arg at
+    // all): imagery already tagged EPSG:3793 should tile itself against the Chatham grid without
+    // any caller having to know to ask for it.
+    const chathamTileIndex = ChathamMapSheet.getMapTileIndex('CI06_5000_0507');
+    if (chathamTileIndex == null) throw new Error('Failed to compute test fixture tile index');
+
+    const TiffCI06 = new FakeCogTiff('s3://path/CI06_5000_0507.tiff', {
+      origin: [chathamTileIndex.origin.x, chathamTileIndex.origin.y],
+      size: { width: chathamTileIndex.width, height: chathamTileIndex.height },
+      epsg: 3793,
+    });
+
+    const location = await extractTiffLocations([TiffCI06], 5000);
+    assert.deepEqual(location[0]?.tileNames, ['CI06_5000_0507']);
   });
 });
 
@@ -156,6 +201,7 @@ describe('validate', () => {
     include: undefined,
     preset: 'none',
     sourceEpsg: undefined,
+    targetEpsg: 2193,
     includeDerived: false,
     scale: 1000 as GridSize,
     forceOutput: true,
@@ -234,6 +280,33 @@ describe('validate', () => {
       {
         output: 'AS21_1000_0101',
         input: ['s3://path/AS21_1000_0101.tiff', 's3://path/AS21_1000_0101.tiff'],
+        includeDerived: false,
+      },
+    ]);
+  });
+
+  it('should tile Chatham Islands imagery end to end with no --target-epsg given', async (t) => {
+    const chathamTileIndex = ChathamMapSheet.getMapTileIndex('CI06_5000_0507');
+    if (chathamTileIndex == null) throw new Error('Failed to compute test fixture tile index');
+
+    const TiffCI06 = new FakeCogTiff('s3://path/CI06_5000_0507.tiff', {
+      origin: [chathamTileIndex.origin.x, chathamTileIndex.origin.y],
+      size: { width: chathamTileIndex.width, height: chathamTileIndex.height },
+      epsg: 3793,
+    });
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([TiffCI06]));
+
+    await commandTileIndexValidate.handler({
+      ...baseArguments,
+      targetEpsg: undefined,
+      scale: 5000 as GridSize,
+    });
+
+    const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
+    assert.deepEqual(outputFileList, [
+      {
+        output: 'CI06_5000_0507',
+        input: ['s3://path/CI06_5000_0507.tiff'],
         includeDerived: false,
       },
     ]);
@@ -353,6 +426,7 @@ describe('GSD handling', () => {
     validate: false,
     preset: 'none',
     sourceEpsg: undefined,
+    targetEpsg: 2193,
     includeDerived: false,
     location: [[fsa.toUrl('s3://test')]],
     scale: 1000 as GridSize,

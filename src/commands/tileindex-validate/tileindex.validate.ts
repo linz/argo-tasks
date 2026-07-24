@@ -1,4 +1,4 @@
-import { Bounds, Projection } from '@basemaps/geo';
+import { Bounds, EpsgCode, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import type { Size } from '@cogeotiff/core';
 import { Tiff, TiffTag } from '@cogeotiff/core';
@@ -15,8 +15,8 @@ import { asyncFilter } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
 import { findBoundingBox, findResolution } from '../../utils/geotiff.ts';
-import type { GridSize } from '../../utils/mapsheet.ts';
-import { GridSizes, MapSheet, MapSheetTileGridSize } from '../../utils/mapsheet.ts';
+import type { GridSize, MapSheetLike } from '../../utils/mapsheet.ts';
+import { getMapSheet, GridSizes, MapSheet, MapSheetRegistry } from '../../utils/mapsheet.ts';
 import type { CommandArguments } from '../../utils/type.util.ts';
 import { config, forceOutput, registerCli, UrlFolderList, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
@@ -70,6 +70,22 @@ export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
   },
 };
 
+export const TargetEpsgFromString: Type<string, number> = {
+  /**
+   * Convert an input string to one of the supported target EPSG codes.
+   *
+   * @param value The input string.
+   * @returns The corresponding EPSG code.
+   */
+  async from(value) {
+    const epsg = Number(value);
+    if (MapSheetRegistry[epsg] == null) {
+      throw new Error(`Invalid target-epsg "${value}"; valid values: "${Object.keys(MapSheetRegistry).join('", "')}"`);
+    }
+    return epsg;
+  },
+};
+
 export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description:
@@ -87,6 +103,14 @@ export const commandTileIndexValidate = command({
       defaultValue: (): 'auto' => 'auto',
     }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
+    targetEpsg: option({
+      type: optional(TargetEpsgFromString),
+      long: 'target-epsg',
+      description:
+        'Target CRS to align output tiles to and calculate map sheet names in. ' +
+        `Defaults to the (source) EPSG of the input tiffs; set to ${EpsgCode.Nztm2000} (NZTM2000) or ` +
+        `${EpsgCode.Citm2000} (Chatham Islands) to reproject into a specific grid.`,
+    }),
     forceOutput,
     preset: option({
       type: string,
@@ -195,7 +219,11 @@ export const commandTileIndexValidate = command({
       logger.info({ gsd: roundedGsd, preset: args.preset, gridSize }, 'TileIndex:AutoSelectedGridSize');
     }
 
-    const tiffLocations = await extractTiffLocations(tiffs, gridSize, args.sourceEpsg);
+    // Default to the (source) EPSG of the input tiffs so imagery tiles against its own native
+    // map sheet grid (eg Chatham Islands EPSG:3793) unless the caller explicitly asks to reproject.
+    const targetEpsg = args.targetEpsg ?? args.sourceEpsg ?? [...tiffsMetadata.projections][0] ?? EpsgCode.Nztm2000;
+
+    const tiffLocations = await extractTiffLocations(tiffs, gridSize, args.sourceEpsg, targetEpsg);
     const outputTiles = groupByTileName(tiffLocations);
     logger.info(
       {
@@ -210,7 +238,7 @@ export const commandTileIndexValidate = command({
       await generateOutputFiles(
         tiffLocations,
         outputTiles,
-        args.sourceEpsg,
+        targetEpsg,
         args.includeDerived,
         String([...tiffsMetadata.roundedGsds][0]),
       );
@@ -366,26 +394,26 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
  *
  * @param tiffLocations The list of source TIFF locations.
  * @param outputTiles The map of output tiles to their source TIFFs.
- * @param sourceEpsg The EPSG code of the source TIFFs.
+ * @param targetEpsg The EPSG code the tiles were aligned to (see `getMapTileIndex`/`extractTiffLocations`).
  * @param includeDerived Whether to include derived TIFFs in the output.
  * @param gsd The ground sample distance to use for the output.
  */
 async function generateOutputFiles(
   tiffLocations: TiffLocation[],
   outputTiles: Map<string, TiffLocation[]>,
-  sourceEpsg: number | undefined,
+  targetEpsg: number,
   includeDerived: boolean,
   gsd: string,
 ): Promise<void> {
+  const mapSheet = getMapSheet(targetEpsg);
+  const targetProjection = Projection.get(targetEpsg);
+
   const inputGeoJson = {
     type: 'FeatureCollection',
+    // `loc.bbox` has already been reprojected into `targetEpsg` by `extractTiffLocations`, so it
+    // must be read back out with the same projection, not the tiff's original source EPSG.
     features: tiffLocations.map((loc) => {
-      const epsg = sourceEpsg ?? loc.epsg;
-      if (epsg == null) {
-        logger.error({ source: protocolAwareString(loc.source) }, 'TileIndex:Epsg:missing');
-        return;
-      }
-      return Projection.get(epsg).boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
+      return targetProjection.boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
         source: loc.source,
         tileName: loc.tileNames.join(', '),
       });
@@ -395,9 +423,9 @@ async function generateOutputFiles(
   const outputGeojson = {
     type: 'FeatureCollection',
     features: [...outputTiles.keys()].map((key) => {
-      const mapTileIndex = MapSheet.getMapTileIndex(key);
+      const mapTileIndex = mapSheet.getMapTileIndex(key);
       if (mapTileIndex == null) throw new Error('Failed to extract tile information from: ' + key);
-      return Projection.get(2193).boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
+      return targetProjection.boundsToGeoJsonFeature(Bounds.fromBbox(mapTileIndex.bbox), {
         source: outputTiles.get(key)?.map((l) => l.source),
         tileName: key,
       });
@@ -559,12 +587,14 @@ export function reprojectIfNeeded(bbox: BBox, sourceProjection: Projection, targ
  * @param tiffs
  * @param gridSize
  * @param forceSourceEpsg
+ * @param targetEpsg CRS to align tiles to and calculate map sheet names in, see {@link getMapSheet}. Defaults to each tiff's own (source) EPSG, ie no reprojection.
  * @returns {TiffLocation[]}
  */
 export async function extractTiffLocations(
   tiffs: Tiff[],
   gridSize: GridSize,
   forceSourceEpsg?: number,
+  targetEpsg?: number,
 ): Promise<TiffLocation[]> {
   const result = await Promise.all(
     tiffs.map(async (tiff): Promise<TiffLocation | null> => {
@@ -580,7 +610,11 @@ export async function extractTiffLocations(
           return null;
         }
 
-        const targetProjection = Projection.get(2193);
+        // Default to the source EPSG so imagery tiles against its own native map sheet grid
+        // unless the caller explicitly asks to reproject into a different one.
+        const resolvedTargetEpsg = targetEpsg ?? sourceEpsg;
+        const mapSheet = getMapSheet(resolvedTargetEpsg);
+        const targetProjection = Projection.get(resolvedTargetEpsg);
         const sourceProjection = Projection.get(sourceEpsg);
 
         const targetBbox = reprojectIfNeeded(sourceBbox, sourceProjection, targetProjection);
@@ -593,7 +627,7 @@ export async function extractTiffLocations(
           return null;
         }
 
-        const covering = getCovering(targetBbox, gridSize);
+        const covering = getCovering(targetBbox, gridSize, mapSheet);
 
         return {
           bbox: targetBbox,
@@ -647,11 +681,12 @@ export function isTiff(url: URL): boolean {
  * @param x The x coordinate of the tile.
  * @param y The y coordinate of the tile.
  * @param gridSize The grid size of the tile.
+ * @param mapSheet The map sheet grid `x`/`y` are expressed in, see {@link getMapSheet}. Defaults to the mainland NZTM50 grid.
  * @returns The tile name.
  */
-export function getTileName(x: number, y: number, gridSize: GridSize): string {
-  const sheetCode = MapSheet.sheetCode(x, y);
-  if (!MapSheet.isKnown(sheetCode)) {
+export function getTileName(x: number, y: number, gridSize: GridSize, mapSheet: MapSheetLike = MapSheet): string {
+  const sheetCode = mapSheet.sheetCode(x, y);
+  if (!mapSheet.isKnown(sheetCode)) {
     logger.info(
       { sheetCode, x, y, gridSize },
       `Map sheet (${sheetCode}) at coordinates (${x}, ${y}) is outside the known range.`,
@@ -659,18 +694,18 @@ export function getTileName(x: number, y: number, gridSize: GridSize): string {
   }
 
   // Shorter tile names for 1:50k
-  if (gridSize === MapSheetTileGridSize) return sheetCode;
+  if (gridSize === mapSheet.gridSizeMax) return sheetCode;
 
-  const tilesPerMapSheet = Math.floor(MapSheet.gridSizeMax / gridSize);
-  const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheet);
-  const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheet);
+  const tilesPerMapSheet = Math.floor(mapSheet.gridSizeMax / gridSize);
+  const tileWidth = Math.floor(mapSheet.width / tilesPerMapSheet);
+  const tileHeight = Math.floor(mapSheet.height / tilesPerMapSheet);
 
   const nbDigits = gridSize === 500 ? 3 : 2;
 
-  const offsetX = Math.floor((x - MapSheet.origin.x) / MapSheet.width);
-  const offsetY = Math.floor((MapSheet.origin.y - y) / MapSheet.height);
-  const maxY = MapSheet.origin.y - offsetY * MapSheet.height;
-  const minX = MapSheet.origin.x + offsetX * MapSheet.width;
+  const offsetX = Math.floor((x - mapSheet.origin.x) / mapSheet.width);
+  const offsetY = Math.floor((mapSheet.origin.y - y) / mapSheet.height);
+  const maxY = mapSheet.origin.y - offsetY * mapSheet.height;
+  const minX = mapSheet.origin.x + offsetX * mapSheet.width;
   const tileX = Math.round(Math.floor((x - minX) / tileWidth + 1));
   const tileY = Math.round(Math.floor((maxY - y) / tileHeight + 1));
   const tileId = `${`${tileY}`.padStart(nbDigits, '0')}${`${tileX}`.padStart(nbDigits, '0')}`;
@@ -699,11 +734,12 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
 /**
  * Get the list of map sheets / tiles that intersect with the given bounding box.
  *
- * @param bbox Bounding box of the area of interest (in EPSG:2193) to get the map sheets for (e.g. TIFF area).
+ * @param bbox Bounding box of the area of interest (in `mapSheet`'s CRS) to get the map sheets for (e.g. TIFF area).
  * @param gridSize Grid size of the map sheets / tiles to get.
+ * @param mapSheet The map sheet grid to tile against, see {@link getMapSheet}.
  * @param minIntersectionMeters Minimum intersection area in meters (width or height) to include the map sheet.
  */
-function getCovering(bbox: BBox, gridSize: GridSize, minIntersectionMeters = 0.15): string[] {
+function getCovering(bbox: BBox, gridSize: GridSize, mapSheet: MapSheetLike, minIntersectionMeters = 0.15): string[] {
   const SurroundingTiles = [
     { x: 1, y: 0 },
     { x: 0, y: -1 },
@@ -714,16 +750,16 @@ function getCovering(bbox: BBox, gridSize: GridSize, minIntersectionMeters = 0.1
   const targetBounds = Bounds.fromBbox(bbox);
 
   const output: string[] = [];
-  const tilesPerMapSheetSide = Math.floor(MapSheet.gridSizeMax / gridSize);
+  const tilesPerMapSheetSide = Math.floor(mapSheet.gridSizeMax / gridSize);
 
-  const tileWidth = Math.floor(MapSheet.width / tilesPerMapSheetSide);
-  const tileHeight = Math.floor(MapSheet.height / tilesPerMapSheetSide);
+  const tileWidth = Math.floor(mapSheet.width / tilesPerMapSheetSide);
+  const tileHeight = Math.floor(mapSheet.height / tilesPerMapSheetSide);
 
   const seen = new Set();
   const todo: Bounds[] = [];
 
-  const sheetName = getTileName(bbox[0], bbox[3], gridSize);
-  const sheetInfo = MapSheet.getMapTileIndex(sheetName);
+  const sheetName = getTileName(bbox[0], bbox[3], gridSize, mapSheet);
+  const sheetInfo = mapSheet.getMapTileIndex(sheetName);
   if (sheetInfo == null) throw new Error('Unable to extract sheet information for point: ' + bbox[0]);
 
   todo.push(Bounds.fromBbox(sheetInfo.bbox));
@@ -744,7 +780,7 @@ function getCovering(bbox: BBox, gridSize: GridSize, minIntersectionMeters = 0.1
     for (const pt of SurroundingTiles) todo.push(nextBounds.add({ x: pt.x * tileWidth, y: pt.y * tileHeight })); // intersection not null, so add all neighbours
     // Add to output only if the intersection is above the minimum coverage
     if (intersection.width < minIntersectionMeters || intersection.height < minIntersectionMeters) continue;
-    output.push(getTileName(nextX, nextY, gridSize));
+    output.push(getTileName(nextX, nextY, gridSize, mapSheet));
   }
 
   return output.sort();
