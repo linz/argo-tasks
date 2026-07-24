@@ -360,15 +360,25 @@ export interface ChathamSheetDefinition {
 }
 
 /**
- * Static definition of the six Chatham Islands Topo50 map sheets (EPSG:3793, NZGD2000 / Chatham
- * Islands TM 2000), laid out on the same 24,000m x 36,000m 1:50k grid as the mainland
- * {@link MapSheet}, just with a different origin, CRS, and (small, fixed) set of sheet codes.
+ * The six Chatham Islands Topo50 mapsheets (EPSG:3793, NZGD2000 / Chatham Islands TM 2000),
+ * laid out on the same 24,000m x 36,000m 1:50k grid as the mainland {@link MapSheet},
+ * with a different origin and layout of sheet codes. The following sheet codes are used:
  *
- * "CI" is one of the mainland grid's three missing row codes (see {@link SheetRanges}) precisely
- * because it's reserved for this separate Chatham Islands series - Chatham Islands imagery must
- * not be tiled against the mainland NZTM50 grid.
+ * +------+------+------+
+ * | CI01 | CI02 | CI03 |
+ * |      |      |      |
+ * +------+------+------+
+ *        | CI04 | CI05 |
+ *        |      |      |
+ *        +------+------+
+ *               | CI06 |
+ *               |      |
+ *               +------+
  *
- * Values transcribed from (and can be regenerated with `ogrinfo -al` against):
+ * "CI" is one of the mainland NZ grid's three missing row codes (see {@link SheetRanges})
+ * as it's reserved for the Chatham Islands map sheets.
+ *
+ * Reference:
  * https://data.linz.govt.nz/layer/50089-nz-chatham-island-linz-map-sheets-topo-150k/
  */
 export const ChathamMapSheetData: ChathamSheetDefinition[] = [
