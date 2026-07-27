@@ -61,6 +61,8 @@ export type Bounds = Point & Size;
  * which one they have.
  */
 export interface MapSheetLike {
+  /** Human readable name of this map sheet grid, eg "NZTM2000" or "Chatham Islands" */
+  name: string;
   /** EPSG code of the coordinate reference system this map sheet grid is defined in */
   crs: number;
   /** Top left point of the grid the map sheets are laid out on */
@@ -166,6 +168,8 @@ function computeMapTileIndex(fileName: string, getOffset: (sheetCode: string) =>
  * - https://data.linz.govt.nz/layer/106965-nz-1500-tile-index/ 1:500
  **/
 export const MapSheet = {
+  /** Human readable name of this map sheet grid */
+  name: 'NZTM2000',
   /** EPSG code of the CRS this map sheet grid is defined in (NZGD2000 / NZTM2000) */
   crs: EpsgCode.Nztm2000,
   /** Height of Topo 1:50k map sheets (meters) */
@@ -394,6 +398,8 @@ const ChathamSheetByCode = new Map(ChathamMapSheetData.map((s) => [s.code, s]));
 const ChathamSheetByRowCol = new Map(ChathamMapSheetData.map((s) => [`${s.row},${s.col}`, s]));
 
 export const ChathamMapSheet = {
+  /** Human readable name of this map sheet grid */
+  name: 'Chatham Islands',
   /** EPSG code of the CRS this map sheet grid is defined in (NZGD2000 / Chatham Islands TM 2000) */
   crs: EpsgCode.Citm2000,
   /** Height of Topo 1:50k map sheets (meters), identical to the mainland grid */

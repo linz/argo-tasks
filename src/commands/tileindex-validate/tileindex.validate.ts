@@ -108,8 +108,10 @@ export const commandTileIndexValidate = command({
       long: 'target-epsg',
       description:
         'Target CRS to align output tiles to and calculate map sheet names in. ' +
-        `Defaults to the (source) EPSG of the input tiffs; set to ${EpsgCode.Nztm2000} (NZTM2000) or ` +
-        `${EpsgCode.Citm2000} (Chatham Islands) to reproject into a specific grid.`,
+        'Defaults to the (source) EPSG of the input tiffs; set to ' +
+        `${Object.entries(MapSheetRegistry)
+          .map(([epsg, mapSheet]) => `${epsg} (${mapSheet.name})`)
+          .join(' or ')} to reproject into a specific grid.`,
     }),
     forceOutput,
     preset: option({
