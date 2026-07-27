@@ -77,6 +77,8 @@ export interface MapSheetLike {
   gridSizes: readonly number[];
   /** Calculate the map sheet code covering a X & Y point */
   sheetCode(x: number, y: number): string;
+  /** Get the expected origin for a map sheet code */
+  offset(sheetCode: string): Point;
   /** Is this sheet code part of the known range for this grid */
   isKnown(sheet: string): boolean;
   /** Get the expected origin and map sheet information from a file name */
@@ -92,11 +94,13 @@ export type GridSize = (typeof GridSizes)[number];
 
 /**
  * Shared tile calculation logic between {@link MapSheet} and {@link ChathamMapSheet}: both are
- * laid out with 24,000m x 36,000m 1:50k sheets and tiling schemes, they only differ in the CRS.
+ * laid out with 24,000m x 36,000m 1:50k sheets and tiling schemes, they only differ in the CRS
+ * and how a sheet code maps to its origin.
  *
- * @param getOffset Look up the top left point of a 1:50k map sheet from its sheet code
+ * @param mapSheet The grid `fileName`'s sheet code belongs to; its own `width`/`height`/`offset`
+ * are used so this works correctly for any registered grid, not just the mainland one.
  */
-function computeMapTileIndex(fileName: string, getOffset: (sheetCode: string) => Point): MapTileIndex | null {
+function computeMapTileIndex(fileName: string, mapSheet: MapSheetLike): MapTileIndex | null {
   const match = fileName.match(MapSheetRegex);
   if (match == null) return null;
 
@@ -116,13 +120,13 @@ function computeMapTileIndex(fileName: string, getOffset: (sheetCode: string) =>
     bbox: [0, 0, 0, 0],
   };
 
-  const mapSheetOffset = getOffset(sheetCode);
+  const mapSheetOffset = mapSheet.offset(sheetCode);
   if (out.gridSize === MapSheetTileGridSize) {
     out.y = mapSheetOffset.y;
     out.x = mapSheetOffset.x;
     out.origin = mapSheetOffset;
-    out.width = MapSheet.width;
-    out.height = MapSheet.height;
+    out.width = mapSheet.width;
+    out.height = mapSheet.height;
     // As in NZTM negative Y goes north, the minY is actually the bottom right point
     out.bbox = [out.origin.x, out.origin.y - out.height, out.origin.x + out.width, out.origin.y];
     return out;
@@ -138,9 +142,9 @@ function computeMapTileIndex(fileName: string, getOffset: (sheetCode: string) =>
   }
   if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
 
-  const origin = getOffset(out.mapSheet);
+  const origin = mapSheet.offset(out.mapSheet);
 
-  const tileOffset = MapSheet.tileSize(out.gridSize, out.x, out.y);
+  const tileOffset = computeTileSize(mapSheet, out.gridSize, out.x, out.y);
   out.origin.x = origin.x + tileOffset.x;
   out.origin.y = origin.y - tileOffset.y;
   out.width = tileOffset.width;
@@ -148,6 +152,19 @@ function computeMapTileIndex(fileName: string, getOffset: (sheetCode: string) =>
   // As in NZTM negative Y goes north, the minY is actually the bottom right point
   out.bbox = [out.origin.x, out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
   return out;
+}
+
+/** Generate the size of a tile inside a map sheet at a specific grid size */
+function computeTileSize(
+  mapSheet: Pick<MapSheetLike, 'width' | 'height' | 'gridSizeMax'>,
+  gridSize: number,
+  x: number,
+  y: number,
+): Bounds {
+  const scale = gridSize / mapSheet.gridSizeMax;
+  const offsetX = mapSheet.width * scale;
+  const offsetY = mapSheet.height * scale;
+  return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
 }
 
 /**
@@ -195,7 +212,7 @@ export const MapSheet = {
    * ```
    */
   getMapTileIndex(fileName: string): MapTileIndex | null {
-    return computeMapTileIndex(fileName, (sheetCode) => MapSheet.offset(sheetCode));
+    return computeMapTileIndex(fileName, MapSheet);
   },
   /**
    * Calculate the expected X & Y origin point for a map sheet
@@ -261,10 +278,7 @@ export const MapSheet = {
 
   /** Generate the size of tile inside a map sheet at a specific grid size */
   tileSize(gridSize: number, x: number, y: number): Bounds {
-    const scale = gridSize / MapSheet.scale;
-    const offsetX = MapSheet.width * scale;
-    const offsetY = MapSheet.height * scale;
-    return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
+    return computeTileSize(MapSheet, gridSize, x, y);
   },
 
   /**
@@ -412,7 +426,7 @@ export const ChathamMapSheet = {
 
   /** Get the expected origin and map sheet information from a file name */
   getMapTileIndex(fileName: string): MapTileIndex | null {
-    return computeMapTileIndex(fileName, (sheetCode) => ChathamMapSheet.offset(sheetCode));
+    return computeMapTileIndex(fileName, ChathamMapSheet);
   },
 
   /**
@@ -442,8 +456,11 @@ export const ChathamMapSheet = {
     const row = Math.floor((ChathamMapSheet.origin.y - y) / ChathamMapSheet.height);
     const sheet = ChathamSheetByRowCol.get(`${row},${col}`);
     if (sheet != null) return sheet.code;
-    // Not one of the six known sheets; synthesize a code so callers get a parseable string, `isKnown()` will flag it.
-    return `CI${Math.abs(row) % 10}${Math.abs(col) % 10}`;
+    // Not one of the six known sheets; synthesize a parseable code for logs. The six real codes
+    // are always "CI0X" (X 1-6), so the tens digit is kept in 1-9 here to guarantee this can
+    // never be mistaken for a real sheet by isKnown()/offset() - two different invalid cells can
+    // still synthesize the same code, but that's just log-label ambiguity, not a silent mis-tiling risk.
+    return `CI${(Math.abs(row) % 9) + 1}${Math.abs(col) % 10}`;
   },
 
   /** Is this one of the six known Chatham Islands map sheets */

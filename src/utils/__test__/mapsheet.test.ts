@@ -164,6 +164,21 @@ describe('ChathamMapSheet', () => {
     assert.throws(() => ChathamMapSheet.offset('AS21'), /Unknown Chatham Islands map sheet "AS21"/);
   });
 
+  it('should never synthesize a fake code that collides with one of the six real sheets', () => {
+    // Real codes are always "CI0X" (X 1-6); a cell far outside the archipelago's row/col range
+    // must not synthesize one of those, or it would be silently treated as a real, known sheet.
+    const knownRowCols = new Set(ChathamMapSheetData.map((s) => `${s.row},${s.col}`));
+    for (let row = -20; row <= 20; row++) {
+      for (let col = -20; col <= 20; col++) {
+        if (knownRowCols.has(`${row},${col}`)) continue;
+        const x = ChathamMapSheet.origin.x + col * ChathamMapSheet.width;
+        const y = ChathamMapSheet.origin.y - row * ChathamMapSheet.height;
+        const code = ChathamMapSheet.sheetCode(x, y);
+        assert.equal(ChathamMapSheet.isKnown(code), false, `${code} from row=${row},col=${col} must not be "known"`);
+      }
+    }
+  });
+
   it('should not be confused with the mainland grid at the same raw x/y', () => {
     // The mainland MapSheet formula still "works" (produces *a* answer) for Chatham Islands
     // coordinates reprojected into NZTM2000 - it must never be mistaken for a Chatham sheet code.
