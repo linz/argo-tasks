@@ -80,7 +80,7 @@ export const TargetEpsgFromString: Type<string, number> = {
   async from(value) {
     const epsg = Number(value);
     if (MapSheetRegistry[epsg] == null) {
-      throw new Error(`Invalid target-epsg "${value}"; valid values: "${Object.keys(MapSheetRegistry).join('", "')}"`);
+      throw new Error(`Invalid target-epsg "${value}". valid values: "${Object.keys(MapSheetRegistry).join('", "')}"`);
     }
     return epsg;
   },

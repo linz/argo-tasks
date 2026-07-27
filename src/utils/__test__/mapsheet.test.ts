@@ -158,6 +158,12 @@ describe('ChathamMapSheet', () => {
     assert.equal(ChathamMapSheet.isKnown('AS21'), false); // a real mainland sheet code
   });
 
+  it('should throw for the offset of an invalid or out-of-range sheet', () => {
+    assert.throws(() => ChathamMapSheet.offset('CI99'), /Unknown Chatham Islands map sheet "CI99"/);
+    assert.throws(() => ChathamMapSheet.offset('CI00'), /Unknown Chatham Islands map sheet "CI00"/);
+    assert.throws(() => ChathamMapSheet.offset('AS21'), /Unknown Chatham Islands map sheet "AS21"/);
+  });
+
   it('should not be confused with the mainland grid at the same raw x/y', () => {
     // The mainland MapSheet formula still "works" (produces *a* answer) for Chatham Islands
     // coordinates reprojected into NZTM2000 - it must never be mistaken for a Chatham sheet code.

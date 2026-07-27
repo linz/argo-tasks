@@ -57,8 +57,8 @@ export type Bounds = Point & Size;
 
 /**
  * Common shape of a topographic map sheet grid, so that commands (eg `tileindex-validate`) can
- * work with more than one grid (eg mainland NZTM50 vs {@link ChathamMapSheet}) without caring
- * which one they have.
+ * work with more than one grid (eg mainland NZTM50 {@link MapSheet} vs {@link ChathamMapSheet})
+ * without caring which one they have.
  */
 export interface MapSheetLike {
   /** Human readable name of this map sheet grid, eg "NZTM2000" or "Chatham Islands" */
@@ -92,8 +92,7 @@ export type GridSize = (typeof GridSizes)[number];
 
 /**
  * Shared tile calculation logic between {@link MapSheet} and {@link ChathamMapSheet}: both are
- * laid out with identical 24,000m x 36,000m 1:50k sheets and sub-tiling scheme, they only differ
- * in which CRS they're defined in and how a sheet code maps to its origin.
+ * laid out with 24,000m x 36,000m 1:50k sheets and tiling schemes, they only differ in the CRS.
  *
  * @param getOffset Look up the top left point of a 1:50k map sheet from its sheet code
  */
@@ -399,12 +398,12 @@ const ChathamSheetByRowCol = new Map(ChathamMapSheetData.map((s) => [`${s.row},$
 
 export const ChathamMapSheet = {
   /** Human readable name of this map sheet grid */
-  name: 'Chatham Islands',
+  name: 'CITM2000',
   /** EPSG code of the CRS this map sheet grid is defined in (NZGD2000 / Chatham Islands TM 2000) */
   crs: EpsgCode.Citm2000,
-  /** Height of Topo 1:50k map sheets (meters), identical to the mainland grid */
+  /** Height of Topo 1:50k map sheets (meters), same as the mainland grid */
   height: MapSheet.height,
-  /** Width of Topo 1:50k map sheets (meters), identical to the mainland grid */
+  /** Width of Topo 1:50k map sheets (meters), same as the mainland grid */
   width: MapSheet.width,
   /** Top left point of the Chatham Islands map sheet grid, in EPSG:3793 */
   origin: { x: 3_458_000, y: 5_176_000 },
@@ -423,14 +422,14 @@ export const ChathamMapSheet = {
    * ```typescript
    * ChathamMapSheet.offset("CI06") // { x: 3506000, y: 5104000 }
    * ```
+   * @throws if the sheet code is not one of the six known Chatham Islands sheets, see {@link ChathamMapSheet.isKnown}
    */
   offset(sheetCode: string): Point {
     const sheet = ChathamSheetByCode.get(sheetCode.slice(0, 4));
-    if (sheet != null) return sheet.origin;
-    // Outside the six known sheets, there is nothing sensible to compute - fall back to the grid
-    // origin so callers get a usable (if geographically meaningless) point rather than crashing;
-    // `isKnown()` will flag the sheet code so this is visible in logs.
-    return ChathamMapSheet.origin;
+    if (sheet == null) {
+      throw new Error(`Unknown Chatham Islands map sheet "${sheetCode}"; not one of the six known sheets`);
+    }
+    return sheet.origin;
   },
 
   /**
