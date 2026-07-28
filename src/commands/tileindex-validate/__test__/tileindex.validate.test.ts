@@ -152,9 +152,6 @@ describe('tiffLocation', () => {
   });
 
   it('should tile Chatham Islands (EPSG:3793) imagery against the Chatham grid when explicitly requested', async () => {
-    // Regression test: this exact file caused a real production incident where tileindex-validate
-    // reprojected it into NZTM2000 and mis-tiled it against the mainland grid (as "BZ59"/"CB61"
-    // etc.) instead of recognising it as Chatham Islands (CI06) imagery.
     const chathamTileIndex = ChathamMapSheet.getMapTileIndex('CI06_5000_0507');
     if (chathamTileIndex == null) throw new Error('Failed to compute test fixture tile index');
 
@@ -169,9 +166,6 @@ describe('tiffLocation', () => {
   });
 
   it('should tile Chatham Islands (EPSG:3793) imagery against the Chatham grid by default, with no target-epsg given', async () => {
-    // Same fixture as above, but relying entirely on the default (no --target-epsg / 4th arg at
-    // all): imagery already tagged EPSG:3793 should tile itself against the Chatham grid without
-    // any caller having to know to ask for it.
     const chathamTileIndex = ChathamMapSheet.getMapTileIndex('CI06_5000_0507');
     if (chathamTileIndex == null) throw new Error('Failed to compute test fixture tile index');
 

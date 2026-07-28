@@ -123,9 +123,8 @@ describe('ChathamMapSheet', () => {
   });
 
   it('should extract MapTileIndex from a sub-tiled filename', () => {
-    // Regression test for a real production incident: this file genuinely exists at
-    // s3://nz-imagery/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/3793/CI06_5000_0507.tiff
-    // but tileindex-validate mis-tiled it against the mainland NZTM50 grid instead.
+    // Regression test for an issue where tileindex-validate mis-tiled
+    // a Chatham Islands tile against the mainland NZTM50 grid instead.
     assert.deepEqual(ChathamMapSheet.getMapTileIndex('CI06_5000_0507'), {
       mapSheet: 'CI06',
       gridSize: 5000,
@@ -154,7 +153,7 @@ describe('ChathamMapSheet', () => {
 
   it('should not know invalid or out-of-range sheets', () => {
     assert.equal(ChathamMapSheet.isKnown('CI99'), false);
-    assert.equal(ChathamMapSheet.isKnown('CI00'), false); // grid cell exists but has no real sheet
+    assert.equal(ChathamMapSheet.isKnown('CI00'), false); // no associated sheet
     assert.equal(ChathamMapSheet.isKnown('AS21'), false); // a real mainland sheet code
   });
 
@@ -180,7 +179,7 @@ describe('ChathamMapSheet', () => {
   });
 
   it('should not be confused with the mainland grid at the same raw x/y', () => {
-    // The mainland MapSheet formula still "works" (produces *a* answer) for Chatham Islands
+    // The mainland MapSheet formula still "works" (produces an answer) for Chatham Islands
     // coordinates reprojected into NZTM2000 - it must never be mistaken for a Chatham sheet code.
     const mainlandSheetCode = MapSheet.sheetCode(3_506_000, 5_104_000);
     assert.notEqual(mainlandSheetCode.slice(0, 2), 'CI');
