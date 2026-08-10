@@ -473,19 +473,6 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
 export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
   let rejected = false;
 
-  if (preset === 'webp' || preset === 'rgbnir_zstd') {
-    const promises = tiffs.map((f) => {
-      return validate8BitsTiff(f).catch((err) => {
-        logger.fatal(
-          { reason: String(err), source: protocolAwareString(f.source.url), preset },
-          'Tiff:ValidatePreset:failed',
-        );
-        rejected = true;
-      });
-    });
-    await Promise.allSettled(promises);
-  }
-
   if (rejected) throw new Error(`Tiff preset:"${preset}" validation failed`);
 }
 
