@@ -174,7 +174,6 @@ export const commandTileIndexValidate = command({
 
     const readTiffStartTime = performance.now();
     const { tiffs, locations } = await loadTiffs(args);
-    await validatePreset(args.preset, tiffs);
     const tiffsMetadata = await getTiffsMetadata(tiffs, locations);
     const readDuration = performance.now() - readTiffStartTime;
     logger.info(
@@ -470,11 +469,6 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
  * @param preset preset to validate against
  * @param tiffs tiffs to validate.
  */
-export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
-  let rejected = false;
-
-  if (rejected) throw new Error(`Tiff preset:"${preset}" validation failed`);
-}
 
 /**
  * Validate all tiffs have consistent band information

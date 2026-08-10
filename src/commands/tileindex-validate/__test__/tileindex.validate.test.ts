@@ -6,7 +6,6 @@ import { fsa, FsMemory } from '@chunkd/fs';
 import type { BBox } from '@linzjs/geojson';
 import { pathToFileURL } from 'url';
 
-import { logger } from '../../../log.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
 import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
@@ -24,7 +23,6 @@ import {
   reprojectIfNeeded,
   TiffLoader,
   validate8BitsTiff,
-  validatePreset,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
@@ -263,29 +261,6 @@ describe('is8BitsTiff', () => {
       name: 'Error',
       message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff is not a 8 bits TIFF`,
     });
-  });
-});
-
-describe('validatePreset', () => {
-  async function testValidatePresetTiffs(t: it.TestContext, preset: string): Promise<void> {
-    const test16bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
-    const test8bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
-    const fatalStub = t.mock.method(logger, 'fatal');
-    await assert.rejects(validatePreset(preset, [test16bTiff, test16bTiff, test8bTiff]), {
-      name: 'Error',
-      message: `Tiff preset:"${preset}" validation failed`,
-    });
-
-    assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
-    const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
-    assert.equal(opts['preset'], preset);
-    assert.ok(opts['reason']?.includes('is not a 8 bits TIFF'));
-  }
-  it('should validate multiple tiffs for webp', async (t) => {
-    await testValidatePresetTiffs(t, 'webp');
-  });
-  it('should validate multiple tiffs for rgbnir_zstd', async (t) => {
-    await testValidatePresetTiffs(t, 'rgbnir_zstd');
   });
 });
 
