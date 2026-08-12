@@ -443,7 +443,7 @@ export const ChathamMapSheet = {
     if (sheet == null) {
       throw new Error(`Unknown Chatham Islands map sheet "${sheetCode}"; not one of the six known sheets`);
     }
-    return sheet.origin;
+    return { ...sheet.origin };
   },
 
   /**
