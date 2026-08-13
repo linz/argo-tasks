@@ -163,6 +163,7 @@ export class GithubApi {
     botEmail: string,
     files: GithubFiles[],
     body?: string,
+    draft: boolean = false
   ): Promise<number | null> {
     // git checkout -b
     logger.info({ branch }, 'GitHub: Get branch');
@@ -200,6 +201,7 @@ export class GithubApi {
         body,
         head: branch,
         base: 'master',
+        draft
       })
       .catch((e) => {
         if (isGithubError(e) && e?.status === 422 && String(e.message).includes('A pull request already exists')) {

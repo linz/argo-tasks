@@ -211,7 +211,7 @@ export class MakeCogGithub {
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await gh.createPullRequest(branch, title, botEmail, [file], body);
+    await gh.createPullRequest(branch, title, botEmail, [file], body, true);
   }
 
   /**
