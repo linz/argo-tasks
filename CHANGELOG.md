@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.0](https://github.com/linz/argo-tasks/compare/v5.4.0...v5.5.0) (2026-08-16)
+
+
+### Features
+
+* use github token rotation automation for argo-tasks TDE-2021 ([#1342](https://github.com/linz/argo-tasks/issues/1342)) ([46eff53](https://github.com/linz/argo-tasks/commit/46eff537405c5c264ab9022c90c6ac4a5de9cec4))
+
 ## [5.4.0](https://github.com/linz/argo-tasks/compare/v5.3.2...v5.4.0) (2026-07-14)
 
 
