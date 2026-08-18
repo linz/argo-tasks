@@ -497,7 +497,7 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
     if (bitCount !== value) {
       logger.fatal(
         {
-          reason: `${protocolAwareString(t.source.url)} Inconsistent bit depth across bands: ${bitCount} vs ${value}}`,
+          reason: `${protocolAwareString(t.source.url)} Inconsistent bit depth across bands: ${bitCount} vs ${value}`,
           source: protocolAwareString(t.source.url),
           preset,
         },
