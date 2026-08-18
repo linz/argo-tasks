@@ -1,3 +1,5 @@
+import { EpsgCode } from '@basemaps/geo';
+
 /** Parse topographic map sheet names in the format `${mapSheet}_${gridSize}_${y}${x}` */
 const MapSheetRegex = /(?<sheetCode>[A-Z]{2}\d{2})(_(?<gridSize>\d+)_(?<tileId>\d+))?/;
 
@@ -53,12 +55,117 @@ export interface Size {
 }
 export type Bounds = Point & Size;
 
+/**
+ * Common shape of a topographic map sheet grid, so that commands (eg `tileindex-validate`) can
+ * work with more than one grid (eg mainland NZTM50 {@link MapSheet} vs {@link ChathamMapSheet})
+ * without caring which one they have.
+ */
+export interface MapSheetLike {
+  /** Human readable name of this map sheet grid, eg "NZTM2000" or "Chatham Islands" */
+  name: string;
+  /** EPSG code of the coordinate reference system this map sheet grid is defined in */
+  crs: number;
+  /** Top left point of the grid the map sheets are laid out on */
+  origin: Point;
+  /** Width of a 1:50k map sheet (meters) */
+  width: number;
+  /** Height of a 1:50k map sheet (meters) */
+  height: number;
+  /** Base (1:50k) scale of the grid (meters) */
+  gridSizeMax: number;
+  /** Allowed grid sizes for sub-tiling a map sheet (meters) */
+  gridSizes: readonly number[];
+  /** Calculate the map sheet code covering a X & Y point */
+  sheetCode(x: number, y: number): string;
+  /** Get the expected origin for a map sheet code */
+  offset(sheetCode: string): Point;
+  /** Is this sheet code part of the known range for this grid */
+  isKnown(sheet: string): boolean;
+  /** Get the expected origin and map sheet information from a file name */
+  getMapTileIndex(fileName: string): MapTileIndex | null;
+}
+
 const charA = 'A'.charCodeAt(0);
 const charS = 'S'.charCodeAt(0);
 
 export const MapSheetTileGridSize = 50_000;
 export const GridSizes = [MapSheetTileGridSize, 10_000, 5_000, 2_000, 1_000, 500] as const;
 export type GridSize = (typeof GridSizes)[number];
+
+/**
+ * Shared tile calculation logic between {@link MapSheet} and {@link ChathamMapSheet}: both are
+ * laid out with 24,000m x 36,000m 1:50k sheets and tiling schemes, they only differ in the CRS
+ * and how a sheet code maps to its origin.
+ *
+ * @param mapSheet The grid `fileName`'s sheet code belongs to; its own `width`/`height`/`offset`
+ * are used so this works correctly for any registered grid, not just the mainland one.
+ */
+function computeMapTileIndex(fileName: string, mapSheet: MapSheetLike): MapTileIndex | null {
+  const match = fileName.match(MapSheetRegex);
+  if (match == null) return null;
+
+  const sheetCode = match?.groups?.['sheetCode'];
+  if (sheetCode == null) return null;
+
+  const gridSize = Number(match?.groups?.['gridSize'] ?? MapSheetTileGridSize);
+  const out: MapTileIndex = {
+    mapSheet: sheetCode,
+    gridSize: gridSize,
+    x: -1,
+    y: -1,
+    name: match[0],
+    origin: { x: 0, y: 0 },
+    width: 0,
+    height: 0,
+    bbox: [0, 0, 0, 0],
+  };
+
+  const mapSheetOffset = mapSheet.offset(sheetCode);
+  if (out.gridSize === MapSheetTileGridSize) {
+    out.y = mapSheetOffset.y;
+    out.x = mapSheetOffset.x;
+    out.origin = mapSheetOffset;
+    out.width = mapSheet.width;
+    out.height = mapSheet.height;
+    // As in NZTM negative Y goes north, the minY is actually the bottom right point
+    out.bbox = [out.origin.x, out.origin.y - out.height, out.origin.x + out.width, out.origin.y];
+    return out;
+  }
+
+  // 1:500 has X/Y is 3 digits not 2
+  if (out.gridSize === 500) {
+    out.y = Number(match?.groups?.['tileId']?.slice(0, 3));
+    out.x = Number(match?.groups?.['tileId']?.slice(3));
+  } else {
+    out.y = Number(match?.groups?.['tileId']?.slice(0, 2));
+    out.x = Number(match?.groups?.['tileId']?.slice(2));
+  }
+  if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
+
+  const origin = mapSheet.offset(out.mapSheet);
+
+  const tileOffset = computeTileSize(mapSheet, out.gridSize, out.x, out.y);
+  out.origin.x = origin.x + tileOffset.x;
+  out.origin.y = origin.y - tileOffset.y;
+  out.width = tileOffset.width;
+  out.height = tileOffset.height;
+  // As in NZTM negative Y goes north, the minY is actually the bottom right point
+  out.bbox = [out.origin.x, out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
+  return out;
+}
+
+/** Generate the size of a tile inside a map sheet at a specific grid size */
+function computeTileSize(
+  mapSheet: Pick<MapSheetLike, 'width' | 'height' | 'gridSizeMax'>,
+  gridSize: number,
+  x: number,
+  y: number,
+): Bounds {
+  const scale = gridSize / mapSheet.gridSizeMax;
+  const offsetX = mapSheet.width * scale;
+  const offsetY = mapSheet.height * scale;
+  return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
+}
 
 /**
  * Topographic 1:50k map sheet calculator
@@ -77,6 +184,10 @@ export type GridSize = (typeof GridSizes)[number];
  * - https://data.linz.govt.nz/layer/106965-nz-1500-tile-index/ 1:500
  **/
 export const MapSheet = {
+  /** Human readable name of this map sheet grid */
+  name: 'NZTM2000',
+  /** EPSG code of the CRS this map sheet grid is defined in (NZGD2000 / NZTM2000) */
+  crs: EpsgCode.Nztm2000,
   /** Height of Topo 1:50k map sheets (meters) */
   height: 36_000,
   /** Width of Topo 1:50k map sheets (meters) */
@@ -101,57 +212,7 @@ export const MapSheet = {
    * ```
    */
   getMapTileIndex(fileName: string): MapTileIndex | null {
-    const match = fileName.match(MapSheetRegex);
-    if (match == null) return null;
-
-    const sheetCode = match?.groups?.['sheetCode'];
-    if (sheetCode == null) return null;
-
-    const gridSize = Number(match?.groups?.['gridSize'] ?? MapSheetTileGridSize);
-    const out: MapTileIndex = {
-      mapSheet: sheetCode,
-      gridSize: gridSize,
-      x: -1,
-      y: -1,
-      name: match[0],
-      origin: { x: 0, y: 0 },
-      width: 0,
-      height: 0,
-      bbox: [0, 0, 0, 0],
-    };
-
-    const mapSheetOffset = MapSheet.offset(sheetCode);
-    if (out.gridSize === MapSheetTileGridSize) {
-      out.y = mapSheetOffset.y;
-      out.x = mapSheetOffset.x;
-      out.origin = mapSheetOffset;
-      out.width = MapSheet.width;
-      out.height = MapSheet.height;
-      // As in NZTM negative Y goes north, the minY is actually the bottom right point
-      out.bbox = [out.origin.x, out.origin.y - out.height, out.origin.x + out.width, out.origin.y];
-      return out;
-    }
-
-    // 1:500 has X/Y is 3 digits not 2
-    if (out.gridSize === 500) {
-      out.y = Number(match?.groups?.['tileId']?.slice(0, 3));
-      out.x = Number(match?.groups?.['tileId']?.slice(3));
-    } else {
-      out.y = Number(match?.groups?.['tileId']?.slice(0, 2));
-      out.x = Number(match?.groups?.['tileId']?.slice(2));
-    }
-    if (isNaN(out.gridSize) || isNaN(out.x) || isNaN(out.y)) return null;
-
-    const origin = MapSheet.offset(out.mapSheet);
-
-    const tileOffset = MapSheet.tileSize(out.gridSize, out.x, out.y);
-    out.origin.x = origin.x + tileOffset.x;
-    out.origin.y = origin.y - tileOffset.y;
-    out.width = tileOffset.width;
-    out.height = tileOffset.height;
-    // As in NZTM negative Y goes north, the minY is actually the bottom right point
-    out.bbox = [out.origin.x, out.origin.y - tileOffset.height, out.origin.x + tileOffset.width, out.origin.y];
-    return out;
+    return computeMapTileIndex(fileName, MapSheet);
   },
   /**
    * Calculate the expected X & Y origin point for a map sheet
@@ -217,10 +278,7 @@ export const MapSheet = {
 
   /** Generate the size of tile inside a map sheet at a specific grid size */
   tileSize(gridSize: number, x: number, y: number): Bounds {
-    const scale = gridSize / MapSheet.scale;
-    const offsetX = MapSheet.width * scale;
-    const offsetY = MapSheet.height * scale;
-    return { x: (x - 1) * offsetX, y: (y - 1) * offsetY, width: offsetX, height: offsetY };
+    return computeTileSize(MapSheet, gridSize, x, y);
   },
 
   /**
@@ -305,3 +363,129 @@ export const SheetRanges = {
   CJ: [[7, 11]],
   CK: [[7, 9]],
 } as const;
+
+/** A single Chatham Islands Topo50 map sheet */
+export interface ChathamSheetDefinition {
+  /** Sheet code, eg "CI06" */
+  code: string;
+  /** Row of the sheet in the Chatham Islands map sheet grid, 0 is the northernmost row */
+  row: number;
+  /** Column of the sheet in the Chatham Islands map sheet grid, 0 is the westernmost column */
+  col: number;
+  /** Top left point of the sheet, in EPSG:3793 */
+  origin: Point;
+}
+
+/**
+ * The six Chatham Islands Topo50 mapsheets (EPSG:3793, NZGD2000 / Chatham Islands TM 2000),
+ * laid out on the same 24,000m x 36,000m 1:50k grid as the mainland {@link MapSheet},
+ * with a different origin and layout of sheet codes. The following sheet codes are used:
+ *
+ * +------+------+------+
+ * | CI01 | CI02 | CI03 |
+ * |      |      |      |
+ * +------+------+------+
+ *        | CI04 | CI05 |
+ *        |      |      |
+ *        +------+------+
+ *               | CI06 |
+ *               |      |
+ *               +------+
+ *
+ * "CI" is one of the mainland NZ grid's three missing row codes (see {@link SheetRanges})
+ * as it's reserved for the Chatham Islands map sheets.
+ *
+ * Reference:
+ * https://data.linz.govt.nz/layer/50089-nz-chatham-island-linz-map-sheets-topo-150k/
+ */
+export const ChathamMapSheetData: ChathamSheetDefinition[] = [
+  { code: 'CI01', row: 0, col: 0, origin: { x: 3_458_000, y: 5_176_000 } }, // Point Somes
+  { code: 'CI02', row: 0, col: 1, origin: { x: 3_482_000, y: 5_176_000 } }, // Cape Young
+  { code: 'CI03', row: 0, col: 2, origin: { x: 3_506_000, y: 5_176_000 } }, // Kaingaroa
+  { code: 'CI04', row: 1, col: 1, origin: { x: 3_482_000, y: 5_140_000 } }, // Waitangi
+  { code: 'CI05', row: 1, col: 2, origin: { x: 3_506_000, y: 5_140_000 } }, // Owenga
+  { code: 'CI06', row: 2, col: 2, origin: { x: 3_506_000, y: 5_104_000 } }, // Pitt Island (Rangiauria)
+];
+
+const ChathamSheetByCode = new Map(ChathamMapSheetData.map((s) => [s.code, s]));
+const ChathamSheetByRowCol = new Map(ChathamMapSheetData.map((s) => [`${s.row},${s.col}`, s]));
+
+export const ChathamMapSheet = {
+  /** Human readable name of this map sheet grid */
+  name: 'CITM2000',
+  /** EPSG code of the CRS this map sheet grid is defined in (NZGD2000 / Chatham Islands TM 2000) */
+  crs: EpsgCode.Citm2000,
+  /** Height of Topo 1:50k map sheets (meters), same as the mainland grid */
+  height: MapSheet.height,
+  /** Width of Topo 1:50k map sheets (meters), same as the mainland grid */
+  width: MapSheet.width,
+  /** Top left point of the Chatham Islands map sheet grid, in EPSG:3793 */
+  origin: { x: 3_458_000, y: 5_176_000 },
+  gridSizeMax: MapSheetTileGridSize,
+  gridSizes: GridSizes,
+
+  /** Get the expected origin and map sheet information from a file name */
+  getMapTileIndex(fileName: string): MapTileIndex | null {
+    return computeMapTileIndex(fileName, ChathamMapSheet);
+  },
+
+  /**
+   * Get the expected origin for a Chatham Islands sheet code
+   *
+   * @example
+   * ```typescript
+   * ChathamMapSheet.offset("CI06") // { x: 3506000, y: 5104000 }
+   * ```
+   * @throws if the sheet code is not one of the six known Chatham Islands sheets, see {@link ChathamMapSheet.isKnown}
+   */
+  offset(sheetCode: string): Point {
+    const sheet = ChathamSheetByCode.get(sheetCode.slice(0, 4));
+    if (sheet == null) {
+      throw new Error(`Unknown Chatham Islands map sheet "${sheetCode}"; not one of the six known sheets`);
+    }
+    return { ...sheet.origin };
+  },
+
+  /**
+   * Calculate the Chatham Islands sheet code from an EPSG:3793 X & Y point
+   *
+   * @warning this does **not** ensure the sheet code is inside the expected range see {@link ChathamMapSheet.isKnown}
+   */
+  sheetCode(x: number, y: number): string {
+    const col = Math.floor((x - ChathamMapSheet.origin.x) / ChathamMapSheet.width);
+    const row = Math.floor((ChathamMapSheet.origin.y - y) / ChathamMapSheet.height);
+    const sheet = ChathamSheetByRowCol.get(`${row},${col}`);
+    if (sheet != null) return sheet.code;
+    // Not one of the six known sheets; synthesize a parseable code for logs. The six real codes
+    // are always "CI0X" (X 1-6), so the tens digit is kept in 1-9 here to guarantee this can
+    // never be mistaken for a real sheet by isKnown()/offset() - two different invalid cells can
+    // still synthesize the same code, but that's just log-label ambiguity, not a silent mis-tiling risk.
+    return `CI${(Math.abs(row) % 9) + 1}${Math.abs(col) % 10}`;
+  },
+
+  /** Is this one of the six known Chatham Islands map sheets */
+  isKnown(sheet: string): boolean {
+    return ChathamSheetByCode.has(sheet.slice(0, 4));
+  },
+};
+
+/** Registry of the map sheet grids supported by `tileindex-validate`, keyed by their EPSG code */
+export const MapSheetRegistry: Record<number, MapSheetLike> = {
+  [MapSheet.crs]: MapSheet,
+  [ChathamMapSheet.crs]: ChathamMapSheet,
+};
+
+/**
+ * Get the map sheet grid to use for a given target EPSG code
+ *
+ * @throws if the EPSG code is not one of the supported map sheet grids
+ */
+export function getMapSheet(epsg: number): MapSheetLike {
+  const mapSheet = MapSheetRegistry[epsg];
+  if (mapSheet == null) {
+    throw new Error(
+      `Unsupported target EPSG:${epsg}; supported target EPSG codes: ${Object.keys(MapSheetRegistry).join(', ')}`,
+    );
+  }
+  return mapSheet;
+}
