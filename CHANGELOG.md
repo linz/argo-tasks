@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.0](https://github.com/linz/argo-tasks/compare/v5.5.0...v5.6.0) (2026-08-18)
+
+
+### Features
+
+* Chatham Islands EPSG:3793 and mapsheets TDE-1990 ([#1328](https://github.com/linz/argo-tasks/issues/1328)) ([1c57874](https://github.com/linz/argo-tasks/commit/1c57874300eb66dc5024d2d2095c1022bdc0da60))
+
 ## [5.5.0](https://github.com/linz/argo-tasks/compare/v5.4.0...v5.5.0) (2026-08-16)
 
 
