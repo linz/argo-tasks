@@ -35,7 +35,11 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
       ],
     });
   });
-  process.env['GITHUB_API_TOKEN'] = 'any-github-api-token';
+  // `@octokit/auth-app` requires a numeric app id, but does not parse the private key until a
+  // request is made, and every request is mocked below
+  process.env['GITHUB_APP_ID'] = '1';
+  process.env['GITHUB_APP_PRIVATE_KEY'] = 'any-github-app-private-key';
+  process.env['GITHUB_APP_INSTALLATION_ID'] = '2';
   t.mock.method(GithubApi.prototype, 'getContent', () => {
     return Promise.resolve(
       Buffer.from(
