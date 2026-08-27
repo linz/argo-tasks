@@ -1,5 +1,16 @@
 # Changelog
 
+## [6.0.0](https://github.com/linz/argo-tasks/compare/v5.7.0...v6.0.0) (2026-08-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* switch to using GitHub App for PR creation TDE-2022 ([#1347](https://github.com/linz/argo-tasks/issues/1347))
+
+### Features
+
+* switch to using GitHub App for PR creation TDE-2022 ([#1347](https://github.com/linz/argo-tasks/issues/1347)) ([f9a24b3](https://github.com/linz/argo-tasks/commit/f9a24b3ae3a50d4c230de4a9366296048d50cfc7))
+
 ## [5.7.0](https://github.com/linz/argo-tasks/compare/v5.6.0...v5.7.0) (2026-08-19)
 
 
