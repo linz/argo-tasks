@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.0](https://github.com/linz/argo-tasks/compare/v5.6.0...v5.7.0) (2026-08-19)
+
+
+### Features
+
+* make basemaps pull requests draft by default ([#1341](https://github.com/linz/argo-tasks/issues/1341)) ([d866534](https://github.com/linz/argo-tasks/commit/d8665345f0db7adcf972cd04ac3ff356c39646a3))
+
 ## [5.6.0](https://github.com/linz/argo-tasks/compare/v5.5.0...v5.6.0) (2026-08-18)
 
 
