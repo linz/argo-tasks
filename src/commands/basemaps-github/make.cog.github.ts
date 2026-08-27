@@ -41,7 +41,6 @@ export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   Event: {},
 };
 
-const botEmail = 'basemaps@linz.govt.nz';
 const ConfigPrettierFormat = Object.assign({}, DEFAULT_PRETTIER_FORMAT, { printWidth: 200 });
 
 export class MakeCogGithub {
@@ -211,7 +210,7 @@ export class MakeCogGithub {
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await gh.createPullRequest(branch, title, botEmail, [file], body, true);
+    await gh.createPullRequest(branch, title, [file], body, true);
   }
 
   /**

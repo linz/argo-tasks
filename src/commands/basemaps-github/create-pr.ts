@@ -14,7 +14,7 @@ import type { Category } from './make.cog.github.ts';
 import { Categories, MakeCogGithub } from './make.cog.github.ts';
 
 export const ValidTargetBuckets: Set<string> = new Set(['linz-basemaps', 'linz-basemaps-staging']);
-export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'linz-imagery', 'nz-elevation']);
+export const ValidSourceBuckets: Set<string> = new Set(['nz-imagery', 'nz-elevation', 'nz-coastal']);
 
 export const LinzBasemapsSourceCollectionRel = 'linz_basemaps:source_collection';
 
