@@ -37,8 +37,8 @@ export class GithubApi {
     this.octokit = restEndpointMethods(
       new Octokit({
         authStrategy: createAppAuth,
-        // Private keys supplied through environment variables commonly arrive with escaped
-        // newlines, which the JWT signer will not accept
+        // Private keys supplied through environment variables may contain newlines,
+        // which the JWT signer will not accept
         auth: { appId, privateKey: privateKey?.replace(/\\n/g, '\n'), installationId },
       }),
     );
