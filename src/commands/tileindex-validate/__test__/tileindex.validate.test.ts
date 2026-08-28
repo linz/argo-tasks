@@ -329,7 +329,7 @@ describe('is8BitsTiff', () => {
     const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
     await assert.rejects(validate8BitsTiff(testTiff), {
       name: 'Error',
-      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported bit depth: 16, 16, 16. Expected: 8`,
+      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported bit depth: 16. Expected: 8`,
     });
 
     const ret = await validateTiffSamples(testTiff, new Set([16]));

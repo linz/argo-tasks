@@ -362,9 +362,12 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
         const image = tiff.images[0];
         if (image) {
           if (image.epsg != null) projections.add(image.epsg);
-          const bitsPerSample = await image.fetch(TiffTag.BitsPerSample);
-          if (bitsPerSample != null && bitsPerSample.length > 0) {
-            dataTypes.add(`${bitsPerSample[0]}-bit`);
+          const bitDepth = await getTiffBitDepth(tiff).catch((e: unknown) => {
+            logger.error({ source: protocolAwareString(tiff.source.url), err: e }, 'TileIndex:GetBitDepth:Failed');
+            return null;
+          });
+          if (bitDepth != null) {
+            dataTypes.add(`${bitDepth}-bit`);
           }
         }
         const gsd = await findResolution(tiff);
@@ -773,21 +776,24 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
  * @param allowedBitCount
  */
 export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<number>): Promise<number> {
+  const bitDepth = await getTiffBitDepth(tiff);
+  if (!allowedBitCount.has(bitDepth)) {
+    throw new Error(
+      `${protocolAwareString(tiff.source.url)} has unsupported bit depth: ${bitDepth}. Expected: ${[...allowedBitCount].join(', ')}`,
+    );
+  }
+  return bitDepth;
+}
+
+async function getTiffBitDepth(tiff: Tiff): Promise<number> {
   const baseImage = tiff.images[0];
   if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
-
   const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
   if (bitsPerSample == null || bitsPerSample.length < 1) {
     throw new Error(`Failed to extract band information from ${protocolAwareString(tiff.source.url)}`);
   }
 
   const firstSample = bitsPerSample[0] as number;
-  if (!allowedBitCount.has(firstSample)) {
-    throw new Error(
-      `${protocolAwareString(tiff.source.url)} has unsupported bit depth: ${bitsPerSample.join(', ')}. Expected: ${[...allowedBitCount].join(', ')}`,
-    );
-  }
-
   for (let i = 1; i < bitsPerSample.length; i++) {
     if (bitsPerSample[i] !== firstSample) {
       throw new Error(
