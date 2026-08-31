@@ -5,6 +5,7 @@ import ulid from 'ulid';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
@@ -19,6 +20,7 @@ export interface SlugMetadata {
   surveyId?: string;
   date: string;
   gsd: string;
+  dataType?: string;
 }
 
 export const commandStacSetup = command({
@@ -58,6 +60,12 @@ export const commandStacSetup = command({
       type: MeterAsString,
       long: 'gsd',
       description: 'GSD of dataset, e.g. 0.3',
+    }),
+
+    dataType: option({
+      type: optional(string),
+      long: 'data-type',
+      description: 'Data type of dataset, e.g. uint16',
     }),
 
     region: option({
@@ -120,6 +128,15 @@ export const commandStacSetup = command({
         logger.error({ gsd, expected: args.gsd }, 'StacSetup:Error:GSDMismatch');
         throw new Error(`GSD at ODR URL [${gsd}] does not match new TIFF GSD [${args.gsd}]`);
       }
+      if (args.dataType) {
+        const dataType =
+          collection['data_type'] ??
+          (await extractBandInformation(await loadFirstTiff(collectionLocation, collection)))[0];
+        if (dataType !== args.dataType) {
+          logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
+          throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
+        }
+      }
 
       const collectionId = collection['id'];
       await writeSetupFiles(slug, collectionId, args.output);
@@ -135,6 +152,7 @@ export const commandStacSetup = command({
         geographicDescription: args.geographicDescription,
         date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
+        dataType: args.dataType,
       };
       const slug = slugFromMetadata(metadata);
       const collectionId = ulid.ulid();
@@ -165,7 +183,7 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
     case 'rural-aerial-photos':
     case 'satellite-imagery':
     case 'urban-aerial-photos':
-      return formatParts(slugify(geographicDescription), metadata.date, `${metadata.gsd}m`);
+      return formatParts(slugify(geographicDescription), metadata.date, `${metadata.gsd}m`, metadata.dataType ?? '');
 
     case 'dem':
     case 'dsm':
@@ -182,6 +200,7 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
         metadata.surveyId.toLowerCase(),
         metadata.date,
         `${metadata.gsd}m`,
+        metadata.dataType ?? '',
       );
 
     default:
