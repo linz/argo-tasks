@@ -40,7 +40,7 @@ export const commandList = command({
     }
     const listLocations = args.location.flat();
     const outputFiles = await getFiles(listLocations, args);
-    const decodedFiles = outputFiles.map((outputFile) => outputFile.map((url) => protocolAwareString(url)));
+    const decodedFiles = outputFiles.map((outputFile) => outputFile.map((url) => protocolAwareString(url, true)));
     if (args.output) await fsa.write(args.output, JSON.stringify(decodedFiles));
   },
 });
