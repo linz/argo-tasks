@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.0](https://github.com/linz/argo-tasks/compare/v6.0.0...v6.1.0) (2026-08-31)
+
+
+### Features
+
+* allow 16 bit tiffs with rgb+nir ([#1311](https://github.com/linz/argo-tasks/issues/1311)) ([7a629e7](https://github.com/linz/argo-tasks/commit/7a629e7f9c78ac6fef72c071d34b4717c6cb246c))
+
 ## [6.0.0](https://github.com/linz/argo-tasks/compare/v5.7.0...v6.0.0) (2026-08-27)
 
 
