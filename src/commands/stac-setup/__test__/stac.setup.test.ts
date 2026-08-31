@@ -36,6 +36,7 @@ describe('stac-setup', () => {
     odrUrl: undefined,
     output: fsa.toUrl('memory:///tmp/stac-setup/'),
     gsd: '1',
+    dataType: undefined,
     region: 'gisborne',
     geographicDescription: 'Wairoa',
     geospatialCategory: 'dem',
@@ -161,6 +162,42 @@ describe('stac-setup', () => {
       { message: 'GSD at ODR URL [0.3] does not match new TIFF GSD [1]' },
     );
   });
+
+  it('should pass when data type matches collection', async () => {
+    await commandStacSetup.handler({
+      ...BaseArgs,
+      odrUrl: collectionLocation,
+      gsd: '0.3',
+      dataType: 'uint8',
+    });
+
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
+    assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
+  });
+
+  it('should fail when data type does not match collection', async () => {
+    await assert.rejects(
+      commandStacSetup.handler({
+        ...BaseArgs,
+        odrUrl: collectionLocation,
+        gsd: '0.3',
+        dataType: 'uint16',
+      }),
+      { message: 'Data type at ODR URL [uint8] does not match new TIFF data type [uint16]' },
+    );
+  });
+
+  it('should not check data type when not supplied', async () => {
+    await commandStacSetup.handler({
+      ...BaseArgs,
+      odrUrl: collectionLocation,
+      gsd: '0.3',
+      dataType: undefined,
+    });
+
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
+    assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
+  });
 });
 
 describe('slugFromMetadata', () => {
@@ -173,6 +210,17 @@ describe('slugFromMetadata', () => {
       gsd: '0.05',
     };
     assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m');
+  });
+  it('Should match - urban with geographic description and data type', () => {
+    const metadata: SlugMetadata = {
+      geospatialCategory: 'urban-aerial-photos',
+      geographicDescription: 'Napier',
+      region: 'hawkes-bay',
+      date: '2017-2018',
+      gsd: '0.05',
+      dataType: 'uint8',
+    };
+    assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m_uint8');
   });
   it('Should match - rural with geographic description', () => {
     const metadata: SlugMetadata = {
@@ -263,6 +311,21 @@ describe('slugFromMetadata', () => {
         date: '1982',
       }),
       'west-coast_sn8066_1982_0.35m',
+    );
+  });
+
+  it('should include data type in scanned-aerial-photos slug when provided', () => {
+    assert.equal(
+      slugFromMetadata({
+        geospatialCategory: 'scanned-aerial-photos',
+        surveyId: 'SN8066',
+        region: 'auckland',
+        geographicDescription: 'West-Coast',
+        gsd: '0.35',
+        date: '1982',
+        dataType: 'uint16',
+      }),
+      'west-coast_sn8066_1982_0.35m_uint16',
     );
   });
 });
