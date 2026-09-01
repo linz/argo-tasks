@@ -20,7 +20,6 @@ export interface SlugMetadata {
   surveyId?: string;
   date: string;
   gsd: string;
-  dataType?: string;
 }
 
 export const commandStacSetup = command({
@@ -152,7 +151,6 @@ export const commandStacSetup = command({
         geographicDescription: args.geographicDescription,
         date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
-        dataType: args.dataType,
       };
       const slug = slugFromMetadata(metadata);
       const collectionId = ulid.ulid();
@@ -183,7 +181,7 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
     case 'rural-aerial-photos':
     case 'satellite-imagery':
     case 'urban-aerial-photos':
-      return formatParts(slugify(geographicDescription), metadata.date, `${metadata.gsd}m`, metadata.dataType ?? '');
+      return formatParts(slugify(geographicDescription), metadata.date, `${metadata.gsd}m`);
 
     case 'dem':
     case 'dsm':
@@ -200,7 +198,6 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
         metadata.surveyId.toLowerCase(),
         metadata.date,
         `${metadata.gsd}m`,
-        metadata.dataType ?? '',
       );
 
     default:

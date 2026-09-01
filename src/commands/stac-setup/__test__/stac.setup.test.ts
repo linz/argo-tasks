@@ -180,10 +180,8 @@ describe('stac-setup', () => {
       commandStacSetup.handler({
         ...BaseArgs,
         odrUrl: collectionLocation,
-        gsd: '0.3',
-        dataType: 'uint16',
-      }),
-      { message: 'Data type at ODR URL [uint8] does not match new TIFF data type [uint16]' },
+        gsd: '0.3',   }),
+     { message: 'Data type at ODR URL [uint8] does not match new TIFF data type [uint16]' },
     );
   });
 
@@ -211,17 +209,8 @@ describe('slugFromMetadata', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m');
   });
-  it('Should match - urban with geographic description and data type', () => {
-    const metadata: SlugMetadata = {
-      geospatialCategory: 'urban-aerial-photos',
-      geographicDescription: 'Napier',
-      region: 'hawkes-bay',
-      date: '2017-2018',
-      gsd: '0.05',
-      dataType: 'uint8',
-    };
-    assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m_uint8');
-  });
+ 
+
   it('Should match - rural with geographic description', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'rural-aerial-photos',
@@ -311,21 +300,6 @@ describe('slugFromMetadata', () => {
         date: '1982',
       }),
       'west-coast_sn8066_1982_0.35m',
-    );
-  });
-
-  it('should include data type in scanned-aerial-photos slug when provided', () => {
-    assert.equal(
-      slugFromMetadata({
-        geospatialCategory: 'scanned-aerial-photos',
-        surveyId: 'SN8066',
-        region: 'auckland',
-        geographicDescription: 'West-Coast',
-        gsd: '0.35',
-        date: '1982',
-        dataType: 'uint16',
-      }),
-      'west-coast_sn8066_1982_0.35m_uint16',
     );
   });
 });
