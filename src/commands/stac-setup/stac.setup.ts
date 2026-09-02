@@ -62,7 +62,7 @@ export const commandStacSetup = command({
     }),
 
     dataType: option({
-      type: optional(string),
+      type: string,
       long: 'data-type',
       description: 'Data type of dataset, e.g. uint16',
     }),
@@ -127,14 +127,13 @@ export const commandStacSetup = command({
         logger.error({ gsd, expected: args.gsd }, 'StacSetup:Error:GSDMismatch');
         throw new Error(`GSD at ODR URL [${gsd}] does not match new TIFF GSD [${args.gsd}]`);
       }
-      if (args.dataType) {
-        const dataType =
-          collection['data_type'] ??
-          (await extractBandInformation(await loadFirstTiff(collectionLocation, collection)))[0];
-        if (dataType !== args.dataType) {
-          logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
-          throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
-        }
+
+      const dataType =
+        collection['data_type'] ??
+        (await extractBandInformation(await loadFirstTiff(collectionLocation, collection)))[0];
+      if (dataType !== args.dataType) {
+        logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
+        throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
       }
 
       const collectionId = collection['id'];
