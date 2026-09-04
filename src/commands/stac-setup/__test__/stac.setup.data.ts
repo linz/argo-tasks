@@ -39,6 +39,7 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
   'linz:geographic_description': 'Palmerston North',
   'linz:slug': 'palmerston-north_2024_0.3m',
   gsd: 0.3,
+  data_type: 'uint8',
   extent: {
     spatial: {
       bbox: [[175.4961876, -36.8000575, 175.5071491, -36.7933469]],

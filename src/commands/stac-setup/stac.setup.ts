@@ -1,10 +1,12 @@
 import { fsa } from '@chunkd/fs';
+import type { Tiff } from '@cogeotiff/core';
 import { command, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
@@ -58,6 +60,12 @@ export const commandStacSetup = command({
       type: MeterAsString,
       long: 'gsd',
       description: 'GSD of dataset, e.g. 0.3',
+    }),
+
+    dataType: option({
+      type: string,
+      long: 'data-type',
+      description: 'Data type of dataset, e.g. uint16',
     }),
 
     region: option({
@@ -114,11 +122,19 @@ export const commandStacSetup = command({
       const slug = collection['linz:slug'];
       if (slug !== slugify(slug)) throw new Error(`Invalid slug: ${slug}.`);
 
-      const gsd =
-        Number(collection['gsd']) || (await loadFirstTiff(collectionLocation, collection)).images[0]?.resolution[0];
+      let tiff: Tiff | undefined;
+      const getTiff = async (): Promise<Tiff> => (tiff ??= await loadFirstTiff(collectionLocation, collection));
+
+      const gsd = Number(collection['gsd']) || (await getTiff()).images[0]?.resolution[0];
       if (gsd !== Number(args.gsd)) {
         logger.error({ gsd, expected: args.gsd }, 'StacSetup:Error:GSDMismatch');
         throw new Error(`GSD at ODR URL [${gsd}] does not match new TIFF GSD [${args.gsd}]`);
+      }
+
+      const dataType = collection['dataType'] ?? (await extractBandInformation(await getTiff()))[0];
+      if (dataType !== args.dataType) {
+        logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
+        throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
       }
 
       const collectionId = collection['id'];

@@ -362,12 +362,13 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
         const image = tiff.images[0];
         if (image) {
           if (image.epsg != null) projections.add(image.epsg);
-          const bitDepth = await getTiffBitDepth(tiff).catch((e: unknown) => {
-            logger.error({ source: protocolAwareString(tiff.source.url), err: e }, 'TileIndex:GetBitDepth:Failed');
+
+          const bands = await extractBandInformation(tiff).catch((e: unknown) => {
+          logger.error({ source: protocolAwareString(tiff.source.url), err: e }, 'TileIndex:ExtractBandInformation:Failed');
             return null;
           });
-          if (bitDepth != null) {
-            dataTypes.add(`${bitDepth}-bit`);
+          if (bands != null && bands[0] != null) {
+            dataTypes.add(bands[0]);
           }
         }
         const gsd = await findResolution(tiff);
@@ -394,6 +395,11 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
     logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
   }
 
+  if (dataTypes.size === 0) {
+    logger.error({ tiffCount: tiffs.length }, 'TileIndex:NoDataTypesFound');
+    throw new Error('No data types found in the TIFFs');
+  }
+  
   if (dataTypes.size > 1) {
     logger.error({ dataTypes: [...dataTypes] }, 'TileIndex:InconsistentDataTypes:Failed');
     throw new Error(`Inconsistent data types found: ${[...dataTypes].join(', ')}`);
