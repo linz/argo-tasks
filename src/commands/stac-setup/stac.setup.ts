@@ -131,7 +131,7 @@ export const commandStacSetup = command({
         throw new Error(`GSD at ODR URL [${gsd}] does not match new TIFF GSD [${args.gsd}]`);
       }
 
-      const dataType = collection['data_type'] ?? (await extractBandInformation(await getTiff()))[0];
+      const dataType = collection['dataType'] ?? (await extractBandInformation(await getTiff()))[0];
       if (dataType !== args.dataType) {
         logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
         throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
