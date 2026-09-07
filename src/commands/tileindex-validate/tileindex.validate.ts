@@ -354,6 +354,7 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   const gsds = new Set<number>();
   const roundedGsds = new Set<string>();
   const dataTypes = new Set<string>();
+  const failedDataTypeSources: string[] = [];
   let canGetResolution = true;
 
   await Promise.all(
@@ -362,12 +363,17 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
         const image = tiff.images[0];
         if (image) {
           if (image.epsg != null) projections.add(image.epsg);
-          const bitDepth = await getTiffBitDepth(tiff).catch((e: unknown) => {
-            logger.error({ source: protocolAwareString(tiff.source.url), err: e }, 'TileIndex:GetBitDepth:Failed');
+
+          const bands = await extractBandInformation(tiff).catch((e: unknown) => {
+            logger.error(
+              { source: protocolAwareString(tiff.source.url), err: e },
+              'TileIndex:ExtractBandInformation:Failed',
+            );
+            failedDataTypeSources.push(protocolAwareString(tiff.source.url));
             return null;
           });
-          if (bitDepth != null) {
-            dataTypes.add(`${bitDepth}-bit`);
+          if (bands != null && bands[0] != null) {
+            dataTypes.add(bands[0]);
           }
         }
         const gsd = await findResolution(tiff);
@@ -392,6 +398,11 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
     );
   } else if (gsds.size > 1) {
     logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
+  }
+
+  if (dataTypes.size === 0) {
+    logger.error({ sources: failedDataTypeSources }, 'TileIndex:NoDataTypesFound');
+    throw new Error(`No data types found in the TIFFs: ${failedDataTypeSources.join(', ')}`);
   }
 
   if (dataTypes.size > 1) {
