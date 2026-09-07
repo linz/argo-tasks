@@ -481,6 +481,56 @@ describe('GSD handling', () => {
   });
 });
 
+describe('DataType handling', () => {
+  const memory = new FsMemory();
+
+  before(() => {
+    fsa.register('memory://', memory);
+    fsa.register('file:///tmp', memory);
+  });
+  beforeEach(() => {
+    memory.files.clear();
+  });
+
+  const baseArguments = {
+    config: undefined,
+    verbose: false,
+    include: undefined,
+    validate: false,
+    preset: 'none',
+    sourceEpsg: undefined,
+    targetEpsg: 2193,
+    includeDerived: false,
+    location: [[fsa.toUrl('s3://test')]],
+    scale: 1000 as GridSize,
+    forceOutput: true,
+    concurrency: 1,
+  };
+
+  it('should output the data type as its sample-format-qualified name, not the raw bit depth', async (t) => {
+    const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+
+    await commandTileIndexValidate.handler(baseArguments);
+
+    const outputDataType = await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/dataType'));
+    assert.strictEqual(outputDataType.toString(), 'uint8');
+  });
+
+  it('should fail, naming the failed sources, if no TIFFs yield a data type', async (t) => {
+    const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
+    t.mock.method(fakeTiff1.images[0], 'fetch', () => null);
+    t.mock.method(fakeTiff2.images[0], 'fetch', () => null);
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    const ret = await commandTileIndexValidate.handler(baseArguments).catch((e: Error) => e);
+    assert.ok(String(ret).startsWith('Error: No data types found in the TIFFs: '));
+    assert.ok(String(ret).includes('AS21_1000_0101.tiff'));
+    assert.ok(String(ret).includes('AT21_1000_0101.tiff'));
+  });
+});
+
 describe('getSize', () => {
   it('should calculate width and height from bounding box', () => {
     const bbox: BBox = [1000, 2000, 1500, 2800];
