@@ -799,6 +799,7 @@ export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<numbe
 async function getTiffBitDepth(tiff: Tiff): Promise<number> {
   const baseImage = tiff.images[0];
   if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
+  
   const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
   if (bitsPerSample == null || bitsPerSample.length < 1) {
     throw new Error(`Failed to extract band information from ${protocolAwareString(tiff.source.url)}`);
