@@ -468,7 +468,7 @@ async function generateOutputFiles(
   const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
   const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
   const gsdFileName = fsa.toUrl('/tmp/tile-index-validate/gsd');
-  const dataTypeFileName = fsa.toUrl('/tmp/tile-index-validate/dataType');
+  const dataTypeFileName = fsa.toUrl('/tmp/tile-index-validate/data-type');
 
   await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
   logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
