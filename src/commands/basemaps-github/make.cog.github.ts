@@ -171,7 +171,7 @@ export class MakeCogGithub {
     const filename = layer.name;
     const gh = new GithubApi(this.repository);
     const branch = `feat/bot-config-vector-${this.imagery}${this.ticketBranchSuffix}`;
-    const title = `config(vector): Update the ${this.imagery} to ${filename} config file.`;
+    const title = `config(vector): Update the ${filename} config file.`;
 
     // Prepare new vector tileset config
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
@@ -179,7 +179,7 @@ export class MakeCogGithub {
       const tileSetPath = path.join('config', 'tileset', `${filename}.json`);
       const newTileSet = await this.prepareVectorTileSetConfig(layer, undefined);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet, false);
     } else {
       const tileSetPath = path.join('config', 'tileset', `${filename}.json`);
       const tileSetContent = await gh.getContent(tileSetPath);
@@ -188,7 +188,7 @@ export class MakeCogGithub {
       const existingTileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
       const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
       // Github create pull request
-      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
+      await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet, false);
     }
   }
 
@@ -202,6 +202,7 @@ export class MakeCogGithub {
     body: string | undefined,
     tileSetPath: string,
     newTileSet: ConfigTileSet | undefined,
+    draft: boolean = true,
   ): Promise<void> {
     // skip pull request tileset prepare failure.
     if (newTileSet == null) throw new Error(`Failed to prepare new tileSet for ${tileSetPath}.`);
@@ -210,7 +211,7 @@ export class MakeCogGithub {
     const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
-    await gh.createPullRequest(branch, title, [file], body, true);
+    await gh.createPullRequest(branch, title, [file], body, draft);
   }
 
   /**
