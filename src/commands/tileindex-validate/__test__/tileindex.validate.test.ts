@@ -513,7 +513,7 @@ describe('DataType handling', () => {
 
     await commandTileIndexValidate.handler(baseArguments);
 
-    const outputDataType = await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/dataType'));
+    const outputDataType = await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/data-type'));
     assert.strictEqual(outputDataType.toString(), 'uint8');
   });
 
