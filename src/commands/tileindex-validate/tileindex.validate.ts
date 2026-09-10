@@ -31,7 +31,7 @@ export interface TiffLocation {
   /** Output tile name */
   tileNames: string[];
   /**
-   * List of bands inside the tiff in the format `uint8` `uint16`
+   * List of bands inside the tiff in the format `uint8',`uint16`, `uint32`
    *
    * @see {@link extractBandInformation} for more information on bad types
    */
@@ -530,7 +530,7 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
 
 function allowedBitsForPreset(preset: string): Set<number> | null {
   if (preset === 'webp') return new Set([8]);
-  if (preset === 'rgbnir_zstd') return new Set([8, 16]);
+  if (preset === 'rgbnir_zstd') return new Set([8, 16, 32]);
   return null;
 }
 
