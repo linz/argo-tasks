@@ -329,7 +329,7 @@ describe('is8BitsTiff', () => {
     const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
     await assert.rejects(validate8BitsTiff(testTiff), {
       name: 'Error',
-      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported bit depth: 16, 16, 16. Expected: 8`,
+      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported bit depth: 16. Expected: 8`,
     });
 
     const ret = await validateTiffSamples(testTiff, new Set([16]));
@@ -478,6 +478,56 @@ describe('GSD handling', () => {
       const outputGsd = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/gsd'));
       assert.deepEqual(outputGsd, '1');
     }
+  });
+});
+
+describe('DataType handling', () => {
+  const memory = new FsMemory();
+
+  before(() => {
+    fsa.register('memory://', memory);
+    fsa.register('file:///tmp', memory);
+  });
+  beforeEach(() => {
+    memory.files.clear();
+  });
+
+  const baseArguments = {
+    config: undefined,
+    verbose: false,
+    include: undefined,
+    validate: false,
+    preset: 'none',
+    sourceEpsg: undefined,
+    targetEpsg: 2193,
+    includeDerived: false,
+    location: [[fsa.toUrl('s3://test')]],
+    scale: 1000 as GridSize,
+    forceOutput: true,
+    concurrency: 1,
+  };
+
+  it('should output the data type as its sample-format-qualified name, not the raw bit depth', async (t) => {
+    const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+
+    await commandTileIndexValidate.handler(baseArguments);
+
+    const outputDataType = await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/data-type'));
+    assert.strictEqual(outputDataType.toString(), 'uint8');
+  });
+
+  it('should fail, naming the failed sources, if no TIFFs yield a data type', async (t) => {
+    const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
+    t.mock.method(fakeTiff1.images[0], 'fetch', () => null);
+    t.mock.method(fakeTiff2.images[0], 'fetch', () => null);
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    const ret = await commandTileIndexValidate.handler(baseArguments).catch((e: Error) => e);
+    assert.ok(String(ret).startsWith('Error: No data types found in the TIFFs: '));
+    assert.ok(String(ret).includes('AS21_1000_0101.tiff'));
+    assert.ok(String(ret).includes('AT21_1000_0101.tiff'));
   });
 });
 

@@ -31,7 +31,7 @@ export interface TiffLocation {
   /** Output tile name */
   tileNames: string[];
   /**
-   * List of bands inside the tiff in the format `uint8` `uint16`
+   * List of bands inside the tiff in the format `uint8',`uint16`, `uint32`
    *
    * @see {@link extractBandInformation} for more information on bad types
    */
@@ -49,6 +49,8 @@ interface TiffsMetadata {
   canGetResolution: boolean;
   /** Number of TIFF files processed */
   tiffCount: number;
+  /** Set of unique data types found in the TIFF files */
+  dataTypes: Set<string>;
 }
 
 export type CommandTileIndexValidateArgs = CommandArguments<typeof commandTileIndexValidate>;
@@ -243,6 +245,7 @@ export const commandTileIndexValidate = command({
         targetEpsg,
         args.includeDerived,
         String([...tiffsMetadata.roundedGsds][0]),
+        String([...tiffsMetadata.dataTypes][0]),
       );
     }
 
@@ -350,6 +353,8 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   const projections = new Set<number>();
   const gsds = new Set<number>();
   const roundedGsds = new Set<string>();
+  const dataTypes = new Set<string>();
+  const failedDataTypeSources: string[] = [];
   let canGetResolution = true;
 
   await Promise.all(
@@ -358,6 +363,18 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
         const image = tiff.images[0];
         if (image) {
           if (image.epsg != null) projections.add(image.epsg);
+
+          const bands = await extractBandInformation(tiff).catch((e: unknown) => {
+            logger.error(
+              { source: protocolAwareString(tiff.source.url), err: e },
+              'TileIndex:ExtractBandInformation:Failed',
+            );
+            failedDataTypeSources.push(protocolAwareString(tiff.source.url));
+            return null;
+          });
+          if (bands != null && bands[0] != null) {
+            dataTypes.add(bands[0]);
+          }
         }
         const gsd = await findResolution(tiff);
         gsds.add(gsd);
@@ -382,12 +399,24 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
   } else if (gsds.size > 1) {
     logger.info({ gsds: [...gsds], roundedGsds: [...roundedGsds] }, 'TileIndex:InconsistentGSDs:RoundedToMatch');
   }
+
+  if (dataTypes.size === 0) {
+    logger.error({ sources: failedDataTypeSources }, 'TileIndex:NoDataTypesFound');
+    throw new Error(`No data types found in the TIFFs: ${failedDataTypeSources.join(', ')}`);
+  }
+
+  if (dataTypes.size > 1) {
+    logger.error({ dataTypes: [...dataTypes] }, 'TileIndex:InconsistentDataTypes:Failed');
+    throw new Error(`Inconsistent data types found: ${[...dataTypes].join(', ')}`);
+  }
+
   return {
     projections,
     gsds,
     roundedGsds,
     canGetResolution,
     tiffCount: tiffs.length,
+    dataTypes,
   };
 }
 
@@ -406,6 +435,7 @@ async function generateOutputFiles(
   targetEpsg: number,
   includeDerived: boolean,
   gsd: string,
+  dataType: string,
 ): Promise<void> {
   const mapSheet = getMapSheet(targetEpsg);
   const targetProjection = Projection.get(targetEpsg);
@@ -438,6 +468,7 @@ async function generateOutputFiles(
   const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
   const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
   const gsdFileName = fsa.toUrl('/tmp/tile-index-validate/gsd');
+  const dataTypeFileName = fsa.toUrl('/tmp/tile-index-validate/data-type');
 
   await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
   logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
@@ -451,6 +482,9 @@ async function generateOutputFiles(
 
   await fsa.write(gsdFileName, gsd);
   logger.info({ path: protocolAwareString(gsdFileName), gsd }, 'Write:GSD');
+
+  await fsa.write(dataTypeFileName, dataType);
+  logger.info({ path: protocolAwareString(dataTypeFileName), dataType }, 'Write:DataType');
 }
 
 /**
@@ -496,7 +530,7 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
 
 function allowedBitsForPreset(preset: string): Set<number> | null {
   if (preset === 'webp') return new Set([8]);
-  if (preset === 'rgbnir_zstd') return new Set([8, 16]);
+  if (preset === 'rgbnir_zstd') return new Set([8, 16, 32]);
   return null;
 }
 
@@ -658,6 +692,7 @@ export async function extractTiffLocations(
           source: tiff.source.url,
           tileNames: covering,
           epsg: tiff.images[0]?.epsg,
+          //FIXME: extractBandInformation now runs in getTiffsMetadata, so it runs twice.
           bands: await extractBandInformation(tiff),
         };
       } catch (e) {
@@ -753,6 +788,16 @@ export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
  * @param allowedBitCount
  */
 export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<number>): Promise<number> {
+  const bitDepth = await getTiffBitDepth(tiff);
+  if (!allowedBitCount.has(bitDepth)) {
+    throw new Error(
+      `${protocolAwareString(tiff.source.url)} has unsupported bit depth: ${bitDepth}. Expected: ${[...allowedBitCount].join(', ')}`,
+    );
+  }
+  return bitDepth;
+}
+
+async function getTiffBitDepth(tiff: Tiff): Promise<number> {
   const baseImage = tiff.images[0];
   if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
 
@@ -762,12 +807,6 @@ export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<numbe
   }
 
   const firstSample = bitsPerSample[0] as number;
-  if (!allowedBitCount.has(firstSample)) {
-    throw new Error(
-      `${protocolAwareString(tiff.source.url)} has unsupported bit depth: ${bitsPerSample.join(', ')}. Expected: ${[...allowedBitCount].join(', ')}`,
-    );
-  }
-
   for (let i = 1; i < bitsPerSample.length; i++) {
     if (bitsPerSample[i] !== firstSample) {
       throw new Error(
