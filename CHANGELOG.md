@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.1.0](https://github.com/linz/argo-tasks/compare/v6.0.0...v6.1.0) (2026-09-10)
+
+
+### Features
+
+* allow 16 bit tiffs with rgb+nir ([#1311](https://github.com/linz/argo-tasks/issues/1311)) ([7a629e7](https://github.com/linz/argo-tasks/commit/7a629e7f9c78ac6fef72c071d34b4717c6cb246c))
+
+
+### Bug Fixes
+
+* vector tileset prs should not be draft ([#1354](https://github.com/linz/argo-tasks/issues/1354)) ([62a873f](https://github.com/linz/argo-tasks/commit/62a873f86b2f47aa5c31243966b42f355ab40251))
+
 ## [6.0.0](https://github.com/linz/argo-tasks/compare/v5.7.0...v6.0.0) (2026-08-27)
 
 
