@@ -36,7 +36,7 @@ export const archiveSetup = command({
     const archiveLocation = getArchiveLocation(args.path, archiveBucketName);
     const saveArchiveLocationTo = new URL('archive-location', args.output);
 
-    await fsa.write(saveArchiveLocationTo, protocolAwareString(archiveLocation));
+    await fsa.write(saveArchiveLocationTo, protocolAwareString(archiveLocation, true));
 
     logger.info(
       { duration: performance.now() - startTime, archiveLocation: protocolAwareString(archiveLocation) },
