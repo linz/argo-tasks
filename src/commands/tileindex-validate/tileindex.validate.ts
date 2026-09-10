@@ -692,6 +692,7 @@ export async function extractTiffLocations(
           source: tiff.source.url,
           tileNames: covering,
           epsg: tiff.images[0]?.epsg,
+          //FIXME: extractBandInformation now runs in getTiffsMetadata, so it runs twice.
           bands: await extractBandInformation(tiff),
         };
       } catch (e) {
