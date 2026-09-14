@@ -128,6 +128,7 @@ function formatBucketName(bucketName: string): string {
 export async function loadFirstTiff(source: URL, collection: StacCollection): Promise<Tiff> {
   const itemLink = collection.links.find((f) => f.rel === 'item')?.href;
   if (itemLink == null) throw new Error(`No items in collection from ${protocolAwareString(source)}.`);
+  console.log(itemLink);
 
   const itemLocation = new URL(itemLink, source);
   const item = await fsa.readJson<StacItem>(itemLocation);
@@ -139,6 +140,7 @@ export async function loadFirstTiff(source: URL, collection: StacCollection): Pr
   const tiffLocation = new URL(tiffLink, source);
   const tiff = await createTiff(tiffLocation);
   if (tiff == null) throw new Error(`Failed to get tiff from ${protocolAwareString(tiffLocation)}.`);
+  console.log(tiff.images[0]?.resolution[0]);
   return tiff;
 }
 
