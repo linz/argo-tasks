@@ -36,6 +36,7 @@ describe('stac-setup', () => {
     odrUrl: undefined,
     output: fsa.toUrl('memory:///tmp/stac-setup/'),
     gsd: '1',
+    dataType: 'uint8',
     region: 'gisborne',
     geographicDescription: 'Wairoa',
     geospatialCategory: 'dem',
@@ -161,6 +162,30 @@ describe('stac-setup', () => {
       { message: 'GSD at ODR URL [0.3] does not match new TIFF GSD [1]' },
     );
   });
+
+  it('should pass when data type matches collection', async () => {
+    await commandStacSetup.handler({
+      ...BaseArgs,
+      odrUrl: collectionLocation,
+      gsd: '0.3',
+      dataType: 'uint8',
+    });
+
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
+    assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
+  });
+
+  it('should fail when data type does not match collection', async () => {
+    await assert.rejects(
+      commandStacSetup.handler({
+        ...BaseArgs,
+        odrUrl: collectionLocation,
+        gsd: '0.3',
+        dataType: 'uint16',
+      }),
+      { message: 'Data type at ODR URL [uint8] does not match new TIFF data type [uint16]' },
+    );
+  });
 });
 
 describe('slugFromMetadata', () => {
@@ -174,6 +199,7 @@ describe('slugFromMetadata', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m');
   });
+
   it('Should match - rural with geographic description', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'rural-aerial-photos',
