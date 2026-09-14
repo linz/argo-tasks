@@ -32,8 +32,6 @@ lds-fetch-layer  --target ./output 51002 51000
 
 Generate target path for ODR buckets using collection metadata.
 
-The date can be omitted from the survey name (example: `s3://nz-elevation/new-zealand/new-zealand/dem_1m/2193/`) by passing the `--no-date-in-survey-path` flag.
-
 For imagery naming conventions see: https://github.com/linz/imagery/blob/master/docs/naming.md
 For elevation naming conventions see: https://github.com/linz/elevation/blob/master/docs/naming.md
 
@@ -245,7 +243,7 @@ stac validate --checksum-assets --recursive s3://linz-imagery-staging/test/stac-
 - Validate the `file:checksum` of all STAC links inside of a collection:
 
 ```bash
-stac validate --checksum-links --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
+stac validate --checksum-links --recursive s3://linz-imagery-staging/test/stac-validate/collection.json 
 ```
 
 - Validate the `file:checksum` of all assets and STAC links inside of a collection:
