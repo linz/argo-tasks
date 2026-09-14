@@ -1,5 +1,18 @@
 # Changelog
 
+## [7.0.0](https://github.com/linz/argo-tasks/compare/v6.1.0...v7.0.0) (2026-09-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* breaking change for version bump of stac setup data_type TDE-1925 ([#1357](https://github.com/linz/argo-tasks/issues/1357))
+
+### Features
+
+* breaking change for version bump of stac setup data_type TDE-1925 ([#1357](https://github.com/linz/argo-tasks/issues/1357)) ([5dde574](https://github.com/linz/argo-tasks/commit/5dde57447656cd7378d381050165eb1934b5a12d))
+* **stac-setup:** add datatype to stac setup odr TDE-2032 ([#1351](https://github.com/linz/argo-tasks/issues/1351)) ([690880b](https://github.com/linz/argo-tasks/commit/690880b9bf12d723faec7576544fd3d619a70deb))
+* **tileindex-validate:** output bit depth from tileindex-validate TDE-2031 ([#1349](https://github.com/linz/argo-tasks/issues/1349)) ([17dfb50](https://github.com/linz/argo-tasks/commit/17dfb50fdf6c0911c019ea7b17d2fdf786671e29))
+
 ## [6.1.0](https://github.com/linz/argo-tasks/compare/v6.0.0...v6.1.0) (2026-09-10)
 
 
