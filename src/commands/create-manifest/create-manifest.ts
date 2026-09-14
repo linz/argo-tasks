@@ -65,7 +65,7 @@ export const commandCreateManifest = command({
         const targetLocation = new URL(`manifest-${targetHash}.json`, actionLocation);
         const targetAction: ActionCopy = { action: 'copy', parameters: { manifest: current } };
         await fsa.write(targetLocation, JSON.stringify(targetAction));
-        outputCopy.push(protocolAwareString(targetLocation));
+        outputCopy.push(protocolAwareString(targetLocation, true));
       } else {
         outputCopy.push(gzipSync(outBuf).toString('base64url'));
       }
