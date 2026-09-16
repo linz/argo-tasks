@@ -54,7 +54,7 @@ export const worker = new WorkerRpc<CopyContract>({
           return;
         }
 
-        for (let attempt = 1; ; attempt++) {
+        for (let attempt = 1; attempt <= 2; attempt++) {
           const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
             source,
             targetLocation,
@@ -156,7 +156,7 @@ export const worker = new WorkerRpc<CopyContract>({
 
             break;
           } catch (error) {
-            if (!shouldRetryDecompress || attempt > 1) throw error;
+            if (!shouldRetryDecompress || attempt === 2) throw error;
             await fsa.delete(target.url).catch(() => undefined);
             await delay(DecompressRetryDelay);
           }
