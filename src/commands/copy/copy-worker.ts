@@ -17,7 +17,6 @@ import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
 const DecompressRetryDelay = 60_000;
-type ManifestEntry = CopyContractArgs['manifest'][number];
 
 function isDecompressError(error: unknown): boolean {
   if (error == null || typeof error !== 'object') return false;
@@ -26,102 +25,6 @@ function isDecompressError(error: unknown): boolean {
   const message = typeof errorRecord['message'] === 'string' ? errorRecord['message'] : '';
 
   return code === 'ZSTD_error_prefix_unknown' || message.includes('Unknown frame descriptor');
-}
-
-async function copyManifestEntry(
-  args: CopyContractArgs,
-  stats: CopyStats,
-  manifestEntry: ManifestEntry,
-  source: NonNullable<Awaited<ReturnType<typeof fsa.head>>> & { size: number },
-  sourceLocation: URL,
-  target: URL,
-  fileOperation: FileOperation,
-  shouldDeleteSourceOnSuccess: boolean,
-  startTime: number,
-): Promise<void> {
-  let targetVerified = false;
-
-  if (fileOperation !== FileOperation.Skip) {
-    logger.info(
-      {
-        path: manifestEntry.source,
-        size: source.size,
-        fileOperation,
-        shouldDeleteSourceOnSuccess,
-      },
-      'File:Copy:Start:' + fileOperation,
-    );
-    const hashOriginal = new HashTransform('sha256');
-    const hashCompressed = new HashTransform('sha256');
-
-    const rawSourceStream = fsa.readStream(sourceLocation);
-    let sourceStream = rawSourceStream;
-
-    const shouldCompress = fileOperation === FileOperation.Compress;
-    const shouldDecompress = fileOperation === FileOperation.Decompress;
-    const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
-
-    switch (fileOperation) {
-      case FileOperation.Copy:
-        sourceStream = rawSourceStream.pipe(hashOriginal);
-        break;
-      case FileOperation.Compress:
-        const zstdCompress = createZstdCompress({
-          params: {
-            [constants.ZSTD_c_compressionLevel]: 17,
-          },
-        });
-        sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstdCompress).pipe(hashCompressed);
-        break;
-      case FileOperation.Decompress:
-        const zstdDecompress = createZstdDecompress();
-        sourceStream = rawSourceStream.pipe(hashCompressed).pipe(zstdDecompress).pipe(hashOriginal);
-        break;
-      default:
-        throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
-    }
-
-    const fileMetadata = shouldFixMetadata ? fixFileMetadata(target, source) : source;
-
-    logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Write');
-    await fsa.write(target, sourceStream, fileMetadata);
-    logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Verify');
-    const expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : source.size;
-    const expectedHash = hashOriginal.multihash;
-    targetVerified = await verifyTargetFile(target, expectedSize, expectedHash);
-    if (!targetVerified) {
-      // Cleanup the failed copy so it can be retried
-      await fsa.delete(target);
-      throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target)}`);
-    }
-
-    statsUpdaters[fileOperation](stats, source.size, expectedSize);
-    logger.debug(
-      {
-        ...manifestEntry,
-        fileOperation,
-        size: source.size,
-        compressedSize: expectedSize,
-        ratio: ((expectedSize / source.size) * 100).toFixed(1) + '%',
-        duration: performance.now() - startTime,
-      },
-      'File:Copy:Done',
-    );
-  } else {
-    logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Skipped');
-    statsUpdaters[fileOperation](stats, source.size);
-  }
-
-  if (shouldDeleteSourceOnSuccess && (targetVerified || fileOperation === FileOperation.Skip)) {
-    const startTimeDelete = performance.now();
-    logger.info({ path: manifestEntry.source }, 'File:DeleteSource:Start');
-    await fsa.delete(sourceLocation);
-    statsUpdaters[FileOperation.Delete](stats, source.size);
-    logger.debug(
-      { ...manifestEntry, size: source.size, duration: performance.now() - startTimeDelete },
-      'File:DeleteSource:Done',
-    );
-  }
 }
 
 /** Current log id */
@@ -159,28 +62,107 @@ export const worker = new WorkerRpc<CopyContract>({
           statsUpdaters[FileOperation.Skip](stats, source?.size ?? 0);
           return;
         }
-        const sourceWithSize = source as typeof source & { size: number };
 
         for (let attempt = 1; attempt <= 2; attempt++) {
           const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
-            sourceWithSize,
+            source,
             targetLocation,
             args,
           );
           const shouldRetryDecompress = fileOperation === FileOperation.Decompress;
+          let targetVerified = false;
 
           try {
-            await copyManifestEntry(
-              args,
-              stats,
-              manifestEntry,
-              sourceWithSize,
-              sourceLocation,
-              target.url,
-              fileOperation,
-              shouldDeleteSourceOnSuccess,
-              startTime,
-            );
+            if (fileOperation !== FileOperation.Skip) {
+              logger.info(
+                {
+                  path: manifestEntry.source,
+                  size: source.size,
+                  fileOperation,
+                  shouldDeleteSourceOnSuccess,
+                },
+                'File:Copy:Start:' + fileOperation,
+              );
+              const hashOriginal = new HashTransform('sha256');
+              const hashCompressed = new HashTransform('sha256');
+
+              const rawSourceStream = fsa.readStream(sourceLocation);
+              let sourceStream = rawSourceStream;
+
+              const shouldCompress = fileOperation === FileOperation.Compress;
+              const shouldDecompress = fileOperation === FileOperation.Decompress;
+              const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
+
+              switch (fileOperation) {
+                case FileOperation.Copy:
+                  sourceStream = rawSourceStream.pipe(hashOriginal);
+                  break;
+                case FileOperation.Compress:
+                  const zstdCompress = createZstdCompress({
+                    params: {
+                      [constants.ZSTD_c_compressionLevel]: 17,
+                    },
+                  });
+                  sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstdCompress).pipe(hashCompressed);
+                  break;
+                case FileOperation.Decompress:
+                  const zstdDecompress = createZstdDecompress();
+                  sourceStream = rawSourceStream.pipe(hashCompressed).pipe(zstdDecompress).pipe(hashOriginal);
+                  break;
+                default:
+                  throw new Error(
+                    `Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`,
+                  );
+              }
+
+              const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
+
+              logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Write');
+              await fsa.write(target.url, sourceStream, fileMetadata);
+              logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Verify');
+              const expectedSize = shouldDecompress
+                ? hashOriginal.size
+                : shouldCompress
+                  ? hashCompressed.size
+                  : source.size;
+              const expectedHash = hashOriginal.multihash;
+              targetVerified = await verifyTargetFile(target.url, expectedSize, expectedHash);
+              if (!targetVerified) {
+                // Cleanup the failed copy so it can be retried
+                await fsa.delete(target.url);
+                throw new Error(
+                  `Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`,
+                );
+              }
+
+              statsUpdaters[fileOperation](stats, source.size, expectedSize);
+              logger.debug(
+                {
+                  ...manifestEntry,
+                  fileOperation,
+                  size: source.size,
+                  compressedSize: expectedSize,
+                  ratio: ((expectedSize / source.size) * 100).toFixed(1) + '%',
+                  duration: performance.now() - startTime,
+                },
+                'File:Copy:Done',
+              );
+            } else {
+              logger.info({ path: manifestEntry.source, size: source.size }, 'File:Copy:Skipped');
+              statsUpdaters[fileOperation](stats, source.size);
+            }
+
+            if (shouldDeleteSourceOnSuccess && (targetVerified || fileOperation === FileOperation.Skip)) {
+              const startTimeDelete = performance.now();
+              logger.info({ path: manifestEntry.source }, 'File:DeleteSource:Start');
+              await fsa.delete(sourceLocation);
+              statsUpdaters[FileOperation.Delete](stats, source.size);
+              logger.debug(
+                { ...manifestEntry, size: source.size, duration: performance.now() - startTimeDelete },
+                'File:DeleteSource:Done',
+              );
+            }
+
             break;
           } catch (error) {
             if (!shouldRetryDecompress || attempt === 2 || !isDecompressError(error)) throw error;
