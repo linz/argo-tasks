@@ -16,16 +16,7 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
-const DecompressRetryDelay = 60_000;
-
-function isDecompressError(error: unknown): boolean {
-  if (error == null || typeof error !== 'object') return false;
-  const errorRecord = error as Record<string, unknown>;
-  const code = typeof errorRecord['code'] === 'string' ? errorRecord['code'] : '';
-  const message = typeof errorRecord['message'] === 'string' ? errorRecord['message'] : '';
-
-  return code === 'ZSTD_error_prefix_unknown' || message.includes('Unknown frame descriptor');
-}
+const RetryDelay = 60_000;
 
 /** Current log id */
 let currentId: string | null = null;
@@ -69,7 +60,6 @@ export const worker = new WorkerRpc<CopyContract>({
             targetLocation,
             args,
           );
-          const shouldRetryDecompress = fileOperation === FileOperation.Decompress;
           let targetVerified = false;
 
           try {
@@ -165,9 +155,9 @@ export const worker = new WorkerRpc<CopyContract>({
 
             break;
           } catch (error) {
-            if (!shouldRetryDecompress || attempt === 2 || !isDecompressError(error)) throw error;
+            if (attempt === 2) throw error;
             await fsa.delete(target.url).catch(() => undefined);
-            await delay(DecompressRetryDelay);
+            await delay(RetryDelay);
           }
         }
       });
