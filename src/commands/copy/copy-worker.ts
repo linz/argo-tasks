@@ -68,7 +68,7 @@ export const worker = new WorkerRpc<CopyContract>({
           const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
             source,
             targetLocation,
-            args, 
+            args,
           );
           let targetVerified = false;
 
