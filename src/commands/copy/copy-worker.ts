@@ -18,6 +18,16 @@ import { FileOperation } from './copy-rpc.ts';
 const Q = new ConcurrentQueue(10);
 const RetryDelay = 60_000;
 
+export function isZstdError(error: unknown): boolean {
+  if (error == null || typeof error !== 'object') return false;
+
+  const errorRecord = error as Record<string, unknown>;
+  const code = typeof errorRecord['code'] === 'string' ? errorRecord['code'] : '';
+  const message = typeof errorRecord['message'] === 'string' ? errorRecord['message'] : '';
+
+  return code === 'ZSTD_error_prefix_unknown' || message.includes('Unknown frame descriptor');
+}
+
 /** Current log id */
 let currentId: string | null = null;
 
@@ -58,7 +68,7 @@ export const worker = new WorkerRpc<CopyContract>({
           const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
             source,
             targetLocation,
-            args,
+            args, 
           );
           let targetVerified = false;
 
@@ -155,8 +165,12 @@ export const worker = new WorkerRpc<CopyContract>({
 
             break;
           } catch (error) {
-            if (attempt === 2) throw error;
+            if (attempt === 2 || !isZstdError(error)) throw error;
             await fsa.delete(target.url).catch(() => undefined);
+            logger.warn(
+              { err: error, path: manifestEntry.source, attempt, retryDelayMs: RetryDelay },
+              'File:Copy:Retry:BeforeDelay',
+            );
             await delay(RetryDelay);
           }
         }
