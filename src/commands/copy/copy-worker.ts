@@ -172,6 +172,10 @@ export const worker = new WorkerRpc<CopyContract>({
               'File:Copy:Retry:BeforeDelay',
             );
             await delay(RetryDelay);
+            logger.info(
+              { path: manifestEntry.source, attempt, retryDelayMs: RetryDelay },
+              'File:Copy:Retry:AfterDelay',
+            );
           }
         }
       });
