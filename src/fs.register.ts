@@ -66,7 +66,7 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
         );
       } catch (error) {
         if (error != null && typeof error === 'object' && 'code' in error && error.code === 'EAI_AGAIN') {
-            throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
+          throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
         }
         throw error;
       }
