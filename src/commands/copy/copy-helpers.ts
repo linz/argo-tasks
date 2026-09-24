@@ -155,7 +155,7 @@ export function fixFileMetadata(location: URL, meta: FileInfo): FileInfo {
 export async function determineTargetFileOperation(
   source: FileInfo,
   initialTargetLocation: URL,
-  args: CopyContractArgs,
+  args: Pick<CopyContractArgs, 'compress' | 'decompress' | 'deleteSource' | 'force' | 'noClobber'>,
 ): Promise<TargetFileOperation> {
   const shouldCompress = shouldCompressFile(args.compress, source.size, MinSizeForCompression);
   const shouldDecompress = shouldDecompressFile(args.decompress, source.url, CompressedFileExtension);
