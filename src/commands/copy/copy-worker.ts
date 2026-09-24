@@ -1,5 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { parentPort, threadId } from 'node:worker_threads';
+import { PassThrough } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { constants, createZstdCompress, createZstdDecompress } from 'node:zlib';
 
 import { fsa } from '@chunkd/fs';
@@ -16,7 +18,7 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
-const RetryDelay = 60_000;
+const RetryDelay = 10_000;
 
 export function isZstdError(error: unknown): boolean {
   if (error == null || typeof error !== 'object') return false;
@@ -98,6 +100,7 @@ export const worker = new WorkerRpc<CopyContract>({
 
                 const rawSourceStream = fsa.readStream(sourceLocation);
                 let sourceStream = rawSourceStream;
+                let sourceStreamPromise: Promise<void> | undefined;
 
                 const shouldCompress = fileOperation === FileOperation.Compress;
                 const shouldDecompress = fileOperation === FileOperation.Decompress;
@@ -113,11 +116,27 @@ export const worker = new WorkerRpc<CopyContract>({
                         [constants.ZSTD_c_compressionLevel]: 17,
                       },
                     });
-                    sourceStream = rawSourceStream.pipe(hashOriginal).pipe(zstdCompress).pipe(hashCompressed);
+                    const compressedSourceStream = new PassThrough();
+                    sourceStream = compressedSourceStream;
+                    sourceStreamPromise = pipeline(
+                      rawSourceStream,
+                      hashOriginal,
+                      zstdCompress,
+                      hashCompressed,
+                      compressedSourceStream,
+                    );
                     break;
                   case FileOperation.Decompress:
                     const zstdDecompress = createZstdDecompress();
-                    sourceStream = rawSourceStream.pipe(hashCompressed).pipe(zstdDecompress).pipe(hashOriginal);
+                    const decompressedSourceStream = new PassThrough();
+                    sourceStream = decompressedSourceStream;
+                    sourceStreamPromise = pipeline(
+                      rawSourceStream,
+                      hashCompressed,
+                      zstdDecompress,
+                      hashOriginal,
+                      decompressedSourceStream,
+                    );
                     break;
                   default:
                     throw new Error(
@@ -128,7 +147,10 @@ export const worker = new WorkerRpc<CopyContract>({
                 const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
 
                 logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Write');
-                await fsa.write(target.url, sourceStream, fileMetadata);
+                await Promise.all([
+                  fsa.write(target.url, sourceStream, fileMetadata),
+                  sourceStreamPromise ?? Promise.resolve(),
+                ]);
                 logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
                 const expectedSize = shouldDecompress
                   ? hashOriginal.size
