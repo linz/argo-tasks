@@ -1,5 +1,3 @@
-import { setTimeout } from 'node:timers/promises';
-
 import { S3Client } from '@aws-sdk/client-s3';
 import { fsa, FsHttp } from '@chunkd/fs';
 import type { AwsCredentialConfig } from '@chunkd/fs-aws';
@@ -8,6 +6,7 @@ import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from 
 
 import { logger } from './log.ts';
 import { protocolAwareString } from './utils/filelist.ts';
+import { retryOnError } from './utils/retry.ts';
 
 /** Check to see if hostname exists inside of a object */
 function hasHostName(x: unknown): x is { hostname: string } {
@@ -40,24 +39,37 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
     const maxTries = 3;
     let totalDelay = 0;
     return async (args) => {
-      for (let attempt = 1; attempt <= maxTries; attempt++) {
-        try {
-          return await next(args);
-        } catch (error) {
-          if (error && typeof error === 'object' && 'code' in error && 'hostname' in error) {
-            if (error.code !== 'EAI_AGAIN') {
+      try {
+        return await retryOnError(
+          maxTries,
+          timeout,
+          async (attempt) => {
+            try {
+              return await next(args);
+            } catch (error) {
+              if (
+                attempt < maxTries &&
+                error != null &&
+                typeof error === 'object' &&
+                'code' in error &&
+                error.code === 'EAI_AGAIN' &&
+                'hostname' in error
+              ) {
+                const delay = timeout(attempt);
+                totalDelay += delay;
+                logger.warn({ host: error.hostname, attempt, delay, totalDelay }, `eai_again:retry`);
+              }
               throw error;
             }
-            const delay = timeout(attempt);
-            totalDelay += delay;
-            logger.warn({ host: error.hostname, attempt, delay, totalDelay }, `eai_again:retry`);
-            await setTimeout(timeout(attempt));
-          } else {
-            throw error;
-          }
+          },
+          (error) => error != null && typeof error === 'object' && 'code' in error && error.code === 'EAI_AGAIN',
+        );
+      } catch (error) {
+        if (error != null && typeof error === 'object' && 'code' in error && error.code === 'EAI_AGAIN') {
+          throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
         }
+        throw error;
       }
-      throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
     };
   };
   return eaiAgain;
