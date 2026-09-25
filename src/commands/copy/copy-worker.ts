@@ -87,7 +87,13 @@ async function copyEntryAttempt({
         });
         const compressedSourceStream = new PassThrough();
         sourceStream = compressedSourceStream;
-        sourceStreamPromise = pipeline(rawSourceStream, hashOriginal, zstdCompress, hashCompressed, compressedSourceStream);
+        sourceStreamPromise = pipeline(
+          rawSourceStream,
+          hashOriginal,
+          zstdCompress,
+          hashCompressed,
+          compressedSourceStream,
+        );
         break;
       }
       case FileOperation.Decompress: {
