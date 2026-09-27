@@ -192,7 +192,7 @@ async function copyEntry({
         startTime,
         stats,
       }).catch(async (error: unknown) => {
-        if (attempt < 2 && isZstdError(error)) {
+        if (attempt < 3 && isZstdError(error)) {
           await fsa.delete(targetLocation).catch(() => undefined);
           logger.warn(
             { err: error, path: manifestEntry.source, attempt, retryDelayMs: RetryDelay },
