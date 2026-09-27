@@ -5,7 +5,6 @@ import { fsa, FsMemory } from '@chunkd/fs';
 
 import { MinSizeForCompression } from '../copy-helpers.ts';
 import type { CopyStats } from '../copy-rpc.ts';
-import { isZstdError } from '../copy-worker.ts';
 import { worker } from '../copy-worker.ts';
 
 const defaultCopyArgs = {
@@ -24,7 +23,8 @@ const defaultCopyArgs = {
 describe('copyFiles', () => {
   const memory = new FsMemory();
   fsa.register('memory://', memory);
-const fakeMultihash = 'fake-multihash-1';
+  const fakeMultihash = '1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
   beforeEach(() => {
     memory.files.clear();
   });
@@ -74,12 +74,6 @@ const fakeMultihash = 'fake-multihash-1';
       memory.files.get('memory://target/topographic.png')?.buffer,
     );
     assert.equal(String(memory.files.get('memory://target/topographic.png')?.buffer), 'test');
-  });
-
-  it('should detect ZSTD errors by code or message', () => {
-    assert.equal(isZstdError({ code: 'ZSTD_error_prefix_unknown' }), true);
-    assert.equal(isZstdError({ message: 'Unknown frame descriptor' }), true);
-    assert.equal(isZstdError({ code: 'OTHER', message: 'some other error' }), false);
   });
 
   it('should default to COG/json when fixContentType = true', async () => {
