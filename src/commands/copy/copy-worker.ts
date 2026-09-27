@@ -178,7 +178,7 @@ async function copyEntry({
   stats: CopyStats;
 }): Promise<void> {
   await retryOnError(
-    2,
+    3,
     () => RetryDelay,
     (attempt) =>
       copyEntryAttempt({

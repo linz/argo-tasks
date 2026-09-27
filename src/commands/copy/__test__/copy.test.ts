@@ -5,7 +5,7 @@ import { fsa, FsMemory } from '@chunkd/fs';
 
 import { MinSizeForCompression } from '../copy-helpers.ts';
 import type { CopyStats } from '../copy-rpc.ts';
-import { worker } from '../copy-worker.ts';
+import { isZstdError, worker } from '../copy-worker.ts';
 
 const defaultCopyArgs = {
   id: '1',
@@ -27,6 +27,13 @@ describe('copyFiles', () => {
 
   beforeEach(() => {
     memory.files.clear();
+  });
+
+  it('should detect zstd errors by code or message', () => {
+    assert.equal(isZstdError({ code: 'ZSTD_error_prefix_unknown' }), true);
+    assert.equal(isZstdError({ message: 'Unknown frame descriptor' }), true);
+    assert.equal(isZstdError({ code: 'OTHER_ERROR', message: 'Some other error' }), false);
+    assert.equal(isZstdError(null), false);
   });
 
   it('should copy to the target location', async () => {
