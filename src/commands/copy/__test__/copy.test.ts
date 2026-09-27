@@ -23,7 +23,7 @@ const defaultCopyArgs = {
 describe('copyFiles', () => {
   const memory = new FsMemory();
   fsa.register('memory://', memory);
-  const fakeMultihash = '1220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const fakeMultihash = 'fake-multihash-1';
 
   beforeEach(() => {
     memory.files.clear();
