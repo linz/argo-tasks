@@ -4,8 +4,7 @@ import { pipeline } from 'node:stream/promises';
 import { parentPort, threadId } from 'node:worker_threads';
 import { constants, createZstdCompress, createZstdDecompress } from 'node:zlib';
 
-import { fsa } from '@chunkd/fs';
-import type { FileInfo } from '@chunkd/fs';
+import { type FileInfo, fsa } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 
 import { logger } from '../../log.ts';
