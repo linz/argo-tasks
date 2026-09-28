@@ -72,11 +72,7 @@ async function copyEntryAttempt({
       case FileOperation.Copy: {
         const copySourceStream = new PassThrough();
         sourceStream = copySourceStream;
-        sourceStreamPromise = pipeline(
-          rawSourceStream,
-          hashOriginal,
-          copySourceStream,
-        );
+        sourceStreamPromise = pipeline(rawSourceStream, hashOriginal, copySourceStream);
         break;
       }
       case FileOperation.Compress: {
