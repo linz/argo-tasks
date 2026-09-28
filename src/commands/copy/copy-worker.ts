@@ -109,15 +109,24 @@ async function copyEntryAttempt({
     const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
 
     logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Write');
-    await Promise.all([fsa.write(target.url, sourceStream, fileMetadata), sourceStreamPromise ?? Promise.resolve()]);
-    logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
-    const expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : sourceSize;
-    const expectedHash = hashOriginal.multihash;
-    targetVerified = await verifyTargetFile(target.url, expectedSize, expectedHash);
-    if (!targetVerified) {
-      // Cleanup the failed copy so it can be retried
-      await fsa.delete(target.url);
-      throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`);
+    let expectedSize: number | undefined;
+    let expectedHash: string | undefined;
+    try {
+      await Promise.all([fsa.write(target.url, sourceStream, fileMetadata), sourceStreamPromise ?? Promise.resolve()]);
+      logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
+      expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : sourceSize;
+      expectedHash = hashOriginal.multihash;
+      targetVerified = await verifyTargetFile(target.url, expectedSize, expectedHash);
+      if (!targetVerified) {
+        // Cleanup the failed copy so it can be retried
+        await fsa.delete(target.url);
+        throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`);
+      }
+    } catch (error) {
+      if (isZstdError(error)) {
+        await fsa.delete(target.url).catch(() => undefined);
+      }
+      throw error;
     }
 
     statsUpdaters[fileOperation](stats, sourceSize, expectedSize);
@@ -165,7 +174,6 @@ async function copyEntry(ctx: CopyEntryContext): Promise<void> {
 
       return copyEntryAttempt(ctx).catch(async (error: unknown) => {
         if (attempt < 3 && isZstdError(error)) {
-          await fsa.delete(ctx.targetLocation).catch(() => undefined);
           logger.warn(
             { err: error, path: ctx.manifestEntry.source, attempt, retryDelayMs: RetryDelay },
             'File:Copy:Retry:BeforeDelay',
