@@ -5,6 +5,7 @@ import { parentPort, threadId } from 'node:worker_threads';
 import { constants, createZstdCompress, createZstdDecompress } from 'node:zlib';
 
 import { fsa } from '@chunkd/fs';
+import type { FileInfo } from '@chunkd/fs';
 import { WorkerRpc } from '@wtrpc/core';
 
 import { logger } from '../../log.ts';
@@ -20,8 +21,18 @@ import { FileOperation } from './copy-rpc.ts';
 const Q = new ConcurrentQueue(10);
 const RetryDelay = 10_000;
 
+interface CopyEntryContext {
+  args: CopyContractArgs;
+  manifestEntry: NonNullable<CopyContractArgs['manifest'][number]>;
+  source: FileInfo;
+  sourceLocation: URL;
+  sourceSize: number;
+  targetLocation: URL;
+  startTime: number;
+  stats: CopyStats;
+}
+
 async function copyEntryAttempt({
-  attempt,
   args,
   manifestEntry,
   source,
@@ -30,24 +41,7 @@ async function copyEntryAttempt({
   targetLocation,
   startTime,
   stats,
-}: {
-  attempt: number;
-  args: CopyContractArgs;
-  manifestEntry: NonNullable<CopyContractArgs['manifest'][number]>;
-  source: NonNullable<Awaited<ReturnType<typeof fsa.head>>>;
-  sourceLocation: URL;
-  sourceSize: number;
-  targetLocation: URL;
-  startTime: number;
-  stats: CopyStats;
-}): Promise<void> {
-  if (attempt > 1) {
-    logger.info(
-      { path: manifestEntry.source, attempt: attempt - 1, retryDelayMs: RetryDelay },
-      'File:Copy:Retry:AfterDelay',
-    );
-  }
-
+}: CopyEntryContext): Promise<void> {
   const { target, fileOperation, shouldDeleteSourceOnSuccess } = await determineTargetFileOperation(
     source,
     targetLocation,
@@ -158,49 +152,30 @@ async function copyEntryAttempt({
   return undefined;
 }
 
-async function copyEntry({
-  args,
-  manifestEntry,
-  source,
-  sourceLocation,
-  sourceSize,
-  targetLocation,
-  startTime,
-  stats,
-}: {
-  args: CopyContractArgs;
-  manifestEntry: NonNullable<CopyContractArgs['manifest'][number]>;
-  source: NonNullable<Awaited<ReturnType<typeof fsa.head>>>;
-  sourceLocation: URL;
-  sourceSize: number;
-  targetLocation: URL;
-  startTime: number;
-  stats: CopyStats;
-}): Promise<void> {
+async function copyEntry(ctx: CopyEntryContext): Promise<void> {
   await retryOnError(
     3,
     () => RetryDelay,
-    (attempt) =>
-      copyEntryAttempt({
-        attempt,
-        args,
-        manifestEntry,
-        source,
-        sourceLocation,
-        sourceSize,
-        targetLocation,
-        startTime,
-        stats,
-      }).catch(async (error: unknown) => {
+    (attempt) => {
+      if (attempt > 1) {
+        logger.info(
+          { path: ctx.manifestEntry.source, attempt: attempt - 1, retryDelayMs: RetryDelay },
+          'File:Copy:Retry:AfterDelay',
+        );
+      }
+
+      return copyEntryAttempt(ctx).catch(async (error: unknown) => {
         if (attempt < 3 && isZstdError(error)) {
-          await fsa.delete(targetLocation).catch(() => undefined);
+          await fsa.delete(ctx.targetLocation).catch(() => undefined);
           logger.warn(
-            { err: error, path: manifestEntry.source, attempt, retryDelayMs: RetryDelay },
+            { err: error, path: ctx.manifestEntry.source, attempt, retryDelayMs: RetryDelay },
             'File:Copy:Retry:BeforeDelay',
           );
         }
+
         throw error;
-      }),
+      });
+    },
     (error: unknown) => isZstdError(error),
   );
 }
