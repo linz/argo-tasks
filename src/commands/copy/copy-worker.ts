@@ -62,16 +62,23 @@ async function copyEntryAttempt({
 
     const rawSourceStream = fsa.readStream(sourceLocation);
     let sourceStream = rawSourceStream;
-    let sourceStreamPromise: Promise<void> | undefined;
+    let sourceStreamPromise: Promise<void>;
 
     const shouldCompress = fileOperation === FileOperation.Compress;
     const shouldDecompress = fileOperation === FileOperation.Decompress;
     const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
 
     switch (fileOperation) {
-      case FileOperation.Copy:
-        sourceStream = rawSourceStream.pipe(hashOriginal);
+      case FileOperation.Copy: {
+        const copySourceStream = new PassThrough();
+        sourceStream = copySourceStream;
+        sourceStreamPromise = pipeline(
+          rawSourceStream,
+          hashOriginal,
+          copySourceStream,
+        );
         break;
+      }
       case FileOperation.Compress: {
         const zstdCompress = createZstdCompress({
           params: {
@@ -112,7 +119,7 @@ async function copyEntryAttempt({
     let expectedSize: number | undefined;
     let expectedHash: string | undefined;
     try {
-      await Promise.all([fsa.write(target.url, sourceStream, fileMetadata), sourceStreamPromise ?? Promise.resolve()]);
+      await Promise.all([fsa.write(target.url, sourceStream, fileMetadata), sourceStreamPromise]);
       logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
       expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : sourceSize;
       expectedHash = hashOriginal.multihash;
