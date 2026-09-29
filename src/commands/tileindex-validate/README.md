@@ -8,9 +8,9 @@ tileindex-validate <options> [...location]
 
 ### Arguments
 
-| Usage         | Description                                                 | Options |
-| ------------- | ----------------------------------------------------------- | ------- |
-| [...location] | Location of the source files. Accepts multiple source paths |         |
+| Usage         | Description                                                                                                                                | Options |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| [...location] | Location of the source files. Accepts multiple source paths. A file indirectly listed multiple times belongs to its most specific location |         |
 
 ### Options
 

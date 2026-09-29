@@ -133,7 +133,8 @@ export const commandTileIndexValidate = command({
     location: restPositionals({
       type: UrlFolderList,
       displayName: 'location',
-      description: 'Location of the source files. Accepts multiple source paths',
+      description:
+        'Location of the source files. Accepts multiple source paths. A file indirectly listed multiple times belongs to its most specific location',
     }),
     concurrency: option({
       type: number,
@@ -259,6 +260,8 @@ export const TiffLoader = {
   /**
    * Concurrently load a collection of TIFF files in the locations provided.
    *
+   * Tiffs are ordered by location, then listing. A file listed by overlapping locations is loaded once and belongs to the most specific one.
+   *
    * @param locations list of locations to find tiffs in.
    * @param args filter the tiffs
    * @returns Initialized tiff
@@ -266,20 +269,40 @@ export const TiffLoader = {
   async load(locations: URL[], q: ConcurrentQueue, args?: FileFilter): Promise<Tiff[]> {
     const filterArgs = { ...args, sizeMin: 0 };
     const hosts = new Set<string>();
+    /**
+     * listingOrder maps each file's url.href to
+     * the index of its most specific `location`,
+     * its `position` across all locations,
+     * and that location's URL length (`specificity`)
+     */
+    const listingOrder = new Map<string, { location: number; position: number; specificity: number }>();
 
     const totalTime = performance.now();
     let progressTime = totalTime;
 
     /** Number of tiff files processed */
     let tiffLoaded = 0;
+    /** Number of tiff files listed */
+    let tiffListed = 0;
     /** Number of tiffs that filed to load */
     let failedCount = 0;
     const output: Tiff[] = [];
     let lastError: unknown = null;
 
-    for (const loc of locations) {
+    for (const [locationIndex, loc] of locations.entries()) {
       for await (const file of asyncFilter(fsa.details(loc), filterArgs)) {
         if (!isTiff(file.url)) continue;
+        const existing = listingOrder.get(file.url.href);
+        // Both locations contain the file, so sort by the longer (more specific) one
+        if (existing == null || loc.href.length > existing.specificity) {
+          listingOrder.set(file.url.href, {
+            location: locationIndex,
+            position: tiffListed,
+            specificity: loc.href.length,
+          });
+        }
+        tiffListed++;
+        if (existing != null) continue;
         // ensure credentials have been loaded
         if (!hosts.has(file.url.hostname)) {
           await fsa.head(file.url);
@@ -323,6 +346,14 @@ export const TiffLoader = {
     }
 
     if (output.length === 0) throw new Error('No Files found');
+
+    // Restore order (location then listing) because file listing runs concurrently
+    output.sort((a, b) => {
+      const orderA = listingOrder.get(a.source.url.href);
+      const orderB = listingOrder.get(b.source.url.href);
+      if (orderA == null || orderB == null) return 0;
+      return orderA.location - orderB.location || orderA.position - orderB.position;
+    });
 
     logger.info({ count: output.length, duration: performance.now() - totalTime }, 'Tiffs:Loaded');
     return output;
