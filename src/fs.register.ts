@@ -15,6 +15,13 @@ function hasHostName(x: unknown): x is { hostname: string } {
   return false;
 }
 
+/** Node's getaddrinfo errors includes hostname, so requiring it limits retries to real DNS lookup failures */
+function isEaiAgain(error: unknown): boolean {
+  return (
+    error != null && typeof error === 'object' && 'hostname' in error && 'code' in error && error.code === 'EAI_AGAIN'
+  );
+}
+
 /**
  * AWS SDK middleware function to force fully qualified domain name  on s3 requests
  *
@@ -30,13 +37,6 @@ export const fqdn: FinalizeRequestMiddleware<object, MetadataBearer> = (next) =>
     return next(args);
   };
 };
-
-/** Node's getaddrinfo errors includes hostname, so requiring it limits retries to real DNS lookup failures */
-function isEaiAgain(error: unknown): boolean {
-  return (
-    error != null && typeof error === 'object' && 'hostname' in error && 'code' in error && error.code === 'EAI_AGAIN'
-  );
-}
 
 /**
  * AWS SDK middleware logic to try 3 times if receiving an EAI_AGAIN error
