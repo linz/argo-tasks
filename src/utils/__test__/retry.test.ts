@@ -9,7 +9,7 @@ describe('retryOnError', () => {
 
     const result = await retryOnError(
       3,
-      () => 1000,
+      () => 10,
       async () => {
         attempts += 1;
         if (attempts < 3) throw new Error('temporary failure');
@@ -29,7 +29,7 @@ describe('retryOnError', () => {
     await assert.rejects(
       retryOnError(
         3,
-        () => 10_000,
+        () => 10,
         async () => {
           attempts += 1;
           throw new Error(`failure ${attempts}`);
@@ -40,7 +40,7 @@ describe('retryOnError', () => {
     );
 
     assert.equal(attempts, 3);
-    assert.ok(performance.now() - start >= 20_000, 'waits about 10 seconds after each of the first two attempts');
+    assert.ok(performance.now() - start >= 20, 'waits about 10 milliseconds after each of the first two attempts');
   });
 
   it('should stop retrying when shouldRetry returns false', async () => {
@@ -49,7 +49,7 @@ describe('retryOnError', () => {
     await assert.rejects(
       retryOnError(
         3,
-        () => 1000,
+        () => 10,
         async () => {
           attempts += 1;
           throw new Error('permanent failure');
