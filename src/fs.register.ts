@@ -1,5 +1,3 @@
-import { setTimeout as delay } from 'node:timers/promises';
-
 import { S3Client } from '@aws-sdk/client-s3';
 import { fsa, FsHttp } from '@chunkd/fs';
 import type { AwsCredentialConfig } from '@chunkd/fs-aws';
@@ -8,6 +6,7 @@ import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from 
 
 import { logger } from './log.ts';
 import { protocolAwareString } from './utils/filelist.ts';
+import { retryOnError } from './utils/retry.ts';
 
 /** Check to see if hostname exists inside of a object */
 function hasHostName(x: unknown): x is { hostname: string } {
@@ -32,38 +31,28 @@ export const fqdn: FinalizeRequestMiddleware<object, MetadataBearer> = (next) =>
   };
 };
 
+/** Node's getaddrinfo errors includes hostname, so requiring it limits retries to real DNS lookup failures */
+function isEaiAgain(error: unknown): boolean {
+  return (
+    error != null && typeof error === 'object' && 'hostname' in error && 'code' in error && error.code === 'EAI_AGAIN'
+  );
+}
+
 /**
  * AWS SDK middleware logic to try 3 times if receiving an EAI_AGAIN error
  */
 export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMiddleware<object, MetadataBearer> {
   const eaiAgain: BuildMiddleware<object, MetadataBearer> = (next) => {
     const maxTries = 3;
-    let totalDelay = 0;
     return async (args) => {
-      for (let attempt = 1; attempt <= maxTries; attempt++) {
-        try {
-          return await next(args);
-        } catch (error) {
-          const isEaiAgainError =
-            error != null &&
-            typeof error === 'object' &&
-            'code' in error &&
-            error.code === 'EAI_AGAIN' &&
-            'hostname' in error;
-
-          if (isEaiAgainError && attempt < maxTries) {
-            const delayMs = timeout(attempt);
-            totalDelay += delayMs;
-            logger.warn({ host: error.hostname, attempt, delay: delayMs, totalDelay }, 'eai_again:retry');
-            await delay(delayMs);
-          } else if (isEaiAgainError && attempt === maxTries) {
-            throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
-          } else {
-            throw error;
-          }
-        }
+      try {
+        return await retryOnError(maxTries, timeout, () => next(args), isEaiAgain, {
+          host: hasHostName(args.request) ? args.request.hostname : undefined,
+        });
+      } catch (error) {
+        if (isEaiAgain(error)) throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
+        throw error;
       }
-      throw new Error('Unreachable');
     };
   };
   return eaiAgain;
