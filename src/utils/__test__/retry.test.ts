@@ -29,7 +29,7 @@ describe('retryOnError', () => {
     await assert.rejects(
       retryOnError(
         3,
-        () => 10,
+        () => 10_000,
         async () => {
           attempts += 1;
           throw new Error(`failure ${attempts}`);
@@ -40,7 +40,7 @@ describe('retryOnError', () => {
     );
 
     assert.equal(attempts, 3);
-    assert.ok(performance.now() - start >= 35, 'waits about 20ms after each of the first two attempts');
+    assert.ok(performance.now() - start >= 20_000, 'waits about 10 seconds after each of the first two attempts');
   });
 
   it('should stop retrying when shouldRetry returns false', async () => {
