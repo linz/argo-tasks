@@ -134,7 +134,7 @@ export const commandTileIndexValidate = command({
       type: UrlFolderList,
       displayName: 'location',
       description:
-        'Location of the source files. Accepts multiple source paths. A file indirectly listed multiple times belongs to its most specific location',
+        'Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap.',
     }),
     concurrency: option({
       type: number,
@@ -269,13 +269,8 @@ export const TiffLoader = {
   async load(locations: URL[], q: ConcurrentQueue, args?: FileFilter): Promise<Tiff[]> {
     const filterArgs = { ...args, sizeMin: 0 };
     const hosts = new Set<string>();
-    /**
-     * listingOrder maps each file's url.href to
-     * the index of its most specific `location`,
-     * its `position` across all locations,
-     * and that location's URL length (`specificity`)
-     */
-    const listingOrder = new Map<string, { location: number; position: number; specificity: number }>();
+    /** File href to its listing position and most specific location's href length */
+    const listingOrder = new Map<string, { position: number; specificity: number }>();
 
     const totalTime = performance.now();
     let progressTime = totalTime;
@@ -289,17 +284,13 @@ export const TiffLoader = {
     const output: Tiff[] = [];
     let lastError: unknown = null;
 
-    for (const [locationIndex, loc] of locations.entries()) {
+    for (const loc of locations) {
       for await (const file of asyncFilter(fsa.details(loc), filterArgs)) {
         if (!isTiff(file.url)) continue;
         const existing = listingOrder.get(file.url.href);
-        // Both locations contain the file, so sort by the longer (more specific) one
-        if (existing == null || loc.href.length > existing.specificity) {
-          listingOrder.set(file.url.href, {
-            location: locationIndex,
-            position: tiffListed,
-            specificity: loc.href.length,
-          });
+        // Deepest location wins, the later one on ties
+        if (existing == null || loc.href.length >= existing.specificity) {
+          listingOrder.set(file.url.href, { position: tiffListed, specificity: loc.href.length });
         }
         tiffListed++;
         if (existing != null) continue;
@@ -338,6 +329,9 @@ export const TiffLoader = {
       }
     }
 
+    const duplicates = tiffListed - listingOrder.size;
+    if (duplicates > 0) logger.warn({ duplicates }, 'Tiff:Load:Duplicates');
+
     await q.join();
 
     if (failedCount > 0) {
@@ -347,12 +341,12 @@ export const TiffLoader = {
 
     if (output.length === 0) throw new Error('No Files found');
 
-    // Restore order (location then listing) because file listing runs concurrently
+    // Restore listing order, as tiffs load concurrently
     output.sort((a, b) => {
       const orderA = listingOrder.get(a.source.url.href);
       const orderB = listingOrder.get(b.source.url.href);
-      if (orderA == null || orderB == null) return 0;
-      return orderA.location - orderB.location || orderA.position - orderB.position;
+      if (orderA == null || orderB == null) throw new Error('Tiff missing from listing');
+      return orderA.position - orderB.position;
     });
 
     logger.info({ count: output.length, duration: performance.now() - totalTime }, 'Tiffs:Loaded');

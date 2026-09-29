@@ -281,6 +281,10 @@ describe('validate', () => {
       folders: ['a/b/c/', 'a/b/', 'a/'],
       expected: ['a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/b/b.tiff', 'a/b/x.tiff', 'a/a.tiff', 'a/x.tiff'],
     },
+    {
+      folders: ['a/b/', 'a/', 'a/b/'],
+      expected: ['a/a.tiff', 'a/x.tiff', 'a/b/b.tiff', 'a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/b/x.tiff'],
+    },
   ];
   for (const { folders, expected } of cases) {
     it(`should load ${folders.join(';')} with each file once, in order of its most specific folder`, async (t) => {
