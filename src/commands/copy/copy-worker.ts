@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks';
-import { PassThrough } from 'node:stream';
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parentPort, threadId } from 'node:worker_threads';
 import { constants, createZstdCompress, createZstdDecompress } from 'node:zlib';
@@ -18,6 +18,9 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
+const MaxAttempts = 3;
+const RetryDelay = (): number => 10_000;
+
 interface CopyEntryContext {
   args: CopyContractArgs;
   manifestEntry: NonNullable<CopyContractArgs['manifest'][number]>;
@@ -59,62 +62,44 @@ async function copyEntryAttempt({
     const hashCompressed = new HashTransform('sha256');
 
     const rawSourceStream = fsa.readStream(sourceLocation);
-    let sourceStream = rawSourceStream;
-    let sourceStreamPromise: Promise<void>;
 
     const shouldCompress = fileOperation === FileOperation.Compress;
     const shouldDecompress = fileOperation === FileOperation.Decompress;
     const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
 
+    const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
+    // pipeline() passes its final stage an AsyncIterable, but fsa.write expects a Readable
+    const writeTarget = (stream: AsyncIterable<Buffer>): Promise<void> =>
+      fsa.write(target.url, Readable.from(stream), fileMetadata);
+
+    let pipelinePromise: Promise<void>;
     switch (fileOperation) {
-      case FileOperation.Copy: {
-        const copySourceStream = new PassThrough();
-        sourceStream = copySourceStream;
-        sourceStreamPromise = pipeline(rawSourceStream, hashOriginal, copySourceStream);
+      case FileOperation.Copy:
+        pipelinePromise = pipeline(rawSourceStream, hashOriginal, writeTarget);
         break;
-      }
       case FileOperation.Compress: {
         const zstdCompress = createZstdCompress({
           params: {
             [constants.ZSTD_c_compressionLevel]: 17,
           },
         });
-        const compressedSourceStream = new PassThrough();
-        sourceStream = compressedSourceStream;
-        sourceStreamPromise = pipeline(
-          rawSourceStream,
-          hashOriginal,
-          zstdCompress,
-          hashCompressed,
-          compressedSourceStream,
-        );
+        pipelinePromise = pipeline(rawSourceStream, hashOriginal, zstdCompress, hashCompressed, writeTarget);
         break;
       }
       case FileOperation.Decompress: {
         const zstdDecompress = createZstdDecompress();
-        const decompressedSourceStream = new PassThrough();
-        sourceStream = decompressedSourceStream;
-        sourceStreamPromise = pipeline(
-          rawSourceStream,
-          hashCompressed,
-          zstdDecompress,
-          hashOriginal,
-          decompressedSourceStream,
-        );
+        pipelinePromise = pipeline(rawSourceStream, hashCompressed, zstdDecompress, hashOriginal, writeTarget);
         break;
       }
       default:
         throw new Error(`Unknown file operation [${String(fileOperation)}] for source: ${manifestEntry.source}`);
     }
 
-    const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
-
     logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Write');
     let expectedSize: number | undefined;
     let expectedHash: string | undefined;
     try {
-      await fsa.write(target.url, sourceStream, fileMetadata);
-      await sourceStreamPromise;
+      await pipelinePromise;
       logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
       expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : sourceSize;
       expectedHash = hashOriginal.multihash;
@@ -124,9 +109,8 @@ async function copyEntryAttempt({
         throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`);
       }
     } catch (error) {
-      if (isZstdError(error)) {
-        await fsa.delete(target.url).catch(() => undefined);
-      }
+      // A failed local write can leave a partial file the next attempt treats as an existing target (S3 leaves none)
+      if (isZstdError(error) && target.url.protocol === 'file:') await fsa.delete(target.url).catch(() => undefined);
       throw error;
     }
 
@@ -206,20 +190,17 @@ export const worker = new WorkerRpc<CopyContract>({
           return;
         }
         const sourceSize = source.size;
-        await retryOnError(
-          () =>
-            copyEntryAttempt({
-              args,
-              manifestEntry,
-              source,
-              sourceLocation,
-              sourceSize,
-              targetLocation,
-              startTime,
-              stats,
-            }),
-          isZstdError,
-        );
+        const ctx: CopyEntryContext = {
+          args,
+          manifestEntry,
+          source,
+          sourceLocation,
+          sourceSize,
+          targetLocation,
+          startTime,
+          stats,
+        };
+        await retryOnError(MaxAttempts, RetryDelay, () => copyEntryAttempt(ctx), isZstdError);
       });
     }
     await Q.join().catch((err: unknown) => {
