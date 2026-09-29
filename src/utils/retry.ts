@@ -3,20 +3,21 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { logger } from '../log.ts';
 
 export async function retryOnError<T>(
-  maxTries: number,
-  delayMs: (attempt: number) => number,
-  operation: () => Promise<T>,
-  shouldRetry: (error: unknown) => boolean,
-  context?: Record<string, unknown>,
+  attempts: number,
+  delayMs: number | ((attempt: number) => number),
+  operation: (attempt: number) => Promise<T>,
+  shouldRetry: (error: unknown, attempt: number) => boolean,
+  logContext: Record<string, unknown> = {},
 ): Promise<T> {
-  for (let i = 1; i <= maxTries; i++) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      return await operation();
+      return await operation(attempt);
     } catch (error) {
-      if (i === maxTries || !shouldRetry(error)) throw error;
-      const delayTime = delayMs(i);
-      logger.info({ ...context, err: error, attempt: i, retryDelayMs: delayTime }, 'Retry:Operation:Failed');
-      await delay(delayTime);
+      if (attempt === attempts || !shouldRetry(error, attempt)) throw error;
+      const retryDelayMs = typeof delayMs === 'number' ? delayMs : delayMs(attempt);
+      logger.warn({ ...logContext, err: error, attempt, retryDelayMs }, 'Retry:BeforeDelay');
+      await delay(retryDelayMs);
+      logger.info({ ...logContext, attempt, retryDelayMs }, 'Retry:AfterDelay');
     }
   }
 

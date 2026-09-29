@@ -18,12 +18,12 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
-const MaxAttempts = 3;
-const RetryDelay = (): number => 10_000;
+/** Mutable so tests can shorten the delay */
+export const CopyRetry = { attempts: 3, delayMs: 10_000 };
 
 interface CopyEntryContext {
   args: CopyContractArgs;
-  manifestEntry: NonNullable<CopyContractArgs['manifest'][number]>;
+  manifestEntry: CopyContractArgs['manifest'][number];
   source: FileInfo;
   sourceLocation: URL;
   sourceSize: number;
@@ -96,22 +96,21 @@ async function copyEntryAttempt({
     }
 
     logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Write');
-    let expectedSize: number | undefined;
-    let expectedHash: string | undefined;
     try {
       await pipelinePromise;
-      logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
-      expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : sourceSize;
-      expectedHash = hashOriginal.multihash;
-      targetVerified = await verifyTargetFile(target.url, expectedSize, expectedHash);
-      if (!targetVerified) {
-        await fsa.delete(target.url);
-        throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`);
-      }
     } catch (error) {
       // A failed local write can leave a partial file the next attempt treats as an existing target (S3 leaves none)
       if (isZstdError(error) && target.url.protocol === 'file:') await fsa.delete(target.url).catch(() => undefined);
       throw error;
+    }
+    logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
+    const expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : sourceSize;
+    const expectedHash = hashOriginal.multihash;
+    targetVerified = await verifyTargetFile(target.url, expectedSize, expectedHash);
+    if (!targetVerified) {
+      // Cleanup the failed copy so it can be retried
+      await fsa.delete(target.url);
+      throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`);
     }
 
     statsUpdaters[fileOperation](stats, sourceSize, expectedSize);
@@ -141,8 +140,6 @@ async function copyEntryAttempt({
       'File:DeleteSource:Done',
     );
   }
-
-  return undefined;
 }
 
 export function isZstdError(error: unknown): boolean {
@@ -155,6 +152,7 @@ export function isZstdError(error: unknown): boolean {
   return code === 'ZSTD_error_prefix_unknown' || message.includes('Unknown frame descriptor');
 }
 
+/** Current log id */
 let currentId: string | null = null;
 
 export const worker = new WorkerRpc<CopyContract>({
@@ -200,10 +198,13 @@ export const worker = new WorkerRpc<CopyContract>({
           startTime,
           stats,
         };
-        await retryOnError(MaxAttempts, RetryDelay, () => copyEntryAttempt(ctx), isZstdError);
+        await retryOnError(CopyRetry.attempts, CopyRetry.delayMs, () => copyEntryAttempt(ctx), isZstdError, {
+          path: manifestEntry.source,
+        });
       });
     }
     await Q.join().catch((err: unknown) => {
+      // Composite errors get swallowed when rethrown through worker threads
       logger.fatal({ err }, 'File:Copy:Failed');
       throw err;
     });
