@@ -1,3 +1,5 @@
+import { setTimeout as delay } from 'node:timers/promises';
+
 import { S3Client } from '@aws-sdk/client-s3';
 import { fsa, FsHttp } from '@chunkd/fs';
 import type { AwsCredentialConfig } from '@chunkd/fs-aws';
@@ -6,7 +8,6 @@ import type { BuildMiddleware, FinalizeRequestMiddleware, MetadataBearer } from 
 
 import { logger } from './log.ts';
 import { protocolAwareString } from './utils/filelist.ts';
-import { retryOnError } from './utils/retry.ts';
 
 /** Check to see if hostname exists inside of a object */
 function hasHostName(x: unknown): x is { hostname: string } {
@@ -39,37 +40,30 @@ export function eaiAgainBuilder(timeout: (attempt: number) => number): BuildMidd
     const maxTries = 3;
     let totalDelay = 0;
     return async (args) => {
-      try {
-        return await retryOnError(
-          maxTries,
-          timeout,
-          async (attempt) => {
-            try {
-              return await next(args);
-            } catch (error) {
-              if (
-                attempt < maxTries &&
-                error != null &&
-                typeof error === 'object' &&
-                'code' in error &&
-                error.code === 'EAI_AGAIN' &&
-                'hostname' in error
-              ) {
-                const delay = timeout(attempt);
-                totalDelay += delay;
-                logger.warn({ host: error.hostname, attempt, delay, totalDelay }, `eai_again:retry`);
-              }
-              throw error;
-            }
-          },
-          (error) => error != null && typeof error === 'object' && 'code' in error && error.code === 'EAI_AGAIN',
-        );
-      } catch (error) {
-        if (error != null && typeof error === 'object' && 'code' in error && error.code === 'EAI_AGAIN') {
-          throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
+      for (let attempt = 1; attempt <= maxTries; attempt++) {
+        try {
+          return await next(args);
+        } catch (error) {
+          const isEaiAgainError =
+            error != null &&
+            typeof error === 'object' &&
+            'code' in error &&
+            error.code === 'EAI_AGAIN' &&
+            'hostname' in error;
+
+          if (isEaiAgainError && attempt < maxTries) {
+            const delayMs = timeout(attempt);
+            totalDelay += delayMs;
+            logger.warn({ host: error.hostname, attempt, delay: delayMs, totalDelay }, 'eai_again:retry');
+            await delay(delayMs);
+          } else if (isEaiAgainError && attempt === maxTries) {
+            throw new Error(`EAI_AGAIN maximum tries (${maxTries}) exceeded`);
+          } else {
+            throw error;
+          }
         }
-        throw error;
       }
+      throw new Error('Unreachable');
     };
   };
   return eaiAgain;

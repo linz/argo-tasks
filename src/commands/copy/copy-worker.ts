@@ -18,8 +18,6 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
-const RetryDelay = 10_000;
-
 interface CopyEntryContext {
   args: CopyContractArgs;
   manifestEntry: NonNullable<CopyContractArgs['manifest'][number]>;
@@ -115,13 +113,13 @@ async function copyEntryAttempt({
     let expectedSize: number | undefined;
     let expectedHash: string | undefined;
     try {
-      await Promise.all([fsa.write(target.url, sourceStream, fileMetadata), sourceStreamPromise]);
+      await fsa.write(target.url, sourceStream, fileMetadata);
+      await sourceStreamPromise;
       logger.info({ path: manifestEntry.source, size: sourceSize }, 'File:Copy:Verify');
       expectedSize = shouldDecompress ? hashOriginal.size : shouldCompress ? hashCompressed.size : sourceSize;
       expectedHash = hashOriginal.multihash;
       targetVerified = await verifyTargetFile(target.url, expectedSize, expectedHash);
       if (!targetVerified) {
-        // Cleanup the failed copy so it can be retried
         await fsa.delete(target.url);
         throw new Error(`Failed to copy source:${manifestEntry.source} target:${protocolAwareString(target.url)}`);
       }
@@ -163,33 +161,6 @@ async function copyEntryAttempt({
   return undefined;
 }
 
-async function copyEntry(ctx: CopyEntryContext): Promise<void> {
-  await retryOnError(
-    3,
-    () => RetryDelay,
-    (attempt) => {
-      if (attempt > 1) {
-        logger.info(
-          { path: ctx.manifestEntry.source, attempt: attempt - 1, retryDelayMs: RetryDelay },
-          'File:Copy:Retry:AfterDelay',
-        );
-      }
-
-      return copyEntryAttempt(ctx).catch(async (error: unknown) => {
-        if (attempt < 3 && isZstdError(error)) {
-          logger.warn(
-            { err: error, path: ctx.manifestEntry.source, attempt, retryDelayMs: RetryDelay },
-            'File:Copy:Retry:BeforeDelay',
-          );
-        }
-
-        throw error;
-      });
-    },
-    (error: unknown) => isZstdError(error),
-  );
-}
-
 export function isZstdError(error: unknown): boolean {
   if (error == null || typeof error !== 'object') return false;
 
@@ -200,7 +171,6 @@ export function isZstdError(error: unknown): boolean {
   return code === 'ZSTD_error_prefix_unknown' || message.includes('Unknown frame descriptor');
 }
 
-/** Current log id */
 let currentId: string | null = null;
 
 export const worker = new WorkerRpc<CopyContract>({
@@ -236,20 +206,23 @@ export const worker = new WorkerRpc<CopyContract>({
           return;
         }
         const sourceSize = source.size;
-        await copyEntry({
-          args,
-          manifestEntry,
-          source,
-          sourceLocation,
-          sourceSize,
-          targetLocation,
-          startTime,
-          stats,
-        });
+        await retryOnError(
+          () =>
+            copyEntryAttempt({
+              args,
+              manifestEntry,
+              source,
+              sourceLocation,
+              sourceSize,
+              targetLocation,
+              startTime,
+              stats,
+            }),
+          isZstdError,
+        );
       });
     }
     await Q.join().catch((err: unknown) => {
-      // Composite errors get swallowed when rethrown through worker threads
       logger.fatal({ err }, 'File:Copy:Failed');
       throw err;
     });

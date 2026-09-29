@@ -8,8 +8,6 @@ describe('retryOnError', () => {
     let attempts = 0;
 
     const result = await retryOnError(
-      3,
-      () => 0,
       async () => {
         attempts += 1;
         if (attempts < 3) throw new Error('temporary failure');
@@ -27,8 +25,6 @@ describe('retryOnError', () => {
 
     await assert.rejects(
       retryOnError(
-        3,
-        () => 0,
         async () => {
           attempts += 1;
           throw new Error('permanent failure');

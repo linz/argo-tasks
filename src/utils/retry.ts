@@ -1,17 +1,18 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
+import { logger } from '../log.ts';
+
 export async function retryOnError<T>(
-  attempts: number,
-  delayMs: (attempt: number) => number,
-  operation: (attempt: number) => Promise<T>,
-  shouldRetry: (error: unknown, attempt: number) => boolean,
+  operation: () => Promise<T>,
+  shouldRetry: (error: unknown) => boolean,
 ): Promise<T> {
-  for (let attempt = 1; attempt <= attempts; attempt++) {
+  for (let i = 1; i <= 3; i++) {
     try {
-      return await operation(attempt);
+      return await operation();
     } catch (error) {
-      if (attempt === attempts || !shouldRetry(error, attempt)) throw error;
-      await delay(delayMs(attempt));
+      if (i === 3 || !shouldRetry(error)) throw error;
+      logger.info({ err: error, attempt: i, retryDelayMs: 10_000 }, 'Retry:Operation:Failed');
+      await delay(10_000);
     }
   }
 
