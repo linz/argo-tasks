@@ -18,8 +18,6 @@ import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
-const MaxAttempts = 3;
-const RetryDelay = (): number => 10_000;
 
 /** Mutable so tests can shorten the delay */
 export const CopyRetry = { attempts: 3, delayMs: 10_000 };
@@ -202,9 +200,15 @@ export const worker = new WorkerRpc<CopyContract>({
           startTime,
           stats,
         };
-        await retryOnError(MaxAttempts, RetryDelay, () => copyEntryAttempt(ctx), isZstdError, {
-          path: manifestEntry.source,
-        });
+        await retryOnError(
+          CopyRetry.attempts,
+          () => CopyRetry.delayMs,
+          () => copyEntryAttempt(ctx),
+          isZstdError,
+          {
+            path: manifestEntry.source,
+          },
+        );
       });
     }
     await Q.join().catch((err: unknown) => {

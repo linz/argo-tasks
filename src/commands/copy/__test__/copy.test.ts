@@ -43,7 +43,7 @@ describe('copyFiles', () => {
     t.after(() => {
       CopyRetry.delayMs = delayMs;
     });
-    const warn = t.mock.method(logger, 'warn');
+    const info = t.mock.method(logger, 'info');
     const source = fsa.toUrl(`/tmp/copy-retry-${process.pid}.tif.zst`);
     await fsa.write(source, Buffer.from('not a zstd frame'));
     t.after(() => fsa.delete(source));
@@ -56,7 +56,7 @@ describe('copyFiles', () => {
       }),
       { code: 'ZSTD_error_prefix_unknown' },
     );
-    const retries = warn.mock.calls.filter((call) => call.arguments[1] === 'Retry:BeforeDelay');
+    const retries = info.mock.calls.filter((call) => call.arguments[1] === 'Retry:Operation:Failed');
     assert.equal(retries.length, CopyRetry.attempts - 1);
   });
 
