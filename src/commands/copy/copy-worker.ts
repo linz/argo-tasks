@@ -19,7 +19,6 @@ import { FileOperation } from './copy-rpc.ts';
 
 const Q = new ConcurrentQueue(10);
 
-/** Mutable so tests can shorten the delay */
 export const CopyRetry = { attempts: 3, delayMs: 10_000 };
 interface CopyEntryContext {
   args: CopyContractArgs;
