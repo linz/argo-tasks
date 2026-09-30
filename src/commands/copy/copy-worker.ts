@@ -21,6 +21,8 @@ const Q = new ConcurrentQueue(10);
 const MaxAttempts = 3;
 const RetryDelay = (): number => 10_000;
 
+/** Mutable so tests can shorten the delay */
+export const CopyRetry = { attempts: 3, delayMs: 10_000 };
 interface CopyEntryContext {
   args: CopyContractArgs;
   manifestEntry: NonNullable<CopyContractArgs['manifest'][number]>;
@@ -200,7 +202,8 @@ export const worker = new WorkerRpc<CopyContract>({
           startTime,
           stats,
         };
-        await retryOnError(MaxAttempts, RetryDelay, () => copyEntryAttempt(ctx), isZstdError);
+        await retryOnError(MaxAttempts, RetryDelay, () => copyEntryAttempt(ctx), isZstdError,
+        { path: manifestEntry.source,});
       });
     }
     await Q.join().catch((err: unknown) => {
