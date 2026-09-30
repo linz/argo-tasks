@@ -133,7 +133,8 @@ export const commandTileIndexValidate = command({
     location: restPositionals({
       type: UrlFolderList,
       displayName: 'location',
-      description: 'Location of the source files. Accepts multiple source paths',
+      description:
+        'Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap.',
     }),
     concurrency: option({
       type: number,
@@ -259,6 +260,8 @@ export const TiffLoader = {
   /**
    * Concurrently load a collection of TIFF files in the locations provided.
    *
+   * Tiffs are ordered by location, then listing. A file listed by overlapping locations is loaded once and belongs to the most specific one.
+   *
    * @param locations list of locations to find tiffs in.
    * @param args filter the tiffs
    * @returns Initialized tiff
@@ -266,12 +269,16 @@ export const TiffLoader = {
   async load(locations: URL[], q: ConcurrentQueue, args?: FileFilter): Promise<Tiff[]> {
     const filterArgs = { ...args, sizeMin: 0 };
     const hosts = new Set<string>();
+    /** File href to its listing position and most specific location's href length */
+    const listingOrder = new Map<string, { position: number; specificity: number }>();
 
     const totalTime = performance.now();
     let progressTime = totalTime;
 
     /** Number of tiff files processed */
     let tiffLoaded = 0;
+    /** Number of tiff files listed */
+    let tiffListed = 0;
     /** Number of tiffs that filed to load */
     let failedCount = 0;
     const output: Tiff[] = [];
@@ -280,6 +287,13 @@ export const TiffLoader = {
     for (const loc of locations) {
       for await (const file of asyncFilter(fsa.details(loc), filterArgs)) {
         if (!isTiff(file.url)) continue;
+        const existing = listingOrder.get(file.url.href);
+        // Deepest location wins, the later one on ties
+        if (existing == null || loc.href.length >= existing.specificity) {
+          listingOrder.set(file.url.href, { position: tiffListed, specificity: loc.href.length });
+        }
+        tiffListed++;
+        if (existing != null) continue;
         // ensure credentials have been loaded
         if (!hosts.has(file.url.hostname)) {
           await fsa.head(file.url);
@@ -315,6 +329,9 @@ export const TiffLoader = {
       }
     }
 
+    const duplicates = tiffListed - listingOrder.size;
+    if (duplicates > 0) logger.warn({ duplicates }, 'Tiff:Load:Duplicates');
+
     await q.join();
 
     if (failedCount > 0) {
@@ -323,6 +340,14 @@ export const TiffLoader = {
     }
 
     if (output.length === 0) throw new Error('No Files found');
+
+    // Restore listing order, as tiffs load concurrently
+    output.sort((a, b) => {
+      const orderA = listingOrder.get(a.source.url.href);
+      const orderB = listingOrder.get(b.source.url.href);
+      if (orderA == null || orderB == null) throw new Error('Tiff missing from listing');
+      return orderA.position - orderB.position;
+    });
 
     logger.info({ count: output.length, duration: performance.now() - totalTime }, 'Tiffs:Loaded');
     return output;

@@ -3,11 +3,14 @@ import { before, beforeEach, describe, it } from 'node:test';
 
 import { Projection } from '@basemaps/geo';
 import { fsa, FsMemory } from '@chunkd/fs';
+import type { Source } from '@cogeotiff/core';
+import { Tiff } from '@cogeotiff/core';
 import type { BBox } from '@linzjs/geojson';
 import { pathToFileURL } from 'url';
 
 import { logger } from '../../../log.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
+import { ConcurrentQueue } from '../../../utils/concurrent.queue.ts';
 import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { ChathamMapSheet, MapSheet } from '../../../utils/mapsheet.ts';
@@ -249,6 +252,90 @@ describe('validate', () => {
     });
     assert.equal(stub.mock.callCount(), 1);
   });
+
+  const root = 'memory://bucket/';
+  // In S3 listing order, each folder has a unique file sorting before its sub-folders and an x.tiff sorting after them
+  const files = ['a/a.tiff', 'a/b/b.tiff', 'a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/b/x.tiff', 'a/x.tiff'];
+  const cases = [
+    {
+      folders: ['a/', 'a/b/', 'a/b/c/'],
+      expected: ['a/a.tiff', 'a/x.tiff', 'a/b/b.tiff', 'a/b/x.tiff', 'a/b/c/c.tiff', 'a/b/c/x.tiff'],
+    },
+    {
+      folders: ['a/', 'a/b/c/', 'a/b/'],
+      expected: ['a/a.tiff', 'a/x.tiff', 'a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/b/b.tiff', 'a/b/x.tiff'],
+    },
+    {
+      folders: ['a/b/', 'a/', 'a/b/c/'],
+      expected: ['a/b/b.tiff', 'a/b/x.tiff', 'a/a.tiff', 'a/x.tiff', 'a/b/c/c.tiff', 'a/b/c/x.tiff'],
+    },
+    {
+      folders: ['a/b/', 'a/b/c/', 'a/'],
+      expected: ['a/b/b.tiff', 'a/b/x.tiff', 'a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/a.tiff', 'a/x.tiff'],
+    },
+    {
+      folders: ['a/b/c/', 'a/', 'a/b/'],
+      expected: ['a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/a.tiff', 'a/x.tiff', 'a/b/b.tiff', 'a/b/x.tiff'],
+    },
+    {
+      folders: ['a/b/c/', 'a/b/', 'a/'],
+      expected: ['a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/b/b.tiff', 'a/b/x.tiff', 'a/a.tiff', 'a/x.tiff'],
+    },
+    {
+      folders: ['a/b/', 'a/', 'a/b/'],
+      expected: ['a/a.tiff', 'a/x.tiff', 'a/b/b.tiff', 'a/b/c/c.tiff', 'a/b/c/x.tiff', 'a/b/x.tiff'],
+    },
+  ];
+  for (const { folders, expected } of cases) {
+    it(`should load ${folders.join(';')} with each file once, in order of its most specific folder`, async (t) => {
+      for (const file of files) await fsa.write(fsa.toUrl(root + file), Buffer.alloc(0));
+      // Stub loading so files earlier in the listing finish last
+      t.mock.method(Tiff, 'create', async (source: Source) => {
+        const index = files.indexOf(source.url.href.replace(root, ''));
+        await new Promise((r) => setTimeout(r, (files.length - index) * 5));
+        return { source } as Tiff;
+      });
+
+      const tiffs = await TiffLoader.load(
+        folders.map((folder) => fsa.toUrl(root + folder)),
+        new ConcurrentQueue(files.length),
+      );
+
+      assert.deepEqual(
+        tiffs.map((tiff) => tiff.source.url.href.replace(root, '')),
+        expected,
+      );
+    });
+  }
+
+  for (const { folders, expected } of [
+    {
+      folders: ['delivery/', 'delivery/add/'],
+      expected: ['delivery/BG35_1000_4829.tiff', 'delivery/add/BG35_1000_4829.tiff'],
+    },
+    {
+      folders: ['delivery/add/', 'delivery/'],
+      expected: ['delivery/add/BG35_1000_4829.tiff', 'delivery/BG35_1000_4829.tiff'],
+    },
+  ]) {
+    it(`should write ${folders.join(';')} inputs to file-list.json once each, in order of their most specific folder`, async () => {
+      // Both orders list the same files, so only the location order decides the file-list.json inputs
+      const tiffBytes = await fsa.read(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
+      for (const file of ['delivery/BG35_1000_4829.tiff', 'delivery/add/BG35_1000_4829.tiff']) {
+        await fsa.write(fsa.toUrl(root + file), tiffBytes);
+      }
+
+      await commandTileIndexValidate.handler({
+        ...baseArguments,
+        location: [folders.map((folder) => fsa.toUrl(root + folder))],
+      });
+
+      const fileList: unknown = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
+      assert.deepEqual(fileList, [
+        { output: 'BG35_1000_4829', input: expected.map((file) => root + file), includeDerived: false },
+      ]);
+    });
+  }
 
   it('should fail with 0 byte tiffs', async () => {
     await fsa.write(fsa.toUrl('file:///tmp/empty/foo.tiff'), Buffer.from(''));
