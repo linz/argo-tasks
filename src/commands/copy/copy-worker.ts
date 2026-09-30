@@ -202,8 +202,9 @@ export const worker = new WorkerRpc<CopyContract>({
           startTime,
           stats,
         };
-        await retryOnError(MaxAttempts, RetryDelay, () => copyEntryAttempt(ctx), isZstdError,
-        { path: manifestEntry.source,});
+        await retryOnError(MaxAttempts, RetryDelay, () => copyEntryAttempt(ctx), isZstdError, {
+          path: manifestEntry.source,
+        });
       });
     }
     await Q.join().catch((err: unknown) => {

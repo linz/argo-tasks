@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
+
 import { logger } from '../../../log.ts';
 import { MinSizeForCompression } from '../copy-helpers.ts';
 import type { CopyStats } from '../copy-rpc.ts';
@@ -36,7 +37,7 @@ describe('copyFiles', () => {
     assert.equal(isZstdError(null), false);
   });
 
-    it('should retry a corrupt zstd file before failing with the zstd error', async (t) => {
+  it('should retry a corrupt zstd file before failing with the zstd error', async (t) => {
     const { delayMs } = CopyRetry;
     CopyRetry.delayMs = 1;
     t.after(() => {
