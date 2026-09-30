@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.1](https://github.com/linz/argo-tasks/compare/v7.0.0...v7.0.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* ensure unique files and correct order TDE-2090 ([#1360](https://github.com/linz/argo-tasks/issues/1360)) ([49aeb42](https://github.com/linz/argo-tasks/commit/49aeb42282203f9a161e2785227c0355249a81ad))
+
 ## [7.0.0](https://github.com/linz/argo-tasks/compare/v6.1.0...v7.0.0) (2026-09-14)
 
 
