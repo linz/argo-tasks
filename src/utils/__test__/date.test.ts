@@ -11,4 +11,14 @@ describe('getPacificAucklandYearMonthDay', () => {
     assert.equal(getPacificAucklandYearMonthDay('2012-06-15T11:59:59Z'), '2012-06-15');
     assert.equal(getPacificAucklandYearMonthDay('2012-06-15T12:00:00Z'), '2012-06-16');
   });
+
+  it('should return undefined for missing input', () => {
+    assert.equal(getPacificAucklandYearMonthDay(null), undefined);
+    assert.equal(getPacificAucklandYearMonthDay(undefined), undefined);
+  });
+
+  it('should return undefined for an unparseable date string', () => {
+    assert.equal(getPacificAucklandYearMonthDay('not a date'), undefined);
+    assert.equal(getPacificAucklandYearMonthDay(''), undefined);
+  });
 });
