@@ -554,8 +554,7 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
 }
 
 function allowedBitsForPreset(preset: string): Set<number> | null {
-  if (preset === 'webp') return new Set([8, 16]);
-  if (preset === 'rgbnir_zstd') return new Set([8, 16, 32]);
+  if (preset === 'webp' || preset === 'rgbnir_zstd') return new Set([8, 16]);
   return null;
 }
 
