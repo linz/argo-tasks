@@ -442,6 +442,10 @@ describe('validatePreset', () => {
   it('should validate multiple tiffs for webp', async (t) => {
     await testValidatePresetTiffs(t, 'webp');
   });
+  it('should accept 16 bit tiffs for webp', async () => {
+    const test16bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
+    await assert.doesNotReject(validatePreset('webp', [test16bTiff, test16bTiff]));
+  });
   it('should validate multiple tiffs for rgbnir_zstd', async (t) => {
     await testValidatePresetTiffs(t, 'rgbnir_zstd');
   });
