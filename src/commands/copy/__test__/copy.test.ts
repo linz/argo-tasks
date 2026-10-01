@@ -3,9 +3,10 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
+import { logger } from '../../../log.ts';
 import { MinSizeForCompression } from '../copy-helpers.ts';
 import type { CopyStats } from '../copy-rpc.ts';
-import { worker } from '../copy-worker.ts';
+import { CopyRetry, isZstdError, worker } from '../copy-worker.ts';
 
 const defaultCopyArgs = {
   id: '1',
@@ -27,6 +28,36 @@ describe('copyFiles', () => {
 
   beforeEach(() => {
     memory.files.clear();
+  });
+
+  it('should detect zstd errors by code or message', () => {
+    assert.equal(isZstdError({ code: 'ZSTD_error_prefix_unknown' }), true);
+    assert.equal(isZstdError({ message: 'Unknown frame descriptor' }), true);
+    assert.equal(isZstdError({ code: 'OTHER_ERROR', message: 'Some other error' }), false);
+    assert.equal(isZstdError(null), false);
+  });
+
+  it('should retry a corrupt zstd file before failing with the zstd error', async (t) => {
+    const { delayMs } = CopyRetry;
+    CopyRetry.delayMs = 1;
+    t.after(() => {
+      CopyRetry.delayMs = delayMs;
+    });
+    const info = t.mock.method(logger, 'info');
+    const source = fsa.toUrl(`/tmp/copy-retry-${process.pid}.tif.zst`);
+    await fsa.write(source, Buffer.from('not a zstd frame'));
+    t.after(() => fsa.delete(source));
+
+    await assert.rejects(
+      worker.routes.copy({
+        ...defaultCopyArgs,
+        decompress: true,
+        manifest: [{ source: source.href, target: 'memory://target/corrupt.tif.zst' }],
+      }),
+      { code: 'ZSTD_error_prefix_unknown' },
+    );
+    const retries = info.mock.calls.filter((call) => call.arguments[1] === 'Retry:Operation:Failed');
+    assert.equal(retries.length, CopyRetry.attempts - 1);
   });
 
   it('should copy to the target location', async () => {

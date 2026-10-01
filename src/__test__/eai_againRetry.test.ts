@@ -51,4 +51,14 @@ describe('eai_againRetryMiddleware', () => {
       message: 'EAI_AGAIN maximum tries (3) exceeded',
     });
   });
+
+  it('should not retry EAI_AGAIN errors without a hostname', async () => {
+    const error = { code: 'EAI_AGAIN' };
+    const fakeNext: BuildHandler<object, MetadataBearer> = () => {
+      callCount += 1;
+      return Promise.reject(error);
+    };
+    await assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), (e) => e === error);
+    assert.equal(callCount, 1);
+  });
 });
