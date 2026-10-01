@@ -796,16 +796,6 @@ export function getTileName(x: number, y: number, gridSize: GridSize, mapSheet: 
   return `${sheetCode}_${gridSize}_${tileId}`;
 }
 
-export const BitSet8 = new Set([8]);
-/**
- * Validate if a TIFF contains only 8 bits bands.
- *
- * @param tiff
- */
-export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
-  await validateTiffSamples(tiff, BitSet8);
-}
-
 /**
  * Ensure the tiff contains only bands with the specified bit count (e.g. 8 bits for webp preset).
  *
