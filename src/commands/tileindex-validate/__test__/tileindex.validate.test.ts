@@ -26,7 +26,6 @@ import {
   isTiff,
   reprojectIfNeeded,
   TiffLoader,
-  validate8BitsTiff,
   validatePreset,
   validateTiffSamples,
 } from '../tileindex.validate.ts';
@@ -407,14 +406,14 @@ describe('GridSizeFromString', () => {
   });
 });
 
-describe('is8BitsTiff', () => {
+describe('validateTiffSamples', () => {
   it('should be a 8 bits TIFF', async () => {
     const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
-    await assert.doesNotReject(validate8BitsTiff(testTiff));
+    await assert.doesNotReject(validateTiffSamples(testTiff, new Set([8])));
   });
   it('should not be a 8 bits TIFF', async () => {
     const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
-    await assert.rejects(validate8BitsTiff(testTiff), {
+    await assert.rejects(validateTiffSamples(testTiff, new Set([8])), {
       name: 'Error',
       message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported bit depth: 16. Expected: 8`,
     });
