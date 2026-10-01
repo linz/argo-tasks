@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import type { Tiff } from '@cogeotiff/core';
-import { command, option, optional, string } from 'cmd-ts';
+import { command, number, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
@@ -10,9 +10,9 @@ import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
-import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
-import { loadFirstTiff } from '../generate-path/path.generate.ts';
-
+import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
+import type { PathMetadata } from '../generate-path/path.generate.ts';
+import { generatePath, loadFirstTiff } from '../generate-path/path.generate.ts';
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
   geographicDescription?: string;
@@ -20,7 +20,7 @@ export interface SlugMetadata {
   /** Optional survey ID if it exists, e.g. SN8066, commonly used with scanned historical imagery */
   surveyId?: string;
   date: string;
-  gsd: string;
+  gsd: number;
 }
 
 export const commandStacSetup = command({
@@ -57,7 +57,7 @@ export const commandStacSetup = command({
     }),
 
     gsd: option({
-      type: MeterAsString,
+      type: number,
       long: 'gsd',
       description: 'GSD of dataset, e.g. 0.3',
     }),
@@ -105,6 +105,12 @@ export const commandStacSetup = command({
       defaultValueIsSerializable: true,
       defaultValue: () => fsa.toUrl('file:///tmp/stac-setup/'),
     }),
+
+    targetBucketName: option({
+      type: string,
+      long: 'target-bucket-name',
+      description: 'Target bucket name, e.g. nz-imagery',
+    }),
   },
 
   async handler(args) {
@@ -144,7 +150,7 @@ export const commandStacSetup = command({
       if (args.startDate && args.startYear) throw new Error('--start-date and --start-year are mutually exclusive');
       if (args.endDate && args.endYear) throw new Error('--end-date and --end-year are mutually exclusive');
 
-      const metadata: SlugMetadata = {
+      const slugMetadata: SlugMetadata = {
         geospatialCategory: args.geospatialCategory as GeospatialDataCategory,
         region: args.region,
         surveyId: args.surveyId,
@@ -152,7 +158,22 @@ export const commandStacSetup = command({
         date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
       };
-      const slug = slugFromMetadata(metadata);
+
+      const slug = slugFromMetadata(slugMetadata);
+      const pathMetadata: PathMetadata = {
+        ...slugMetadata,
+        slug: slug,
+        targetBucketName: args.targetBucketName,
+        epsg: 2193, // TODO: Fix before merge, should read from first tiff
+      };
+
+      const newOdrUrl = generatePath(pathMetadata);
+      const collectionLocation = new URL('collection.json', newOdrUrl);
+      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
+      if (collection !== null)
+        throw new Error(
+          `Warning: No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`,
+        );
       const collectionId = ulid.ulid();
       await writeSetupFiles(slug, collectionId, args.output);
       logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
