@@ -35,11 +35,12 @@ describe('stac-setup', () => {
     surveyId: undefined,
     odrUrl: undefined,
     output: fsa.toUrl('memory:///tmp/stac-setup/'),
-    gsd: '1',
+    gsd: 1, // made a number
     dataType: 'uint8',
     region: 'gisborne',
     geographicDescription: 'Wairoa',
     geospatialCategory: 'dem',
+    targetBucketName: 'test-bucket',
   };
 
   it('should retrieve setup from collection', async () => {
@@ -48,7 +49,7 @@ describe('stac-setup', () => {
       odrUrl: collectionLocation,
       startYear: '2013',
       endYear: '2014',
-      gsd: '0.3',
+      gsd: 0.3,
       region: 'gisborne',
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
@@ -67,13 +68,15 @@ describe('stac-setup', () => {
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should retrieve setup from args', async () => {
+  it('should retrieve setup from args', async (t) => {
+    // Avoid checking real S3 during unit tests
+    t.mock.method(fsa, 'exists', async () => false);
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
       startYear: '2013',
       endYear: '2014',
-      gsd: '1',
+      gsd: 1,
       region: 'gisborne',
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
@@ -92,17 +95,21 @@ describe('stac-setup', () => {
     assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should not include the date in the slug', async () => {
+  it('should not include the date in the slug', async (t) => {
+    // Simulate no existing collection at the generated ODR path
+    t.mock.method(fsa, 'exists', async () => false);
+
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
       startYear: '',
       endYear: '',
-      gsd: '10',
+      gsd: 10,
       region: 'new-zealand',
       geographicDescription: '',
       geospatialCategory: 'dem',
     } as const;
+
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
@@ -115,12 +122,37 @@ describe('stac-setup', () => {
     assert.strictEqual(slug.toString(), 'new-zealand');
   });
 
-  it('should generate a slug with a survey id', async () => {
+  it('should throw an error when collection.json already exists', async (t) => {
+    // Simulate existing collection at the generated ODR path
+    t.mock.method(fsa, 'exists', async () => true);
+
     const baseArgs = {
       ...BaseArgs,
       startYear: '1982',
       endYear: '1983',
-      gsd: '0.375',
+      gsd: 0.375,
+      region: 'chatham-islands',
+      surveyId: 'SN8066',
+      geographicDescription: 'Chatham Islands',
+      geospatialCategory: 'scanned-aerial-photos',
+    } as const;
+
+    const ret = await commandStacSetup.handler(baseArgs).catch((e) => String(e));
+    assert.equal(
+      ret,
+      'Error: No ODR URL supplied but collection.json exists at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/2193/collection.json.',
+    );
+  });
+
+  it('should generate a slug with a survey id', async (t) => {
+    // Simulate no existing collection at the generated ODR path
+    t.mock.method(fsa, 'exists', async () => false);
+
+    const baseArgs = {
+      ...BaseArgs,
+      startYear: '1982',
+      endYear: '1983',
+      gsd: 0.375,
       region: 'chatham-islands',
       surveyId: 'SN8066',
       geographicDescription: 'Chatham Islands',
@@ -157,7 +189,7 @@ describe('stac-setup', () => {
       commandStacSetup.handler({
         ...BaseArgs,
         odrUrl: collectionLocation,
-        gsd: '1', // different to collection which is 0.3
+        gsd: 1, // different to collection which is 0.3
       }),
       { message: 'GSD at ODR URL [0.3] does not match new TIFF GSD [1]' },
     );
@@ -167,7 +199,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler({
       ...BaseArgs,
       odrUrl: collectionLocation,
-      gsd: '0.3',
+      gsd: 0.3,
       dataType: 'uint8',
     });
 
@@ -180,7 +212,7 @@ describe('stac-setup', () => {
       commandStacSetup.handler({
         ...BaseArgs,
         odrUrl: collectionLocation,
-        gsd: '0.3',
+        gsd: 0.3,
         dataType: 'uint16',
       }),
       { message: 'Data type at ODR URL [uint8] does not match new TIFF data type [uint16]' },
@@ -195,7 +227,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: 'Napier',
       region: 'hawkes-bay',
       date: '2017-2018',
-      gsd: '0.05',
+      gsd: 0.05,
     };
     assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m');
   });
@@ -206,7 +238,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: 'North Island Weather Event',
       region: 'hawkes-bay',
       date: '2023',
-      gsd: '0.25',
+      gsd: 0.25,
     };
     assert.equal(slugFromMetadata(metadata), 'north-island-weather-event_2023_0.25m');
   });
@@ -216,7 +248,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
-      gsd: '0.3',
+      gsd: 0.3,
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023_0.3m');
   });
@@ -227,7 +259,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
-      gsd: '10',
+      gsd: 10,
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
@@ -237,7 +269,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
-      gsd: '10',
+      gsd: 10,
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
@@ -247,7 +279,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
-      gsd: '1',
+      gsd: 1,
     };
     assert.throws(() => {
       slugFromMetadata(metadata);
@@ -260,7 +292,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
-      gsd: '1',
+      gsd: 1,
     };
     assert.throws(() => {
       slugFromMetadata(metadata);
@@ -273,7 +305,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: 'new-zealand',
       region: 'new-zealand',
       date: '',
-      gsd: '10',
+      gsd: 10,
     };
     assert.equal(slugFromMetadata(metadata), 'new-zealand');
   });
@@ -285,7 +317,7 @@ describe('slugFromMetadata', () => {
         surveyId: 'SN8066',
         region: 'auckland',
         geographicDescription: 'West-Coast',
-        gsd: '0.35',
+        gsd: 0.35,
         date: '1982',
       }),
       'west-coast_sn8066_1982_0.35m',
