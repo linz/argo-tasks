@@ -166,14 +166,15 @@ export const commandStacSetup = command({
         targetBucketName: args.targetBucketName,
         epsg: 2193, // TODO: Fix before merge, should read from first tiff
       };
-
+      // changed as it failed when trying to read a .json that doesn't exist
       const newOdrUrl = generatePath(pathMetadata);
       const collectionLocation = new URL('collection.json', newOdrUrl);
-      const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
-      if (collection !== null)
+
+      if (await fsa.exists(collectionLocation)) {
         throw new Error(
-          `Warning: No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`,
+          `No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`,
         );
+      }
       const collectionId = ulid.ulid();
       await writeSetupFiles(slug, collectionId, args.output);
       logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
