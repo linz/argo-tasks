@@ -554,8 +554,7 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
 }
 
 function allowedBitsForPreset(preset: string): Set<number> | null {
-  if (preset === 'webp') return new Set([8]);
-  if (preset === 'rgbnir_zstd') return new Set([8, 16, 32]);
+  if (preset === 'webp' || preset === 'rgbnir_zstd') return new Set([8, 16]);
   return null;
 }
 
@@ -794,16 +793,6 @@ export function getTileName(x: number, y: number, gridSize: GridSize, mapSheet: 
   const tileY = Math.round(Math.floor((maxY - y) / tileHeight + 1));
   const tileId = `${`${tileY}`.padStart(nbDigits, '0')}${`${tileX}`.padStart(nbDigits, '0')}`;
   return `${sheetCode}_${gridSize}_${tileId}`;
-}
-
-export const BitSet8 = new Set([8]);
-/**
- * Validate if a TIFF contains only 8 bits bands.
- *
- * @param tiff
- */
-export async function validate8BitsTiff(tiff: Tiff): Promise<void> {
-  await validateTiffSamples(tiff, BitSet8);
 }
 
 /**
