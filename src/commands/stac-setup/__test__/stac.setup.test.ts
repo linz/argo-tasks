@@ -41,6 +41,7 @@ describe('stac-setup', () => {
     geographicDescription: 'Wairoa',
     geospatialCategory: 'dem',
     targetBucketName: 'test-bucket',
+    targetEpsg: 2193,
   };
 
   it('should retrieve setup from collection', async () => {
@@ -140,7 +141,7 @@ describe('stac-setup', () => {
     const ret = await commandStacSetup.handler(baseArgs).catch((e) => String(e));
     assert.equal(
       ret,
-      'Error: No ODR URL supplied but collection.json exists at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/2193/collection.json.',
+      `Error: No ODR URL supplied but collection.json exists at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/${baseArgs.targetEpsg}/collection.json.`,
     );
   });
 

@@ -111,6 +111,12 @@ export const commandStacSetup = command({
       long: 'target-bucket-name',
       description: 'Target bucket name, e.g. nz-imagery',
     }),
+
+    targetEpsg: option({
+      type: number,
+      long: 'target-epsg',
+      description: 'EPSG of the source files',
+    }),
   },
 
   async handler(args) {
@@ -164,9 +170,9 @@ export const commandStacSetup = command({
         ...slugMetadata,
         slug: slug,
         targetBucketName: args.targetBucketName,
-        epsg: 2193, // TODO: Fix before merge, should read from first tiff
+        epsg: args.targetEpsg,
       };
-      // changed as it failed when trying to read a .json that doesn't exist
+
       const newOdrUrl = generatePath(pathMetadata);
       const collectionLocation = new URL('collection.json', newOdrUrl);
 

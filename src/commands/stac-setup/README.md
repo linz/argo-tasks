@@ -24,6 +24,7 @@ stac-setup <options>
 | --odr-url <value>              | Open Data Registry URL of existing dataset                | optional                         |
 | --output <value>               | Where to store output files                               | default: file:///tmp/stac-setup/ |
 | --target-bucket-name <str>     | Target bucket name, e.g. nz-imagery                       |                                  |
+| --target-epsg <number>         | EPSG of the source files                                  |                                  |
 
 ### Flags
 
