@@ -15,7 +15,7 @@ stac-setup <options>
 | --start-year <str>             | Start year of survey capture, deprecated use --start-date | optional                         |
 | --end-date <str>               | End date of survey capture (YYYY-MM-DD), eg 2024-05-23    | optional                         |
 | --end-year <str>               | End year of survey capture, deprecated use --end-date     | optional                         |
-| --gsd <value>                  | GSD of dataset, e.g. 0.3                                  |                                  |
+| --gsd <number>                 | GSD of dataset, e.g. 0.3                                  |                                  |
 | --data-type <str>              | Data type of dataset, e.g. uint16                         |                                  |
 | --region <str>                 | Region of dataset                                         |                                  |
 | --geographic-description <str> | Geographic description of dataset                         | optional                         |
