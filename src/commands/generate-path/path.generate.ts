@@ -62,9 +62,22 @@ export const commandGeneratePath = command({
     };
 
     const target = generatePath(metadata);
+
+    // TO DO: Check this part
+    // Publish ODR can be run independently on already-standardised data,
+    // so check the generated destination before publishing.
+    const collectionLocation = new URL('collection.json', target);
+
+    if (await fsa.exists(collectionLocation)) {
+      throw new Error(
+        `No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`,
+      );
+    }
+
     logger.info({ duration: performance.now() - startTime, target }, 'GeneratePath:Done');
 
     await fsa.write(fsa.toUrl('/tmp/generate-path/target'), target);
+
     logger.info({ location: '/tmp/generate-path/target', target }, 'GeneratePath:Written');
   },
 });
