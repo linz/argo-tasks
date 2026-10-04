@@ -263,9 +263,12 @@ describe('command.generatePath', () => {
     verbose: false,
     targetBucketName: 'some-output-bucket',
     source: fsa.toUrl(''),
+    odrUrl: undefined,
   };
 
-  it('should generate a output', async () => {
+
+  it('should generate a output', async (t) => {
+    t.mock.method(fsa, 'exists', async () => false);
     await fsa.write(
       fsa.toUrl('memory://bucket/source/test/collection.json'),
       Buffer.from(
@@ -296,4 +299,48 @@ describe('command.generatePath', () => {
     const output = await fsa.read(fsa.toUrl('/tmp/generate-path/target'));
     assert.deepEqual(output.toString('utf-8'), 's3://some-output-bucket/wellington/source-test/rgb/2193/');
   });
+
+  it('should error when generated ODR destination already exists', async (t) => {
+    t.mock.method(fsa, 'exists', async () => true);
+
+    await fsa.write(
+      fsa.toUrl('memory://bucket/source/test/collection.json'),
+      Buffer.from(
+        JSON.stringify({
+          'linz:geospatial_category': 'urban-aerial-photos',
+          'linz:region': 'wellington',
+          'linz:slug': 'source-test',
+          links: [{ href: './BQ32.json', rel: 'item' }],
+        }),
+      ),
+    );
+
+    await fsa.write(
+      fsa.toUrl('memory://bucket/source/test/BQ32.json'),
+      Buffer.from(
+        JSON.stringify({
+          assets: {
+            visual: {
+              href: './BQ32.tiff',
+            },
+          },
+        }),
+      ),
+    );
+
+    await fsa.write(fsa.toUrl('memory://bucket/source/test/BQ32.tiff'), RgbaNztm2000Tiff);
+
+    const ret = await commandGeneratePath
+      .handler({
+        ...baseArgs,
+        source: await UrlFolder.from('memory://bucket/source/test/'),
+      })
+      .catch((e) => String(e));
+
+    assert.equal(
+      ret,
+      'Error: No ODR URL supplied but collection.json exists at s3://some-output-bucket/wellington/source-test/rgb/2193/collection.json.',
+    );
+  });
+
 });
