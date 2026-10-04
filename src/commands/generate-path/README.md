@@ -14,10 +14,11 @@ generate-path <options> <path>
 
 ### Options
 
-| Usage                      | Description                         | Options  |
-| -------------------------- | ----------------------------------- | -------- |
-| --config <str>             | Location of role configuration file | optional |
-| --target-bucket-name <str> | Target bucket name, e.g. nz-imagery |          |
+| Usage                      | Description                                | Options  |
+| -------------------------- | ------------------------------------------ | -------- |
+| --config <str>             | Location of role configuration file        | optional |
+| --target-bucket-name <str> | Target bucket name, e.g. nz-imagery        |          |
+| --odr-url <value>          | Open Data Registry URL of existing dataset | optional |
 
 ### Flags
 
