@@ -266,7 +266,6 @@ describe('command.generatePath', () => {
     odrUrl: undefined,
   };
 
-
   it('should generate a output', async (t) => {
     t.mock.method(fsa, 'exists', async () => false);
     await fsa.write(
@@ -342,5 +341,4 @@ describe('command.generatePath', () => {
       'Error: No ODR URL supplied but collection.json exists at s3://some-output-bucket/wellington/source-test/rgb/2193/collection.json.',
     );
   });
-
 });

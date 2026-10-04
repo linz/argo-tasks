@@ -1,7 +1,7 @@
 import { Epsg } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import type { Tiff } from '@cogeotiff/core';
-import { command, option, positional, string, optional } from 'cmd-ts';
+import { command, option, optional, positional, string } from 'cmd-ts';
 import type { StacCollection, StacItem } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
@@ -9,7 +9,7 @@ import { logger } from '../../log.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { StacCollectionLinz } from '../../utils/metadata.ts';
 import { GeospatialDataCategories } from '../../utils/metadata.ts';
-import { config, createTiff, registerCli, UrlFolder, verbose, Url } from '../common.ts';
+import { config, createTiff, registerCli, Url, UrlFolder, verbose } from '../common.ts';
 
 export interface PathMetadata {
   targetBucketName: string;
@@ -45,7 +45,6 @@ export const commandGeneratePath = command({
       long: 'odr-url',
       description: 'Open Data Registry URL of existing dataset',
     }),
-
   },
 
   async handler(args) {
@@ -72,10 +71,8 @@ export const commandGeneratePath = command({
 
     const collectionLocation = new URL('collection.json', target);
 
-    if (await fsa.exists(collectionLocation) && !args.odrUrl) {
-      throw new Error(
-        `No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`,
-      );
+    if ((await fsa.exists(collectionLocation)) && !args.odrUrl) {
+      throw new Error(`No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`);
     }
 
     logger.info({ duration: performance.now() - startTime, target }, 'GeneratePath:Done');
