@@ -66,7 +66,9 @@ export const commandGeneratePath = command({
     const collectionLocation = new URL('collection.json', target);
 
     if (await fsa.exists(collectionLocation)) {
-      throw new Error(`No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`);
+      throw new Error(
+        `An existing collection was found at ${protocolAwareString(collectionLocation)}. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
+      );
     }
 
     logger.info({ duration: performance.now() - startTime, target }, 'GeneratePath:Done');

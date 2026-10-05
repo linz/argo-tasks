@@ -8,23 +8,23 @@ stac-setup <options>
 
 ### Options
 
-| Usage                          | Description                                               | Options                          |
-| ------------------------------ | --------------------------------------------------------- | -------------------------------- |
-| --config <str>                 | Location of role configuration file                       | optional                         |
-| --start-date <str>             | End date of survey capture (YYYY-MM-DD), eg 2023-01-01    | optional                         |
-| --start-year <str>             | Start year of survey capture, deprecated use --start-date | optional                         |
-| --end-date <str>               | End date of survey capture (YYYY-MM-DD), eg 2024-05-23    | optional                         |
-| --end-year <str>               | End year of survey capture, deprecated use --end-date     | optional                         |
-| --gsd <number>                 | GSD of dataset, e.g. 0.3                                  |                                  |
-| --data-type <str>              | Data type of dataset, e.g. uint16                         |                                  |
-| --region <str>                 | Region of dataset                                         |                                  |
-| --geographic-description <str> | Geographic description of dataset                         | optional                         |
-| --survey-id <str>              | Associated survey id, eg SN8066 or SNC20505               | optional                         |
-| --geospatial-category <str>    | Geospatial category of dataset                            |                                  |
-| --odr-url <value>              | Open Data Registry URL of existing dataset                | optional                         |
-| --output <value>               | Where to store output files                               | default: file:///tmp/stac-setup/ |
-| --target-bucket-name <str>     | Target bucket name, e.g. nz-imagery                       |                                  |
-| --target-epsg <number>         | EPSG of the source files                                  |                                  |
+| Usage                          | Description                                                       | Options                          |
+| ------------------------------ | ----------------------------------------------------------------- | -------------------------------- |
+| --config <str>                 | Location of role configuration file                               | optional                         |
+| --start-date <str>             | End date of survey capture (YYYY-MM-DD), eg 2023-01-01            | optional                         |
+| --start-year <str>             | Start year of survey capture, deprecated use --start-date         | optional                         |
+| --end-date <str>               | End date of survey capture (YYYY-MM-DD), eg 2024-05-23            | optional                         |
+| --end-year <str>               | End year of survey capture, deprecated use --end-date             | optional                         |
+| --gsd <value>                  | GSD of dataset, e.g. 0.3                                          |                                  |
+| --data-type <str>              | Data type of dataset, e.g. uint16                                 |                                  |
+| --region <str>                 | Region of dataset                                                 |                                  |
+| --geographic-description <str> | Geographic description of dataset                                 | optional                         |
+| --survey-id <str>              | Associated survey id, eg SN8066 or SNC20505                       | optional                         |
+| --geospatial-category <str>    | Geospatial category of dataset                                    |                                  |
+| --odr-url <value>              | Open Data Registry URL of existing dataset                        | optional                         |
+| --output <value>               | Where to store output files                                       | default: file:///tmp/stac-setup/ |
+| --target-bucket-name <str>     | Target bucket name, e.g. nz-imagery                               |                                  |
+| --target-epsg <number>         | EPSG of the standardised output files for checking odr_url target |                                  |
 
 ### Flags
 

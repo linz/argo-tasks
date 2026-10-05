@@ -2,9 +2,9 @@ import assert from 'node:assert';
 import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
+import { MeterAsString } from '../../common.ts';
 
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
-import { MeterAsString } from '../../common.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
 import { SampleCollection } from './stac.setup.data.ts';
@@ -35,7 +35,7 @@ describe('stac-setup', () => {
     surveyId: undefined,
     odrUrl: undefined,
     output: fsa.toUrl('memory:///tmp/stac-setup/'),
-    gsd: 1, // made a number
+    gsd: '1',
     dataType: 'uint8',
     region: 'gisborne',
     geographicDescription: 'Wairoa',
@@ -50,7 +50,7 @@ describe('stac-setup', () => {
       odrUrl: collectionLocation,
       startYear: '2013',
       endYear: '2014',
-      gsd: 0.3,
+      gsd: '0.3',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
@@ -77,7 +77,7 @@ describe('stac-setup', () => {
       odrUrl: undefined,
       startYear: '2013',
       endYear: '2014',
-      gsd: 1,
+      gsd: '1',
       region: 'gisborne',
       geographicDescription: 'Wairoa',
       geospatialCategory: 'dem',
@@ -105,7 +105,7 @@ describe('stac-setup', () => {
       odrUrl: undefined,
       startYear: '',
       endYear: '',
-      gsd: 10,
+      gsd: '10',
       region: 'new-zealand',
       geographicDescription: '',
       geospatialCategory: 'dem',
@@ -131,7 +131,7 @@ describe('stac-setup', () => {
       ...BaseArgs,
       startYear: '1982',
       endYear: '1983',
-      gsd: 0.375,
+      gsd: '0.375',
       region: 'chatham-islands',
       surveyId: 'SN8066',
       geographicDescription: 'Chatham Islands',
@@ -139,7 +139,7 @@ describe('stac-setup', () => {
     } as const;
 
     await assert.rejects(commandStacSetup.handler(baseArgs), {
-      message: `No ODR URL supplied but collection.json exists at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/${baseArgs.targetEpsg}/collection.json.`,
+      message: `An existing collection was found at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/${baseArgs.targetEpsg}/collection.json. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
     });
   });
 
@@ -151,7 +151,7 @@ describe('stac-setup', () => {
       ...BaseArgs,
       startYear: '1982',
       endYear: '1983',
-      gsd: 0.375,
+      gsd: '0.375',
       region: 'chatham-islands',
       surveyId: 'SN8066',
       geographicDescription: 'Chatham Islands',
@@ -188,7 +188,7 @@ describe('stac-setup', () => {
       commandStacSetup.handler({
         ...BaseArgs,
         odrUrl: collectionLocation,
-        gsd: 1, // different to collection which is 0.3
+        gsd: '1', // different to collection which is 0.3
       }),
       { message: 'GSD at ODR URL [0.3] does not match new TIFF GSD [1]' },
     );
@@ -198,7 +198,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler({
       ...BaseArgs,
       odrUrl: collectionLocation,
-      gsd: 0.3,
+      gsd: '0.3',
       dataType: 'uint8',
     });
 
@@ -211,7 +211,7 @@ describe('stac-setup', () => {
       commandStacSetup.handler({
         ...BaseArgs,
         odrUrl: collectionLocation,
-        gsd: 0.3,
+        gsd: '0.3',
         dataType: 'uint16',
       }),
       { message: 'Data type at ODR URL [uint8] does not match new TIFF data type [uint16]' },
@@ -226,7 +226,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: 'Napier',
       region: 'hawkes-bay',
       date: '2017-2018',
-      gsd: 0.05,
+      gsd: '0.05',
     };
     assert.equal(slugFromMetadata(metadata), 'napier_2017-2018_0.05m');
   });
@@ -237,7 +237,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: 'North Island Weather Event',
       region: 'hawkes-bay',
       date: '2023',
-      gsd: 0.25,
+      gsd: '0.25',
     };
     assert.equal(slugFromMetadata(metadata), 'north-island-weather-event_2023_0.25m');
   });
@@ -247,7 +247,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
-      gsd: 0.3,
+      gsd: '0.3',
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023_0.3m');
   });
@@ -258,7 +258,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
-      gsd: 10,
+      gsd: '10',
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
@@ -268,7 +268,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'auckland',
       date: '2023',
-      gsd: 10,
+      gsd: '10',
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
@@ -278,7 +278,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
-      gsd: 1,
+      gsd: '1',
     };
     assert.throws(() => {
       slugFromMetadata(metadata);
@@ -291,7 +291,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: undefined,
       region: 'wellington',
       date: '1963',
-      gsd: 1,
+      gsd: '1',
     };
     assert.throws(() => {
       slugFromMetadata(metadata);
@@ -304,7 +304,7 @@ describe('slugFromMetadata', () => {
       geographicDescription: 'new-zealand',
       region: 'new-zealand',
       date: '',
-      gsd: 10,
+      gsd: '10',
     };
     assert.equal(slugFromMetadata(metadata), 'new-zealand');
   });
@@ -316,7 +316,7 @@ describe('slugFromMetadata', () => {
         surveyId: 'SN8066',
         region: 'auckland',
         geographicDescription: 'West-Coast',
-        gsd: 0.35,
+        gsd: '0.35',
         date: '1982',
       }),
       'west-coast_sn8066_1982_0.35m',
@@ -344,21 +344,19 @@ describe('formatDate', () => {
     assert.equal(formatDate('2023-01-01', '2024-01-01'), '2023-2024');
   });
 });
-
 describe('checkGsd', () => {
-  it('Should return GSD unaltered', async () => {
+  it('Should accept a number', async () => {
     assert.equal(await MeterAsString.from('0.3'), '0.3');
   });
 
-  it('Should return GSD with trailing m removed', async () => {
+  it('Should accept a number with metres', async () => {
     assert.equal(await MeterAsString.from('0.3m'), '0.3');
   });
 
   it('Should throw error if GSD is not a number', async () => {
-    await assert.rejects(async () => await MeterAsString.from('foo'), Error('Invalid value: foo. must be a number.'));
     await assert.rejects(
-      async () => await MeterAsString.from('1.4deg'),
-      Error('Invalid value: 1.4deg. must be a number.'),
+      () => MeterAsString.from('hello'),
+      Error('Invalid value: hello. must be a number.'),
     );
   });
 });

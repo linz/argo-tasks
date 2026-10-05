@@ -335,7 +335,7 @@ describe('command.generatePath', () => {
       }),
       {
         message:
-          'No ODR URL supplied but collection.json exists at s3://some-output-bucket/wellington/source-test/rgb/2193/collection.json.',
+          'An existing collection was found at s3://some-output-bucket/wellington/source-test/rgb/2193/collection.json. To overwrite or update the existing collection, supply its ODR URL using odr_url.',
       },
     );
   });

@@ -10,9 +10,10 @@ import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
-import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
+import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose, MeterAsString } from '../common.ts';
 import type { PathMetadata } from '../generate-path/path.generate.ts';
 import { generatePath, loadFirstTiff } from '../generate-path/path.generate.ts';
+
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
   geographicDescription?: string;
@@ -20,7 +21,7 @@ export interface SlugMetadata {
   /** Optional survey ID if it exists, e.g. SN8066, commonly used with scanned historical imagery */
   surveyId?: string;
   date: string;
-  gsd: number;
+  gsd: string;
 }
 
 export const commandStacSetup = command({
@@ -57,7 +58,7 @@ export const commandStacSetup = command({
     }),
 
     gsd: option({
-      type: number,
+      type: MeterAsString,
       long: 'gsd',
       description: 'GSD of dataset, e.g. 0.3',
     }),
@@ -115,7 +116,7 @@ export const commandStacSetup = command({
     targetEpsg: option({
       type: number,
       long: 'target-epsg',
-      description: 'EPSG of the source files',
+      description: 'EPSG of the standardised output files for checking odr_url target',
     }),
   },
 
@@ -166,8 +167,11 @@ export const commandStacSetup = command({
       };
 
       const slug = slugFromMetadata(slugMetadata);
+
       const pathMetadata: PathMetadata = {
-        ...slugMetadata,
+        geospatialCategory: args.geospatialCategory,
+        region: args.region,
+        gsd: Number(args.gsd),
         slug: slug,
         targetBucketName: args.targetBucketName,
         epsg: args.targetEpsg,
@@ -178,7 +182,7 @@ export const commandStacSetup = command({
 
       if (await fsa.exists(collectionLocation)) {
         throw new Error(
-          `No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`,
+          `An existing collection was found at ${protocolAwareString(collectionLocation)}. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
         );
       }
       const collectionId = ulid.ulid();
