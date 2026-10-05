@@ -353,7 +353,7 @@ describe('checkGsd', () => {
     assert.equal(await MeterAsString.from('0.3m'), '0.3');
   });
 
-  it('Should throw error if GSD is not a number', async () => {
-    await assert.rejects(() => MeterAsString.from('hello'), Error('Invalid value: hello. must be a number.'));
+  it('Should throw error if GSD is not a number', () => {
+    assert.throws(() => MeterAsString.from('hello'), Error('Invalid value: hello. must be a number.'));
   });
 });
