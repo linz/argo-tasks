@@ -39,7 +39,6 @@ export const commandGeneratePath = command({
       displayName: 'path',
       description: 'path to source data where collection.json file is located',
     }),
-
   },
 
   async handler(args) {
@@ -66,7 +65,7 @@ export const commandGeneratePath = command({
 
     const collectionLocation = new URL('collection.json', target);
 
-    if ((await fsa.exists(collectionLocation))) {
+    if (await fsa.exists(collectionLocation)) {
       throw new Error(`No ODR URL supplied but collection.json exists at ${protocolAwareString(collectionLocation)}.`);
     }
 

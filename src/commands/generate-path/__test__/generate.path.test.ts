@@ -263,7 +263,6 @@ describe('command.generatePath', () => {
     verbose: false,
     targetBucketName: 'some-output-bucket',
     source: fsa.toUrl(''),
-    odrUrl: undefined,
   };
 
   it('should generate a output', async (t) => {
@@ -329,16 +328,15 @@ describe('command.generatePath', () => {
 
     await fsa.write(fsa.toUrl('memory://bucket/source/test/BQ32.tiff'), RgbaNztm2000Tiff);
 
-    const ret = await commandGeneratePath
-      .handler({
+    await assert.rejects(
+      commandGeneratePath.handler({
         ...baseArgs,
         source: await UrlFolder.from('memory://bucket/source/test/'),
-      })
-      .catch((e) => String(e));
-
-    assert.equal(
-      ret,
-      'Error: No ODR URL supplied but collection.json exists at s3://some-output-bucket/wellington/source-test/rgb/2193/collection.json.',
+      }),
+      {
+        message:
+          'No ODR URL supplied but collection.json exists at s3://some-output-bucket/wellington/source-test/rgb/2193/collection.json.',
+      },
     );
   });
 });

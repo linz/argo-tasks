@@ -138,11 +138,9 @@ describe('stac-setup', () => {
       geospatialCategory: 'scanned-aerial-photos',
     } as const;
 
-    const ret = await commandStacSetup.handler(baseArgs).catch((e) => String(e));
-    assert.equal(
-      ret,
-      `Error: No ODR URL supplied but collection.json exists at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/${baseArgs.targetEpsg}/collection.json.`,
-    );
+    await assert.rejects(commandStacSetup.handler(baseArgs), {
+      message: `No ODR URL supplied but collection.json exists at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/${baseArgs.targetEpsg}/collection.json.`,
+    });
   });
 
   it('should generate a slug with a survey id', async (t) => {
