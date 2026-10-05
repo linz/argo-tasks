@@ -10,7 +10,7 @@ import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
-import { config, registerCli, Url, UrlFolder, urlPathEndsWith, verbose, MeterAsString } from '../common.ts';
+import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 import type { PathMetadata } from '../generate-path/path.generate.ts';
 import { generatePath, loadFirstTiff } from '../generate-path/path.generate.ts';
 

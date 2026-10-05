@@ -2,9 +2,9 @@ import assert from 'node:assert';
 import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
-import { MeterAsString } from '../../common.ts';
 
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
+import { MeterAsString } from '../../common.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
 import { SampleCollection } from './stac.setup.data.ts';
@@ -354,9 +354,6 @@ describe('checkGsd', () => {
   });
 
   it('Should throw error if GSD is not a number', async () => {
-    await assert.rejects(
-      () => MeterAsString.from('hello'),
-      Error('Invalid value: hello. must be a number.'),
-    );
+    await assert.rejects(() => MeterAsString.from('hello'), Error('Invalid value: hello. must be a number.'));
   });
 });
