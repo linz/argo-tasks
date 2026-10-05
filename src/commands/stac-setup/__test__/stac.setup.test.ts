@@ -3,11 +3,12 @@ import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
+import { logger } from '../../../log.ts';
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
-import { SampleCollection } from './stac.setup.data.ts';
+import { DemCollection, HawkesBayResupplyCollection, SampleCollection } from './stac.setup.data.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();
@@ -175,7 +176,28 @@ describe('stac-setup', () => {
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should fail when data type does not match collection', async () => {
+  it('should warn and allow uint16 resupply for RGB collections with uint8 ODR data', async (t) => {
+    await fsa.write(collectionLocation, JSON.stringify(HawkesBayResupplyCollection));
+
+    const warnStub = t.mock.method(logger, 'warn');
+
+    await commandStacSetup.handler({
+      ...BaseArgs,
+      odrUrl: collectionLocation,
+      gsd: '0.3',
+      dataType: 'uint16',
+    });
+
+    assert.equal(warnStub.mock.callCount(), 1);
+    const opts = warnStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+    assert.equal(opts['odrDataType'], 'uint8');
+    assert.equal(opts['sourceDataType'], 'uint16');
+    assert.equal(opts['geospatialCategory'], 'urban-aerial-photos');
+  });
+
+  it('should fail when data type does not match a non-RGB collection', async () => {
+    await fsa.write(collectionLocation, JSON.stringify(DemCollection));
+
     await assert.rejects(
       commandStacSetup.handler({
         ...BaseArgs,

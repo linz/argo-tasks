@@ -9,6 +9,7 @@ import { logger } from '../../log.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
+import { GeospatialDataCategories } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 import { loadFirstTiff } from '../generate-path/path.generate.ts';
@@ -132,9 +133,21 @@ export const commandStacSetup = command({
       }
 
       const dataType = collection['data_type'] ?? (await extractBandInformation(await getTiff()))[0];
-      if (dataType !== args.dataType) {
+      const isAllowedMismatch = isAllowedRgbResupplyMismatch(collection, dataType, args.dataType);
+      if (dataType !== args.dataType && !isAllowedMismatch) {
         logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
         throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
+      }
+      if (isAllowedMismatch) {
+        logger.warn(
+          {
+            odrUrl: protocolAwareString(collectionLocation),
+            odrDataType: dataType,
+            sourceDataType: args.dataType,
+            geospatialCategory: collection['linz:geospatial_category'],
+          },
+          'StacSetup:Warn:ResupplyStandardisationShouldNotUseOdrUrlAsSource',
+        );
       }
 
       const collectionId = collection['id'];
@@ -159,6 +172,25 @@ export const commandStacSetup = command({
     }
   },
 });
+
+function isAllowedRgbResupplyMismatch(
+  collection: StacCollection & StacCollectionLinz,
+  collectionDataType: string | undefined,
+  sourceDataType: string | undefined,
+): boolean {
+  if (collectionDataType !== 'uint8' || sourceDataType !== 'uint16') return false;
+
+  switch (collection['linz:geospatial_category']) {
+    case GeospatialDataCategories.AncillaryAerialPhotos:
+    case GeospatialDataCategories.RuralAerialPhotos:
+    case GeospatialDataCategories.SatelliteImagery:
+    case GeospatialDataCategories.UrbanAerialPhotos:
+    case GeospatialDataCategories.ScannedAerialPhotos:
+      return true;
+    default:
+      return false;
+  }
+}
 
 function formatParts(...parts: string[]): string {
   return parts.filter((f) => f != null && f.length > 0).join('_');
