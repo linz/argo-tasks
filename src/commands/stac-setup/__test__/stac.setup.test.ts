@@ -344,6 +344,7 @@ describe('formatDate', () => {
     assert.equal(formatDate('2023-01-01', '2024-01-01'), '2023-2024');
   });
 });
+
 describe('checkGsd', () => {
   it('Should accept a number', async () => {
     assert.equal(await MeterAsString.from('0.3'), '0.3');
