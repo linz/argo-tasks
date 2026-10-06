@@ -8,7 +8,12 @@ import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
-import { DemCollection, HawkesBayResupplyCollection, SampleCollection } from './stac.setup.data.ts';
+import {
+  HawkesBayResupplyCollection,
+  RgbnirUint8Collection,
+  RgbUint16Collection,
+  SampleCollection,
+} from './stac.setup.data.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();
@@ -195,8 +200,22 @@ describe('stac-setup', () => {
     assert.equal(opts['geospatialCategory'], 'urban-aerial-photos');
   });
 
-  it('should fail when data type does not match a non-RGB collection', async () => {
-    await fsa.write(collectionLocation, JSON.stringify(DemCollection));
+  it('should accept 8-bit resupply of 16-bit RGB ODR dataset', async () => {
+    await fsa.write(collectionLocation, JSON.stringify(RgbUint16Collection));
+
+    await commandStacSetup.handler({
+      ...BaseArgs,
+      odrUrl: collectionLocation,
+      gsd: '0.3',
+      dataType: 'uint8',
+    });
+
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
+    assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GNM');
+  });
+
+  it('should reject 16-bit resupply of 8-bit RGBNIR ODR dataset', async () => {
+    await fsa.write(collectionLocation, JSON.stringify(RgbnirUint8Collection));
 
     await assert.rejects(
       commandStacSetup.handler({
