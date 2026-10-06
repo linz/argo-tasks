@@ -1,7 +1,11 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { sortLinks } from '../stac.github.import.ts';
+import { fsa } from '@chunkd/fs';
+import type { StacVersion } from 'stac-ts';
+
+import { GithubApi } from '../../../utils/github.ts';
+import { commandStacGithubImport, sortLinks } from '../stac.github.import.ts';
 
 function shuffle<T>(array: T[]): T[] {
   let currentIndex = array.length;
@@ -109,5 +113,90 @@ describe('sortLinks', () => {
         sorted,
       );
     }
+  });
+});
+
+describe('publish ODR parameters', () => {
+  it('should include user group and copy option in publish ODR parameters', async (t) => {
+    // Pretend GitHub returned a catalog.json containing a self link
+    t.mock.method(GithubApi.prototype, 'getContent', () => {
+      return Promise.resolve(
+        JSON.stringify({
+          links: [
+            {
+              rel: 'self',
+              href: 'https://example.com/catalog.json',
+              type: 'application/json',
+            },
+          ],
+        }),
+      );
+    });
+
+    // Prevent a real pull request from being created and record the call
+    const createPullRequestMock = t.mock.method(GithubApi.prototype, 'createPullRequest', () => {});
+
+    // Pretend fsa.read() returned a basemaps config URL
+    t.mock.method(fsa, 'read', () => {
+      return Promise.resolve('https://example.com/basemaps');
+    });
+
+    // Pretend fsa.readJson() returned the source STAC collection
+    t.mock.method(fsa, 'readJson', () => {
+      return Promise.resolve({
+        stac_version: '1.0.0' as StacVersion,
+        type: 'Collection',
+        id: 'b871c4a7-2d8e-4cec-997a-ed755cf542b9',
+        title: 'any-title',
+        description: 'any-description',
+        license: 'any-license',
+        'linz:region': 'manawatu-whanganui',
+        extent: {
+          spatial: { bbox: [[]] },
+          temporal: { interval: [[null, null]] },
+        },
+        links: [],
+      });
+    });
+
+    // Set up fake GitHub credentials required by GithubApi
+    process.env['GITHUB_APP_ID'] = '1';
+    process.env['GITHUB_APP_PRIVATE_KEY'] = 'any-github-app-private-key';
+    process.env['GITHUB_APP_INSTALLATION_ID'] = '2';
+
+    // Set up the arguments we want to test
+    const params = {
+      source: new URL('s3://linz-workflow-artifacts/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/'),
+      target: new URL('s3://linz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/'),
+      repoName: 'linz/imagery',
+      copyOption: '--no-clobber',
+      userGroup: 'land',
+      ticket: '',
+      config: undefined,
+      verbose: false,
+    };
+
+    // Run the handler
+    await commandStacGithubImport.handler(params);
+
+    // Check createPullRequest was called once
+    assert.equal(createPullRequestMock.mock.callCount(), 1);
+
+    // Get the files passed to createPullRequest
+    const createPullRequestCall = createPullRequestMock.mock.calls[0];
+    const files = createPullRequestCall?.arguments[2];
+
+    // Find the generated Publish ODR parameters file
+    const parametersFile = files?.find((file) => file.path.startsWith('publish-odr-parameters/'));
+    assert.ok(parametersFile);
+
+    // Parse the parameters file content
+    const parameters = JSON.parse(parametersFile.content) as {
+      user_group: string;
+      copy_option: string;
+    };
+
+    assert.equal(parameters.user_group, 'land');
+    assert.equal(parameters.copy_option, '--no-clobber');
   });
 });

@@ -43,18 +43,16 @@ export const commandStacGithubImport = command({
       defaultValue: () => imageryRepo,
       defaultValueIsSerializable: true,
     }),
-
     copyOption: option({
       type: oneOf(['--force', '--no-clobber', '--force-no-clobber']),
       long: 'copy-option',
-      defaultValue: () => '--no-clobber' as const,
+      defaultValue: () => '--no-clobber',
       defaultValueIsSerializable: true,
     }),
     userGroup: option({
       type: oneOf(['land', 'sea', 'none']),
       long: 'user-group',
     }),
-
     ticket: option({
       type: string,
       long: 'ticket',
