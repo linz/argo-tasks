@@ -146,7 +146,8 @@ export const commandStacSetup = command({
             sourceDataType: args.dataType,
             geospatialCategory: collection['linz:geospatial_category'],
           },
-          'StacSetup:Warn:OdrDataTypeMismatchAllowed',        );
+          'StacSetup:Warn:OdrDataTypeMismatchAllowed',
+        );
       }
 
       const collectionId = collection['id'];
@@ -177,7 +178,7 @@ function isAllowedRgbResupplyMismatch(
   collectionDataType: string | undefined,
   sourceDataType: string | undefined,
 ): boolean {
-    if (collectionDataType !== 'uint8' || sourceDataType !== 'uint16') return false;
+  if (collectionDataType !== 'uint8' || sourceDataType !== 'uint16') return false;
 
   switch (collection['linz:geospatial_category']) {
     case GeospatialDataCategories.AncillaryAerialPhotos:

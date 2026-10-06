@@ -61,15 +61,6 @@ export const HawkesBayResupplyCollection: StacCollection & StacCollectionLinz = 
   'linz:slug': 'hawkes-bay_2024_0.3m',
 };
 
-export const RgbUint16Collection: StacCollection & StacCollectionLinz = {
-  ...HawkesBayResupplyCollection,
-  id: '01HGF4RAQSM53Z26Y7C27T1GNM',
-  title: "Hawke's Bay RGB (2024) - Preview",
-  description: "RGB imagery within the Hawke's Bay region captured in 2024.",
-  'linz:geospatial_category': 'satellite-imagery',
-  data_type: 'uint16',
-};
-
 export const RgbnirUint8Collection: StacCollection & StacCollectionLinz = {
   ...HawkesBayResupplyCollection,
   id: '01HGF4RAQSM53Z26Y7C27T1GNM',
