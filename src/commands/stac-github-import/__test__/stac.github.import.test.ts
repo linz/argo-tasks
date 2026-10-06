@@ -167,7 +167,7 @@ describe('publish ODR parameters', () => {
     // Set up the arguments we want to test
     const params = {
       source: new URL('s3://linz-workflows-scratch/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/'),
-      target: new URL('s3://linz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/'),
+      target: new URL('s3://nz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/'),
       repoName: 'linz/imagery',
       copyOption: '--no-clobber',
       userGroup: 'land',
