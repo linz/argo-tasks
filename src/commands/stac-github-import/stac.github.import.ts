@@ -25,7 +25,7 @@ export const commandStacGithubImport = command({
   args: {
     config,
     verbose,
-    //example: s3://linz-workflow-scratch/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/
+    //example: s3://linz-workflows-scratch/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/
     source: option({
       type: Url,
       long: 'source',
