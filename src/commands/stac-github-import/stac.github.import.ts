@@ -31,7 +31,7 @@ export const commandStacGithubImport = command({
       long: 'source',
       description: 'Source location of the collection.json file',
     }),
-    // example: s3://linz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/
+    // example: s3://nz-imagery/manawatu-whanganui/manawatu-whanganui_2010-2011_0.4m/rgb/2193/
     target: option({
       type: Url,
       long: 'target',
