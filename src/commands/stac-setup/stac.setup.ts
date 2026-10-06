@@ -146,7 +146,7 @@ export const commandStacSetup = command({
             sourceDataType: args.dataType,
             geospatialCategory: collection['linz:geospatial_category'],
           },
-          'StacSetup:Warn:ResupplyStandardisationShouldNotUseOdrUrlAsSource',
+          'StacSetup:Warn:StacSetup:Warn:OdrDataTypeMismatchAllowed',
         );
       }
 
