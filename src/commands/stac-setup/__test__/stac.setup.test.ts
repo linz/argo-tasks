@@ -346,15 +346,19 @@ describe('formatDate', () => {
 });
 
 describe('checkGsd', () => {
-  it('Should accept a number', async () => {
+  it('Should return GSD unaltered', async () => {
     assert.equal(await MeterAsString.from('0.3'), '0.3');
   });
 
-  it('Should accept a number with metres', async () => {
+  it('Should return GSD with trailing m removed', async () => {
     assert.equal(await MeterAsString.from('0.3m'), '0.3');
   });
 
-  it('Should throw error if GSD is not a number', () => {
-    assert.throws(() => MeterAsString.from('hello'), Error('Invalid value: hello. must be a number.'));
+  it('Should throw error if GSD is not a number', async () => {
+    await assert.rejects(async () => await MeterAsString.from('foo'), Error('Invalid value: foo. must be a number.'));
+    await assert.rejects(
+      async () => await MeterAsString.from('1.4deg'),
+      Error('Invalid value: 1.4deg. must be a number.'),
+    );
   });
 });
