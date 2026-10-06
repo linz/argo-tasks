@@ -25,7 +25,7 @@ export const commandStacGithubImport = command({
   args: {
     config,
     verbose,
-    //example: s3://linz-workflow-artifacts/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/
+    //example: s3://linz-workflow-scratch/2023-04/25-ispi-manawatu-whanganui-2010-2011-0-4m-tttsb/flat/
     source: option({
       type: Url,
       long: 'source',
@@ -52,6 +52,7 @@ export const commandStacGithubImport = command({
     userGroup: option({
       type: oneOf(['land', 'sea', 'none']),
       long: 'user-group',
+      description: "Group of users running the workflow: 'land', 'sea', or 'none'",
     }),
     ticket: option({
       type: string,
