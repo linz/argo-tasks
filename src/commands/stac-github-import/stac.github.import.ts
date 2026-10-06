@@ -43,12 +43,18 @@ export const commandStacGithubImport = command({
       defaultValue: () => imageryRepo,
       defaultValueIsSerializable: true,
     }),
+
     copyOption: option({
       type: oneOf(['--force', '--no-clobber', '--force-no-clobber']),
       long: 'copy-option',
-      defaultValue: () => '--no-clobber',
+      defaultValue: () => '--no-clobber' as const,
       defaultValueIsSerializable: true,
     }),
+    userGroup: option({
+      type: oneOf(['land', 'sea', 'none']),
+      long: 'user-group',
+    }),
+
     ticket: option({
       type: string,
       long: 'ticket',
@@ -114,6 +120,7 @@ export const commandStacGithubImport = command({
       copy_option: args.copyOption,
       region: collection['linz:region'],
       flatten: 'false',
+      user_group: args.userGroup,
     };
     const parametersFile = {
       path: `publish-odr-parameters/${collection.id}-${Date.now()}.yaml`,

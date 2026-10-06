@@ -15,6 +15,7 @@ stac-github-import <options>
 | --target <value>      | Target location for the collection.json file            |                       |
 | --repo-name <value>   | One of 'linz/coastal', 'linz/elevation', 'linz/imagery' | default: linz/imagery |
 | --copy-option <value> | One of '--force', '--no-clobber', '--force-no-clobber'  | default: --no-clobber |
+| --user-group <value>  | One of 'land', 'sea', 'none'                            |                       |
 | --ticket <str>        | Associated JIRA ticket e.g. AIP-74                      | default:              |
 
 ### Flags
