@@ -178,7 +178,11 @@ function isAllowedRgbResupplyMismatch(
   collectionDataType: string | undefined,
   sourceDataType: string | undefined,
 ): boolean {
-  if (collectionDataType !== 'uint8' || sourceDataType !== 'uint16') return false;
+  const dataTypeMismatch =
+    (collectionDataType === 'uint8' && sourceDataType === 'uint16') ||
+    (collectionDataType === 'uint16' && sourceDataType === 'uint8');
+
+  if (!dataTypeMismatch) return false;
 
   switch (collection['linz:geospatial_category']) {
     case GeospatialDataCategories.AncillaryAerialPhotos:
