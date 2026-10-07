@@ -3,12 +3,13 @@ import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
+import { logger } from '../../../log.ts';
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
 import { formatBucketName } from '../../generate-path/path.generate.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
-import { SampleCollection } from './stac.setup.data.ts';
+import { HawkesBayResupplyCollection, RgbnirUint8Collection, SampleCollection } from './stac.setup.data.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();
@@ -207,7 +208,41 @@ describe('stac-setup', () => {
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should fail when data type does not match collection', async () => {
+  it('should warn and allow uint16 resupply for RGB collections with uint8 ODR data', async (t) => {
+    await fsa.write(collectionLocation, JSON.stringify(HawkesBayResupplyCollection));
+
+    const warnStub = t.mock.method(logger, 'warn');
+
+    await commandStacSetup.handler({
+      ...BaseArgs,
+      odrUrl: collectionLocation,
+      gsd: '0.3',
+      dataType: 'uint16',
+    });
+
+    assert.equal(warnStub.mock.callCount(), 1);
+    const opts = warnStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+    assert.equal(opts['odrDataType'], 'uint8');
+    assert.equal(opts['sourceDataType'], 'uint16');
+    assert.equal(opts['geospatialCategory'], 'urban-aerial-photos');
+
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
+    files.sort();
+    assert.deepStrictEqual(files, [
+      fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
+    ]);
+
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
+    assert.strictEqual(collectionId.toString(), HawkesBayResupplyCollection.id);
+
+    const slug = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/linz-slug'));
+    assert.strictEqual(slug.toString(), HawkesBayResupplyCollection['linz:slug']);
+  });
+
+  it('should reject 16-bit resupply of 8-bit RGBNIR ODR dataset', async () => {
+    await fsa.write(collectionLocation, JSON.stringify(RgbnirUint8Collection));
+
     await assert.rejects(
       commandStacSetup.handler({
         ...BaseArgs,
@@ -216,6 +251,21 @@ describe('stac-setup', () => {
         dataType: 'uint16',
       }),
       { message: 'Data type at ODR URL [uint8] does not match new TIFF data type [uint16]' },
+    );
+  });
+
+  it('should reject 8-bit resupply of 16-bit RGBNIR ODR dataset', async () => {
+    const rgbnirUint16 = { ...RgbnirUint8Collection, data_type: 'uint16' };
+    await fsa.write(collectionLocation, JSON.stringify(rgbnirUint16));
+
+    await assert.rejects(
+      commandStacSetup.handler({
+        ...BaseArgs,
+        odrUrl: collectionLocation,
+        gsd: '0.3',
+        dataType: 'uint8',
+      }),
+      { message: 'Data type at ODR URL [uint16] does not match new TIFF data type [uint8]' },
     );
   });
 });

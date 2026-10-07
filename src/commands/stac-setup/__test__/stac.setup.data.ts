@@ -49,3 +49,23 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
     },
   },
 };
+
+export const HawkesBayResupplyCollection: StacCollection & StacCollectionLinz = {
+  ...SampleCollection,
+  title: "North Island Weather Event Hawke's Bay 0.3m Satellite Imagery (2024) - Preview",
+  description:
+    "Satellite imagery within the Hawke's Bay region captured in 2024, published as a record of the North Island Weather Event.",
+  'linz:region': 'hawkes-bay',
+  'linz:event_name': 'North Island Weather Event',
+  'linz:geographic_description': "Hawke's Bay",
+  'linz:slug': 'hawkes-bay_2024_0.3m',
+};
+
+export const RgbnirUint8Collection: StacCollection & StacCollectionLinz = {
+  ...HawkesBayResupplyCollection,
+  id: '01HGF4RAQSM53Z26Y7C27T1GNM',
+  title: "Hawke's Bay RGBNIR (2024) - Preview",
+  description: "RGBNIR imagery within the Hawke's Bay region captured in 2024.",
+  'linz:geospatial_category': 'near-infrared-aerial-photos',
+  data_type: 'uint8',
+};
