@@ -5,6 +5,7 @@ import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
+import { formatBucketName } from '../../generate-path/path.generate.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
 import { SampleCollection } from './stac.setup.data.ts';
@@ -40,6 +41,8 @@ describe('stac-setup', () => {
     region: 'gisborne',
     geographicDescription: 'Wairoa',
     geospatialCategory: 'dem',
+    targetBucketName: formatBucketName('test-bucket'),
+    targetEpsg: 2193,
   };
 
   it('should retrieve setup from collection', async () => {
@@ -67,7 +70,9 @@ describe('stac-setup', () => {
     assert.strictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should retrieve setup from args', async () => {
+  it('should retrieve setup from args', async (t) => {
+    // Avoid checking real S3 during unit tests
+    t.mock.method(fsa, 'exists', async () => false);
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
@@ -92,7 +97,10 @@ describe('stac-setup', () => {
     assert.notStrictEqual(collectionId.toString(), '01HGF4RAQSM53Z26Y7C27T1GMB');
   });
 
-  it('should not include the date in the slug', async () => {
+  it('should not include the date in the slug', async (t) => {
+    // Simulate no existing collection at the generated ODR path
+    t.mock.method(fsa, 'exists', async () => false);
+
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
@@ -103,6 +111,7 @@ describe('stac-setup', () => {
       geographicDescription: '',
       geospatialCategory: 'dem',
     } as const;
+
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
@@ -115,7 +124,30 @@ describe('stac-setup', () => {
     assert.strictEqual(slug.toString(), 'new-zealand');
   });
 
-  it('should generate a slug with a survey id', async () => {
+  it('should throw an error when collection.json already exists', async (t) => {
+    // Simulate existing collection at the generated ODR path
+    t.mock.method(fsa, 'exists', async () => true);
+
+    const baseArgs = {
+      ...BaseArgs,
+      startYear: '1982',
+      endYear: '1983',
+      gsd: '0.375',
+      region: 'chatham-islands',
+      surveyId: 'SN8066',
+      geographicDescription: 'Chatham Islands',
+      geospatialCategory: 'scanned-aerial-photos',
+    } as const;
+
+    await assert.rejects(commandStacSetup.handler(baseArgs), {
+      message: `An existing collection was found at s3://test-bucket/chatham-islands/chatham-islands_sn8066_1982-1983_0.375m/rgb/${baseArgs.targetEpsg}/collection.json. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
+    });
+  });
+
+  it('should generate a slug with a survey id', async (t) => {
+    // Simulate no existing collection at the generated ODR path
+    t.mock.method(fsa, 'exists', async () => false);
+
     const baseArgs = {
       ...BaseArgs,
       startYear: '1982',

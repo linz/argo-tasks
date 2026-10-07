@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import type { Tiff } from '@cogeotiff/core';
-import { command, option, optional, string } from 'cmd-ts';
+import { command, number, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
 import ulid from 'ulid';
 
@@ -11,7 +11,8 @@ import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
-import { loadFirstTiff } from '../generate-path/path.generate.ts';
+import type { PathMetadata } from '../generate-path/path.generate.ts';
+import { formatBucketName, generatePath, loadFirstTiff } from '../generate-path/path.generate.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
@@ -105,6 +106,18 @@ export const commandStacSetup = command({
       defaultValueIsSerializable: true,
       defaultValue: () => fsa.toUrl('file:///tmp/stac-setup/'),
     }),
+
+    targetBucketName: option({
+      type: string,
+      long: 'target-bucket-name',
+      description: 'Target bucket name, e.g. nz-imagery',
+    }),
+
+    targetEpsg: option({
+      type: number,
+      long: 'target-epsg',
+      description: 'EPSG of the standardised output files for checking odr_url target',
+    }),
   },
 
   async handler(args) {
@@ -144,7 +157,7 @@ export const commandStacSetup = command({
       if (args.startDate && args.startYear) throw new Error('--start-date and --start-year are mutually exclusive');
       if (args.endDate && args.endYear) throw new Error('--end-date and --end-year are mutually exclusive');
 
-      const metadata: SlugMetadata = {
+      const slugMetadata: SlugMetadata = {
         geospatialCategory: args.geospatialCategory as GeospatialDataCategory,
         region: args.region,
         surveyId: args.surveyId,
@@ -152,7 +165,26 @@ export const commandStacSetup = command({
         date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
       };
-      const slug = slugFromMetadata(metadata);
+
+      const slug = slugFromMetadata(slugMetadata);
+
+      const pathMetadata: PathMetadata = {
+        geospatialCategory: args.geospatialCategory,
+        region: args.region,
+        gsd: Number(args.gsd),
+        slug: slug,
+        targetBucketName: formatBucketName(args.targetBucketName),
+        epsg: args.targetEpsg,
+      };
+
+      const newOdrUrl = generatePath(pathMetadata);
+      const collectionLocation = new URL('collection.json', newOdrUrl);
+
+      if (await fsa.exists(collectionLocation)) {
+        throw new Error(
+          `An existing collection was found at ${protocolAwareString(collectionLocation)}. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
+        );
+      }
       const collectionId = ulid.ulid();
       await writeSetupFiles(slug, collectionId, args.output);
       logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
