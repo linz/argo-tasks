@@ -193,6 +193,19 @@ describe('stac-setup', () => {
     assert.equal(opts['odrDataType'], 'uint8');
     assert.equal(opts['sourceDataType'], 'uint16');
     assert.equal(opts['geospatialCategory'], 'urban-aerial-photos');
+
+    const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
+    files.sort();
+    assert.deepStrictEqual(files, [
+      fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
+      fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
+    ]);
+
+    const collectionId = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/collection-id'));
+    assert.strictEqual(collectionId.toString(), HawkesBayResupplyCollection.id);
+
+    const slug = await fsa.read(fsa.toUrl('memory:///tmp/stac-setup/linz-slug'));
+    assert.strictEqual(slug.toString(), HawkesBayResupplyCollection['linz:slug']);
   });
 
   it('should reject 16-bit resupply of 8-bit RGBNIR ODR dataset', async () => {
