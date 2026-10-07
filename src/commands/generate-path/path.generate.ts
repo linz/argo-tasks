@@ -117,7 +117,7 @@ export function generatePath(metadata: PathMetadata): string {
   );
 }
 
-function formatBucketName(bucketName: string): string {
+export function formatBucketName(bucketName: string): string {
   if (bucketName.startsWith('s3://')) return bucketName.replace('s3://', '').replace('/', '');
   return bucketName;
 }

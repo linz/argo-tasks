@@ -8,6 +8,7 @@ import { MeterAsString } from '../../common.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
 import { SampleCollection } from './stac.setup.data.ts';
+import { formatBucketName } from '../../generate-path/path.generate.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();
@@ -40,7 +41,7 @@ describe('stac-setup', () => {
     region: 'gisborne',
     geographicDescription: 'Wairoa',
     geospatialCategory: 'dem',
-    targetBucketName: 'test-bucket',
+    targetBucketName: formatBucketName('test-bucket'),
     targetEpsg: 2193,
   };
 
