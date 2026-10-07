@@ -5,10 +5,10 @@ import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
+import { formatBucketName } from '../../generate-path/path.generate.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
 import { SampleCollection } from './stac.setup.data.ts';
-import { formatBucketName } from '../../generate-path/path.generate.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();

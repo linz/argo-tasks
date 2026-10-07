@@ -12,7 +12,7 @@ import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/met
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 import type { PathMetadata } from '../generate-path/path.generate.ts';
-import { generatePath, loadFirstTiff } from '../generate-path/path.generate.ts';
+import { formatBucketName, generatePath, loadFirstTiff } from '../generate-path/path.generate.ts';
 
 export interface SlugMetadata {
   geospatialCategory: GeospatialDataCategory;
@@ -173,7 +173,7 @@ export const commandStacSetup = command({
         region: args.region,
         gsd: Number(args.gsd),
         slug: slug,
-        targetBucketName: args.targetBucketName,
+        targetBucketName: formatBucketName(args.targetBucketName),
         epsg: args.targetEpsg,
       };
 
