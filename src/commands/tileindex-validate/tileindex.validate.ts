@@ -1,7 +1,7 @@
 import { Bounds, EpsgCode, Projection } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import type { Size } from '@cogeotiff/core';
-import { Tiff, TiffTag } from '@cogeotiff/core';
+import { Tiff } from '@cogeotiff/core';
 import type { BBox } from '@linzjs/geojson';
 import type { Type } from 'cmd-ts';
 import { boolean, command, flag, number, option, optional, restPositionals, string } from 'cmd-ts';
@@ -553,8 +553,8 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
   throw new Error(`Unknown preset: ${preset}`);
 }
 
-function allowedBitsForPreset(preset: string): Set<number> | null {
-  if (preset === 'webp' || preset === 'rgbnir_zstd') return new Set([8, 16]);
+function allowedDataTypesForPreset(preset: string): Set<string> | null {
+  if (preset === 'webp' || preset === 'rgbnir_zstd') return new Set(['uint8', 'uint16']);
   return null;
 }
 
@@ -567,13 +567,13 @@ function allowedBitsForPreset(preset: string): Set<number> | null {
 export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<void> {
   let rejected = false;
 
-  const bitSet = allowedBitsForPreset(preset);
-  if (bitSet == null) return;
+  const allowedDataTypes = allowedDataTypesForPreset(preset);
+  if (allowedDataTypes == null) return;
 
-  let bitCount: number | null = null;
+  let dataType: string | null = null;
 
   const promises = tiffs.map(async (t) => {
-    const value = await validateTiffSamples(t, bitSet).catch((err) => {
+    const value = await validateTiffDataType(t, allowedDataTypes).catch((err) => {
       logger.fatal(
         { reason: String(err), source: protocolAwareString(t.source.url), preset },
         'Tiff:ValidatePreset:failed',
@@ -581,11 +581,11 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
       rejected = true;
     });
     if (value == null) return;
-    if (bitCount == null) bitCount = value;
-    if (bitCount !== value) {
+    if (dataType == null) dataType = value;
+    if (dataType !== value) {
       logger.fatal(
         {
-          reason: `${protocolAwareString(t.source.url)} Inconsistent bit depth across bands: ${bitCount} vs ${value}`,
+          reason: `${protocolAwareString(t.source.url)} Inconsistent data type across tiffs: ${dataType} vs ${value}`,
           source: protocolAwareString(t.source.url),
           preset,
         },
@@ -796,40 +796,30 @@ export function getTileName(x: number, y: number, gridSize: GridSize, mapSheet: 
 }
 
 /**
- * Ensure the tiff contains only bands with the specified bit count (e.g. 8 bits for webp preset).
+ * Ensure every band of the tiff has the same data type and that it is one of the allowed data types
+ * (e.g. `uint8` or `uint16` for the webp preset).
  *
  * @param tiff
- * @param allowedBitCount
+ * @param allowedDataTypes data types in the format of {@link extractBandInformation}, e.g. `uint8`, `float32`
+ * @returns the data type of the tiff
  */
-export async function validateTiffSamples(tiff: Tiff, allowedBitCount: Set<number>): Promise<number> {
-  const bitDepth = await getTiffBitDepth(tiff);
-  if (!allowedBitCount.has(bitDepth)) {
-    throw new Error(
-      `${protocolAwareString(tiff.source.url)} has unsupported bit depth: ${bitDepth}. Expected: ${[...allowedBitCount].join(', ')}`,
-    );
-  }
-  return bitDepth;
-}
-
-async function getTiffBitDepth(tiff: Tiff): Promise<number> {
-  const baseImage = tiff.images[0];
-  if (baseImage === undefined) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
-
-  const bitsPerSample = await baseImage.fetch(TiffTag.BitsPerSample);
-  if (bitsPerSample == null || bitsPerSample.length < 1) {
+export async function validateTiffDataType(tiff: Tiff, allowedDataTypes: Set<string>): Promise<string> {
+  const bands = await extractBandInformation(tiff);
+  const dataType = bands[0];
+  if (dataType == null) {
     throw new Error(`Failed to extract band information from ${protocolAwareString(tiff.source.url)}`);
   }
 
-  const firstSample = bitsPerSample[0] as number;
-  for (let i = 1; i < bitsPerSample.length; i++) {
-    if (bitsPerSample[i] !== firstSample) {
-      throw new Error(
-        `${protocolAwareString(tiff.source.url)} Inconsistent bit depth across bands: ${bitsPerSample.join(', ')}`,
-      );
-    }
+  if (bands.some((band) => band !== dataType)) {
+    throw new Error(`${protocolAwareString(tiff.source.url)} Inconsistent data type across bands: ${bands.join(', ')}`);
   }
 
-  return firstSample;
+  if (!allowedDataTypes.has(dataType)) {
+    throw new Error(
+      `${protocolAwareString(tiff.source.url)} has unsupported data type: ${dataType}. Expected: ${[...allowedDataTypes].join(', ')}`,
+    );
+  }
+  return dataType;
 }
 
 /**
