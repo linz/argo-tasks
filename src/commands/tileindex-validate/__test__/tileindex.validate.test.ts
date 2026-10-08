@@ -430,6 +430,14 @@ describe('validateTiffDataType', () => {
       message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/32f.tiff has unsupported data type: float32. Expected: uint8, uint16`,
     });
   });
+  it('should not accept an int16 TIFF as uint16', async () => {
+    const testTiff = await createTiff(pathToFileURL(`${dataDir}/16i.tiff`));
+    assert.equal(await validateTiffDataType(testTiff, new Set(['int16'])), 'int16');
+    await assert.rejects(validateTiffDataType(testTiff, new Set(['uint8', 'uint16'])), {
+      name: 'Error',
+      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16i.tiff has unsupported data type: int16. Expected: uint8, uint16`,
+    });
+  });
 });
 
 describe('validatePreset', () => {
@@ -459,15 +467,20 @@ describe('validatePreset', () => {
     await testValidatePresetTiffs(t, 'rgbnir_zstd');
   });
   for (const preset of ['webp', 'rgbnir_zstd']) {
-    it(`should reject float32 tiffs for ${preset}`, async (t) => {
-      const test32fTiff = await createTiff(pathToFileURL(`${dataDir}/32f.tiff`));
-      const fatalStub = t.mock.method(logger, 'fatal');
-      await assert.rejects(validatePreset(preset, [test32fTiff]), {
-        message: `Tiff preset:"${preset}" validation failed`,
+    for (const [dataType, file] of [
+      ['float32', '32f.tiff'],
+      ['int16', '16i.tiff'],
+    ]) {
+      it(`should reject ${dataType} tiffs for ${preset}`, async (t) => {
+        const testTiff = await createTiff(pathToFileURL(`${dataDir}/${file}`));
+        const fatalStub = t.mock.method(logger, 'fatal');
+        await assert.rejects(validatePreset(preset, [testTiff]), {
+          message: `Tiff preset:"${preset}" validation failed`,
+        });
+        const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+        assert.ok(opts['reason']?.includes(`unsupported data type: ${dataType}`));
       });
-      const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
-      assert.ok(opts['reason']?.includes('unsupported data type: float32'));
-    });
+    }
   }
 });
 
