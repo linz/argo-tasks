@@ -422,7 +422,7 @@ describe('validateTiffDataType', () => {
     const ret = await validateTiffDataType(testTiff, new Set(['uint16']));
     assert.equal(ret, 'uint16');
   });
-  it('should be a float32 TIFF', async () => {
+  it('should read a float32 TIFF and reject it when only uint8/uint16 are allowed', async () => {
     const testTiff = await createTiff(pathToFileURL(`${dataDir}/32f.tiff`));
     assert.equal(await validateTiffDataType(testTiff, new Set(['float32'])), 'float32');
     await assert.rejects(validateTiffDataType(testTiff, new Set(['uint8', 'uint16'])), {
@@ -430,7 +430,7 @@ describe('validateTiffDataType', () => {
       message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/32f.tiff has unsupported data type: float32. Expected: uint8, uint16`,
     });
   });
-  it('should not accept an int16 TIFF as uint16', async () => {
+  it('should read an int16 TIFF and reject it when only uint8/uint16 are allowed', async () => {
     const testTiff = await createTiff(pathToFileURL(`${dataDir}/16i.tiff`));
     assert.equal(await validateTiffDataType(testTiff, new Set(['int16'])), 'int16');
     await assert.rejects(validateTiffDataType(testTiff, new Set(['uint8', 'uint16'])), {
