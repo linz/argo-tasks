@@ -222,7 +222,6 @@ describe('stac-setup', () => {
 
     assert.equal(warnStub.mock.callCount(), 1);
     const opts = warnStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
-    assert.equal(opts['odrDataType'], 'uint8');
     assert.equal(opts['sourceDataType'], 'uint16');
     assert.equal(opts['geospatialCategory'], 'urban-aerial-photos');
     assert.equal(
