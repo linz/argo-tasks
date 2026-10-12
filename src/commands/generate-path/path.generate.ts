@@ -62,6 +62,15 @@ export const commandGeneratePath = command({
     };
 
     const target = generatePath(metadata);
+
+    const collectionLocation = new URL('collection.json', target);
+
+    if (await fsa.exists(collectionLocation)) {
+      throw new Error(
+        `An existing collection was found at ${protocolAwareString(collectionLocation)}. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
+      );
+    }
+
     logger.info({ duration: performance.now() - startTime, target }, 'GeneratePath:Done');
 
     await fsa.write(fsa.toUrl('/tmp/generate-path/target'), target);
@@ -108,7 +117,7 @@ export function generatePath(metadata: PathMetadata): string {
   );
 }
 
-function formatBucketName(bucketName: string): string {
+export function formatBucketName(bucketName: string): string {
   if (bucketName.startsWith('s3://')) return bucketName.replace('s3://', '').replace('/', '');
   return bucketName;
 }

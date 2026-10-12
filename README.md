@@ -256,11 +256,11 @@ stac validate --checksum-assets --checksum-links --recursive s3://linz-imagery-s
 
 Map input TIFF files to output tiles based on their location. Validate their alignment to the tile grid and output retiling information.
 
-Outputs files for visualisation of the tiles and a list of output tiles with their input TIFF files for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for creating the tiles with GDAL.
+Outputs files for visualisation of the tiles and a list of output tiles with their input TIFF files for [geoprocessor/raster](https://github.com/linz/geoprocessor/pkgs/container/geoprocessor%2Fraster) to use for creating the tiles with GDAL.
 
 - `input.geojson` GeoJSON file containing the bounding boxes of the source files. Example: [input.geojson](docs/input.geojson)
 - `output.geojson` GeoJSON file containing the bounding boxes of the requested target files. Example: [output.geojson](docs/output.geojson)
-- `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
+- `file-list.json` a list of source and target files to be used as an input for `geoprocessor/raster`. Example: [file-list.json](docs/file-list.json)
 
 #### Example
 
@@ -290,9 +290,9 @@ Add --vector flag to import new layer into vector map.
 
 Get a list of STAC items from source datasets that have changed or been added to the source compared to the optional target collection, based on existing hashes in linked STAC documents. Note: If a target collection has been provided, its items links must be resolvable. If no target is specified, all items will be considered updated/new.
 
-Outputs a `file-list.json` file for [topo-imagery](https://github.com/linz/topo-imagery/pkgs/container/topo-imagery) to use for generating hillshades (or retiling with GDAL).
+Outputs a `file-list.json` file for [geoprocessor/raster](https://github.com/linz/geoprocessor/pkgs/container/geoprocessor%2Fraster) to use for generating hillshades (or retiling with GDAL).
 
-- `file-list.json` a list of source and target files to be used as an input for `topo-imagery`. Example: [file-list.json](docs/file-list.json)
+- `file-list.json` a list of source and target files to be used as an input for `geoprocessor/raster`. Example: [file-list.json](docs/file-list.json)
 
 `--target-collection`
 Target collection.json file that needs to be updated. If not provided, all items will be considered updated/new.

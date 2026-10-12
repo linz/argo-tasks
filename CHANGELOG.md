@@ -1,5 +1,16 @@
 # Changelog
 
+## [8.0.0](https://github.com/linz/argo-tasks/compare/v7.0.2...v8.0.0) (2026-10-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* error existing odr url TDE-2110 ([#1367](https://github.com/linz/argo-tasks/issues/1367))
+
+### Features
+
+* error existing odr url TDE-2110 ([#1367](https://github.com/linz/argo-tasks/issues/1367)) ([461aa99](https://github.com/linz/argo-tasks/commit/461aa99a2eca44e566bebe20d2d65197abc77bdc))
+
 ## [7.0.2](https://github.com/linz/argo-tasks/compare/v7.0.1...v7.0.2) (2026-10-01)
 
 
