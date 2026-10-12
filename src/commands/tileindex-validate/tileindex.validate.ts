@@ -561,7 +561,9 @@ function allowedDataTypesForPreset(preset: string): Set<string> | null {
 }
 
 /**
- * Validate the tiffs against a validation preset
+ * Validate each tiff against a validation preset
+ *
+ * Consistency of the data type across tiffs is checked by {@link getTiffsMetadata}
  *
  * @param preset preset to validate against
  * @param tiffs tiffs to validate.
@@ -572,29 +574,14 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
   const allowedDataTypes = allowedDataTypesForPreset(preset);
   if (allowedDataTypes == null) return;
 
-  let dataType: string | null = null;
-
   const promises = tiffs.map(async (t) => {
-    const value = await validateTiffDataType(t, allowedDataTypes).catch((err) => {
+    await validateTiffDataType(t, allowedDataTypes).catch((err) => {
       logger.fatal(
         { reason: String(err), source: protocolAwareString(t.source.url), preset },
         'Tiff:ValidatePreset:failed',
       );
       rejected = true;
     });
-    if (value == null) return;
-    if (dataType == null) dataType = value;
-    if (dataType !== value) {
-      logger.fatal(
-        {
-          reason: `${protocolAwareString(t.source.url)} Inconsistent data type across tiffs: ${dataType} vs ${value}`,
-          source: protocolAwareString(t.source.url),
-          preset,
-        },
-        'Tiff:ValidatePreset:failed',
-      );
-      rejected = true;
-    }
   });
   await Promise.allSettled(promises);
 

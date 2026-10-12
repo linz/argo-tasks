@@ -4,7 +4,7 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { Projection } from '@basemaps/geo';
 import { fsa, FsMemory } from '@chunkd/fs';
 import type { Source } from '@cogeotiff/core';
-import { Tiff } from '@cogeotiff/core';
+import { SampleFormat, Tiff, TiffTag } from '@cogeotiff/core';
 import type { BBox } from '@linzjs/geojson';
 import { pathToFileURL } from 'url';
 
@@ -443,10 +443,11 @@ describe('validateTiffDataType', () => {
 describe('validatePreset', () => {
   const dataDir = './src/commands/tileindex-validate/__test__/data';
   async function testValidatePresetTiffs(t: it.TestContext, preset: string): Promise<void> {
-    const test16bTiff = await createTiff(pathToFileURL(`${dataDir}/16b.tiff`));
     const test8bTiff = await createTiff(pathToFileURL(`${dataDir}/8b.tiff`));
+    const test32fTiff = await createTiff(pathToFileURL(`${dataDir}/32f.tiff`));
+    const test16iTiff = await createTiff(pathToFileURL(`${dataDir}/16i.tiff`));
     const fatalStub = t.mock.method(logger, 'fatal');
-    await assert.rejects(validatePreset(preset, [test8bTiff, test16bTiff, test16bTiff]), {
+    await assert.rejects(validatePreset(preset, [test8bTiff, test32fTiff, test16iTiff]), {
       name: 'Error',
       message: `Tiff preset:"${preset}" validation failed`,
     });
@@ -454,7 +455,7 @@ describe('validatePreset', () => {
     assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
     const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
     assert.equal(opts['preset'], preset);
-    assert.ok(opts['reason']?.includes('Inconsistent data type'));
+    assert.ok(opts['reason']?.includes('unsupported data type'));
   }
   it('should validate multiple tiffs for webp', async (t) => {
     await testValidatePresetTiffs(t, 'webp');
@@ -652,6 +653,21 @@ describe('DataType handling', () => {
     assert.ok(String(ret).startsWith('Error: No data types found in the TIFFs: '));
     assert.ok(String(ret).includes('AS21_1000_0101.tiff'));
     assert.ok(String(ret).includes('AT21_1000_0101.tiff'));
+  });
+
+  it('should fail if TIFFs have different data types, even when each is allowed by the preset', async (t) => {
+    const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
+    t.mock.method(fakeTiff2.images[0], 'fetch', (tag: TiffTag) => {
+      if (tag === TiffTag.BitsPerSample) return [16, 16, 16];
+      if (tag === TiffTag.SampleFormat) return [SampleFormat.Uint, SampleFormat.Uint, SampleFormat.Uint];
+      return null;
+    });
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await assert.rejects(commandTileIndexValidate.handler({ ...baseArguments, preset: 'webp' }), {
+      message: 'Inconsistent data types found: uint8, uint16',
+    });
   });
 });
 
