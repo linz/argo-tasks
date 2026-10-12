@@ -28,3 +28,11 @@ export const GeospatialDataCategories = {
 } as const;
 
 export type GeospatialDataCategory = (typeof GeospatialDataCategories)[keyof typeof GeospatialDataCategories];
+
+export const RgbCategories: ReadonlySet<GeospatialDataCategory> = new Set([
+  GeospatialDataCategories.AncillaryAerialPhotos,
+  GeospatialDataCategories.RuralAerialPhotos,
+  GeospatialDataCategories.SatelliteImagery,
+  GeospatialDataCategories.ScannedAerialPhotos,
+  GeospatialDataCategories.UrbanAerialPhotos,
+]);

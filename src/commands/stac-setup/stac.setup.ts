@@ -9,7 +9,7 @@ import { logger } from '../../log.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
-import { GeospatialDataCategories } from '../../utils/metadata.ts';
+import { RgbCategories } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 import type { PathMetadata } from '../generate-path/path.generate.ts';
@@ -146,7 +146,8 @@ export const commandStacSetup = command({
       }
 
       const dataType = collection['data_type'] ?? (await extractBandInformation(await getTiff()))[0];
-      const isAllowedMismatch = isAllowedRgbResupplyMismatch(collection, dataType, args.dataType);
+      const isAllowedMismatch =
+        dataType === 'uint8' && args.dataType === 'uint16' && RgbCategories.has(collection['linz:geospatial_category']);
       if (dataType !== args.dataType && !isAllowedMismatch) {
         logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
         throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
@@ -206,25 +207,6 @@ export const commandStacSetup = command({
     }
   },
 });
-
-function isAllowedRgbResupplyMismatch(
-  collection: StacCollection & StacCollectionLinz,
-  collectionDataType: string | undefined,
-  sourceDataType: string | undefined,
-): boolean {
-  if (collectionDataType !== 'uint8' || sourceDataType !== 'uint16') return false;
-
-  switch (collection['linz:geospatial_category']) {
-    case GeospatialDataCategories.AncillaryAerialPhotos:
-    case GeospatialDataCategories.RuralAerialPhotos:
-    case GeospatialDataCategories.SatelliteImagery:
-    case GeospatialDataCategories.UrbanAerialPhotos:
-    case GeospatialDataCategories.ScannedAerialPhotos:
-      return true;
-    default:
-      return false;
-  }
-}
 
 function formatParts(...parts: string[]): string {
   return parts.filter((f) => f != null && f.length > 0).join('_');
