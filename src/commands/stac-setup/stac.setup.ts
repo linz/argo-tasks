@@ -146,13 +146,16 @@ export const commandStacSetup = command({
       }
 
       const dataType = collection['data_type'] ?? (await extractBandInformation(await getTiff()))[0];
-      const isAllowedMismatch =
-        dataType === 'uint8' && args.dataType === 'uint16' && RgbCategories.has(collection['linz:geospatial_category']);
-      if (dataType !== args.dataType && !isAllowedMismatch) {
-        logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
-        throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
-      }
-      if (isAllowedMismatch) {
+
+      if (dataType !== args.dataType) {
+        const isAllowedMismatch =
+          dataType === 'uint8' &&
+          args.dataType === 'uint16' &&
+          RgbCategories.has(collection['linz:geospatial_category']);
+        if (!isAllowedMismatch) {
+          logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
+          throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
+        }
         logger.warn(
           {
             odrUrl: protocolAwareString(collectionLocation),
