@@ -158,6 +158,8 @@ export const commandStacSetup = command({
             odrDataType: dataType,
             sourceDataType: args.dataType,
             geospatialCategory: collection['linz:geospatial_category'],
+            reason:
+              'RGB imagery is standardised to 8-bit WebP, so a uint16 resupply of a uint8 ODR collection is allowed',
           },
           'StacSetup:Warn:OdrDataTypeMismatchAllowed',
         );
