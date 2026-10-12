@@ -244,7 +244,7 @@ describe('stac-setup', () => {
   });
 
   it('should reject 16-bit resupply of 8-bit RGBNIR ODR dataset', async () => {
-    await fsa.write(collectionLocation, JSON.stringify(RgbnirUint8Collection));
+    await fsa.write(collectionLocation, JSON.stringify(RgbnirCollection));
 
     await assert.rejects(
       commandStacSetup.handler({
