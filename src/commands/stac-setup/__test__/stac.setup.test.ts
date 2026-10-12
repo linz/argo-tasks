@@ -9,7 +9,7 @@ import { MeterAsString } from '../../common.ts';
 import { formatBucketName } from '../../generate-path/path.generate.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
-import { HawkesBayResupplyCollection, RgbnirUint8Collection, SampleCollection } from './stac.setup.data.ts';
+import { HawkesBayResupplyCollection, RgbnirCollection, SampleCollection } from './stac.setup.data.ts';
 
 describe('stac-setup', () => {
   const mem = new FsMemory();
@@ -259,7 +259,7 @@ describe('stac-setup', () => {
   });
 
   it('should reject 8-bit resupply of 16-bit RGBNIR ODR dataset', async () => {
-    const rgbnirUint16 = { ...RgbnirUint8Collection, data_type: 'uint16' };
+    const rgbnirUint16 = { ...RgbnirCollection, data_type: 'uint16' };
     await fsa.write(collectionLocation, JSON.stringify(rgbnirUint16));
 
     await assert.rejects(
@@ -274,7 +274,7 @@ describe('stac-setup', () => {
   });
 
   it('should pass when uint16 data type matches uint16 collection', async () => {
-    const rgbnirUint16 = { ...RgbnirUint8Collection, data_type: 'uint16' };
+    const rgbnirUint16 = { ...RgbnirCollection, data_type: 'uint16' };
     await fsa.write(collectionLocation, JSON.stringify(rgbnirUint16));
 
     await commandStacSetup.handler({

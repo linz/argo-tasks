@@ -39,7 +39,6 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
   'linz:geographic_description': 'Palmerston North',
   'linz:slug': 'palmerston-north_2024_0.3m',
   gsd: 0.3,
-  data_type: 'uint8',
   extent: {
     spatial: {
       bbox: [[175.4961876, -36.8000575, 175.5071491, -36.7933469]],
@@ -61,11 +60,10 @@ export const HawkesBayResupplyCollection: StacCollection & StacCollectionLinz = 
   'linz:slug': 'hawkes-bay_2024_0.3m',
 };
 
-export const RgbnirUint8Collection: StacCollection & StacCollectionLinz = {
+export const RgbnirCollection: StacCollection & StacCollectionLinz = {
   ...HawkesBayResupplyCollection,
   id: '01HGF4RAQSM53Z26Y7C27T1GNM',
   title: "Hawke's Bay RGBNIR (2024) - Preview",
   description: "RGBNIR imagery within the Hawke's Bay region captured in 2024.",
   'linz:geospatial_category': 'near-infrared-aerial-photos',
-  data_type: 'uint8',
 };
