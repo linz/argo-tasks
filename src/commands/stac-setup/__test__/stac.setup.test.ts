@@ -3,6 +3,7 @@ import { afterEach, before, beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
 
+import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
 import { logger } from '../../../log.ts';
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
@@ -21,6 +22,10 @@ describe('stac-setup', () => {
 
   beforeEach(async () => {
     await fsa.write(collectionLocation, JSON.stringify(SampleCollection));
+    // add an item so stac-setup can read the first item of a collection
+    const item = { assets: { visual: { href: './BA34_1000_3040.tiff' } } };
+    await fsa.write(fsa.toUrl('memory:///BA34_1000_3040.json'), JSON.stringify(item));
+    await fsa.write(fsa.toUrl('memory:///BA34_1000_3040.tiff'), RgbaNztm2000Tiff);
   });
 
   afterEach(() => {
