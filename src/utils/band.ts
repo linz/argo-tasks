@@ -1,4 +1,4 @@
-import type { Tiff, TiffImage } from '@cogeotiff/core';
+import type { Tiff } from '@cogeotiff/core';
 import { SampleFormat, TiffTag } from '@cogeotiff/core';
 
 import { protocolAwareString } from './filelist.ts';
@@ -32,7 +32,8 @@ function getDataType(i: SampleFormat): string {
  * @throws {Error} if cannot extract band information
  */
 export async function extractBandInformation(tiff: Tiff): Promise<string[]> {
-  const firstImage = tiff.images[0] as TiffImage;
+  const firstImage = tiff.images[0];
+  if (firstImage == null) throw new Error(`Can't get base image for ${protocolAwareString(tiff.source.url)}`);
 
   const [dataType, bitsPerSample] = await Promise.all([
     /** firstImage.fetch(TiffTag.Photometric), **/ // TODO enable RGB detection

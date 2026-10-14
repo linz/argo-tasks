@@ -4,7 +4,7 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { Projection } from '@basemaps/geo';
 import { fsa, FsMemory } from '@chunkd/fs';
 import type { Source } from '@cogeotiff/core';
-import { Tiff } from '@cogeotiff/core';
+import { SampleFormat, Tiff, TiffTag } from '@cogeotiff/core';
 import type { BBox } from '@linzjs/geojson';
 import { pathToFileURL } from 'url';
 
@@ -26,9 +26,8 @@ import {
   isTiff,
   reprojectIfNeeded,
   TiffLoader,
-  validate8BitsTiff,
   validatePreset,
-  validateTiffSamples,
+  validateTiffDataType,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
@@ -407,29 +406,48 @@ describe('GridSizeFromString', () => {
   });
 });
 
-describe('is8BitsTiff', () => {
-  it('should be a 8 bits TIFF', async () => {
-    const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
-    await assert.doesNotReject(validate8BitsTiff(testTiff));
+describe('validateTiffDataType', () => {
+  const dataDir = './src/commands/tileindex-validate/__test__/data';
+  it('should be a uint8 TIFF', async () => {
+    const testTiff = await createTiff(pathToFileURL(`${dataDir}/8b.tiff`));
+    assert.equal(await validateTiffDataType(testTiff, new Set(['uint8'])), 'uint8');
   });
-  it('should not be a 8 bits TIFF', async () => {
-    const testTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
-    await assert.rejects(validate8BitsTiff(testTiff), {
+  it('should not be a uint8 TIFF', async () => {
+    const testTiff = await createTiff(pathToFileURL(`${dataDir}/16b.tiff`));
+    await assert.rejects(validateTiffDataType(testTiff, new Set(['uint8'])), {
       name: 'Error',
-      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported bit depth: 16. Expected: 8`,
+      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16b.tiff has unsupported data type: uint16. Expected: uint8`,
     });
 
-    const ret = await validateTiffSamples(testTiff, new Set([16]));
-    assert.equal(ret, 16);
+    const ret = await validateTiffDataType(testTiff, new Set(['uint16']));
+    assert.equal(ret, 'uint16');
+  });
+  it('should read a float32 TIFF and reject it when only uint8/uint16 are allowed', async () => {
+    const testTiff = await createTiff(pathToFileURL(`${dataDir}/32f.tiff`));
+    assert.equal(await validateTiffDataType(testTiff, new Set(['float32'])), 'float32');
+    await assert.rejects(validateTiffDataType(testTiff, new Set(['uint8', 'uint16'])), {
+      name: 'Error',
+      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/32f.tiff has unsupported data type: float32. Expected: uint8, uint16`,
+    });
+  });
+  it('should read an int16 TIFF and reject it when only uint8/uint16 are allowed', async () => {
+    const testTiff = await createTiff(pathToFileURL(`${dataDir}/16i.tiff`));
+    assert.equal(await validateTiffDataType(testTiff, new Set(['int16'])), 'int16');
+    await assert.rejects(validateTiffDataType(testTiff, new Set(['uint8', 'uint16'])), {
+      name: 'Error',
+      message: `${process.cwd()}/src/commands/tileindex-validate/__test__/data/16i.tiff has unsupported data type: int16. Expected: uint8, uint16`,
+    });
   });
 });
 
 describe('validatePreset', () => {
+  const dataDir = './src/commands/tileindex-validate/__test__/data';
   async function testValidatePresetTiffs(t: it.TestContext, preset: string): Promise<void> {
-    const test16bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/16b.tiff'));
-    const test8bTiff = await createTiff(pathToFileURL('./src/commands/tileindex-validate/__test__/data/8b.tiff'));
+    const test8bTiff = await createTiff(pathToFileURL(`${dataDir}/8b.tiff`));
+    const test32fTiff = await createTiff(pathToFileURL(`${dataDir}/32f.tiff`));
+    const test16iTiff = await createTiff(pathToFileURL(`${dataDir}/16i.tiff`));
     const fatalStub = t.mock.method(logger, 'fatal');
-    await assert.rejects(validatePreset(preset, [test8bTiff, test16bTiff, test16bTiff]), {
+    await assert.rejects(validatePreset(preset, [test8bTiff, test32fTiff, test16iTiff]), {
       name: 'Error',
       message: `Tiff preset:"${preset}" validation failed`,
     });
@@ -437,14 +455,34 @@ describe('validatePreset', () => {
     assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
     const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
     assert.equal(opts['preset'], preset);
-    assert.ok(opts['reason']?.includes('bit depth'));
+    assert.ok(opts['reason']?.includes('unsupported data type'));
   }
   it('should validate multiple tiffs for webp', async (t) => {
     await testValidatePresetTiffs(t, 'webp');
   });
+  it('should accept uint16 tiffs for webp', async () => {
+    const test16bTiff = await createTiff(pathToFileURL(`${dataDir}/16b.tiff`));
+    await assert.doesNotReject(validatePreset('webp', [test16bTiff, test16bTiff]));
+  });
   it('should validate multiple tiffs for rgbnir_zstd', async (t) => {
     await testValidatePresetTiffs(t, 'rgbnir_zstd');
   });
+  for (const preset of ['webp', 'rgbnir_zstd']) {
+    for (const [dataType, file] of [
+      ['float32', '32f.tiff'],
+      ['int16', '16i.tiff'],
+    ]) {
+      it(`should reject ${dataType} tiffs for ${preset}`, async (t) => {
+        const testTiff = await createTiff(pathToFileURL(`${dataDir}/${file}`));
+        const fatalStub = t.mock.method(logger, 'fatal');
+        await assert.rejects(validatePreset(preset, [testTiff]), {
+          message: `Tiff preset:"${preset}" validation failed`,
+        });
+        const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+        assert.ok(opts['reason']?.includes(`unsupported data type: ${dataType}`));
+      });
+    }
+  }
 });
 
 describe('TiffFromMisalignedTiff', () => {
@@ -615,6 +653,21 @@ describe('DataType handling', () => {
     assert.ok(String(ret).startsWith('Error: No data types found in the TIFFs: '));
     assert.ok(String(ret).includes('AS21_1000_0101.tiff'));
     assert.ok(String(ret).includes('AT21_1000_0101.tiff'));
+  });
+
+  it('should fail if TIFFs have different data types, even when each is allowed by the preset', async (t) => {
+    const fakeTiff1 = FakeCogTiff.fromTileName('AS21_1000_0101');
+    const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
+    t.mock.method(fakeTiff2.images[0], 'fetch', (tag: TiffTag) => {
+      if (tag === TiffTag.BitsPerSample) return [16, 16, 16];
+      if (tag === TiffTag.SampleFormat) return [SampleFormat.Uint, SampleFormat.Uint, SampleFormat.Uint];
+      return null;
+    });
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+
+    await assert.rejects(commandTileIndexValidate.handler({ ...baseArguments, preset: 'webp' }), {
+      message: 'Inconsistent data types found: uint8, uint16',
+    });
   });
 });
 
