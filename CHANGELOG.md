@@ -1,5 +1,13 @@
 # Changelog
 
+## [8.1.0](https://github.com/linz/argo-tasks/compare/v8.0.0...v8.1.0) (2026-10-14)
+
+
+### Features
+
+* allow mismatched datatype for odr and resupply tde-2108 ([#1368](https://github.com/linz/argo-tasks/issues/1368)) ([6428569](https://github.com/linz/argo-tasks/commit/6428569d377dbbbd67f48f43a66a912eb5c030ea))
+* support 16-bit webp and remove support for 32-bit rgbnir_zstd TDE-2107 ([#1365](https://github.com/linz/argo-tasks/issues/1365)) ([4071dfd](https://github.com/linz/argo-tasks/commit/4071dfd89ff4e0fd961038b48e140ce0b90d2bf0))
+
 ## [8.0.0](https://github.com/linz/argo-tasks/compare/v7.0.2...v8.0.0) (2026-10-07)
 
 
