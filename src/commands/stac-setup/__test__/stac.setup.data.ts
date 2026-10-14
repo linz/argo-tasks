@@ -39,7 +39,6 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
   'linz:geographic_description': 'Palmerston North',
   'linz:slug': 'palmerston-north_2024_0.3m',
   gsd: 0.3,
-  data_type: 'uint8',
   extent: {
     spatial: {
       bbox: [[175.4961876, -36.8000575, 175.5071491, -36.7933469]],
@@ -48,4 +47,23 @@ export const SampleCollection: StacCollection & StacCollectionLinz = {
       interval: [['2022-12-31T11:00:00Z', '2022-12-31T11:00:00Z']],
     },
   },
+};
+
+export const HawkesBayResupplyCollection: StacCollection & StacCollectionLinz = {
+  ...SampleCollection,
+  title: "North Island Weather Event Hawke's Bay 0.3m Satellite Imagery (2024) - Preview",
+  description:
+    "Satellite imagery within the Hawke's Bay region captured in 2024, published as a record of the North Island Weather Event.",
+  'linz:region': 'hawkes-bay',
+  'linz:event_name': 'North Island Weather Event',
+  'linz:geographic_description': "Hawke's Bay",
+  'linz:slug': 'hawkes-bay_2024_0.3m',
+};
+
+export const RgbnirCollection: StacCollection & StacCollectionLinz = {
+  ...HawkesBayResupplyCollection,
+  id: '01HGF4RAQSM53Z26Y7C27T1GNM',
+  title: "Hawke's Bay RGBNIR (2024) - Preview",
+  description: "RGBNIR imagery within the Hawke's Bay region captured in 2024.",
+  'linz:geospatial_category': 'near-infrared-aerial-photos',
 };

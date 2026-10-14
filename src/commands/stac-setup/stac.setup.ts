@@ -9,6 +9,7 @@ import { logger } from '../../log.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
+import { RgbCategories } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 import type { PathMetadata } from '../generate-path/path.generate.ts';
@@ -145,9 +146,27 @@ export const commandStacSetup = command({
       }
 
       const dataType = collection['data_type'] ?? (await extractBandInformation(await getTiff()))[0];
+
       if (dataType !== args.dataType) {
-        logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
-        throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
+        const isAllowedMismatch =
+          dataType === 'uint8' &&
+          args.dataType === 'uint16' &&
+          RgbCategories.has(collection['linz:geospatial_category']);
+        if (!isAllowedMismatch) {
+          logger.error({ dataType, expected: args.dataType }, 'StacSetup:Error:DataTypeMismatch');
+          throw new Error(`Data type at ODR URL [${dataType}] does not match new TIFF data type [${args.dataType}]`);
+        }
+        logger.warn(
+          {
+            odrUrl: protocolAwareString(collectionLocation),
+            odrDataType: dataType,
+            sourceDataType: args.dataType,
+            geospatialCategory: collection['linz:geospatial_category'],
+            reason:
+              'RGB imagery is standardised to 8-bit WebP, so a uint16 resupply of a uint8 ODR collection is allowed',
+          },
+          'StacSetup:Warn:OdrDataTypeMismatchAllowed',
+        );
       }
 
       const collectionId = collection['id'];
