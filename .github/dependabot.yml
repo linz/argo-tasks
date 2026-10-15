@@ -1,4 +1,5 @@
 version: 2
+
 updates:
 - package-ecosystem: "docker"
   directories: 
@@ -13,6 +14,7 @@ updates:
     default-days: 15
   commit-message:
     prefix: build(deps)
+
 - package-ecosystem: github-actions
   directory: /
   open-pull-requests-limit: 5
@@ -30,6 +32,7 @@ updates:
       applies-to: version-updates
       patterns: ["*"]
       update-types: [minor, patch]
+
 - package-ecosystem: npm
   directory: /
   open-pull-requests-limit: 5
