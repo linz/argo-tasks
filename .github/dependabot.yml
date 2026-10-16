@@ -1,7 +1,7 @@
 version: 2
 
 updates:
-- package-ecosystem: "docker"
+- package-ecosystem: docker
   directories: 
     - /.github/workflows
   open-pull-requests-limit: 5
