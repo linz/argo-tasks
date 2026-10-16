@@ -54,6 +54,11 @@ updates:
     aws:
       patterns:
         - "@aws-sdk/*"
+    aws-cdk:
+      patterns:
+        - "aws-cdk"
+        - "aws-cdk-lib"
+        - "constructs"
     chunkd:
       patterns:
         - "@cogeotiff/*"
