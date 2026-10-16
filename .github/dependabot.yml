@@ -16,7 +16,8 @@ updates:
     prefix: build(deps)
 
 - package-ecosystem: github-actions
-  directory: /
+  directories: 
+    - /
   open-pull-requests-limit: 5
   schedule:
     interval: weekly
@@ -34,7 +35,8 @@ updates:
       update-types: [minor, patch]
 
 - package-ecosystem: npm
-  directory: /
+  directories: 
+    - /
   open-pull-requests-limit: 5
   schedule:
     interval: weekly
