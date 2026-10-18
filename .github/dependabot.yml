@@ -2,7 +2,8 @@ version: 2
 
 updates:
 - package-ecosystem: docker
-  directory: /
+  directories: 
+    - /
   open-pull-requests-limit: 5
   schedule:
     interval: weekly
@@ -12,14 +13,14 @@ updates:
   cooldown:
     default-days: 15
   commit-message:
-    prefix: "build(deps)"
+    prefix: build(deps)
   groups:
     docker-minor-and-patch:
       patterns: ["*"]
       update-types: [minor, patch]
 
 - package-ecosystem: docker
-  directories: 
+  directories:
     - /.github/workflows
   open-pull-requests-limit: 5
   schedule:
@@ -33,7 +34,7 @@ updates:
     prefix: build(deps)
 
 - package-ecosystem: github-actions
-  directories: 
+  directories:
     - /
   open-pull-requests-limit: 5
   schedule:
@@ -52,7 +53,7 @@ updates:
       update-types: [minor, patch]
 
 - package-ecosystem: npm
-  directories: 
+  directories:
     - /
   open-pull-requests-limit: 5
   schedule:
