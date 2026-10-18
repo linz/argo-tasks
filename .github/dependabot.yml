@@ -3,6 +3,24 @@ version: 2
 updates:
 - package-ecosystem: docker
   directories: 
+    - /
+  open-pull-requests-limit: 5
+  schedule:
+    interval: weekly
+    day: monday
+    time: "07:30"
+    timezone: Pacific/Auckland
+  cooldown:
+    default-days: 15
+  commit-message:
+    prefix: build(deps)
+  groups:
+    docker-minor-and-patch:
+      patterns: ["*"]
+      update-types: [minor, patch]
+
+- package-ecosystem: docker
+  directories:
     - /.github/workflows
   open-pull-requests-limit: 5
   schedule:
@@ -16,7 +34,7 @@ updates:
     prefix: build(deps)
 
 - package-ecosystem: github-actions
-  directories: 
+  directories:
     - /
   open-pull-requests-limit: 5
   schedule:
@@ -35,7 +53,7 @@ updates:
       update-types: [minor, patch]
 
 - package-ecosystem: npm
-  directories: 
+  directories:
     - /
   open-pull-requests-limit: 5
   schedule:
@@ -51,6 +69,9 @@ updates:
     basemaps:
       patterns:
         - "@basemaps/*"
+    octokit:
+      patterns:
+        - "@octokit/*"
     aws:
       patterns:
         - "@aws-sdk/*"
