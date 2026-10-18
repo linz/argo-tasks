@@ -24,7 +24,7 @@ jobs:
 
       - name: Build container
         if: ${{ github.ref != 'refs/heads/master' }}
-        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v5
         with:
           context: .
           platforms: linux/amd64
@@ -124,7 +124,7 @@ jobs:
             return tags.join(', ')
 
       - name: Build and push container
-        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v5
         with:
           context: .
           tags: ${{ steps.tags.outputs.result }}
