@@ -36,7 +36,7 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
 
     steps:
-      - uses: linz/action-typescript@dee99184c4305aea6c380a52db9b2d7abaaa3e78 # v3
+      - uses: linz/action-typescript@47be81e60ed1d891c696c3fb7f558876ba9a2b57 # v3
         with:
           node-version: 24.5.0
 
