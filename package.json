@@ -16,7 +16,7 @@
     "@linzjs/style": "^5.4.0",
     "@types/node": "^24.2.0",
     "@types/prettier": "^3.0.0",
-    "stac-ts": "^1.0.4"
+    "stac-ts": "^1.0.5"
   },
   "scripts": {
     "build": "tsc",
@@ -48,15 +48,15 @@
     "@octokit/auth-app": "^6.1.4",
     "@octokit/core": "^5.0.0",
     "@octokit/plugin-rest-endpoint-methods": "^10.1.1",
-    "@turf/buffer": "^7.1.0",
+    "@turf/buffer": "^7.4.0",
     "@wtrpc/core": "^1.1.0",
-    "ajv": "^8.17.1",
+    "ajv": "^8.20.0",
     "ajv-formats": "^2.1.1",
-    "cmd-ts": "^0.13.0",
+    "cmd-ts": "^0.15.0",
     "flatgeobuf": "^3.23.1",
     "p-limit": "^5.0.0",
     "pino": "^8.17.0",
-    "prettier": "^3.3.3",
+    "prettier": "^3.9.9",
     "pretty-json-log": "^1.4.0",
     "ulid": "^2.3.0",
     "zod": "^3.22.4"
