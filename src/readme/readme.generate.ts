@@ -77,7 +77,7 @@ async function generateReadme(): Promise<void> {
       data.push(`### ${firstTopic.charAt(0).toUpperCase()}${firstTopic.slice(1)}`); // upper case flags -> Flags
       data.push();
       data.push('|Usage|Description|Options|');
-      data.push('|---------|---------|');
+      data.push('|---------|---------|---------|');
       for (const topic of topics) {
         // all commands have --help
         if (topic.usage.startsWith('--help')) continue;
