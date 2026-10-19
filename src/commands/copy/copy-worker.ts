@@ -66,7 +66,12 @@ async function copyEntryAttempt({
     const shouldDecompress = fileOperation === FileOperation.Decompress;
     const shouldFixMetadata = args.fixContentType || shouldDecompress || shouldCompress;
 
-    const fileMetadata = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
+    const fileInfo = shouldFixMetadata ? fixFileMetadata(target.url, source) : source;
+    if (fileInfo.metadata != null && !isStringRecord(fileInfo.metadata)) {
+      logger.error({ path: manifestEntry.source, metadata: fileInfo.metadata }, 'Non-string metadata detected');
+      throw new Error(`Non-string metadata on source:${manifestEntry.source}`);
+    }
+    const fileMetadata = { ...fileInfo, metadata: fileInfo.metadata };
     // pipeline() passes its final stage an AsyncIterable, but fsa.write expects a Readable
     const writeTarget = (stream: AsyncIterable<Buffer>): Promise<void> =>
       fsa.write(target.url, Readable.from(stream), fileMetadata);
@@ -142,6 +147,11 @@ async function copyEntryAttempt({
   }
 
   return undefined;
+}
+
+/** chunkd types source metadata as unknown, but writes require strings */
+function isStringRecord(record: Record<string, unknown>): record is Record<string, string> {
+  return Object.values(record).every((value) => typeof value === 'string');
 }
 
 export function isZstdError(error: unknown): boolean {
