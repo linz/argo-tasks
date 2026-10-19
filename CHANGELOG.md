@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.1.2](https://github.com/linz/argo-tasks/compare/v8.1.1...v8.1.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* **deps:** manual npm audit fix TDE-2130 ([#1389](https://github.com/linz/argo-tasks/issues/1389)) ([4370952](https://github.com/linz/argo-tasks/commit/43709525b2b72584f64092edd83a81f041d56257))
+
 ## [8.1.1](https://github.com/linz/argo-tasks/compare/v8.1.0...v8.1.1) (2026-10-18)
 
 
