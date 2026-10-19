@@ -42,13 +42,13 @@ export const commandStacValidate = command({
     }),
     recursive: flag({
       type: boolean,
-      defaultValue: () => true,
+      defaultValue: () => false,
       long: 'recursive',
       description: 'Follow and validate STAC links',
     }),
     strict: flag({
       type: boolean,
-      defaultValue: () => true,
+      defaultValue: () => false,
       long: 'strict',
       description: 'Strict checking',
     }),
