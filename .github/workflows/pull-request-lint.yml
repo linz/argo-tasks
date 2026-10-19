@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: linz/action-pull-request-lint@v1
+      - uses: linz/action-pull-request-lint@7adb4bc59b59dc6e097de831c29a17c2c1338826 # v1.2.0
         with:
           conventional: 'error' # require conventional pull request title (default: "error" options: "error", "warn", "off")
           jira: 'warn' # Require JIRA ticket references (default: "warn", options: "error", "warn", "off")
