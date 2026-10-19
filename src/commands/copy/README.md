@@ -23,7 +23,7 @@ copy <options> [...location]
 
 | Usage              | Description                                                                                                                             | Options        |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| --verbose          | Verbose logging                                                                                                                         |                |
+| --verbose          | Verbose logging                                                                                                                         | optional       |
 | --force            | Overwrite existing files                                                                                                                | default: false |
 | --no-clobber       | Skip existing files                                                                                                                     | default: false |
 | --force-no-clobber | Overwrite changed files                                                                                                                 | default: false |
