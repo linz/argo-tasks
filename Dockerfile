@@ -1,4 +1,4 @@
-FROM node:24.5.0-slim@sha256:7c1ef8ffc4ac39763375af7619df88c07a791dd83ba0743e738edce83b183139
+FROM node:25.9.0-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370
 
 RUN apt-get update && apt-get install openssh-client git jq -y
 
