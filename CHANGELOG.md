@@ -1,5 +1,20 @@
 # Changelog
 
+## [8.1.2](https://github.com/linz/argo-tasks/compare/v8.1.1...v8.1.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* **deps:** manual npm audit fix TDE-2130 ([#1389](https://github.com/linz/argo-tasks/issues/1389)) ([4370952](https://github.com/linz/argo-tasks/commit/43709525b2b72584f64092edd83a81f041d56257))
+
+## [8.1.1](https://github.com/linz/argo-tasks/compare/v8.1.0...v8.1.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **deps:** bump fast-uri from 3.0.6 to 3.1.8 ([#1363](https://github.com/linz/argo-tasks/issues/1363)) ([0ff58c4](https://github.com/linz/argo-tasks/commit/0ff58c465f0278578ec8b5fc50762921eeb78018))
+* **deps:** bump the aws group across 1 directory with 3 updates ([#1377](https://github.com/linz/argo-tasks/issues/1377)) ([6f4f105](https://github.com/linz/argo-tasks/commit/6f4f1053ccc4e54b21837d912cafb0e002f2fb4f))
+
 ## [8.1.0](https://github.com/linz/argo-tasks/compare/v8.0.0...v8.1.0) (2026-10-14)
 
 
