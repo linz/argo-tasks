@@ -200,7 +200,7 @@ describe('copyFiles', () => {
         metadata: { multihash: fakeMultihash, unique: 'fileB' },
       }),
     ]);
-    assert.rejects(
+    await assert.rejects(
       worker.routes.copy({
         ...defaultCopyArgs,
         manifest: [
