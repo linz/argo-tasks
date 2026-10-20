@@ -1,6 +1,6 @@
-import type prettier from 'prettier';
+import type { FormatConfig } from 'oxfmt';
 
-export const DEFAULT_PRETTIER_FORMAT: prettier.Options = {
+export const DEFAULT_FORMAT: FormatConfig = {
   semi: true,
   trailingComma: 'all',
   singleQuote: true,

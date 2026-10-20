@@ -9,7 +9,7 @@ import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
 import path from 'node:path';
 
 import { logger } from '../../log.ts';
-import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { DEFAULT_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
@@ -40,7 +40,7 @@ export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   Event: {},
 };
 
-const ConfigPrettierFormat = Object.assign({}, DEFAULT_PRETTIER_FORMAT, { printWidth: 200 });
+const ConfigFormat = Object.assign({}, DEFAULT_FORMAT, { printWidth: 200 });
 
 export class MakeCogGithub {
   imagery: string;
@@ -207,7 +207,7 @@ export class MakeCogGithub {
     if (newTileSet == null) throw new Error(`Failed to prepare new tileSet for ${tileSetPath}.`);
 
     // Github
-    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
+    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
     await gh.createPullRequest(branch, title, [file], body, draft);

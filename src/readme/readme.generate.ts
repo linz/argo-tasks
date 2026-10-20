@@ -1,7 +1,7 @@
 import { fsa } from '@chunkd/fs';
 import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.ts';
 import { writeFileSync } from 'node:fs';
-import * as prettier from 'prettier';
+import { format } from 'oxfmt';
 import { pathToFileURL } from 'url';
 
 import { AllCommands } from '../commands/index.ts';
@@ -91,7 +91,7 @@ async function generateReadme(): Promise<void> {
 
     const text = data.join('\n');
 
-    const formatted = await prettier.format(text, { filepath: 'readme.md' });
+    const { code: formatted } = await format('readme.md', text);
     const targetReadme = new URL('README.md', fsa.toUrl(targetPath));
 
     writeFileSync(targetReadme, formatted);
@@ -101,7 +101,7 @@ async function generateReadme(): Promise<void> {
 
   const commandText = commandIndex.join('\n');
 
-  const formatted = await prettier.format(commandText, { filepath: 'readme.md' });
+  const { code: formatted } = await format('readme.md', commandText);
   writeFileSync('COMMANDS.md', formatted);
 }
 
