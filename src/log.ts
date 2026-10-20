@@ -1,11 +1,11 @@
 import { pino } from 'pino';
 import { PrettyTransform } from 'pretty-json-log';
-import ulid from 'ulid';
+import { ulid } from 'ulid';
 
 export const logger = process.stdout.isTTY ? pino(PrettyTransform.stream()) : pino();
 logger.level = 'debug';
 
-export const logId = ulid.ulid();
+export const logId = ulid();
 logger.setBindings({ id: logId });
 
 export function registerLogger(cfg: { verbose?: boolean }): void {

@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import type { Tiff } from '@cogeotiff/core';
 import { command, number, option, optional, string } from 'cmd-ts';
 import type { StacCollection } from 'stac-ts';
-import ulid from 'ulid';
+import { ulid } from 'ulid';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
@@ -204,7 +204,7 @@ export const commandStacSetup = command({
           `An existing collection was found at ${protocolAwareString(collectionLocation)}. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
         );
       }
-      const collectionId = ulid.ulid();
+      const collectionId = ulid();
       await writeSetupFiles(slug, collectionId, args.output);
       logger.info({ duration: performance.now() - startTime, slug, collectionId }, 'StacSetup:Done');
     }
