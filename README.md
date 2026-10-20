@@ -73,7 +73,7 @@ list s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --out
 
 ### `pretty-print`
 
-Format all JSON files within a directory using `prettier`.
+Format all JSON files within a directory using `oxfmt`.
 
 #### Example
 
