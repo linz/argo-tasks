@@ -453,7 +453,7 @@ describe('validatePreset', () => {
     });
 
     assert.equal(fatalStub.mock.callCount(), 2); // Should be called per tiff failure
-    const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+    const opts = fatalStub.mock.calls[0]?.arguments[0] as Record<string, string>;
     assert.equal(opts['preset'], preset);
     assert.ok(opts['reason']?.includes('unsupported data type'));
   }
@@ -478,7 +478,7 @@ describe('validatePreset', () => {
         await assert.rejects(validatePreset(preset, [testTiff]), {
           message: `Tiff preset:"${preset}" validation failed`,
         });
-        const opts = fatalStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string>;
+        const opts = fatalStub.mock.calls[0]?.arguments[0] as Record<string, string>;
         assert.ok(opts['reason']?.includes(`unsupported data type: ${dataType}`));
       });
     }
