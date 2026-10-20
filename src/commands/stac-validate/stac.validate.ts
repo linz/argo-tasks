@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
-import Ajv from 'ajv';
+import { Ajv } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals } from 'cmd-ts';
 import { createHash } from 'crypto';
@@ -73,8 +73,7 @@ export const commandStacValidate = command({
     }
     const stacFileLocations = args.location.flat();
 
-    // Weird typing for ajv require us to use the "default" export to construct it.
-    const ajv = new Ajv.default({
+    const ajv = new Ajv({
       allErrors: true,
       strict: args.strict,
       loadSchema: loadSchema,
