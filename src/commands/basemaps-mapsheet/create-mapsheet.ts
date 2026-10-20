@@ -4,7 +4,7 @@ import { Bounds, EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, string } from 'cmd-ts';
 import * as fgb from 'flatgeobuf/lib/mjs/geojson.js';
-import type { FeatureCollection, MultiPolygon } from 'geojson';
+import type { Feature, FeatureCollection, MultiPolygon } from 'geojson';
 import { promisify } from 'util';
 import { gunzip } from 'zlib';
 
@@ -31,6 +31,13 @@ async function readConfig(config: URL): Promise<ConfigBundled> {
     return JSON.parse(data.toString()) as ConfigBundled;
   }
   return JSON.parse(obj.toString()) as ConfigBundled;
+}
+
+/** Read all features from a flatgeobuf into a GeoJSON FeatureCollection */
+async function readFeatureCollection(buf: Uint8Array): Promise<FeatureCollection> {
+  const features: Feature[] = [];
+  for await (const feature of fgb.deserialize(buf)) features.push(feature);
+  return { type: 'FeatureCollection', features };
 }
 
 interface Output {
@@ -87,7 +94,7 @@ export const basemapsCreateMapSheet = command({
     const configJson = await readConfig(config);
     const mem = ConfigProviderMemory.fromJson(configJson);
 
-    const rest = fgb.deserialize(buf);
+    const rest = await readFeatureCollection(buf);
     const featuresWritePromise = fsa.write(fsa.toUrl('features.json'), JSON.stringify(rest));
 
     const aerial = await mem.TileSet.get('ts_aerial');
