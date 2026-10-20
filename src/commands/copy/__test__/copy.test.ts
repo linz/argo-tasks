@@ -317,14 +317,12 @@ describe('copyFiles', () => {
   });
 
   it('should copy and compress files when compress flag is set and file is large enough', async () => {
-    await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression, 'x'), {
-        contentType: 'application/octet-stream',
-        metadata: {
-          unique: 'fileA',
-        },
-      }),
-    ]);
+    await fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression, 'x'), {
+      contentType: 'application/octet-stream',
+      metadata: {
+        unique: 'fileA',
+      },
+    });
     await worker.routes.copy({
       ...defaultCopyArgs,
       manifest: [
@@ -344,14 +342,12 @@ describe('copyFiles', () => {
   });
 
   it('should copy and NOT compress files when compress flag is set and file is small', async () => {
-    await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression - 1, 'x'), {
-        contentType: 'application/octet-stream',
-        metadata: {
-          unique: 'fileA',
-        },
-      }),
-    ]);
+    await fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression - 1, 'x'), {
+      contentType: 'application/octet-stream',
+      metadata: {
+        unique: 'fileA',
+      },
+    });
     await worker.routes.copy({
       ...defaultCopyArgs,
       manifest: [

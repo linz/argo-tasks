@@ -319,7 +319,7 @@ export class MakeCogGithub {
         category: 'Elevation',
         layers: [targetLayer],
         outputs: [DefaultTerrainRgbOutput, DefaultColorRampOutput],
-      } as ConfigTileSetRaster;
+      };
     }
 
     this.setDefaultConfig(layer, 'Elevation');

@@ -3,7 +3,6 @@ import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import assert from 'node:assert';
 import { afterEach, it } from 'node:test';
-import type { StacVersion } from 'stac-ts';
 
 import { anySlug } from '../../../utils/__test__/slugify.test.ts';
 import { GithubApi } from '../../../utils/github.ts';
@@ -19,7 +18,7 @@ await it('basemapsCreatePullRequest.handler should handle S3 target', async (t) 
   const targetUrl = `s3://linz-basemaps/${EpsgCode.Nztm2000}/${anySlug()}`;
   t.mock.method(fsa, 'readJson', () => {
     return Promise.resolve({
-      stac_version: '1.0.0' as StacVersion,
+      stac_version: '1.0.0',
       type: 'Collection',
       id: 'b871c4a7-2d8e-4cec-997a-ed755cf542b9',
       title: 'any-title',

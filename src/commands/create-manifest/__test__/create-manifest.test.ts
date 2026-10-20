@@ -90,9 +90,7 @@ describe('createManifest', () => {
   });
 
   it('should copy single file to the target location without a trailing /', async () => {
-    await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
-    ]);
+    await fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true })));
 
     const outputFiles = await createManifest(
       [await Url.from('memory://source/topographic.json')],
