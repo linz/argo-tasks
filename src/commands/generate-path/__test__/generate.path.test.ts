@@ -233,7 +233,7 @@ describe('gsd', () => {
 });
 
 describe('metadata from collection', () => {
-  it('Should return urban aerial photos path', async () => {
+  it('Should return urban aerial photos path', () => {
     const collection = structuredClone(SampleCollection);
 
     const metadata: PathMetadata = {
@@ -265,7 +265,7 @@ describe('command.generatePath', () => {
   };
 
   it('should generate a output', async (t) => {
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
     await fsa.write(
       fsa.toUrl('memory://bucket/source/test/collection.json'),
       Buffer.from(
@@ -298,7 +298,7 @@ describe('command.generatePath', () => {
   });
 
   it('should error when generated ODR destination already exists', async (t) => {
-    t.mock.method(fsa, 'exists', async () => true);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(true));
 
     await fsa.write(
       fsa.toUrl('memory://bucket/source/test/collection.json'),

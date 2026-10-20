@@ -14,7 +14,7 @@ import {
 } from '../verify.restore.ts';
 
 describe('fetchResultKeysFromReport', () => {
-  it('returns keys for succeeded results', async () => {
+  it('returns keys for succeeded results', () => {
     const report = {
       Results: [
         { TaskExecutionStatus: 'succeeded', Bucket: 'b', Key: 'k', MD5Checksum: 'm' },
@@ -25,7 +25,7 @@ describe('fetchResultKeysFromReport', () => {
     assert.deepEqual(keys, [fsa.toUrl('s3://b/k'), fsa.toUrl('s3://b2/k2')]);
   });
 
-  it('returns all keys and logs a warning if any result is not succeeded', async (t) => {
+  it('returns all keys and logs a warning if any result is not succeeded', (t) => {
     const warnStub = t.mock.method(logger, 'warn');
     const report = {
       Results: [
@@ -44,7 +44,7 @@ describe('fetchResultKeysFromReport', () => {
 });
 
 describe('fetchPendingRestoredObjectPaths', () => {
-  it('returns Bucket/Key for successful requests', async () => {
+  it('returns Bucket/Key for successful requests', () => {
     const entries = [
       {
         Bucket: 'b',
@@ -60,7 +60,7 @@ describe('fetchPendingRestoredObjectPaths', () => {
     assert.deepEqual(files, [{ Bucket: 'b', Key: 'k' }]);
   });
 
-  it('throws if any request is not successful except RestoreAlreadyInProgress', async () => {
+  it('throws if any request is not successful except RestoreAlreadyInProgress', () => {
     const entries = [
       {
         Bucket: 'b',
@@ -178,7 +178,7 @@ describe('parseReportResult', () => {
 });
 
 describe('isRestoreCompleted', () => {
-  it('returns true if Restore is ongoing-request="false"', async () => {
+  it('returns true if Restore is ongoing-request="false"', () => {
     const headObjectOutput: HeadObjectCommandOutput = {
       Restore: 'ongoing-request="false", expiry-date="Sat, 16 Aug 2025 00:00:00 GMT"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
@@ -190,7 +190,7 @@ describe('isRestoreCompleted', () => {
     assert.strictEqual(isRestoreCompleted(fileInfo), true);
   });
 
-  it('returns false if Restore is ongoing-request="true"', async () => {
+  it('returns false if Restore is ongoing-request="true"', () => {
     const headObjectOutput: HeadObjectCommandOutput = {
       Restore: 'ongoing-request="true"',
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
@@ -202,7 +202,7 @@ describe('isRestoreCompleted', () => {
     assert.strictEqual(isRestoreCompleted(fileInfo), false);
   });
 
-  it('throws if Restore is undefined', async () => {
+  it('throws if Restore is undefined', () => {
     const headObjectOutput: HeadObjectCommandOutput = {
       $metadata: { httpStatusCode: 200, requestId: '', extendedRequestId: '', cfId: '' },
     };

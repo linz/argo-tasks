@@ -62,13 +62,15 @@ export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
    * @param value The input string.
    * @returns The corresponding GridSize or 'auto'.
    */
-  async from(value) {
-    if (value === 'auto') return value;
+  from(value) {
+    if (value === 'auto') return Promise.resolve(value);
     const gridSize = Number(value) as GridSize;
     if (!GridSizes.includes(gridSize)) {
-      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}", or "auto"`);
+      return Promise.reject(
+        new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}", or "auto"`),
+      );
     }
-    return gridSize;
+    return Promise.resolve(gridSize);
   },
 };
 
@@ -79,12 +81,14 @@ export const TargetEpsgFromString: Type<string, number> = {
    * @param value The input string.
    * @returns The corresponding EPSG code.
    */
-  async from(value) {
+  from(value) {
     const epsg = Number(value);
     if (MapSheetRegistry[epsg] == null) {
-      throw new Error(`Invalid target-epsg "${value}". valid values: "${Object.keys(MapSheetRegistry).join('", "')}"`);
+      return Promise.reject(
+        new Error(`Invalid target-epsg "${value}". valid values: "${Object.keys(MapSheetRegistry).join('", "')}"`),
+      );
     }
-    return epsg;
+    return Promise.resolve(epsg);
   },
 };
 

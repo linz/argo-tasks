@@ -77,7 +77,7 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from args', async (t) => {
     // Avoid checking real S3 during unit tests
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
@@ -104,7 +104,7 @@ describe('stac-setup', () => {
 
   it('should not include the date in the slug', async (t) => {
     // Simulate no existing collection at the generated ODR path
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
 
     const baseArgs = {
       ...BaseArgs,
@@ -131,7 +131,7 @@ describe('stac-setup', () => {
 
   it('should throw an error when collection.json already exists', async (t) => {
     // Simulate existing collection at the generated ODR path
-    t.mock.method(fsa, 'exists', async () => true);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(true));
 
     const baseArgs = {
       ...BaseArgs,
@@ -151,7 +151,7 @@ describe('stac-setup', () => {
 
   it('should generate a slug with a survey id', async (t) => {
     // Simulate no existing collection at the generated ODR path
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
 
     const baseArgs = {
       ...BaseArgs,
@@ -412,10 +412,10 @@ describe('slugFromMetadata', () => {
 });
 
 describe('formatDate', () => {
-  it('Should return date as single year', async () => {
+  it('Should return date as single year', () => {
     assert.equal(formatDate('2023', '2023'), '2023');
   });
-  it('Should return date as two years', async () => {
+  it('Should return date as two years', () => {
     assert.equal(formatDate('2023', '2024'), '2023-2024');
   });
   it('Should only return a date if both are set', () => {

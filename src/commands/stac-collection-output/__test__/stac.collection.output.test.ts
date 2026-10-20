@@ -37,24 +37,24 @@ describe('stac-collection-output', () => {
     const scale = await fsa.read(fsa.toUrl('memory:///tmp/stac-collection-output/scale'));
     assert.strictEqual(scale.toString(), '1000');
   });
-  it('Should return true for a valid scale', async () => {
+  it('Should return true for a valid scale', () => {
     assert.equal(getScale(SampleCollection, collectionLocation), '1000');
   });
-  it('Should throw an error if item link href is an empty string', async () => {
+  it('Should throw an error if item link href is an empty string', () => {
     SampleCollection.links = [{ rel: 'item', href: '' }];
     assert.throws(
       () => getScale(SampleCollection, collectionLocation),
       Error('No valid item link href found in collection at memory:///collection.json.'),
     );
   });
-  it('Should throw an error if no item link', async () => {
+  it('Should throw an error if no item link', () => {
     SampleCollection.links = [];
     assert.throws(
       () => getScale(SampleCollection, collectionLocation),
       Error('No valid item link href found in collection at memory:///collection.json.'),
     );
   });
-  it('Should throw an error if item link href does not contain a scale', async () => {
+  it('Should throw an error if item link href does not contain a scale', () => {
     SampleCollection.links = [{ rel: 'item', href: 'item-without-scale.json' }];
     assert.throws(
       () => getScale(SampleCollection, collectionLocation),

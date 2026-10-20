@@ -10,10 +10,10 @@ describe('retryOnError', () => {
     const result = await retryOnError(
       3,
       () => 10,
-      async () => {
+      () => {
         attempts += 1;
-        if (attempts < 3) throw new Error('temporary failure');
-        return 'ok';
+        if (attempts < 3) return Promise.reject(new Error('temporary failure'));
+        return Promise.resolve('ok');
       },
       () => true,
     );
@@ -30,9 +30,9 @@ describe('retryOnError', () => {
       retryOnError(
         3,
         () => 10,
-        async () => {
+        () => {
           attempts += 1;
-          throw new Error(`failure ${attempts}`);
+          return Promise.reject(new Error(`failure ${attempts}`));
         },
         () => true,
       ),
@@ -50,9 +50,9 @@ describe('retryOnError', () => {
       retryOnError(
         3,
         () => 10,
-        async () => {
+        () => {
           attempts += 1;
-          throw new Error('permanent failure');
+          return Promise.reject(new Error('permanent failure'));
         },
         () => false,
       ),
