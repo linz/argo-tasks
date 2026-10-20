@@ -319,7 +319,7 @@ async function loadSchema(urlString: string): Promise<object> {
   const cachePath = pathToFileURL(`./json-schema-cache/${cacheId}.json`);
   try {
     return await fsa.readJson<object>(cachePath);
-  } catch (e) {
+  } catch {
     return fsa.read(schemaLocation).then(async (obj) => {
       logger.info(
         { schemaLocation: protocolAwareString(schemaLocation), cachePath: protocolAwareString(cachePath) },

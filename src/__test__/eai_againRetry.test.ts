@@ -11,7 +11,12 @@ function fakeNextBuilder(failCount: number): BuildHandler<object, MetadataBearer
     // fail a specified number of times and then succeed
     callCount += 1;
     if (callCount < 1 + failCount) {
-      return Promise.reject({ code: 'EAI_AGAIN', hostname: 'nz-imagery.s3.ap-southeast-2.amazonaws.com' });
+      return Promise.reject(
+        Object.assign(new Error('getaddrinfo EAI_AGAIN'), {
+          code: 'EAI_AGAIN',
+          hostname: 'nz-imagery.s3.ap-southeast-2.amazonaws.com',
+        }),
+      );
     } else {
       return Promise.resolve({ output: { $metadata: {} }, response: {} });
     }
@@ -37,7 +42,7 @@ describe('eai_againRetryMiddleware', () => {
 
   it('should throw error if fails with unknown error type', async () => {
     const fakeNext: BuildHandler<object, MetadataBearer> = () => {
-      return Promise.reject({ message: 'ERROR MESSAGE' });
+      return Promise.reject(new Error('ERROR MESSAGE'));
     };
     await assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
       message: 'ERROR MESSAGE',
@@ -52,7 +57,7 @@ describe('eai_againRetryMiddleware', () => {
   });
 
   it('should not retry EAI_AGAIN errors without a hostname', async () => {
-    const error = { code: 'EAI_AGAIN' };
+    const error = Object.assign(new Error('EAI_AGAIN'), { code: 'EAI_AGAIN' });
     const fakeNext: BuildHandler<object, MetadataBearer> = () => {
       callCount += 1;
       return Promise.reject(error);

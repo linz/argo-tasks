@@ -32,7 +32,7 @@ describe('stac-collection-output', () => {
     await commandStacCollectionOutput.handler(BaseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-collection-output/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [fsa.toUrl('memory:///tmp/stac-collection-output/scale')]);
     const scale = await fsa.read(fsa.toUrl('memory:///tmp/stac-collection-output/scale'));
     assert.strictEqual(scale.toString(), '1000');

@@ -64,7 +64,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
@@ -91,7 +91,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
@@ -120,7 +120,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
@@ -234,7 +234,7 @@ describe('stac-setup', () => {
     );
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),

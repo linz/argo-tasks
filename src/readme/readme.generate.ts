@@ -1,13 +1,13 @@
 import { fsa } from '@chunkd/fs';
 import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.ts';
 import { writeFileSync } from 'node:fs';
+import { stripVTControlCharacters } from 'node:util';
 import { format } from 'oxfmt';
 import { pathToFileURL } from 'url';
 
 import { AllCommands } from '../commands/index.ts';
 import { makeRelative } from '../utils/filelist.ts';
 import { commandHasExample, ExampleSymbol } from './readme.example.ts';
-const AnsiRemove = /\u001b\[.*?m/g;
 
 function hasHelp(f: unknown): f is ProvidesHelp {
   if (f == null) return false;
@@ -81,7 +81,7 @@ async function generateReadme(): Promise<void> {
         // all commands have --help
         if (topic.usage.startsWith('--help')) continue;
 
-        const context = [topic.usage, topic.description, topic.defaults?.[0]?.replace(AnsiRemove, '') ?? ''].join('|');
+        const context = [topic.usage, topic.description, stripVTControlCharacters(topic.defaults?.[0] ?? '')].join('|');
         data.push(`|${context}|`);
       }
     }
