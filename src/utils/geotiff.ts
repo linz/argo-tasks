@@ -44,7 +44,9 @@ export async function loadTfw(imageLoc: URL): Promise<TfwParseResult> {
       tfwData = await fsa.read(candidateTfwLocation);
       logger.info({ sidecar: `${protocolAwareString(candidateTfwLocation)}` }, 'LoadTFW:SidecarFileFound');
       break;
-    } catch (err) {}
+    } catch {
+      // try the next sidecar extension
+    }
   }
 
   if (!tfwData) {
