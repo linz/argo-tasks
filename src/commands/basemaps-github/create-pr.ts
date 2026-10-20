@@ -215,7 +215,7 @@ export const CommandCreatePRArgs = {
   category: option({
     type: optional(oneOf(Object.values(Categories))),
     long: 'category',
-    description: [...Object.values(Categories)].join(', '),
+    description: Object.values(Categories).join(', '),
   }),
   repository: option({
     type: string,

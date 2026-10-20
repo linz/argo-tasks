@@ -30,8 +30,6 @@ import {
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 function convertTileName(fileName: string, gridSize: GridSize): string | null {
   const mapTileIndex = MapSheet.getMapTileIndex(fileName);
   if (mapTileIndex == null) return null;
@@ -379,7 +377,7 @@ describe('validate', () => {
     await commandTileIndexValidate.handler({
       ...baseArguments,
       targetEpsg: undefined,
-      scale: 5000 as GridSize,
+      scale: 5000,
     });
 
     const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));
