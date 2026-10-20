@@ -1,12 +1,11 @@
-import { basename } from 'node:path/posix';
-import { gzipSync } from 'node:zlib';
-
 import type { ConfigTileSetRaster } from '@basemaps/config';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
 import { Area, truncate } from '@linzjs/geojson';
 import buffer from '@turf/buffer';
 import { command, number, option, optional, string } from 'cmd-ts';
+import { basename } from 'node:path/posix';
+import { gzipSync } from 'node:zlib';
 import pLimit from 'p-limit';
 import pc from 'polygon-clipping';
 import type { StacCollection, StacItem } from 'stac-ts';

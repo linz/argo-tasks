@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import { DefaultColorRampOutput, DefaultTerrainRgbOutput, standardizeLayerName } from '@basemaps/config';
 import type {
   ConfigLayer,
@@ -8,6 +6,7 @@ import type {
   ConfigTileSetVector,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
+import path from 'node:path';
 
 import { logger } from '../../log.ts';
 import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';

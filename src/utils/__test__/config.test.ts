@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
-
 import prettier from 'prettier';
 
 import { DEFAULT_PRETTIER_FORMAT } from '../config.ts';

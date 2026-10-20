@@ -1,8 +1,7 @@
-import assert from 'node:assert';
-import { describe, it } from 'node:test';
-
 import { fsa, FsMemory } from '@chunkd/fs';
 import type { Source, Tiff, TiffImage } from '@cogeotiff/core';
+import assert from 'node:assert';
+import { describe, it } from 'node:test';
 
 import { createTiff } from '../../commands/common.ts';
 import { findBoundingBox, findResolution, loadTfw, parseTfw, PixelIsPoint } from '../geotiff.ts';

@@ -1,7 +1,6 @@
+import { fsa } from '@chunkd/fs';
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
-
-import { fsa } from '@chunkd/fs';
 
 import type { TiffLocation } from '../../commands/tileindex-validate/tileindex.validate.ts';
 import type { FileListEntryClass } from '../filelist.ts';

@@ -1,7 +1,6 @@
+import type { FinalizeHandler, MetadataBearer } from '@smithy/types';
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
-
-import type { FinalizeHandler, MetadataBearer } from '@smithy/types';
 
 import { fqdn } from '../fs.register.ts';
 

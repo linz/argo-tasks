@@ -1,7 +1,6 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { afterEach, before, beforeEach, describe, it } from 'node:test';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 
 import { commandStacCollectionOutput, getScale } from '../stac.collection.output.ts';
 import { SampleCollection } from './stac.collection.output.data.ts';

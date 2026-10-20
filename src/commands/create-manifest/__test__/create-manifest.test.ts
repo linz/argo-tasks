@@ -1,9 +1,8 @@
+import { fsa, FsMemory } from '@chunkd/fs';
+import { parse } from 'cmd-ts';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 import { gunzipSync } from 'node:zlib';
-
-import { fsa, FsMemory } from '@chunkd/fs';
-import { parse } from 'cmd-ts';
 
 import type { CommandArguments } from '../../../utils/type.util.ts';
 import { Url, UrlFolder, UrlFolderList } from '../../common.ts';

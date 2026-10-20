@@ -1,9 +1,8 @@
-import assert from 'node:assert';
-import { afterEach, it } from 'node:test';
-
 import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
 import { EpsgCode } from '@basemaps/geo';
 import { fsa } from '@chunkd/fs';
+import assert from 'node:assert';
+import { afterEach, it } from 'node:test';
 import type { StacVersion } from 'stac-ts';
 
 import { anySlug } from '../../../utils/__test__/slugify.test.ts';
