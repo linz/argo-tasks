@@ -6,6 +6,7 @@ import { asyncFilter } from '../chunk.ts';
 
 describe('AsyncFilter', () => {
   function makeGenerator(list: string[]): () => AsyncGenerator<{ url: URL }> {
+    // oxlint-disable-next-line typescript/require-await -- asyncFilter needs an async generator like fsa.details
     return async function* gen(): AsyncGenerator<{ url: URL }> {
       for (const path of list) yield { url: fsa.toUrl(path) };
     };

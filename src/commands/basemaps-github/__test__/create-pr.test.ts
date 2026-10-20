@@ -5,7 +5,7 @@ import type { targetInfo } from '../create-pr.ts';
 import { parseTargetUrl } from '../create-pr.ts';
 
 describe('parseTargetUrl', () => {
-  it('Should parse the correct target vector Urls', async () => {
+  it('Should parse the correct target vector Urls', () => {
     const target = new URL(
       's3://linz-basemaps/vector/3857/53382-nz-roads-addressing/01HSF04SG9M1P3V667A4NZ1MN8/53382-nz-roads-addressing.tar.co',
     );
@@ -16,7 +16,7 @@ describe('parseTargetUrl', () => {
     assert.equal(filename, '53382-nz-roads-addressing.tar.co');
   });
 
-  it('Should parse the correct target raster Urls', async () => {
+  it('Should parse the correct target raster Urls', () => {
     const target = new URL('s3://linz-basemaps/3857/canterbury_rural_2014-2015_0-30m_RGBA/01HSF04SG9M1P3V667A4NZ1MN8/');
     const { bucket, epsg, name, filename } = parseTargetUrl(target, 0);
     assert.equal(bucket, 'linz-basemaps');
@@ -25,7 +25,7 @@ describe('parseTargetUrl', () => {
     assert.equal(filename, undefined);
   });
 
-  it('Should parse the correct target elevation Urls', async () => {
+  it('Should parse the correct target elevation Urls', () => {
     const target = new URL(
       's3://linz-basemaps/elevation/3857/bay-of-plenty_2019-2022_dem_1m/01HSF04SG9M1P3V667A4NZ1MN8/',
     );
@@ -36,7 +36,7 @@ describe('parseTargetUrl', () => {
     assert.equal(filename, undefined);
   });
 
-  it('Should thrown with incorrect offsets', async () => {
+  it('Should thrown with incorrect offsets', () => {
     const validRaster = new URL('s3://linz-basemaps/3857/bay-of-plenty_2019-2022_dem_1m/01HSF04SG9M1P3V667A4NZ1MN8/');
     const test1 = (): targetInfo => parseTargetUrl(validRaster, 1);
     assert.throws(test1, /Invalid target/);
@@ -54,7 +54,7 @@ describe('parseTargetUrl', () => {
     assert.throws(test3, /Invalid target/);
   });
 
-  it('Should thrown with incorrect target urls', async () => {
+  it('Should thrown with incorrect target urls', () => {
     const invalidEpsg = new URL('s3://linz-basemaps/999/bay-of-plenty_2019-2022_dem_1m/01HSF04SG9M1P3V667A4NZ1MN8/');
     const test1 = (): targetInfo => parseTargetUrl(invalidEpsg, 0);
     assert.throws(test1, /Invalid target/);
