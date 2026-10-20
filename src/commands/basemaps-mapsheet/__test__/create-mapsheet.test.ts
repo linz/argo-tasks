@@ -3,9 +3,11 @@ import { describe, it } from 'node:test';
 
 import type { ConfigImagery, ConfigTileSet } from '@basemaps/config';
 import { ConfigProviderMemory } from '@basemaps/config';
+import { fsa, FsMemory } from '@chunkd/fs';
+import * as fgb from 'flatgeobuf/lib/mjs/geojson.js';
 import type { FeatureCollection } from 'geojson';
 
-import { createMapSheet } from '../create-mapsheet.ts';
+import { basemapsCreateMapSheet, createMapSheet } from '../create-mapsheet.ts';
 
 describe('copyFiles', () => {
   const rest: FeatureCollection = {
@@ -154,6 +156,38 @@ describe('copyFiles', () => {
   it('Should exclude the satellite', async () => {
     const outputs = await createMapSheet(aerial, mem, rest, undefined, new RegExp('satellite', 'i'));
 
+    assert.deepEqual(outputs, [
+      {
+        sheetCode: 'CK07',
+        files: [
+          's3://linz-basemaps/2193/southland_rural_2005-2011_0-75m_RGBA/01F6P1S7DSP4N5DCBGCTZCMJ27/8-113-145.tiff',
+        ],
+      },
+    ]);
+  });
+
+  it('Should read features from a flatgeobuf', async () => {
+    const fs = new FsMemory();
+    fsa.register('memory://', fs);
+    const featuresUrl = fsa.toUrl('features.json');
+    fsa.register(featuresUrl.href, fs);
+
+    await fsa.write(fsa.toUrl('memory://source/mapsheet.fgb'), Buffer.from(fgb.serialize(rest)));
+    await fsa.write(fsa.toUrl('memory://source/config.json'), JSON.stringify(mem.toJson()));
+
+    await basemapsCreateMapSheet.handler({
+      verbose: false,
+      path: fsa.toUrl('memory://source/mapsheet.fgb'),
+      bmConfig: fsa.toUrl('memory://source/config.json'),
+      output: fsa.toUrl('memory://target/output.json'),
+      include: undefined,
+      exclude: 'satellite',
+    });
+
+    const features = await fsa.readJson<FeatureCollection>(featuresUrl);
+    assert.deepEqual(features, { type: 'FeatureCollection', features: [{ ...rest.features[0], id: 0 }] });
+
+    const outputs = await fsa.readJson(fsa.toUrl('memory://target/output.json'));
     assert.deepEqual(outputs, [
       {
         sheetCode: 'CK07',
