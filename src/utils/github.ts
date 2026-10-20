@@ -1,7 +1,7 @@
 import { createAppAuth } from '@octokit/auth-app';
 import { Octokit } from '@octokit/core';
+import type { Api } from '@octokit/plugin-rest-endpoint-methods';
 import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
-import type { Api } from '@octokit/plugin-rest-endpoint-methods/dist-types/types.js';
 
 import { logger } from '../log.ts';
 
