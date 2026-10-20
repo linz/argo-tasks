@@ -39,7 +39,7 @@ describe('fetchResultKeysFromReport', () => {
     assert.deepEqual(keys, [fsa.toUrl('s3://b/k'), fsa.toUrl('s3://b/k2'), fsa.toUrl('s3://b2/k3')]);
 
     assert.equal(warnStub.mock.callCount(), 1);
-    const opts = warnStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string[]>;
+    const opts = warnStub.mock.calls[0]?.arguments[0] as Record<string, string[]>;
     assert.deepEqual(opts['results'], ['s3://b/k2']);
   });
 });
@@ -131,7 +131,7 @@ describe('fetchPendingRestoredObjectPaths', () => {
     ]);
 
     assert.equal(warnStub.mock.callCount(), 1);
-    const opts = warnStub.mock.calls[0]?.arguments[0] as unknown as Record<string, string[]>;
+    const opts = warnStub.mock.calls[0]?.arguments[0] as Record<string, string[]>;
     assert.deepEqual(opts['keys'], ['k2']);
   });
 
