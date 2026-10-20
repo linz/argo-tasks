@@ -1,11 +1,10 @@
+import { type FileInfo, fsa } from '@chunkd/fs';
+import { WorkerRpc } from '@wtrpc/core';
 import { performance } from 'node:perf_hooks';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parentPort, threadId } from 'node:worker_threads';
 import { constants, createZstdCompress, createZstdDecompress } from 'node:zlib';
-
-import { type FileInfo, fsa } from '@chunkd/fs';
-import { WorkerRpc } from '@wtrpc/core';
 
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';

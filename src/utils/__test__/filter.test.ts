@@ -1,7 +1,6 @@
+import { fsa } from '@chunkd/fs';
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
-
-import { fsa } from '@chunkd/fs';
 
 import { asyncFilter } from '../chunk.ts';
 

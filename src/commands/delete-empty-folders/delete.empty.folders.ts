@@ -1,7 +1,6 @@
-import { rmdir } from 'node:fs/promises';
-
 import { fsa, FsError } from '@chunkd/fs';
 import { boolean, command, flag, restPositionals } from 'cmd-ts';
+import { rmdir } from 'node:fs/promises';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';

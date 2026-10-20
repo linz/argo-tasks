@@ -1,7 +1,6 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 
 import { logger } from '../../../log.ts';
 import { MinSizeForCompression } from '../copy-helpers.ts';

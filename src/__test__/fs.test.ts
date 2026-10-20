@@ -1,8 +1,7 @@
-import { after, before, beforeEach, describe, it } from 'node:test';
-
 import { fsa, FsError, FsMemory } from '@chunkd/fs';
 import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
+import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { registerFileSystem } from '../fs.register.ts';
 

@@ -1,7 +1,6 @@
+import type { BuildHandler, MetadataBearer } from '@smithy/types';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
-
-import type { BuildHandler, MetadataBearer } from '@smithy/types';
 
 import { eaiAgainBuilder } from '../fs.register.ts';
 

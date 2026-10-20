@@ -1,9 +1,8 @@
-import assert from 'node:assert';
-import { describe, it } from 'node:test';
-
 import type { HeadObjectCommandOutput } from '@aws-sdk/client-s3';
 import type { FileInfo } from '@chunkd/fs';
 import { fsa } from '@chunkd/fs';
+import assert from 'node:assert';
+import { describe, it } from 'node:test';
 
 import { logger } from '../../../log.ts';
 import {

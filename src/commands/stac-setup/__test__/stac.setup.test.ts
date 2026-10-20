@@ -1,7 +1,6 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { afterEach, before, beforeEach, describe, it } from 'node:test';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 
 import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
 import { logger } from '../../../log.ts';

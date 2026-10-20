@@ -1,7 +1,6 @@
-import { writeFileSync } from 'node:fs';
-
 import { fsa } from '@chunkd/fs';
 import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.ts';
+import { writeFileSync } from 'node:fs';
 import * as prettier from 'prettier';
 import { pathToFileURL } from 'url';
 
