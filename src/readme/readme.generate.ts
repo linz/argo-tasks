@@ -6,6 +6,7 @@ import { format } from 'oxfmt';
 import { pathToFileURL } from 'url';
 
 import { AllCommands } from '../commands/index.ts';
+import { DEFAULT_FORMAT } from '../utils/config.ts';
 import { makeRelative } from '../utils/filelist.ts';
 import { commandHasExample, ExampleSymbol } from './readme.example.ts';
 
@@ -91,7 +92,7 @@ async function generateReadme(): Promise<void> {
 
     const text = data.join('\n');
 
-    const { code: formatted } = await format('readme.md', text);
+    const { code: formatted } = await format('readme.md', text, DEFAULT_FORMAT);
     const targetReadme = new URL('README.md', fsa.toUrl(targetPath));
 
     writeFileSync(targetReadme, formatted);
@@ -101,7 +102,7 @@ async function generateReadme(): Promise<void> {
 
   const commandText = commandIndex.join('\n');
 
-  const { code: formatted } = await format('readme.md', commandText);
+  const { code: formatted } = await format('readme.md', commandText, DEFAULT_FORMAT);
   writeFileSync('COMMANDS.md', formatted);
 }
 
