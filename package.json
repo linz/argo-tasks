@@ -55,7 +55,7 @@
     "cmd-ts": "^0.15.0",
     "flatgeobuf": "^3.23.1",
     "p-limit": "^5.0.0",
-    "pino": "^8.17.0",
+    "pino": "^10.4.0",
     "prettier": "^3.9.9",
     "pretty-json-log": "^1.4.0",
     "ulid": "^3.0.2",
