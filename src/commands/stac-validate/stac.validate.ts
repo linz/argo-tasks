@@ -224,11 +224,12 @@ export const commandStacValidate = command({
         }
       }
 
-      if (isOk)
+      if (isOk) {
         logger.info(
           { title: stacJson.title, type: stacJson.type, stacFileLocation: protocolAwareString(stacFileLocation) },
           'Validation:Done:Ok',
         );
+      }
 
       if (recursive) {
         for (const child of getStacChildren(stacJson, stacFileLocation)) {
