@@ -58,7 +58,7 @@
   "devDependencies": {
     "@chunkd/source-memory": "^11.0.2",
     "@linzjs/style": "^6.1.1",
-    "@types/node": "^24.2.0",
+    "@types/node": "~24.5.0",
     "concurrently": "^10.0.6",
     "stac-ts": "^1.0.4"
   },
