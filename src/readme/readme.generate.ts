@@ -92,7 +92,7 @@ async function generateReadme(): Promise<void> {
 
     const text = data.join('\n');
 
-    const { code: formatted } = await format('readme.md', text, DEFAULT_FORMAT);
+    const formatted = await formatMarkdown(text);
     const targetReadme = new URL('README.md', fsa.toUrl(targetPath));
 
     writeFileSync(targetReadme, formatted);
@@ -102,8 +102,18 @@ async function generateReadme(): Promise<void> {
 
   const commandText = commandIndex.join('\n');
 
-  const { code: formatted } = await format('readme.md', commandText, DEFAULT_FORMAT);
+  const formatted = await formatMarkdown(commandText);
   writeFileSync('COMMANDS.md', formatted);
 }
 
-generateReadme().catch((e) => console.log('Failed', e));
+async function formatMarkdown(text: string): Promise<string> {
+  const result = await format('readme.md', text, DEFAULT_FORMAT);
+  const [error] = result.errors;
+  if (error) throw new Error(`Failed to format markdown: ${error.message}`);
+  return result.code;
+}
+
+generateReadme().catch((e) => {
+  console.log('Failed', e);
+  process.exitCode = 1;
+});
