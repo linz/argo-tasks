@@ -1,6 +1,10 @@
 {
   "extends": "@linzjs/style/tsconfig.base.json",
   "compilerOptions": {
+    // node runs the .ts files directly, so resolve imports the way node does
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2023"],
     "outDir": "build",
     "noEmit": true,
     "allowImportingTsExtensions": true
