@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc",
     "docs": "node src/readme/readme.generate.ts",
-    "lint": "npx concurrently \"npm run lint:oxlint\" \"npm run lint:fmt\" \"tsc\"",
+    "lint": "npm run lint:fmt && tsc && npm run lint:oxlint",
     "lint:oxlint": "oxlint --deny-warnings",
     "lint:fmt": "oxfmt --check .",
     "lint:fix": "oxlint --fix && oxfmt --write .",
@@ -59,7 +59,6 @@
     "@chunkd/source-memory": "^11.0.2",
     "@linzjs/style": "^6.1.1",
     "@types/node": "~24.5.0",
-    "concurrently": "^10.0.6",
     "stac-ts": "^1.0.4"
   },
   "engines": {
