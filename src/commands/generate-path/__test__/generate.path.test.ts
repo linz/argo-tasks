@@ -8,8 +8,7 @@ import { UrlFolder } from '../../common.ts';
 import { SampleCollection } from '../../generate-path/__test__/sample.ts';
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.ts';
 import type { PathMetadata } from '../path.generate.ts';
-import { commandGeneratePath } from '../path.generate.ts';
-import { extractEpsg, extractGsd, generatePath } from '../path.generate.ts';
+import { commandGeneratePath, extractEpsg, extractGsd, generatePath } from '../path.generate.ts';
 
 describe('GeneratePathImagery', () => {
   it('Should match - urban aerial from slug', () => {
