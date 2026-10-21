@@ -7,8 +7,7 @@ import { gunzipSync } from 'node:zlib';
 import type { CommandArguments } from '../../../utils/type.util.ts';
 import { Url, UrlFolder, UrlFolderList } from '../../common.ts';
 import type { SourceTarget } from '../create-manifest.ts';
-import { commandCreateManifest } from '../create-manifest.ts';
-import { createManifest, validatePaths } from '../create-manifest.ts';
+import { commandCreateManifest, createManifest, validatePaths } from '../create-manifest.ts';
 
 type CommandCreateManifestArgs = CommandArguments<typeof commandCreateManifest>;
 

@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { getArchiveBucketName, getArchiveLocation } from '../archive.setup.ts';
-import { isSafePath } from '../archive.setup.ts';
+import { getArchiveBucketName, getArchiveLocation, isSafePath } from '../archive.setup.ts';
 
 describe('getArchiveBucketName', () => {
   it('should return the correct archive bucket name for a valid source bucket', () => {
