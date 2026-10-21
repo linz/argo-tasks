@@ -8,6 +8,8 @@ export default defineConfig({
     es2023: true,
   },
   rules: {
+    // allow single-line ifs without braces, remove once linz/style-js#1136 is released
+    curly: ['error', 'multi-line'],
     // node runs .ts directly and needs "import type" when importing types
     'typescript/consistent-type-imports': 'error',
     // node:test describe/it return promises that the test runner handles
