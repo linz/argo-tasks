@@ -62,15 +62,14 @@ export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
    * @param value The input string.
    * @returns The corresponding GridSize or 'auto'.
    */
-  from(value) {
-    if (value === 'auto') return Promise.resolve(value);
+  // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
+  async from(value) {
+    if (value === 'auto') return value;
     const gridSize = Number(value) as GridSize;
     if (!GridSizes.includes(gridSize)) {
-      return Promise.reject(
-        new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}", or "auto"`),
-      );
+      throw new Error(`Invalid grid size "${value}"; valid values: "${GridSizes.join('", "')}", or "auto"`);
     }
-    return Promise.resolve(gridSize);
+    return gridSize;
   },
 };
 
@@ -81,14 +80,13 @@ export const TargetEpsgFromString: Type<string, number> = {
    * @param value The input string.
    * @returns The corresponding EPSG code.
    */
-  from(value) {
+  // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
+  async from(value) {
     const epsg = Number(value);
     if (MapSheetRegistry[epsg] == null) {
-      return Promise.reject(
-        new Error(`Invalid target-epsg "${value}". valid values: "${Object.keys(MapSheetRegistry).join('", "')}"`),
-      );
+      throw new Error(`Invalid target-epsg "${value}". valid values: "${Object.keys(MapSheetRegistry).join('", "')}"`);
     }
-    return Promise.resolve(epsg);
+    return epsg;
   },
 };
 

@@ -16,12 +16,13 @@ export class HttpError extends Error {
 describe('Register', () => {
   const seenBuckets = new Set();
   const throw403: InitializeMiddleware<object, MetadataBearer> = () => {
-    return (args: unknown) => {
+    // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
+    return async (args: unknown) => {
       const inp = args as { input: { Bucket?: string } };
       const bucket = inp.input.Bucket;
-      if (seenBuckets.has(bucket)) return Promise.reject(new HttpError(418, `Bucket: ${bucket} read multiple`));
+      if (seenBuckets.has(bucket)) throw new HttpError(418, `Bucket: ${bucket} read multiple`);
       seenBuckets.add(bucket);
-      return Promise.reject(new HttpError(403, 'Something'));
+      throw new HttpError(403, 'Something');
     };
   };
   const throw403Init = {
