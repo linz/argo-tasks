@@ -10,10 +10,11 @@ describe('retryOnError', () => {
     const result = await retryOnError(
       3,
       () => 10,
-      () => {
+      // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
+      async () => {
         attempts += 1;
-        if (attempts < 3) return Promise.reject(new Error('temporary failure'));
-        return Promise.resolve('ok');
+        if (attempts < 3) throw new Error('temporary failure');
+        return 'ok';
       },
       () => true,
     );
@@ -30,9 +31,10 @@ describe('retryOnError', () => {
       retryOnError(
         3,
         () => 10,
-        () => {
+        // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
+        async () => {
           attempts += 1;
-          return Promise.reject(new Error(`failure ${attempts}`));
+          throw new Error(`failure ${attempts}`);
         },
         () => true,
       ),
@@ -50,9 +52,10 @@ describe('retryOnError', () => {
       retryOnError(
         3,
         () => 10,
-        () => {
+        // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
+        async () => {
           attempts += 1;
-          return Promise.reject(new Error('permanent failure'));
+          throw new Error('permanent failure');
         },
         () => false,
       ),
