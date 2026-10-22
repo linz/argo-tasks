@@ -1,6 +1,6 @@
 import { fsa } from '@chunkd/fs';
 import type { DefinedError, ValidateFunction } from 'ajv';
-import Ajv from 'ajv';
+import { Ajv } from 'ajv';
 import { fastFormats } from 'ajv-formats/dist/formats.js';
 import { boolean, command, flag, number, option, restPositionals } from 'cmd-ts';
 import { createHash } from 'crypto';
@@ -73,8 +73,7 @@ export const commandStacValidate = command({
     }
     const stacFileLocations = args.location.flat();
 
-    // Weird typing for ajv require us to use the "default" export to construct it.
-    const ajv = new Ajv.default({
+    const ajv = new Ajv({
       allErrors: true,
       strict: args.strict,
       loadSchema: loadSchema,
@@ -224,11 +223,12 @@ export const commandStacValidate = command({
         }
       }
 
-      if (isOk)
+      if (isOk) {
         logger.info(
           { title: stacJson.title, type: stacJson.type, stacFileLocation: protocolAwareString(stacFileLocation) },
           'Validation:Done:Ok',
         );
+      }
 
       if (recursive) {
         for (const child of getStacChildren(stacJson, stacFileLocation)) {
@@ -319,7 +319,7 @@ async function loadSchema(urlString: string): Promise<object> {
   const cachePath = pathToFileURL(`./json-schema-cache/${cacheId}.json`);
   try {
     return await fsa.readJson<object>(cachePath);
-  } catch (e) {
+  } catch {
     return fsa.read(schemaLocation).then(async (obj) => {
       logger.info(
         { schemaLocation: protocolAwareString(schemaLocation), cachePath: protocolAwareString(cachePath) },

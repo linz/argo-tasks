@@ -1,7 +1,6 @@
+import type { BuildHandler, MetadataBearer } from '@smithy/types';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
-
-import type { BuildHandler, MetadataBearer } from '@smithy/types';
 
 import { eaiAgainBuilder } from '../fs.register.ts';
 
@@ -12,7 +11,12 @@ function fakeNextBuilder(failCount: number): BuildHandler<object, MetadataBearer
     // fail a specified number of times and then succeed
     callCount += 1;
     if (callCount < 1 + failCount) {
-      return Promise.reject({ code: 'EAI_AGAIN', hostname: 'nz-imagery.s3.ap-southeast-2.amazonaws.com' });
+      return Promise.reject(
+        Object.assign(new Error('getaddrinfo EAI_AGAIN'), {
+          code: 'EAI_AGAIN',
+          hostname: 'nz-imagery.s3.ap-southeast-2.amazonaws.com',
+        }),
+      );
     } else {
       return Promise.resolve({ output: { $metadata: {} }, response: {} });
     }
@@ -24,9 +28,9 @@ describe('eai_againRetryMiddleware', () => {
   beforeEach(() => {
     callCount = 0;
   });
-  it('should run next once if it succeeds', () => {
+  it('should run next once if it succeeds', async () => {
     const fakeNext = fakeNextBuilder(0);
-    eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} });
+    await eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} });
     assert.equal(callCount, 1);
   });
 
@@ -36,24 +40,24 @@ describe('eai_againRetryMiddleware', () => {
     assert.equal(callCount, 3);
   });
 
-  it('should throw error if fails with unknown error type', () => {
+  it('should throw error if fails with unknown error type', async () => {
     const fakeNext: BuildHandler<object, MetadataBearer> = () => {
-      return Promise.reject({ message: 'ERROR MESSAGE' });
+      return Promise.reject(new Error('ERROR MESSAGE'));
     };
-    assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
+    await assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
       message: 'ERROR MESSAGE',
     });
   });
 
-  it('should throw error if next fails with EAI_AGAIN three times', () => {
+  it('should throw error if next fails with EAI_AGAIN three times', async () => {
     const fakeNext = fakeNextBuilder(3);
-    assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
+    await assert.rejects(eaiAgainBuilder(() => 0)(fakeNext, {})({ input: {}, request: {} }), {
       message: 'EAI_AGAIN maximum tries (3) exceeded',
     });
   });
 
   it('should not retry EAI_AGAIN errors without a hostname', async () => {
-    const error = { code: 'EAI_AGAIN' };
+    const error = Object.assign(new Error('EAI_AGAIN'), { code: 'EAI_AGAIN' });
     const fakeNext: BuildHandler<object, MetadataBearer> = () => {
       callCount += 1;
       return Promise.reject(error);

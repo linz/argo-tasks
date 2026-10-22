@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import { DefaultColorRampOutput, DefaultTerrainRgbOutput, standardizeLayerName } from '@basemaps/config';
 import type {
   ConfigLayer,
@@ -8,9 +6,10 @@ import type {
   ConfigTileSetVector,
 } from '@basemaps/config/build/config/tile.set.js';
 import { TileSetType } from '@basemaps/config/build/config/tile.set.js';
+import path from 'node:path';
 
 import { logger } from '../../log.ts';
-import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { DEFAULT_FORMAT } from '../../utils/config.ts';
 import { GithubApi } from '../../utils/github.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
@@ -41,7 +40,7 @@ export const DefaultCategorySetting: Record<Category, CategorySetting> = {
   Event: {},
 };
 
-const ConfigPrettierFormat = Object.assign({}, DEFAULT_PRETTIER_FORMAT, { printWidth: 200 });
+const ConfigFormat = Object.assign({}, DEFAULT_FORMAT, { printWidth: 200 });
 
 export class MakeCogGithub {
   imagery: string;
@@ -116,7 +115,7 @@ export class MakeCogGithub {
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Unable get the aerial.json from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
-      const newTileSet = await this.prepareRasterTileSetConfig(layer, tileSet, category);
+      const newTileSet = this.prepareRasterTileSetConfig(layer, tileSet, category);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
     }
@@ -148,7 +147,7 @@ export class MakeCogGithub {
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     if (individual) {
       if (region == null) region = 'individual';
-      const tileSet = await this.prepareElevationTileSetConfig(layer);
+      const tileSet = this.prepareElevationTileSetConfig(layer);
       const tileSetPath = path.join('config', 'tileset', region, 'elevation', type, `${layer.name}.json`);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, tileSet);
@@ -158,7 +157,7 @@ export class MakeCogGithub {
       const tileSetContent = await gh.getContent(tileSetPath);
       if (tileSetContent == null) throw new Error(`Failed to get config elevation from config repo.`);
       const tileSet = JSON.parse(tileSetContent) as ConfigTileSetRaster;
-      const newTileSet = await this.prepareElevationTileSetConfig(layer, tileSet);
+      const newTileSet = this.prepareElevationTileSetConfig(layer, tileSet);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet);
     }
@@ -177,7 +176,7 @@ export class MakeCogGithub {
     logger.info({ imagery: this.imagery }, 'GitHub: Get the master TileSet config file');
     if (individual) {
       const tileSetPath = path.join('config', 'tileset', `${filename}.json`);
-      const newTileSet = await this.prepareVectorTileSetConfig(layer, undefined);
+      const newTileSet = this.prepareVectorTileSetConfig(layer, undefined);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet, false);
     } else {
@@ -186,7 +185,7 @@ export class MakeCogGithub {
       if (tileSetContent == null) throw new Error(`Failed to get config topographic from config repo.`);
       // update the existing tileset
       const existingTileSet = JSON.parse(tileSetContent) as ConfigTileSetVector;
-      const newTileSet = await this.prepareVectorTileSetConfig(layer, existingTileSet);
+      const newTileSet = this.prepareVectorTileSetConfig(layer, existingTileSet);
       // Github create pull request
       await this.createTileSetPullRequest(gh, branch, title, body, tileSetPath, newTileSet, false);
     }
@@ -208,7 +207,7 @@ export class MakeCogGithub {
     if (newTileSet == null) throw new Error(`Failed to prepare new tileSet for ${tileSetPath}.`);
 
     // Github
-    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigPrettierFormat);
+    const content = await prettyPrint(JSON.stringify(newTileSet, null, 2), ConfigFormat);
     const file = { path: tileSetPath, content };
     // Github create pull request
     await gh.createPullRequest(branch, title, [file], body, draft);
@@ -242,11 +241,11 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareRasterTileSetConfig(
+  prepareRasterTileSetConfig(
     layer: ConfigLayer,
     tileSet: ConfigTileSetRaster,
     category: Category,
-  ): Promise<ConfigTileSetRaster> {
+  ): ConfigTileSetRaster {
     // Reprocess existing layer
     for (let i = 0; i < tileSet.layers.length; i++) {
       const existing = tileSet.layers[i];
@@ -282,7 +281,7 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): Promise<ConfigTileSetVector> {
+  prepareVectorTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetVector): ConfigTileSetVector {
     if (tileSet == null) {
       return {
         type: TileSetType.Vector,
@@ -308,7 +307,7 @@ export class MakeCogGithub {
   /**
    * Prepare raster tileSet config json
    */
-  async prepareElevationTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetRaster): Promise<ConfigTileSetRaster> {
+  prepareElevationTileSetConfig(layer: ConfigLayer, tileSet?: ConfigTileSetRaster): ConfigTileSetRaster {
     if (tileSet == null) {
       // Prepare individual elevation tileset config
       const targetLayer: ConfigLayer = { ...layer, category: 'Elevation', minZoom: 0, maxZoom: 32 };
@@ -320,7 +319,7 @@ export class MakeCogGithub {
         category: 'Elevation',
         layers: [targetLayer],
         outputs: [DefaultTerrainRgbOutput, DefaultColorRampOutput],
-      } as ConfigTileSetRaster;
+      };
     }
 
     this.setDefaultConfig(layer, 'Elevation');

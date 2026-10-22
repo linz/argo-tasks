@@ -62,6 +62,7 @@ export const GridSizeFromString: Type<string, GridSize | 'auto'> = {
    * @param value The input string.
    * @returns The corresponding GridSize or 'auto'.
    */
+  // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
   async from(value) {
     if (value === 'auto') return value;
     const gridSize = Number(value) as GridSize;
@@ -79,6 +80,7 @@ export const TargetEpsgFromString: Type<string, number> = {
    * @param value The input string.
    * @returns The corresponding EPSG code.
    */
+  // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
   async from(value) {
     const epsg = Number(value);
     if (MapSheetRegistry[epsg] == null) {

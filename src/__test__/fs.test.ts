@@ -1,8 +1,7 @@
-import { after, before, beforeEach, describe, it } from 'node:test';
-
 import { fsa, FsError, FsMemory } from '@chunkd/fs';
 import type { InitializeMiddleware, MetadataBearer } from '@smithy/types';
 import assert from 'assert';
+import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { registerFileSystem } from '../fs.register.ts';
 
@@ -17,6 +16,7 @@ export class HttpError extends Error {
 describe('Register', () => {
   const seenBuckets = new Set();
   const throw403: InitializeMiddleware<object, MetadataBearer> = () => {
+    // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
     return async (args: unknown) => {
       const inp = args as { input: { Bucket?: string } };
       const bucket = inp.input.Bucket;

@@ -1,14 +1,14 @@
-import { writeFileSync } from 'node:fs';
-
 import { fsa } from '@chunkd/fs';
 import type { HelpTopic, ProvidesHelp } from 'cmd-ts/dist/cjs/helpdoc.ts';
-import * as prettier from 'prettier';
+import { writeFileSync } from 'node:fs';
+import { stripVTControlCharacters } from 'node:util';
+import { format } from 'oxfmt';
 import { pathToFileURL } from 'url';
 
 import { AllCommands } from '../commands/index.ts';
+import { DEFAULT_FORMAT } from '../utils/config.ts';
 import { makeRelative } from '../utils/filelist.ts';
 import { commandHasExample, ExampleSymbol } from './readme.example.ts';
-const AnsiRemove = /\u001b\[.*?m/g;
 
 function hasHelp(f: unknown): f is ProvidesHelp {
   if (f == null) return false;
@@ -82,7 +82,7 @@ async function generateReadme(): Promise<void> {
         // all commands have --help
         if (topic.usage.startsWith('--help')) continue;
 
-        const context = [topic.usage, topic.description, topic.defaults?.[0]?.replace(AnsiRemove, '') ?? ''].join('|');
+        const context = [topic.usage, topic.description, stripVTControlCharacters(topic.defaults?.[0] ?? '')].join('|');
         data.push(`|${context}|`);
       }
     }
@@ -92,7 +92,7 @@ async function generateReadme(): Promise<void> {
 
     const text = data.join('\n');
 
-    const formatted = await prettier.format(text, { filepath: 'readme.md' });
+    const formatted = await formatMarkdown(text);
     const targetReadme = new URL('README.md', fsa.toUrl(targetPath));
 
     writeFileSync(targetReadme, formatted);
@@ -102,8 +102,18 @@ async function generateReadme(): Promise<void> {
 
   const commandText = commandIndex.join('\n');
 
-  const formatted = await prettier.format(commandText, { filepath: 'readme.md' });
+  const formatted = await formatMarkdown(commandText);
   writeFileSync('COMMANDS.md', formatted);
 }
 
-generateReadme().catch((e) => console.log('Failed', e));
+async function formatMarkdown(text: string): Promise<string> {
+  const result = await format('readme.md', text, DEFAULT_FORMAT);
+  const [error] = result.errors;
+  if (error) throw new Error(`Failed to format markdown: ${error.message}`);
+  return result.code;
+}
+
+generateReadme().catch((e) => {
+  console.log('Failed', e);
+  process.exitCode = 1;
+});

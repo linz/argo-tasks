@@ -1,9 +1,8 @@
-import assert from 'node:assert';
-import { afterEach, before, describe, it } from 'node:test';
-
 import { Nztm2000QuadTms, Projection } from '@basemaps/geo';
 import { fsa, FsMemory } from '@chunkd/fs';
 import { featuresToMultiPolygon } from '@linzjs/geojson';
+import assert from 'node:assert';
+import { afterEach, before, describe, it } from 'node:test';
 import type { StacCollection } from 'stac-ts';
 
 import { MapSheet } from '../../../utils/mapsheet.ts';
@@ -73,7 +72,7 @@ describe('mapsheet-coverage', () => {
     await fsa.write(fsa.toUrl('ms://config.json'), JSON.stringify({ layers: [] }));
     await commandMapSheetCoverage.handler(baseArgs);
     const files = await fsa.toArray(fsa.list(fsa.toUrl('ms://output/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepEqual(files, [
       fsa.toUrl('ms://output/capture-dates.geojson'),
       fsa.toUrl('ms://output/file-list.json'),

@@ -101,7 +101,7 @@ export const basemapsCreateMapSheet = command({
     if (aerial == null) throw new Error('Invalid config file.');
 
     logger.info({ path: protocolAwareString(location), config }, 'MapSheet:CreateMapSheet');
-    const outputs = await createMapSheet(aerial, mem, rest, include, exclude);
+    const outputs = createMapSheet(aerial, mem, rest, include, exclude);
 
     logger.info({ outputPath: protocolAwareString(outputLocation) }, 'MapSheet:WriteOutput');
     const outputWritePromise = fsa.write(outputLocation, JSON.stringify(outputs, null, 2));
@@ -110,13 +110,13 @@ export const basemapsCreateMapSheet = command({
   },
 });
 
-export async function createMapSheet(
+export function createMapSheet(
   aerial: ConfigTileSet,
   mem: ConfigProviderMemory,
   rest: FeatureCollection,
   include: RegExp | undefined,
   exclude: RegExp | undefined,
-): Promise<Output[]> {
+): Output[] {
   // Find all the valid NZTM imagery from the config
   const imagery: ConfigImagery[] = [];
   for (const layer of aerial.layers) {

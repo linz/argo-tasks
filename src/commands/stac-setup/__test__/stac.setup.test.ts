@@ -1,7 +1,6 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { afterEach, before, beforeEach, describe, it } from 'node:test';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 
 import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
 import { logger } from '../../../log.ts';
@@ -65,7 +64,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
@@ -78,7 +77,7 @@ describe('stac-setup', () => {
 
   it('should retrieve setup from args', async (t) => {
     // Avoid checking real S3 during unit tests
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
     const baseArgs = {
       ...BaseArgs,
       odrUrl: undefined,
@@ -92,7 +91,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
@@ -105,7 +104,7 @@ describe('stac-setup', () => {
 
   it('should not include the date in the slug', async (t) => {
     // Simulate no existing collection at the generated ODR path
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
 
     const baseArgs = {
       ...BaseArgs,
@@ -121,7 +120,7 @@ describe('stac-setup', () => {
     await commandStacSetup.handler(baseArgs);
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
@@ -132,7 +131,7 @@ describe('stac-setup', () => {
 
   it('should throw an error when collection.json already exists', async (t) => {
     // Simulate existing collection at the generated ODR path
-    t.mock.method(fsa, 'exists', async () => true);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(true));
 
     const baseArgs = {
       ...BaseArgs,
@@ -152,7 +151,7 @@ describe('stac-setup', () => {
 
   it('should generate a slug with a survey id', async (t) => {
     // Simulate no existing collection at the generated ODR path
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
 
     const baseArgs = {
       ...BaseArgs,
@@ -235,7 +234,7 @@ describe('stac-setup', () => {
     );
 
     const files = await fsa.toArray(fsa.list(fsa.toUrl('memory:///tmp/stac-setup/')));
-    files.sort();
+    files.sort((a, b) => a.href.localeCompare(b.href));
     assert.deepStrictEqual(files, [
       fsa.toUrl('memory:///tmp/stac-setup/collection-id'),
       fsa.toUrl('memory:///tmp/stac-setup/linz-slug'),
@@ -413,10 +412,10 @@ describe('slugFromMetadata', () => {
 });
 
 describe('formatDate', () => {
-  it('Should return date as single year', async () => {
+  it('Should return date as single year', () => {
     assert.equal(formatDate('2023', '2023'), '2023');
   });
-  it('Should return date as two years', async () => {
+  it('Should return date as two years', () => {
     assert.equal(formatDate('2023', '2024'), '2023-2024');
   });
   it('Should only return a date if both are set', () => {

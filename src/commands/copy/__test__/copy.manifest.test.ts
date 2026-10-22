@@ -1,9 +1,8 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { rm } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 
 import type { ActionCopy } from '../../../utils/actions.ts';
 import { makeRelative } from '../../../utils/filelist.ts';

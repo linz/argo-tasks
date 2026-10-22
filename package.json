@@ -1,39 +1,33 @@
 {
   "name": "@linzjs/argo-tasks",
-  "private": true,
   "version": "8.1.2",
-  "main": "build/src/index.js",
-  "types": "build/src/index.d.ts",
-  "repository": "git@github.com:linz/argo-tasks.git",
+  "private": true,
   "license": "MIT",
   "author": {
     "name": "Land Information New Zealand",
     "url": "https://linz.govt.nz",
     "organization": true
   },
-  "devDependencies": {
-    "@chunkd/source-memory": "^11.0.2",
-    "@linzjs/style": "^5.4.0",
-    "@types/node": "^24.2.0",
-    "@types/prettier": "^3.0.0",
-    "stac-ts": "^1.0.4"
+  "repository": "git@github.com:linz/argo-tasks.git",
+  "files": [
+    "src/"
+  ],
+  "type": "module",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
+  "publishConfig": {
+    "access": "restricted"
   },
   "scripts": {
     "build": "tsc",
     "docs": "node src/readme/readme.generate.ts",
-    "lint": "npx eslint . --ignore-path .gitignore",
+    "lint": "npm run lint:fmt && tsc && npm run lint:oxlint",
+    "lint:oxlint": "oxlint --deny-warnings",
+    "lint:fmt": "oxfmt --check .",
+    "lint:fix": "oxlint --fix && oxfmt --write .",
+    "format": "oxfmt --write .",
     "test": "node --test 'src/**/*.test.ts'"
   },
-  "publishConfig": {
-    "access": "restricted"
-  },
-  "type": "module",
-  "engines": {
-    "node": "^24.5.0"
-  },
-  "files": [
-    "src/"
-  ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",
     "@aws-sdk/credential-providers": "^3.1146.0",
@@ -54,11 +48,20 @@
     "ajv-formats": "^2.1.1",
     "cmd-ts": "^0.15.0",
     "flatgeobuf": "^4.5.0",
+    "oxfmt": "^0.71.0",
     "p-limit": "^5.0.0",
     "pino": "^10.4.0",
-    "prettier": "^3.9.9",
     "pretty-json-log": "^1.4.0",
     "ulid": "^3.0.2",
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@chunkd/source-memory": "^11.0.2",
+    "@linzjs/style": "^6.1.1",
+    "@types/node": "~24.5.0",
+    "stac-ts": "^1.0.4"
+  },
+  "engines": {
+    "node": "^24.5.0"
   }
 }

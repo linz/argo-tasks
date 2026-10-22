@@ -134,8 +134,9 @@ export function fixFileMetadata(location: URL, meta: FileInfo): FileInfo {
   if (!FixableContentType.has(meta.contentType ?? 'binary/octet-stream')) return meta;
 
   // Assume our tiffs are cloud optimized
-  if (urlPathEndsWith(location, '.tiff') || urlPathEndsWith(location, '.tif'))
+  if (urlPathEndsWith(location, '.tiff') || urlPathEndsWith(location, '.tif')) {
     return { ...meta, contentType: 'image/tiff; application=geotiff; profile=cloud-optimized' };
+  }
 
   // Overwrite with application/json, or application/geo+json for geojson files
   if (urlPathEndsWith(location, '.json')) return { ...meta, contentType: guessStacContentType(location) };
@@ -230,21 +231,23 @@ export async function verifyTargetFile(target: URL, expectedSize: number, expect
   // Fixme: Local file system does not support metadata so assume hash is correct
   if (target.protocol === 'file:') {
     const targetVerified = targetSize === expectedSize;
-    if (!targetVerified)
+    if (!targetVerified) {
       logger.fatal(
         { target: protocolAwareString(target), expectedHash, targetHash, expectedSize, targetSize },
         'Copy:Failed',
       );
+    }
 
     return targetVerified;
   }
 
   const targetVerified = targetSize === expectedSize && targetHash === expectedHash;
-  if (!targetVerified)
+  if (!targetVerified) {
     logger.fatal(
       { target: protocolAwareString(target), expectedHash, targetHash, expectedSize, targetSize },
       'Copy:Failed',
     );
+  }
 
   return targetVerified;
 }

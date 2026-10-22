@@ -1,7 +1,6 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { before, beforeEach, describe, it } from 'node:test';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 import type * as st from 'stac-ts';
 
 import {
@@ -86,8 +85,8 @@ describe('stacValidate', function () {
       const collection =
         'https://nz-imagery.s3-ap-southeast-2.amazonaws.com/new-zealand/new-zealand_2020-2021_10m/rgb/2193/collection.json';
       const collectionLocation = fsa.toUrl(collection);
-      assert.doesNotThrow(async () => {
-        await commandStacValidate.handler({
+      await assert.doesNotReject(
+        commandStacValidate.handler({
           config: undefined,
           verbose: false,
           concurrency: 1,
@@ -96,8 +95,8 @@ describe('stacValidate', function () {
           recursive: false,
           strict: false,
           location: [[collectionLocation]],
-        });
-      });
+        }),
+      );
     });
 
     it('should validate a valid link checksum', async () => {
