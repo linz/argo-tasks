@@ -14,8 +14,8 @@ import { mergeStats } from './copy-helpers.ts';
 import type { CopyContract, CopyStats } from './copy-rpc.ts';
 
 const CopyValidator = z.object({
-  source: z.string().transform((val) => protocolAwareString(fsa.toUrl(val))),
-  target: z.string().transform((val) => protocolAwareString(fsa.toUrl(val))),
+  source: z.string().transform((val) => protocolAwareString(fsa.toUrl(val), true)),
+  target: z.string().transform((val) => protocolAwareString(fsa.toUrl(val), true)),
 });
 const CopyManifest = z.array(CopyValidator);
 

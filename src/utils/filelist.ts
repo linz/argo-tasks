@@ -10,23 +10,31 @@ export const HttpProtocols = ['https:', 'http:'];
  * For http(s):// URLs it returns the full URL (with encoded characters)
  * For other protocols it decodes the characters and
  * for file:// URL it creates a relative path from the current working directory
- * For non-HTTP URLs, # characters are kept encoded as %23 to prevent
- * them from being interpreted as URL fragments.
+ * For non-HTTP URLs, if encodeSpecialChars is true, # characters and % signs are kept encoded as %23 and %25 respectively  to prevent
+ * them from being interpreted as URL fragments or special characters.
  *
  * @param targetLocation URL to convert to string
+ * @param encodeSpecialChars whether to encode special characters (#, %) for non-HTTP URLs
  * @returns string representation of the URL
  */
-export function protocolAwareString(targetLocation: URL): string {
+export function protocolAwareString(targetLocation: URL, encodeSpecialChars = false): string {
   if (HttpProtocols.includes(targetLocation.protocol)) {
     return targetLocation.href;
   }
   if (targetLocation.protocol === 'file:') {
     return fileURLToPath(targetLocation);
   }
-
-  // Decode URI components but keep # characters encoded to prevent
-  // them from being interpreted as URL fragments
-  return decodeURIComponent(targetLocation.href).replace(/#/g, '%23');
+  if (!encodeSpecialChars) {
+    return decodeURIComponent(targetLocation.href);
+  }
+  // Encode % signs to avoid decodeURIComponent errors
+  const targetLocationWithEncodedPercents = encodePercentSigns(targetLocation.href);
+  // Decode URI components
+  const targetLocationDecodedURI = decodeURIComponent(targetLocationWithEncodedPercents);
+  // Encode % signs again to avoid issues using the decoded URI with fsa
+  // Encode # characters to prevent them from being interpreted as URL fragments
+  const targetLocationWithEncodedHashesAndPercents = encodePercentSigns(targetLocationDecodedURI).replace(/#/g, '%23');
+  return targetLocationWithEncodedHashesAndPercents;
 }
 
 /**
@@ -65,7 +73,19 @@ export function makeRelative(baseLocation: URL, fileLocation: URL, strict = true
   if (HttpProtocols.includes(fileLocation.protocol)) {
     return fileLocation.href.replace(baseLocationFolder.href, './');
   }
-  return decodeURIComponent(fileLocation.href.replace(baseLocationFolder.href, './'));
+
+  const fileLocationWithEncodedPercents = encodePercentSigns(fileLocation.href);
+  return decodeURIComponent(fileLocationWithEncodedPercents.replace(baseLocationFolder.href, './'));
+}
+
+/**
+ * Encode percent signs (%) not followed by two hex digits as %25
+ *
+ * @param input string to encode
+ * @returns encoded string
+ */
+export function encodePercentSigns(input: string): string {
+  return input.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
 }
 
 export interface FileListEntry {

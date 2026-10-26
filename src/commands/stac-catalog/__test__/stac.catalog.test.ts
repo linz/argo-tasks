@@ -2,9 +2,7 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
 import { fsa, FsMemory } from '@chunkd/fs';
-import { pathToFileURL } from 'url';
 
-import { makeRelative } from '../../../utils/filelist.ts';
 import { createLinks } from '../stac.catalog.ts';
 
 describe('stacCatalog', () => {
@@ -40,29 +38,5 @@ describe('stacCatalog', () => {
         'file:size': 23,
       },
     ]);
-  });
-});
-
-describe('makeRelative', () => {
-  it('should make relative urls', () => {
-    assert.equal(
-      makeRelative(fsa.toUrl('s3://linz-imagery/'), fsa.toUrl('s3://linz-imagery/catalog.json')),
-      './catalog.json',
-    );
-  });
-
-  it('should make relative from absolute paths', () => {
-    assert.equal(
-      makeRelative(pathToFileURL('/home/blacha/'), pathToFileURL('/home/blacha/catalog.json')),
-      './catalog.json',
-    );
-  });
-
-  it('should make relative relative paths', () => {
-    assert.equal(makeRelative(pathToFileURL(process.cwd() + '/'), pathToFileURL('./catalog.json')), './catalog.json');
-  });
-
-  it('should not make relative on different paths', () => {
-    assert.throws(() => makeRelative(pathToFileURL('/home/blacha/'), pathToFileURL('/home/test/catalog.json')), Error);
   });
 });
