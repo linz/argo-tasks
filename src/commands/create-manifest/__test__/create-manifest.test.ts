@@ -1,15 +1,13 @@
+import { fsa, FsMemory } from '@chunkd/fs';
+import { parse } from 'cmd-ts';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 import { gunzipSync } from 'node:zlib';
 
-import { fsa, FsMemory } from '@chunkd/fs';
-import { parse } from 'cmd-ts';
-
 import type { CommandArguments } from '../../../utils/type.util.ts';
 import { Url, UrlFolder, UrlFolderList } from '../../common.ts';
 import type { SourceTarget } from '../create-manifest.ts';
-import { commandCreateManifest } from '../create-manifest.ts';
-import { createManifest, validatePaths } from '../create-manifest.ts';
+import { commandCreateManifest, createManifest, validatePaths } from '../create-manifest.ts';
 
 type CommandCreateManifestArgs = CommandArguments<typeof commandCreateManifest>;
 
@@ -91,9 +89,7 @@ describe('createManifest', () => {
   });
 
   it('should copy single file to the target location without a trailing /', async () => {
-    await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true }))),
-    ]);
+    await fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.from(JSON.stringify({ test: true })));
 
     const outputFiles = await createManifest(
       [await Url.from('memory://source/topographic.json')],

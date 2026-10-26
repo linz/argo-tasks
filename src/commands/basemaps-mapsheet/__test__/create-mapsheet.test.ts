@@ -1,11 +1,10 @@
-import assert from 'node:assert';
-import { describe, it } from 'node:test';
-
 import type { ConfigImagery, ConfigTileSet } from '@basemaps/config';
 import { ConfigProviderMemory } from '@basemaps/config';
 import { fsa, FsMemory } from '@chunkd/fs';
 import * as fgb from 'flatgeobuf/lib/mjs/geojson.js';
 import type { FeatureCollection } from 'geojson';
+import assert from 'node:assert';
+import { describe, it } from 'node:test';
 
 import { basemapsCreateMapSheet, createMapSheet } from '../create-mapsheet.ts';
 
@@ -139,8 +138,8 @@ describe('copyFiles', () => {
   mem.put(satellite);
   mem.put(southland);
 
-  it('Should create the correct map sheets', async () => {
-    const outputs = await createMapSheet(aerial, mem, rest, undefined, undefined);
+  it('Should create the correct map sheets', () => {
+    const outputs = createMapSheet(aerial, mem, rest, undefined, undefined);
 
     assert.deepEqual(outputs, [
       {
@@ -153,8 +152,8 @@ describe('copyFiles', () => {
     ]);
   });
 
-  it('Should exclude the satellite', async () => {
-    const outputs = await createMapSheet(aerial, mem, rest, undefined, new RegExp('satellite', 'i'));
+  it('Should exclude the satellite', () => {
+    const outputs = createMapSheet(aerial, mem, rest, undefined, new RegExp('satellite', 'i'));
 
     assert.deepEqual(outputs, [
       {

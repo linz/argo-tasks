@@ -1,7 +1,6 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 
 import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
 import type { CommandArguments } from '../../../utils/type.util.ts';
@@ -9,8 +8,7 @@ import { UrlFolder } from '../../common.ts';
 import { SampleCollection } from '../../generate-path/__test__/sample.ts';
 import { FakeCogTiff } from '../../tileindex-validate/__test__/tileindex.validate.data.ts';
 import type { PathMetadata } from '../path.generate.ts';
-import { commandGeneratePath } from '../path.generate.ts';
-import { extractEpsg, extractGsd, generatePath } from '../path.generate.ts';
+import { commandGeneratePath, extractEpsg, extractGsd, generatePath } from '../path.generate.ts';
 
 describe('GeneratePathImagery', () => {
   it('Should match - urban aerial from slug', () => {
@@ -234,7 +232,7 @@ describe('gsd', () => {
 });
 
 describe('metadata from collection', () => {
-  it('Should return urban aerial photos path', async () => {
+  it('Should return urban aerial photos path', () => {
     const collection = structuredClone(SampleCollection);
 
     const metadata: PathMetadata = {
@@ -266,7 +264,7 @@ describe('command.generatePath', () => {
   };
 
   it('should generate a output', async (t) => {
-    t.mock.method(fsa, 'exists', async () => false);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(false));
     await fsa.write(
       fsa.toUrl('memory://bucket/source/test/collection.json'),
       Buffer.from(
@@ -299,7 +297,7 @@ describe('command.generatePath', () => {
   });
 
   it('should error when generated ODR destination already exists', async (t) => {
-    t.mock.method(fsa, 'exists', async () => true);
+    t.mock.method(fsa, 'exists', () => Promise.resolve(true));
 
     await fsa.write(
       fsa.toUrl('memory://bucket/source/test/collection.json'),

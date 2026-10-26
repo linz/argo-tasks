@@ -1,11 +1,12 @@
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, positional } from 'cmd-ts';
-import prettier from 'prettier';
+import type { FormatConfig } from 'oxfmt';
+import { format } from 'oxfmt';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getFiles } from '../../utils/chunk.ts';
-import { DEFAULT_PRETTIER_FORMAT } from '../../utils/config.ts';
+import { DEFAULT_FORMAT } from '../../utils/config.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import { config, registerCli, UrlFolder, UrlList, urlPathEndsWith, verbose } from '../common.ts';
 
@@ -52,9 +53,9 @@ export const commandPrettyPrint = command({
  * @param targetLocation where to save the output. If not specified, overwrite the original file.
  */
 export async function formatFile(sourceLocation: URL, targetLocation?: URL): Promise<void> {
-  logger.debug({ file: protocolAwareString(sourceLocation) }, 'PrettyPrint:RunPrettier');
+  logger.debug({ file: protocolAwareString(sourceLocation) }, 'PrettyPrint:Format');
   let outputLocation = sourceLocation;
-  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(sourceLocation)), DEFAULT_PRETTIER_FORMAT);
+  const prettyPrinted = await prettyPrint(JSON.stringify(await fsa.readJson(sourceLocation)), DEFAULT_FORMAT);
   if (targetLocation) {
     // FIXME: can be duplicate files
     outputLocation = new URL(sourceLocation.pathname.replace(new RegExp('.*/', ''), ''), targetLocation);
@@ -64,15 +65,17 @@ export async function formatFile(sourceLocation: URL, targetLocation?: URL): Pro
 }
 
 /**
- * Pretty prints a JSON document using prettier.
+ * Pretty prints a JSON document using oxfmt.
  *
  * @param jsonStr a stringify JSON to pretty print
- * @param config a Prettier configuration
+ * @param config an oxfmt configuration
  * @returns the stringify JSON pretty printed
  */
-export async function prettyPrint(jsonStr: string, config: prettier.Options): Promise<string> {
-  return await prettier.format(jsonStr, {
-    ...config,
-    parser: 'json',
-  });
+export async function prettyPrint(jsonStr: string, config: FormatConfig): Promise<string> {
+  const result = await format('file.json', jsonStr, config);
+  const [error] = result.errors;
+  if (error) {
+    throw new Error(`Failed to format JSON: ${error.message}`);
+  }
+  return result.code;
 }

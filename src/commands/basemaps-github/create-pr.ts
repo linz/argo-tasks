@@ -149,7 +149,7 @@ async function parseVectorTargetInfo(target: URL): Promise<{ name: string; title
   // Get title from lds:title for individual vector layer
   if (ldsLayers.length === 1) {
     const ldsTitle = ldsLayers[0]?.['lds:title'];
-    if (ldsTitle != null) title = String(ldsTitle);
+    if (typeof ldsTitle === 'string') title = ldsTitle;
   }
   if (title == null) throw new Error(`Failed to get title from collection.json.`);
 
@@ -215,7 +215,7 @@ export const CommandCreatePRArgs = {
   category: option({
     type: optional(oneOf(Object.values(Categories))),
     long: 'category',
-    description: [...Object.values(Categories)].join(', '),
+    description: Object.values(Categories).join(', '),
   }),
   repository: option({
     type: string,

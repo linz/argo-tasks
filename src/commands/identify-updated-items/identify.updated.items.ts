@@ -1,7 +1,6 @@
-import { basename } from 'node:path/posix';
-
 import { fsa } from '@chunkd/fs';
 import { command, option, optional, restPositionals } from 'cmd-ts';
+import { basename } from 'node:path/posix';
 import type { StacCollection, StacItem, StacLink } from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';

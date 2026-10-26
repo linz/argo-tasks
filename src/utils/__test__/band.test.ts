@@ -1,7 +1,6 @@
+import type { Tiff } from '@cogeotiff/core';
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
-
-import type { Tiff } from '@cogeotiff/core';
 import { pathToFileURL } from 'url';
 
 import { createTiff } from '../../commands/common.ts';

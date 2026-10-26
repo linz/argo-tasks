@@ -40,8 +40,9 @@ export const commandStacCollectionOutput = command({
       ? args.odrUrl
       : new URL('collection.json', args.odrUrl);
     const collection = await fsa.readJson<StacCollection & StacCollectionLinz>(collectionLocation);
-    if (collection == null)
+    if (collection == null) {
       throw new Error(`Failed to get collection.json from ${protocolAwareString(collectionLocation)}.`);
+    }
     const scale = getScale(collection, collectionLocation);
     await writeSetupFiles(scale, args.output);
     logger.info(

@@ -3,8 +3,6 @@ import { SampleFormat, Tiff, TiffTag } from '@cogeotiff/core';
 
 import { MapSheet } from '../../../utils/mapsheet.ts';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const resolution = [1, -1, 0];
 const size = { width: 480, height: 720 };
 const valueGeo = (): undefined => undefined;
@@ -40,7 +38,7 @@ export class FakeCogTiff extends Tiff {
           if (tag === TiffTag.SampleFormat) return [SampleFormat.Uint, SampleFormat.Uint, SampleFormat.Uint];
           return null;
         },
-      } as any,
+      } as unknown as FakeCogTiffImage,
     ];
   }
 

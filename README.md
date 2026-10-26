@@ -73,7 +73,7 @@ list s3://linz-imagery/sample --include ".*.tiff$"  --exclude "BG33.tiff$" --out
 
 ### `pretty-print`
 
-Format all JSON files within a directory using `prettier`.
+Format all JSON files within a directory using `oxfmt`.
 
 #### Example
 
@@ -243,7 +243,7 @@ stac validate --checksum-assets --recursive s3://linz-imagery-staging/test/stac-
 - Validate the `file:checksum` of all STAC links inside of a collection:
 
 ```bash
-stac validate --checksum-links --recursive s3://linz-imagery-staging/test/stac-validate/collection.json 
+stac validate --checksum-links --recursive s3://linz-imagery-staging/test/stac-validate/collection.json
 ```
 
 - Validate the `file:checksum` of all assets and STAC links inside of a collection:

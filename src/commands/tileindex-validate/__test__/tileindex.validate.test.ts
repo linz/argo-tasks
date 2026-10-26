@@ -1,11 +1,10 @@
-import assert from 'node:assert';
-import { before, beforeEach, describe, it } from 'node:test';
-
 import { Projection } from '@basemaps/geo';
 import { fsa, FsMemory } from '@chunkd/fs';
 import type { Source } from '@cogeotiff/core';
 import { SampleFormat, Tiff, TiffTag } from '@cogeotiff/core';
 import type { BBox } from '@linzjs/geojson';
+import assert from 'node:assert';
+import { before, beforeEach, describe, it } from 'node:test';
 import { pathToFileURL } from 'url';
 
 import { logger } from '../../../log.ts';
@@ -30,8 +29,6 @@ import {
   validateTiffDataType,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 function convertTileName(fileName: string, gridSize: GridSize): string | null {
   const mapTileIndex = MapSheet.getMapTileIndex(fileName);
@@ -380,7 +377,7 @@ describe('validate', () => {
     await commandTileIndexValidate.handler({
       ...baseArguments,
       targetEpsg: undefined,
-      scale: 5000 as GridSize,
+      scale: 5000,
     });
 
     const outputFileList = await fsa.readJson(fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'));

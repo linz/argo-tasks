@@ -1,7 +1,6 @@
+import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
-
-import { fsa, FsMemory } from '@chunkd/fs';
 
 import { logger } from '../../../log.ts';
 import { MinSizeForCompression } from '../copy-helpers.ts';
@@ -201,7 +200,7 @@ describe('copyFiles', () => {
         metadata: { multihash: fakeMultihash, unique: 'fileB' },
       }),
     ]);
-    assert.rejects(
+    await assert.rejects(
       worker.routes.copy({
         ...defaultCopyArgs,
         manifest: [
@@ -318,14 +317,12 @@ describe('copyFiles', () => {
   });
 
   it('should copy and compress files when compress flag is set and file is large enough', async () => {
-    await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression, 'x'), {
-        contentType: 'application/octet-stream',
-        metadata: {
-          unique: 'fileA',
-        },
-      }),
-    ]);
+    await fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression, 'x'), {
+      contentType: 'application/octet-stream',
+      metadata: {
+        unique: 'fileA',
+      },
+    });
     await worker.routes.copy({
       ...defaultCopyArgs,
       manifest: [
@@ -345,14 +342,12 @@ describe('copyFiles', () => {
   });
 
   it('should copy and NOT compress files when compress flag is set and file is small', async () => {
-    await Promise.all([
-      fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression - 1, 'x'), {
-        contentType: 'application/octet-stream',
-        metadata: {
-          unique: 'fileA',
-        },
-      }),
-    ]);
+    await fsa.write(fsa.toUrl('memory://source/topographic.json'), Buffer.alloc(MinSizeForCompression - 1, 'x'), {
+      contentType: 'application/octet-stream',
+      metadata: {
+        unique: 'fileA',
+      },
+    });
     await worker.routes.copy({
       ...defaultCopyArgs,
       manifest: [
