@@ -38,7 +38,7 @@ export class FakeCogTiff extends Tiff {
           if (tag === TiffTag.SampleFormat) return [SampleFormat.Uint, SampleFormat.Uint, SampleFormat.Uint];
           return null;
         },
-      } as any,
+      } as unknown as FakeCogTiffImage,
     ];
   }
 

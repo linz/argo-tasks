@@ -13,6 +13,11 @@ export default defineConfig({
     // overrides for LINZ base config
     curly: ['error', 'multi-line'], // linz/style-js#1136
     'import/no-duplicates': 'error', // linz/style-js#1138
+    'prefer-const': 'error',
+    'typescript/explicit-function-return-type': 'error',
+    'typescript/no-explicit-any': 'error',
+    'typescript/no-unsafe-enum-comparison': 'error',
+    'typescript/no-unsafe-return': 'error',
     // node runs .ts directly and needs "import type" when importing types
     'typescript/consistent-type-imports': 'error',
     // node:test describe/it return promises that the test runner handles (linz/style-js#1137)
