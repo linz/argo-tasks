@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.1.3](https://github.com/linz/argo-tasks/compare/v8.1.2...v8.1.3) (2026-10-26)
+
+
+### Bug Fixes
+
+* **deps:** upgrade @linzjs/style to v6 TDE-2164 ([#1403](https://github.com/linz/argo-tasks/issues/1403)) ([f6b24df](https://github.com/linz/argo-tasks/commit/f6b24df5ef0563b18e2da7bd397179bd549c6007))
+
 ## [8.1.2](https://github.com/linz/argo-tasks/compare/v8.1.1...v8.1.2) (2026-10-19)
 
 
