@@ -29,9 +29,9 @@
     "test": "node --test 'src/**/*.test.ts'"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1146.0",
-    "@aws-sdk/credential-providers": "^3.1146.0",
-    "@aws-sdk/lib-storage": "^3.1146.0",
+    "@aws-sdk/client-s3": "^3.1149.0",
+    "@aws-sdk/credential-providers": "^3.1149.0",
+    "@aws-sdk/lib-storage": "^3.1149.0",
     "@basemaps/config": "^8.13.2",
     "@basemaps/geo": "^8.9.1",
     "@chunkd/fs": "^11.5.3",
