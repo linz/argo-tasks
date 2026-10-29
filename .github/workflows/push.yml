@@ -8,6 +8,12 @@ jobs:
         with:
           node-version: 24.5.0
 
+      - name: Download actionlint
+        run: docker build --tag actionlint - < .github/workflows/actionlint.dockerfile
+
+      - name: Run actionlint to check workflow files
+        run: docker run --volume="${PWD}:/repo" --workdir=/repo actionlint -color
+
       - name: Generate Readme
         run: |
           npm run docs
@@ -56,12 +62,6 @@ jobs:
       - uses: linz/action-typescript@47be81e60ed1d891c696c3fb7f558876ba9a2b57 # v3.2.0
         with:
           node-version: 24.5.0
-
-      - name: Download actionlint
-        run: docker build --tag actionlint - < .github/workflows/actionlint.dockerfile
-
-      - name: Run actionlint to check workflow files
-        run: docker run --volume="${PWD}:/repo" --workdir=/repo actionlint -color
 
       - name: Setup GIT version
         id: version
@@ -135,3 +135,11 @@ jobs:
             GIT_HASH=${{ github.sha }}
             GIT_VERSION=${{ steps.version.outputs.version }} 
             GITHUB_RUN_ID=${{ github.run_id}}
+
+  ci-ok:
+    if: always()
+    needs: ['build']
+    runs-on: ubuntu-latest
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
