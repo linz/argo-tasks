@@ -10,6 +10,12 @@ describe('getArchiveBucketName', () => {
     assert.equal(result, expectedBucketName);
   });
 
+  it('should return the correct archive bucket name for a planning source bucket', () => {
+    const expectedBucketName = 'linz-planning-archive';
+    const result = getArchiveBucketName('linz-planning-upload');
+    assert.equal(result, expectedBucketName);
+  });
+
   it('should throw an error for an unsupported source bucket', () => {
     assert.throws(
       () => {
