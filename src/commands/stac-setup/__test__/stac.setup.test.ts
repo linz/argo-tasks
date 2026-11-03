@@ -359,6 +359,26 @@ describe('slugFromMetadata', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
+  it('Should match - ancillary aerial photos without gsd', () => {
+    const metadata: SlugMetadata = {
+      geospatialCategory: 'ancillary-aerial-photos',
+      geographicDescription: undefined,
+      region: 'auckland',
+      date: '2023',
+      gsd: '0.3',
+    };
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023');
+  });
+  it('Should match - ancillary near infrared aerial photos without gsd', () => {
+    const metadata: SlugMetadata = {
+      geospatialCategory: 'ancillary-near-infrared-aerial-photos',
+      geographicDescription: undefined,
+      region: 'auckland',
+      date: '2023',
+      gsd: '0.3',
+    };
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023');
+  });
   it('Should error as historic imagery needs a surveyId', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'scanned-aerial-photos',
