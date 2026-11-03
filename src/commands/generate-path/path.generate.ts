@@ -86,20 +86,24 @@ export const commandGeneratePath = command({
  */
 export function generatePath(metadata: PathMetadata): string {
   if (
-    metadata.geospatialCategory === GeospatialDataCategories.AncillaryAerialPhotos ||
-    metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.RuralAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
-    metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos
+    metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos ||
+    metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
   }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.NearInfraredAerialPhotos ||
-    metadata.geospatialCategory === GeospatialDataCategories.NearInfraredSatelliteImagery ||
-    metadata.geospatialCategory === GeospatialDataCategories.AncillaryNearInfraredAerialPhotos
+    metadata.geospatialCategory === GeospatialDataCategories.NearInfraredSatelliteImagery
   ) {
     return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgbnir/${metadata.epsg}/`;
+  }
+  if (metadata.geospatialCategory === GeospatialDataCategories.AncillaryAerialPhotos) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb_${metadata.gsd}m/${metadata.epsg}/`;
+  }
+  if (metadata.geospatialCategory === GeospatialDataCategories.AncillaryNearInfraredAerialPhotos) {
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgbnir_${metadata.gsd}m/${metadata.epsg}/`;
   }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.Dem ||
