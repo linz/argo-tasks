@@ -57,6 +57,7 @@ export function getArchiveBucketName(sourceBucket: string): string {
   const bucketMapping = {
     'linz-topographic-upload': 'linz-topographic-archive',
     'linz-hydrographic-upload': 'linz-hydrographic-archive',
+    'linz-planning-upload': 'linz-planning-archive',
   };
 
   // special case for hydro-data-bucket-* as it ends with an AWS account id which we should not share publicly

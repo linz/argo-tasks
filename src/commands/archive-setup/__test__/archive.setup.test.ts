@@ -5,9 +5,15 @@ import { getArchiveBucketName, getArchiveLocation, isSafePath } from '../archive
 
 describe('getArchiveBucketName', () => {
   it('should return the correct archive bucket name for a valid source bucket', () => {
-    const expectedBucketName = 'linz-topographic-archive';
-    const result = getArchiveBucketName('linz-topographic-upload');
-    assert.equal(result, expectedBucketName);
+    const bucketMappings = [
+      ['linz-topographic-upload', 'linz-topographic-archive'],
+      ['linz-planning-upload', 'linz-planning-archive'],
+      ['linz-hydrographic-upload', 'linz-hydrographic-archive'],
+    ] as const;
+
+    for (const [sourceBucket, expectedArchiveBucket] of bucketMappings) {
+      assert.equal(getArchiveBucketName(sourceBucket), expectedArchiveBucket);
+    }
   });
 
   it('should throw an error for an unsupported source bucket', () => {
