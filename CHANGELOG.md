@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.2.0](https://github.com/linz/argo-tasks/compare/v8.1.4...v8.2.0) (2026-11-03)
+
+
+### Features
+
+* support Planning archive bucket TDE-2179 ([#1420](https://github.com/linz/argo-tasks/issues/1420)) ([c9bae85](https://github.com/linz/argo-tasks/commit/c9bae858dc127d174c09e829abfb3a74c3683538))
+
 ## [8.1.4](https://github.com/linz/argo-tasks/compare/v8.1.3...v8.1.4) (2026-10-30)
 
 
