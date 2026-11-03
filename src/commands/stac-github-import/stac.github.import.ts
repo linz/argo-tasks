@@ -46,7 +46,7 @@ export const commandStacGithubImport = command({
     copyOption: option({
       type: oneOf(['--force', '--no-clobber', '--force-no-clobber']),
       long: 'copy-option',
-      defaultValue: () => '--no-clobber',
+      defaultValue: () => '--no-clobber' as const,
       defaultValueIsSerializable: true,
     }),
     ticket: option({

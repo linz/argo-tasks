@@ -1,5 +1,13 @@
 # Changelog
 
+## [8.1.4](https://github.com/linz/argo-tasks/compare/v8.1.3...v8.1.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **deps:** release zod 4.6.7 and fast-uri 3.1.9 security fixes ([#1416](https://github.com/linz/argo-tasks/issues/1416)) ([9729185](https://github.com/linz/argo-tasks/commit/9729185f81a3c3e14745c1b0f9bbdcb14b7174bf))
+* update node to patch against CVE-2026-111497 TDE-2184 ([#1421](https://github.com/linz/argo-tasks/issues/1421)) ([dfef2d0](https://github.com/linz/argo-tasks/commit/dfef2d037ad8241249b51f794b62a1762c4e0504))
+
 ## [8.1.3](https://github.com/linz/argo-tasks/compare/v8.1.2...v8.1.3) (2026-10-26)
 
 
