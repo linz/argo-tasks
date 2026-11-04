@@ -46,6 +46,30 @@ describe('GeneratePathImagery', () => {
     assert.equal(generatePath(metadata), 's3://nz-imagery/auckland/auckland_2023_0.3m/rgbnir/2193/');
   });
 
+  it('Should match - coastal ancillary aerial photos with gsd in product folder', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-coastal',
+      geospatialCategory: 'ancillary-aerial-photos',
+      region: 'auckland',
+      slug: 'auckland_2023',
+      gsd: 0.3,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-coastal/auckland/auckland_2023/rgb_0.3m/2193/');
+  });
+
+  it('Should match - coastal ancillary near infrared aerial photos with gsd in product folder', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-coastal',
+      geospatialCategory: 'ancillary-near-infrared-aerial-photos',
+      region: 'auckland',
+      slug: 'auckland_2023',
+      gsd: 0.3,
+      epsg: 2193,
+    };
+    assert.equal(generatePath(metadata), 's3://nz-coastal/auckland/auckland_2023/rgbnir_0.3m/2193/');
+  });
+
   it('Should match - scanned aerial photos from slug', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',

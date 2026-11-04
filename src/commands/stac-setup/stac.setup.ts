@@ -23,6 +23,7 @@ export interface SlugMetadata {
   surveyId?: string;
   date: string;
   gsd: string;
+  targetBucketName?: string;
 }
 
 export const commandStacSetup = command({
@@ -184,6 +185,7 @@ export const commandStacSetup = command({
         geographicDescription: args.geographicDescription,
         date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
+        targetBucketName: formatBucketName(args.targetBucketName),
       };
 
       const slug = slugFromMetadata(slugMetadata);
@@ -225,7 +227,17 @@ function formatParts(...parts: string[]): string {
 export function slugFromMetadata(metadata: SlugMetadata): string {
   const geographicDescription = metadata.geographicDescription || metadata.region;
 
+  if (
+    metadata.targetBucketName === 'nz-coastal' &&
+    (metadata.geospatialCategory === 'ancillary-aerial-photos' ||
+      metadata.geospatialCategory === 'ancillary-near-infrared-aerial-photos')
+  ) {
+    return formatParts(slugify(geographicDescription), metadata.date);
+  }
+
   switch (metadata.geospatialCategory) {
+    case 'ancillary-aerial-photos':
+    case 'ancillary-near-infrared-aerial-photos':
     case 'near-infrared-aerial-photos':
     case 'near-infrared-satellite-imagery':
     case 'rural-aerial-photos':
@@ -239,8 +251,6 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
     case 'dem-hillshade-igor':
     case 'dsm-hillshade':
     case 'dsm-hillshade-igor':
-    case 'ancillary-aerial-photos':
-    case 'ancillary-near-infrared-aerial-photos':
       return formatParts(slugify(geographicDescription), metadata.date);
 
     case 'scanned-aerial-photos':
