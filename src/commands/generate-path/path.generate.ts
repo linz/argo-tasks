@@ -95,7 +95,7 @@ export function generatePath(metadata: PathMetadata): string {
     metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
     metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos
   ) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${gsdSuffix}${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb${gsdSuffix}/${metadata.epsg}/`;
   }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.NearInfraredAerialPhotos ||
