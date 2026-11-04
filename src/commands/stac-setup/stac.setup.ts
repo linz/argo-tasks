@@ -23,7 +23,7 @@ export interface SlugMetadata {
   surveyId?: string;
   date: string;
   gsd: string;
-  targetBucketName?: string;
+  targetBucketName: string;
 }
 
 export const commandStacSetup = command({
@@ -178,6 +178,7 @@ export const commandStacSetup = command({
       if (args.startDate && args.startYear) throw new Error('--start-date and --start-year are mutually exclusive');
       if (args.endDate && args.endYear) throw new Error('--end-date and --end-year are mutually exclusive');
 
+      const bucketName = formatBucketName(args.targetBucketName);
       const slugMetadata: SlugMetadata = {
         geospatialCategory: args.geospatialCategory as GeospatialDataCategory,
         region: args.region,
@@ -185,7 +186,7 @@ export const commandStacSetup = command({
         geographicDescription: args.geographicDescription,
         date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
-        targetBucketName: formatBucketName(args.targetBucketName),
+        targetBucketName: bucketName,
       };
 
       const slug = slugFromMetadata(slugMetadata);
@@ -195,7 +196,7 @@ export const commandStacSetup = command({
         region: args.region,
         gsd: Number(args.gsd),
         slug: slug,
-        targetBucketName: formatBucketName(args.targetBucketName),
+        targetBucketName: bucketName,
         epsg: args.targetEpsg,
       };
 
