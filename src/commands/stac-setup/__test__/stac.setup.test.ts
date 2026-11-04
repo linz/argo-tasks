@@ -359,6 +359,39 @@ describe('slugFromMetadata', () => {
     };
     assert.equal(slugFromMetadata(metadata), 'auckland_2023');
   });
+  it('Should match - ancillary aerial photos with gsd (not coastal)', () => {
+    const metadata: SlugMetadata = {
+      geospatialCategory: 'ancillary-aerial-photos',
+      geographicDescription: undefined,
+      region: 'auckland',
+      date: '2023',
+      gsd: '0.3',
+      targetBucketName: 'nz-imagery',
+    };
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023_0.3m');
+  });
+  it('Should match - coastal ancillary aerial photos without gsd', () => {
+    const metadata: SlugMetadata = {
+      geospatialCategory: 'ancillary-aerial-photos',
+      geographicDescription: undefined,
+      region: 'auckland',
+      date: '2023',
+      gsd: '0.3',
+      targetBucketName: 'nz-coastal',
+    };
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023');
+  });
+  it('Should match - coastal ancillary near infrared aerial photos without gsd', () => {
+    const metadata: SlugMetadata = {
+      geospatialCategory: 'ancillary-near-infrared-aerial-photos',
+      geographicDescription: undefined,
+      region: 'auckland',
+      date: '2023',
+      gsd: '0.3',
+      targetBucketName: 'nz-coastal',
+    };
+    assert.equal(slugFromMetadata(metadata), 'auckland_2023');
+  });
   it('Should error as historic imagery needs a surveyId', () => {
     const metadata: SlugMetadata = {
       geospatialCategory: 'scanned-aerial-photos',

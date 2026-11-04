@@ -8,7 +8,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { StacCollectionLinz } from '../../utils/metadata.ts';
-import { GeospatialDataCategories } from '../../utils/metadata.ts';
+import { GeospatialDataCategories, isCoastalAncillary } from '../../utils/metadata.ts';
 import { config, createTiff, registerCli, UrlFolder, verbose } from '../common.ts';
 
 export interface PathMetadata {
@@ -85,6 +85,9 @@ export const commandGeneratePath = command({
  * @returns
  */
 export function generatePath(metadata: PathMetadata): string {
+  const gsdSuffix = isCoastalAncillary(metadata.targetBucketName, metadata.geospatialCategory)
+    ? `_${metadata.gsd}m`
+    : '';
   if (
     metadata.geospatialCategory === GeospatialDataCategories.AncillaryAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.UrbanAerialPhotos ||
@@ -92,14 +95,14 @@ export function generatePath(metadata: PathMetadata): string {
     metadata.geospatialCategory === GeospatialDataCategories.SatelliteImagery ||
     metadata.geospatialCategory === GeospatialDataCategories.ScannedAerialPhotos
   ) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgb${gsdSuffix}/${metadata.epsg}/`;
   }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.NearInfraredAerialPhotos ||
     metadata.geospatialCategory === GeospatialDataCategories.NearInfraredSatelliteImagery ||
     metadata.geospatialCategory === GeospatialDataCategories.AncillaryNearInfraredAerialPhotos
   ) {
-    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgbnir/${metadata.epsg}/`;
+    return `s3://${metadata.targetBucketName}/${metadata.region}/${metadata.slug}/rgbnir${gsdSuffix}/${metadata.epsg}/`;
   }
   if (
     metadata.geospatialCategory === GeospatialDataCategories.Dem ||

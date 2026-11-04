@@ -9,7 +9,7 @@ import { logger } from '../../log.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
-import { RgbCategories } from '../../utils/metadata.ts';
+import { isCoastalAncillary, RgbCategories } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 import type { PathMetadata } from '../generate-path/path.generate.ts';
@@ -23,6 +23,7 @@ export interface SlugMetadata {
   surveyId?: string;
   date: string;
   gsd: string;
+  targetBucketName?: string;
 }
 
 export const commandStacSetup = command({
@@ -177,6 +178,7 @@ export const commandStacSetup = command({
       if (args.startDate && args.startYear) throw new Error('--start-date and --start-year are mutually exclusive');
       if (args.endDate && args.endYear) throw new Error('--end-date and --end-year are mutually exclusive');
 
+      const bucketName = formatBucketName(args.targetBucketName);
       const slugMetadata: SlugMetadata = {
         geospatialCategory: args.geospatialCategory as GeospatialDataCategory,
         region: args.region,
@@ -184,6 +186,7 @@ export const commandStacSetup = command({
         geographicDescription: args.geographicDescription,
         date: formatDate(args.startDate ?? args.startYear, args.endDate ?? args.endYear),
         gsd: args.gsd,
+        targetBucketName: bucketName,
       };
 
       const slug = slugFromMetadata(slugMetadata);
@@ -193,7 +196,7 @@ export const commandStacSetup = command({
         region: args.region,
         gsd: Number(args.gsd),
         slug: slug,
-        targetBucketName: formatBucketName(args.targetBucketName),
+        targetBucketName: bucketName,
         epsg: args.targetEpsg,
       };
 
@@ -228,6 +231,11 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
   switch (metadata.geospatialCategory) {
     case 'ancillary-aerial-photos':
     case 'ancillary-near-infrared-aerial-photos':
+      if (isCoastalAncillary(metadata.targetBucketName, metadata.geospatialCategory)) {
+        return formatParts(slugify(geographicDescription), metadata.date);
+      }
+      return formatParts(slugify(geographicDescription), metadata.date, `${metadata.gsd}m`);
+
     case 'near-infrared-aerial-photos':
     case 'near-infrared-satellite-imagery':
     case 'rural-aerial-photos':
