@@ -9,7 +9,7 @@ import { logger } from '../../log.ts';
 import { extractBandInformation } from '../../utils/band.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GeospatialDataCategory, StacCollectionLinz } from '../../utils/metadata.ts';
-import { RgbCategories } from '../../utils/metadata.ts';
+import { isCoastalAncillary, RgbCategories } from '../../utils/metadata.ts';
 import { slugify } from '../../utils/slugify.ts';
 import { config, MeterAsString, registerCli, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 import type { PathMetadata } from '../generate-path/path.generate.ts';
@@ -23,7 +23,7 @@ export interface SlugMetadata {
   surveyId?: string;
   date: string;
   gsd: string;
-  targetBucketName: string;
+  targetBucketName?: string;
 }
 
 export const commandStacSetup = command({
@@ -228,17 +228,14 @@ function formatParts(...parts: string[]): string {
 export function slugFromMetadata(metadata: SlugMetadata): string {
   const geographicDescription = metadata.geographicDescription || metadata.region;
 
-  if (
-    metadata.targetBucketName === 'nz-coastal' &&
-    (metadata.geospatialCategory === 'ancillary-aerial-photos' ||
-      metadata.geospatialCategory === 'ancillary-near-infrared-aerial-photos')
-  ) {
-    return formatParts(slugify(geographicDescription), metadata.date);
-  }
-
   switch (metadata.geospatialCategory) {
     case 'ancillary-aerial-photos':
     case 'ancillary-near-infrared-aerial-photos':
+      if (isCoastalAncillary(metadata.targetBucketName, metadata.geospatialCategory)) {
+        return formatParts(slugify(geographicDescription), metadata.date);
+      }
+      return formatParts(slugify(geographicDescription), metadata.date, `${metadata.gsd}m`);
+
     case 'near-infrared-aerial-photos':
     case 'near-infrared-satellite-imagery':
     case 'rural-aerial-photos':

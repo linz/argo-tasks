@@ -36,3 +36,15 @@ export const RgbCategories: ReadonlySet<GeospatialDataCategory> = new Set([
   GeospatialDataCategories.ScannedAerialPhotos,
   GeospatialDataCategories.UrbanAerialPhotos,
 ]);
+
+/**
+ * nz-coastal ancillary imagery follows the elevation layout:
+ * GSD goes in the product folder (e.g. rgb_0.3m) instead of the slug.
+ */
+export function isCoastalAncillary(targetBucketName: string | undefined, category: string): boolean {
+  return (
+    targetBucketName === 'nz-coastal' &&
+    (category === GeospatialDataCategories.AncillaryAerialPhotos ||
+      category === GeospatialDataCategories.AncillaryNearInfraredAerialPhotos)
+  );
+}
