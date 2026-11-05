@@ -1,5 +1,5 @@
 import { fsa } from '@chunkd/fs';
-import { boolean, command, flag, oneOf, option, string } from 'cmd-ts';
+import { command, oneOf, option, string } from 'cmd-ts';
 import path from 'path';
 import type * as st from 'stac-ts';
 
@@ -20,9 +20,11 @@ const imageryRepo = 'linz/imagery';
  */
 export const ValidRepos: string[] = ['linz/coastal', 'linz/elevation', 'linz/flood-map', imageryRepo];
 
+export const ItemRepos: string[] = ['linz/flood-map'];
+
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
-  description: 'Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository',
+  description: `Format and push a STAC collection.json file (with its items for ${ItemRepos.join(', ')}) and Argo Workflows parameters file to a GitHub repository`,
   version: CliInfo.version,
   args: {
     config,
@@ -57,12 +59,6 @@ export const commandStacGithubImport = command({
       description: 'Associated JIRA ticket e.g. AIP-74',
       defaultValue: () => '',
       defaultValueIsSerializable: true,
-    }),
-    includeItems: flag({
-      type: boolean,
-      defaultValue: () => false,
-      long: 'include-items',
-      description: 'Also import the STAC items linked from the collection.json file',
     }),
   },
 
@@ -118,7 +114,7 @@ export const commandStacGithubImport = command({
     const title = `feat: import ${collection.title}${titleTicketSuffix}`;
 
     const itemFiles: GithubFiles[] = [];
-    if (args.includeItems) {
+    if (ItemRepos.includes(args.repoName)) {
       const items = await createItemFiles(collection, sourceCollection, targetCollection);
       const unlinkedItems = await findUnlinkedItemFiles(gh, branch, targetCollectionPath, items);
       itemFiles.push(...items, ...unlinkedItems);
@@ -177,26 +173,14 @@ export async function createItemFiles(
   sourceCollection: URL,
   targetCollection: URL,
 ): Promise<GithubFiles[]> {
-  const sourceFolder = new URL('./', sourceCollection);
-  const targetFolder = new URL('./', targetCollection);
-  const items: { source: URL; target: URL }[] = [];
-  for (const link of collection.links) {
-    if (link.rel !== 'item') continue;
-    const source = new URL(link.href, sourceCollection);
-    const target = new URL(link.href, targetCollection);
-    if (!source.href.startsWith(sourceFolder.href) || !target.href.startsWith(targetFolder.href)) {
-      throw new Error(`Item ${link.href} is not a relative path inside the collection folder`);
-    }
-    items.push({ source, target });
-  }
-  if (items.length === 0) throw new Error(`No items linked from ${protocolAwareString(sourceCollection)}`);
-
   const queue = new ConcurrentQueue(25);
   const files: GithubFiles[] = [];
-  for (const item of items) {
+  for (const link of collection.links) {
+    if (link.rel !== 'item') continue;
     queue.push(async () => {
-      const content = await fsa.read(item.source);
-      files.push({ path: path.join('stac', item.target.pathname), content: content.toString() });
+      const content = await fsa.read(new URL(link.href, sourceCollection));
+      const target = new URL(link.href, targetCollection);
+      files.push({ path: path.join('stac', target.pathname), content: content.toString() });
     });
   }
   await queue.join();
