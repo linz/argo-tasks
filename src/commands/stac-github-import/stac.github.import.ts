@@ -113,7 +113,12 @@ export const commandStacGithubImport = command({
     const titleTicketSuffix = args.ticket ? ` ${args.ticket}` : '';
     const title = `feat: import ${collection.title}${titleTicketSuffix}`;
 
-    const itemFiles = args.includeItems ? await createItemFiles(collection, sourceCollection, targetCollection) : [];
+    const itemFiles: GithubFiles[] = [];
+    if (args.includeItems) {
+      const items = await createItemFiles(collection, sourceCollection, targetCollection);
+      const unlinkedItems = await findUnlinkedItemFiles(gh, branch, targetCollectionPath, items);
+      itemFiles.push(...items, ...unlinkedItems);
+    }
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     const parametersFileContent = {
@@ -168,20 +173,40 @@ export async function createItemFiles(
   sourceCollection: URL,
   targetCollection: URL,
 ): Promise<GithubFiles[]> {
+  const sourceFolder = new URL('./', sourceCollection);
   const targetFolder = new URL('./', targetCollection);
-  const queue = new ConcurrentQueue(25);
-  const files: GithubFiles[] = [];
+  const items: { source: URL; target: URL }[] = [];
   for (const link of collection.links) {
     if (link.rel !== 'item') continue;
+    const source = new URL(link.href, sourceCollection);
+    const target = new URL(link.href, targetCollection);
+    if (!source.href.startsWith(sourceFolder.href) || !target.href.startsWith(targetFolder.href)) {
+      throw new Error(`Item ${link.href} is not a relative path inside the collection folder`);
+    }
+    items.push({ source, target });
+  }
+  if (items.length === 0) throw new Error(`No items linked from ${protocolAwareString(sourceCollection)}`);
+
+  const queue = new ConcurrentQueue(25);
+  const files: GithubFiles[] = [];
+  for (const item of items) {
     queue.push(async () => {
-      const targetItem = new URL(link.href, targetCollection);
-      if (!targetItem.href.startsWith(targetFolder.href)) {
-        throw new Error(`Item ${link.href} is not inside ${protocolAwareString(targetFolder)}`);
-      }
-      const content = await fsa.read(new URL(link.href, sourceCollection));
-      files.push({ path: path.join('stac', targetItem.pathname), content: content.toString() });
+      const content = await fsa.read(item.source);
+      files.push({ path: path.join('stac', item.target.pathname), content: content.toString() });
     });
   }
   await queue.join();
   return files;
+}
+
+export async function findUnlinkedItemFiles(
+  gh: Pick<GithubApi, 'getBranch' | 'listFiles'>,
+  branch: string,
+  collectionPath: string,
+  itemFiles: GithubFiles[],
+): Promise<GithubFiles[]> {
+  const linked = new Set([collectionPath, ...itemFiles.map((f) => f.path)]);
+  const ref = (await gh.getBranch(branch)) ?? 'master';
+  const files = await gh.listFiles(ref, path.dirname(collectionPath));
+  return files.filter((f) => f.endsWith('.json') && !linked.has(f)).map((f) => ({ path: f, content: null }));
 }
