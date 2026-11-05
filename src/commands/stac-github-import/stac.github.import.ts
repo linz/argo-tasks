@@ -1,5 +1,6 @@
 import { fsa } from '@chunkd/fs';
-import { command, oneOf, option, string } from 'cmd-ts';
+import { boolean, command, flag, oneOf, option, string } from 'cmd-ts';
+import pLimit from 'p-limit';
 import path from 'path';
 import type * as st from 'stac-ts';
 
@@ -7,7 +8,9 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { DEFAULT_FORMAT } from '../../utils/config.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
+import type { GithubFiles } from '../../utils/github.ts';
 import { GithubApi } from '../../utils/github.ts';
+import { hashBuffer } from '../../utils/hash.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
 
@@ -56,6 +59,12 @@ export const commandStacGithubImport = command({
       defaultValue: () => '',
       defaultValueIsSerializable: true,
     }),
+    includeItems: flag({
+      type: boolean,
+      defaultValue: () => false,
+      long: 'include-items',
+      description: 'Also import the STAC items linked from the collection.json file',
+    }),
   },
 
   async handler(args) {
@@ -92,13 +101,7 @@ export const commandStacGithubImport = command({
 
     const collection = await fsa.readJson<st.StacCollection>(sourceCollection);
 
-    const rootLink = collection.links.find((f) => f.rel === 'root');
-    if (rootLink) {
-      rootLink.href = selfLink.href;
-      rootLink.type = 'application/json';
-    } else {
-      collection.links.unshift({ rel: 'root', href: selfLink.href, type: 'application/json' });
-    }
+    setRootLink(collection.links, selfLink.href);
     sortLinks(collection.links);
 
     // branch: "feat/bot-01GYXCC7823GVKF6BJA6K354TR-AIP-36"
@@ -109,6 +112,9 @@ export const commandStacGithubImport = command({
     const titleTicketSuffix = args.ticket ? ` ${args.ticket}` : '';
     const title = `feat: import ${collection.title}${titleTicketSuffix}`;
 
+    const itemFiles = args.includeItems
+      ? await createItemFiles(collection, sourceCollection, targetCollection, selfLink.href)
+      : [];
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     const parametersFileContent = {
@@ -125,7 +131,12 @@ export const commandStacGithubImport = command({
     };
     logger.info({ commit: title, branch }, 'Git:Commit');
     // create pull request
-    const pr = await gh.createPullRequest(branch, title, [collectionFile, parametersFile], prBody.join('\n'));
+    const pr = await gh.createPullRequest(
+      branch,
+      title,
+      [collectionFile, ...itemFiles, parametersFile],
+      prBody.join('\n'),
+    );
     if (pr != null) {
       const prUrl = new URL(`https://github.com/${args.repoName}/pull/${pr}`);
       logger.info({ prUrl: protocolAwareString(prUrl) }, 'Git:PullRequestCreated');
@@ -151,4 +162,42 @@ export function sortLinks(links: st.StacLink[]): void {
     if (aRel === bRel) return a.href.localeCompare(b.href);
     return aRel - bRel;
   });
+}
+
+export function setRootLink(links: st.StacLink[], href: string): void {
+  const rootLink = links.find((f) => f.rel === 'root');
+  if (rootLink) {
+    rootLink.href = href;
+    rootLink.type = 'application/json';
+  } else {
+    links.unshift({ rel: 'root', href, type: 'application/json' });
+  }
+}
+
+export async function createItemFiles(
+  collection: st.StacCollection,
+  sourceCollection: URL,
+  targetCollection: URL,
+  rootHref: string,
+): Promise<GithubFiles[]> {
+  const targetFolder = new URL('./', targetCollection);
+  const itemLinks = collection.links.filter((f) => f.rel === 'item');
+  const queue = pLimit(25);
+  return Promise.all(
+    itemLinks.map((link) =>
+      queue(async () => {
+        const targetItem = new URL(link.href, targetCollection);
+        if (!targetItem.href.startsWith(targetFolder.href)) {
+          throw new Error(`Item ${link.href} is not inside ${protocolAwareString(targetFolder)}`);
+        }
+        const item = await fsa.readJson<st.StacItem>(new URL(link.href, sourceCollection));
+        setRootLink(item.links, rootHref);
+        const content = await prettyPrint(JSON.stringify(item), DEFAULT_FORMAT);
+        const buffer = Buffer.from(content);
+        if (link['file:checksum'] != null) link['file:checksum'] = hashBuffer(buffer);
+        if (link['file:size'] != null) link['file:size'] = buffer.length;
+        return { path: path.join('stac', targetItem.pathname), content };
+      }),
+    ),
+  );
 }
