@@ -16,7 +16,7 @@ const imageryRepo = 'linz/imagery';
 /**
  * Repositories that a STAC collection may be imported into
  */
-export const ValidRepos: string[] = ['linz/coastal', 'linz/elevation', imageryRepo];
+export const ValidRepos: string[] = ['linz/coastal', 'linz/elevation', 'linz/flood-map', imageryRepo];
 
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
