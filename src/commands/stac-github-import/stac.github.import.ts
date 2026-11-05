@@ -1,11 +1,11 @@
 import { fsa } from '@chunkd/fs';
 import { boolean, command, flag, oneOf, option, string } from 'cmd-ts';
-import pLimit from 'p-limit';
 import path from 'path';
 import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { DEFAULT_FORMAT } from '../../utils/config.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import type { GithubFiles } from '../../utils/github.ts';
@@ -173,18 +173,19 @@ export async function createItemFiles(
   targetCollection: URL,
 ): Promise<GithubFiles[]> {
   const targetFolder = new URL('./', targetCollection);
-  const itemLinks = collection.links.filter((f) => f.rel === 'item');
-  const queue = pLimit(25);
-  return Promise.all(
-    itemLinks.map((link) =>
-      queue(async () => {
-        const targetItem = new URL(link.href, targetCollection);
-        if (!targetItem.href.startsWith(targetFolder.href)) {
-          throw new Error(`Item ${link.href} is not inside ${protocolAwareString(targetFolder)}`);
-        }
-        const content = await fsa.read(new URL(link.href, sourceCollection));
-        return { path: path.join('stac', targetItem.pathname), content: content.toString() };
-      }),
-    ),
-  );
+  const queue = new ConcurrentQueue(25);
+  const files: GithubFiles[] = [];
+  for (const link of collection.links) {
+    if (link.rel !== 'item') continue;
+    queue.push(async () => {
+      const targetItem = new URL(link.href, targetCollection);
+      if (!targetItem.href.startsWith(targetFolder.href)) {
+        throw new Error(`Item ${link.href} is not inside ${protocolAwareString(targetFolder)}`);
+      }
+      const content = await fsa.read(new URL(link.href, sourceCollection));
+      files.push({ path: path.join('stac', targetItem.pathname), content: content.toString() });
+    });
+  }
+  await queue.join();
+  return files;
 }
