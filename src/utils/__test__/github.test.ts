@@ -1,8 +1,12 @@
 import assert from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import type { Blob } from '../github.ts';
 import { GithubApi } from '../github.ts';
+
+interface TreeRequest {
+  base_tree: string;
+  tree: unknown[];
+}
 
 describe('GithubApi', () => {
   const originalEnv = { ...process.env };
@@ -42,33 +46,54 @@ describe('GithubApi', () => {
     await assert.rejects(gh.listFiles('master', 'stac/a'), /too large/);
   });
 
-  it('createPullRequest should delete the files without content', async (t) => {
-    const commits: Blob[][] = [];
-    t.mock.method(GithubApi.prototype, 'getBranch', () => Promise.resolve('any-sha'));
-    t.mock.method(GithubApi.prototype, 'createBlob', (content: string, path: string) =>
-      Promise.resolve({ path, mode: '100644', type: 'blob', sha: `sha-${content}` }),
-    );
-    t.mock.method(GithubApi.prototype, 'createCommit', (blobs: Blob[]) => {
-      commits.push(blobs);
-      return Promise.resolve('any-commit-sha');
-    });
-    t.mock.method(GithubApi.prototype, 'updateBranch', () => Promise.resolve());
+  it('createTree should add the files with content and delete the files without', async (t) => {
     const gh = new GithubApi('linz/flood-map');
-    t.mock.method(gh.octokit.rest.pulls, 'create', () =>
-      Promise.resolve({ status: 201, data: { number: 1, html_url: 'https://github.com/linz/flood-map/pull/1' } }),
+    const requests: TreeRequest[] = [];
+    t.mock.method(gh.octokit.rest.git, 'createTree', (request: TreeRequest) => {
+      requests.push(request);
+      return Promise.resolve({ status: 201, data: { sha: `tree-${requests.length}` } });
+    });
+
+    const tree = await gh.createTree(
+      [
+        { path: 'stac/a/AB01.json', content: '{}' },
+        { path: 'stac/a/AB02.json', content: null },
+      ],
+      'commit-sha',
     );
 
-    const pr = await gh.createPullRequest('feat/bot', 'feat: import', [
-      { path: 'stac/a/AB01.json', content: '{}' },
-      { path: 'stac/a/AB02.json', content: null },
+    assert.equal(tree, 'tree-1');
+    assert.deepEqual(requests, [
+      {
+        owner: 'linz',
+        repo: 'flood-map',
+        base_tree: 'commit-sha',
+        tree: [
+          { path: 'stac/a/AB01.json', mode: '100644', type: 'blob', content: '{}' },
+          { path: 'stac/a/AB02.json', mode: '100644', type: 'blob', sha: null },
+        ],
+      },
     ]);
+  });
 
-    assert.equal(pr, 1);
-    assert.deepEqual(commits, [
+  it('createTree should chain trees of at most 500 files', async (t) => {
+    const gh = new GithubApi('linz/flood-map');
+    const requests: TreeRequest[] = [];
+    t.mock.method(gh.octokit.rest.git, 'createTree', (request: TreeRequest) => {
+      requests.push(request);
+      return Promise.resolve({ status: 201, data: { sha: `tree-${requests.length}` } });
+    });
+    const files = [...Array(501).keys()].map((i) => ({ path: `stac/a/${i}.json`, content: '{}' }));
+
+    const tree = await gh.createTree(files, 'commit-sha');
+
+    assert.equal(tree, 'tree-2');
+    assert.deepEqual(
+      requests.map((r) => [r.base_tree, r.tree.length]),
       [
-        { path: 'stac/a/AB01.json', mode: '100644', type: 'blob', sha: 'sha-{}' },
-        { path: 'stac/a/AB02.json', mode: '100644', type: 'blob', sha: null },
+        ['commit-sha', 500],
+        ['tree-1', 1],
       ],
-    ]);
+    );
   });
 });
