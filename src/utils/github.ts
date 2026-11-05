@@ -9,7 +9,7 @@ export interface Blob {
   path: string;
   mode: '100644';
   type: 'blob';
-  sha: string;
+  sha: string | null;
 }
 
 export class GithubApi {
@@ -124,6 +124,22 @@ export class GithubApi {
     return null;
   }
 
+  async listFiles(ref: string, folder: string): Promise<string[]> {
+    logger.info({ ref, folder }, 'GitHub API: List files');
+    const response = await this.octokit.rest.git.getTree({
+      owner: this.owner,
+      repo: this.repo,
+      tree_sha: ref,
+      recursive: 'true',
+    });
+    if (!this.isOk(response.status)) throw new Error(`Failed to get tree ${ref}.`);
+    if (response.data.truncated) throw new Error(`Tree ${ref} is too large to list ${folder}.`);
+    const prefix = `${folder}/`;
+    return response.data.tree
+      .filter((f) => f.type === 'blob' && f.path.startsWith(prefix) && !f.path.slice(prefix.length).includes('/'))
+      .map((f) => f.path);
+  }
+
   /**
    * Create a file imagery config file into basemaps-config/config/imagery and commit
    */
@@ -188,6 +204,11 @@ export class GithubApi {
     // git add
     const blobs: Blob[] = [];
     for (const file of files) {
+      if (file.content == null) {
+        logger.info({ path: file.path }, 'GitHub: Delete file');
+        blobs.push({ path: file.path, mode: '100644', type: 'blob', sha: null });
+        continue;
+      }
       logger.info({ path: file.path }, 'GitHub: Add change');
       const blob = await this.createBlob(file.content, file.path);
       blobs.push(blob);
@@ -233,7 +254,7 @@ export class GithubApi {
 
 export interface GithubFiles {
   path: string;
-  content: string;
+  content: string | null;
 }
 
 interface GithubError {
