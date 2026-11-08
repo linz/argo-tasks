@@ -6,7 +6,7 @@ import { RgbaNztm2000Tiff } from '../../../__test__/tiff.util.ts';
 import { logger } from '../../../log.ts';
 import type { GeospatialDataCategory } from '../../../utils/metadata.ts';
 import { MeterAsString } from '../../common.ts';
-import { formatBucketName } from '../../generate-path/path.generate.ts';
+import { formatBucketName, generatePath } from '../../generate-path/path.generate.ts';
 import type { SlugMetadata } from '../stac.setup.ts';
 import { commandStacSetup, formatDate, slugFromMetadata } from '../stac.setup.ts';
 import { HawkesBayResupplyCollection, RgbnirCollection, SampleCollection } from './stac.setup.data.ts';
@@ -460,6 +460,43 @@ describe('slugFromMetadata', () => {
         date: '1982',
       }),
       'west-coast_sn8066_1982_0.35m',
+    );
+  });
+});
+
+describe('coastal path co-location', () => {
+  const pathFor = (geospatialCategory: GeospatialDataCategory, gsd: string): string => {
+    const base = { region: 'auckland', geographicDescription: 'Mangawhai to Snells', date: '2025', gsd };
+    const slug = slugFromMetadata({ ...base, geospatialCategory, targetBucketName: 'nz-coastal' });
+    return generatePath({
+      ...base,
+      geospatialCategory,
+      slug,
+      gsd: Number(gsd),
+      targetBucketName: 'nz-coastal',
+      epsg: 2193,
+    });
+  };
+
+  it('should publish ancillary imagery alongside DEM and DSM of the same survey', () => {
+    assert.deepStrictEqual(
+      [
+        pathFor('dem', '1'),
+        pathFor('dsm', '1'),
+        pathFor('ancillary-aerial-photos', '0.3'),
+        pathFor('ancillary-near-infrared-aerial-photos', '0.3'),
+      ],
+      [
+        's3://nz-coastal/auckland/mangawhai-to-snells_2025/dem_1m/2193/',
+        's3://nz-coastal/auckland/mangawhai-to-snells_2025/dsm_1m/2193/',
+        's3://nz-coastal/auckland/mangawhai-to-snells_2025/rgb_0.3m/2193/',
+        's3://nz-coastal/auckland/mangawhai-to-snells_2025/rgbnir_0.3m/2193/',
+      ],
+    );
+    // Imagery and DSM of the same survey resolve to the same survey folder
+    assert.strictEqual(
+      new URL('../..', pathFor('ancillary-aerial-photos', '0.3')).href,
+      new URL('../..', pathFor('dsm', '1')).href,
     );
   });
 });
