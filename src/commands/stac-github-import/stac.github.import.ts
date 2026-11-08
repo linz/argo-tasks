@@ -16,7 +16,7 @@ const imageryRepo = 'linz/imagery';
 /**
  * Repositories that a STAC collection may be imported into
  */
-export const ValidRepos: string[] = ['linz/coastal', 'linz/elevation', imageryRepo];
+export const ValidRepos: string[] = ['linz/coastal', 'linz/elevation', 'linz/flood-map', imageryRepo];
 
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
@@ -65,8 +65,12 @@ export const commandStacGithubImport = command({
 
     const basemapsConfigLocation = new URL('config-url', args.source);
     const prBody: string[] = [];
-    const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
-    prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
+    if (await fsa.exists(basemapsConfigLocation)) {
+      const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
+      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
+    } else {
+      logger.warn({ location: protocolAwareString(basemapsConfigLocation) }, 'Basemaps:ConfigUrlMissing');
+    }
     prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
