@@ -101,6 +101,7 @@ export class GithubApi {
     return null;
   }
 
+  /** List the files directly inside a folder at a ref */
   async listFiles(ref: string, folder: string): Promise<string[]> {
     logger.info({ ref, folder }, 'GitHub API: List files');
     const response = await this.octokit.rest.git.getTree({
@@ -137,6 +138,7 @@ export class GithubApi {
     return commitRes.data.sha;
   }
 
+  /** Create a tree in batches of files, removing files with null content */
   async createTree(files: GithubFiles[], baseTree: string): Promise<string> {
     let treeSha = baseTree;
     let offset = 0;

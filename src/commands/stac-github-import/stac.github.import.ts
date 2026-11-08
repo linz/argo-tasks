@@ -168,6 +168,7 @@ export function sortLinks(links: st.StacLink[]): void {
   });
 }
 
+/** Read the items the collection links, unchanged, at their target paths */
 export async function createItemFiles(
   collection: st.StacCollection,
   sourceCollection: URL,
@@ -187,6 +188,7 @@ export async function createItemFiles(
   return files;
 }
 
+/** Find the .json files next to the collection that it no longer links */
 export async function findUnlinkedItemFiles(
   gh: Pick<GithubApi, 'getBranch' | 'listFiles'>,
   branch: string,
