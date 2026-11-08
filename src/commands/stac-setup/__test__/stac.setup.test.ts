@@ -149,6 +149,26 @@ describe('stac-setup', () => {
     });
   });
 
+  it('should throw an error with the coastal ancillary path when collection.json already exists', async (t) => {
+    // Simulate existing collection at the generated ODR path
+    t.mock.method(fsa, 'exists', () => Promise.resolve(true));
+
+    const baseArgs = {
+      ...BaseArgs,
+      startYear: '2023',
+      endYear: '2023',
+      gsd: '0.3',
+      region: 'auckland',
+      geographicDescription: 'Auckland',
+      geospatialCategory: 'ancillary-aerial-photos',
+      targetBucketName: 'nz-coastal',
+    } as const;
+
+    await assert.rejects(commandStacSetup.handler(baseArgs), {
+      message: `An existing collection was found at s3://nz-coastal/auckland/auckland_2023/rgb_0.3m/${baseArgs.targetEpsg}/collection.json. To overwrite or update the existing collection, supply its ODR URL using odr_url.`,
+    });
+  });
+
   it('should generate a slug with a survey id', async (t) => {
     // Simulate no existing collection at the generated ODR path
     t.mock.method(fsa, 'exists', () => Promise.resolve(false));
