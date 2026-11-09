@@ -1,5 +1,18 @@
 # Changelog
 
+## [8.3.0](https://github.com/linz/argo-tasks/compare/v8.2.0...v8.3.0) (2026-11-09)
+
+
+### Features
+
+* allow stac-github-import into linz/flood-map TDE-2215 ([#1434](https://github.com/linz/argo-tasks/issues/1434)) ([58b7a16](https://github.com/linz/argo-tasks/commit/58b7a161be0ece62ac05ee6adc3a490b74e58be9))
+* ensure coastal aerial imagery is published to path shared with DEM/DSM TDE-2149 ([#1428](https://github.com/linz/argo-tasks/issues/1428)) ([9163c3b](https://github.com/linz/argo-tasks/commit/9163c3bf0699c797f8bd8bc16d398204d6d0d0b4))
+
+
+### Bug Fixes
+
+* removed the process exit as required by the story tde-2151 ([#1436](https://github.com/linz/argo-tasks/issues/1436)) ([e4ccb0f](https://github.com/linz/argo-tasks/commit/e4ccb0f6c6b7ee6af743ef3ff1db945b09ed95bb))
+
 ## [8.2.0](https://github.com/linz/argo-tasks/compare/v8.1.4...v8.2.0) (2026-11-03)
 
 
