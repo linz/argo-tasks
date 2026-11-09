@@ -69,12 +69,8 @@ export const commandStacGithubImport = command({
 
     const basemapsConfigLocation = new URL('config-url', args.source);
     const prBody: string[] = [];
-    if (await fsa.exists(basemapsConfigLocation)) {
-      const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
-      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
-    } else {
-      logger.warn({ location: protocolAwareString(basemapsConfigLocation) }, 'Basemaps:ConfigUrlMissing');
-    }
+    const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
+    prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
     prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
