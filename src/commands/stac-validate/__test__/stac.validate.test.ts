@@ -125,4 +125,33 @@ describe('stacValidate', function () {
       assert.equal(errors.length, 0);
     });
   });
+
+  describe('commandStacValidate', () => {
+    const memory = new FsMemory();
+
+    before(() => fsa.register('memory://stac-validate/', memory));
+
+    it('should exit 1 when a top-level file throws', async (t) => {
+      const exitStub = t.mock.method(process, 'exit', () => undefined as never);
+      // `null` makes validateStac throw, simulating an unexpected error such as a schema compile failure
+      const throwingItem = fsa.toUrl('memory://stac-validate/throwing.json');
+      await fsa.write(throwingItem, Buffer.from('null'));
+
+      await commandStacValidate.handler({
+        config: undefined,
+        verbose: false,
+        concurrency: 1,
+        checksumAssets: false,
+        checksumLinks: false,
+        recursive: false,
+        strict: false,
+        location: [[throwingItem]],
+      });
+
+      assert.deepStrictEqual(
+        exitStub.mock.calls.map((c) => c.arguments),
+        [[1]],
+      );
+    });
+  });
 });

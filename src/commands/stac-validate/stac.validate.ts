@@ -247,7 +247,6 @@ export const commandStacValidate = command({
         validateStac(stacFileLocation).catch((err: unknown) => {
           logger.error({ err, stacFileLocation: protocolAwareString(stacFileLocation) }, 'Failed');
           failures.push(stacFileLocation);
-          process.exit();
         }),
       );
     }
