@@ -9,6 +9,7 @@ import { commandStacGithubImport } from '../stac.github.import.ts';
 
 const memory = new FsMemory();
 const target = 's3://nz-flood-map/new-zealand/flood-depth/present-day_1pct/2193/';
+const folder = 'stac/new-zealand/flood-depth/present-day_1pct/2193';
 
 before(() => {
   fsa.register('memory://', memory);
@@ -31,13 +32,19 @@ describe('commandStacGithubImport', () => {
   async function importCollection(
     t: TestContext,
     repoName: string,
+    items: string[] = [],
+    existing: string[] = [],
   ): Promise<{ files: GithubFiles[]; body: string | undefined }> {
-    const collection = { id: 'any-id', title: 'any-title', 'linz:region': 'new-zealand', links: [] };
+    const links = items.map((item) => ({ rel: 'item', href: `./${item}` }));
+    const collection = { id: 'any-id', title: 'any-title', 'linz:region': 'new-zealand', links };
     await fsa.write(fsa.toUrl('memory://source/collection.json'), Buffer.from(JSON.stringify(collection)));
+    for (const item of items) await fsa.write(fsa.toUrl(`memory://source/${item}`), Buffer.from('{}'));
     const catalog = {
       links: [{ rel: 'self', href: 'https://nz-flood-map.s3.ap-southeast-2.amazonaws.com/catalog.json' }],
     };
     t.mock.method(GithubApi.prototype, 'getContent', () => Promise.resolve(JSON.stringify(catalog)));
+    t.mock.method(GithubApi.prototype, 'getBranch', () => Promise.resolve(undefined));
+    t.mock.method(GithubApi.prototype, 'listFiles', () => Promise.resolve(existing));
     const pullRequest: { files: GithubFiles[]; body: string | undefined } = { files: [], body: undefined };
     t.mock.method(GithubApi.prototype, 'createPullRequest', (...args: unknown[]) => {
       pullRequest.files = args[2] as GithubFiles[];
@@ -86,6 +93,29 @@ describe('commandStacGithubImport', () => {
         '**Basemaps preview link for Visual QA:** [Basemaps 🗺️](https://basemaps.linz.govt.nz/?config=any)',
         `**ODR destination path:** \`${target}\``,
       ].join('\n'),
+    );
+  });
+
+  it('should import the items for linz/flood-map and delete the unlinked ones', async (t) => {
+    const { files } = await importCollection(t, 'linz/flood-map', ['AB01.json'], [`${folder}/AB02.json`]);
+
+    assert.deepEqual(
+      files.map((f) => `${f.content == null ? '-' : '+'} ${f.path.replace(/-\d+\.yaml$/, '.yaml')}`),
+      [
+        `+ ${folder}/collection.json`,
+        `+ ${folder}/AB01.json`,
+        `- ${folder}/AB02.json`,
+        '+ publish-odr-parameters/any-id.yaml',
+      ],
+    );
+  });
+
+  it('should only import the collection for linz/imagery', async (t) => {
+    const { files } = await importCollection(t, 'linz/imagery', ['AB01.json'], [`${folder}/AB02.json`]);
+
+    assert.deepEqual(
+      files.map((f) => f.path.replace(/-\d+\.yaml$/, '.yaml')),
+      [`${folder}/collection.json`, 'publish-odr-parameters/any-id.yaml'],
     );
   });
 });
