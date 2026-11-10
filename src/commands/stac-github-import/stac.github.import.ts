@@ -5,8 +5,10 @@ import type * as st from 'stac-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
+import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { DEFAULT_FORMAT } from '../../utils/config.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
+import type { GithubFiles } from '../../utils/github.ts';
 import { GithubApi } from '../../utils/github.ts';
 import { config, registerCli, Url, verbose } from '../common.ts';
 import { prettyPrint } from '../pretty-print/pretty.print.ts';
@@ -18,9 +20,11 @@ const imageryRepo = 'linz/imagery';
  */
 export const ValidRepos: string[] = ['linz/coastal', 'linz/elevation', 'linz/flood-map', imageryRepo];
 
+export const ItemRepos: string[] = ['linz/flood-map'];
+
 export const commandStacGithubImport = command({
   name: 'stac-github-import',
-  description: 'Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository',
+  description: `Format and push a STAC collection.json file (with its items for ${ItemRepos.join(', ')}) and Argo Workflows parameters file to a GitHub repository`,
   version: CliInfo.version,
   args: {
     config,
@@ -65,12 +69,8 @@ export const commandStacGithubImport = command({
 
     const basemapsConfigLocation = new URL('config-url', args.source);
     const prBody: string[] = [];
-    if (await fsa.exists(basemapsConfigLocation)) {
-      const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
-      prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
-    } else {
-      logger.warn({ location: protocolAwareString(basemapsConfigLocation) }, 'Basemaps:ConfigUrlMissing');
-    }
+    const basemapsConfigLink = await fsa.read(basemapsConfigLocation);
+    prBody.push(`**Basemaps preview link for Visual QA:** [Basemaps 🗺️](${String(basemapsConfigLink)})`);
     prBody.push(`**ODR destination path:** \`${args.target.href}\``);
 
     // Load information from the template inside the repo
@@ -109,6 +109,12 @@ export const commandStacGithubImport = command({
     const titleTicketSuffix = args.ticket ? ` ${args.ticket}` : '';
     const title = `feat: import ${collection.title}${titleTicketSuffix}`;
 
+    const itemFiles: GithubFiles[] = [];
+    if (ItemRepos.includes(args.repoName)) {
+      const items = await createItemFiles(collection, sourceCollection, targetCollection);
+      const unlinkedItems = await findUnlinkedItemFiles(gh, branch, targetCollectionPath, items);
+      itemFiles.push(...items, ...unlinkedItems);
+    }
     const collectionFileContent = await prettyPrint(JSON.stringify(collection), DEFAULT_FORMAT);
     const collectionFile = { path: targetCollectionPath, content: collectionFileContent };
     const parametersFileContent = {
@@ -125,7 +131,12 @@ export const commandStacGithubImport = command({
     };
     logger.info({ commit: title, branch }, 'Git:Commit');
     // create pull request
-    const pr = await gh.createPullRequest(branch, title, [collectionFile, parametersFile], prBody.join('\n'));
+    const pr = await gh.createPullRequest(
+      branch,
+      title,
+      [collectionFile, ...itemFiles, parametersFile],
+      prBody.join('\n'),
+    );
     if (pr != null) {
       const prUrl = new URL(`https://github.com/${args.repoName}/pull/${pr}`);
       logger.info({ prUrl: protocolAwareString(prUrl) }, 'Git:PullRequestCreated');
@@ -151,4 +162,37 @@ export function sortLinks(links: st.StacLink[]): void {
     if (aRel === bRel) return a.href.localeCompare(b.href);
     return aRel - bRel;
   });
+}
+
+/** Read the items the collection links, unchanged, at their target paths */
+export async function createItemFiles(
+  collection: st.StacCollection,
+  sourceCollection: URL,
+  targetCollection: URL,
+): Promise<GithubFiles[]> {
+  const queue = new ConcurrentQueue(25);
+  const files: GithubFiles[] = [];
+  for (const link of collection.links) {
+    if (link.rel !== 'item') continue;
+    queue.push(async () => {
+      const content = await fsa.read(new URL(link.href, sourceCollection));
+      const target = new URL(link.href, targetCollection);
+      files.push({ path: path.join('stac', target.pathname), content: content.toString() });
+    });
+  }
+  await queue.join();
+  return files;
+}
+
+/** Find the .json files next to the collection that it no longer links */
+export async function findUnlinkedItemFiles(
+  gh: Pick<GithubApi, 'getBranch' | 'listFiles'>,
+  branch: string,
+  collectionPath: string,
+  itemFiles: GithubFiles[],
+): Promise<GithubFiles[]> {
+  const linked = new Set([collectionPath, ...itemFiles.map((f) => f.path)]);
+  const ref = (await gh.getBranch(branch)) ?? 'master';
+  const files = await gh.listFiles(ref, path.dirname(collectionPath));
+  return files.filter((f) => f.endsWith('.json') && !linked.has(f)).map((f) => ({ path: f, content: null }));
 }

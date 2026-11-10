@@ -1,6 +1,6 @@
 # stac-github-import
 
-Format and push a STAC collection.json file and Argo Workflows parameters file to a GitHub repository
+Format and push a STAC collection.json file (with its items for linz/flood-map) and Argo Workflows parameters file to a GitHub repository
 
 ## Usage
 

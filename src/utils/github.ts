@@ -5,12 +5,7 @@ import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
 
 import { logger } from '../log.ts';
 
-export interface Blob {
-  path: string;
-  mode: '100644';
-  type: 'blob';
-  sha: string;
-}
+const TreeChunkSize = 500;
 
 export class GithubApi {
   octokit: Api;
@@ -91,24 +86,6 @@ export class GithubApi {
   }
 
   /**
-   * Create a blob object in git
-   */
-  async createBlob(content: string, path: string): Promise<Blob> {
-    // Create the blobs with the files content
-    logger.debug({ path }, 'GitHub API: Create blob');
-    const blobRes = await this.octokit.rest.git.createBlob({
-      owner: this.owner,
-      repo: this.repo,
-      content,
-      encoding: 'utf-8',
-    });
-    if (!this.isOk(blobRes.status)) throw new Error(`Failed to create data blob.`);
-
-    const blobSha = blobRes.data.sha;
-    return { path, mode: '100644', type: 'blob', sha: blobSha };
-  }
-
-  /**
    * Get content from the github repository
    */
   async getContent(path: string): Promise<string | null> {
@@ -124,21 +101,29 @@ export class GithubApi {
     return null;
   }
 
+  /** List the files directly inside a folder at a ref */
+  async listFiles(ref: string, folder: string): Promise<string[]> {
+    logger.info({ ref, folder }, 'GitHub API: List files');
+    const response = await this.octokit.rest.git.getTree({
+      owner: this.owner,
+      repo: this.repo,
+      tree_sha: ref,
+      recursive: 'true',
+    });
+    if (!this.isOk(response.status)) throw new Error(`Failed to get tree ${ref}.`);
+    if (response.data.truncated) throw new Error(`Tree ${ref} is too large to list ${folder}.`);
+    const prefix = `${folder}/`;
+    return response.data.tree
+      .filter((f) => f.type === 'blob' && f.path.startsWith(prefix) && !f.path.slice(prefix.length).includes('/'))
+      .map((f) => f.path);
+  }
+
   /**
    * Create a file imagery config file into basemaps-config/config/imagery and commit
    */
-  async createCommit(blobs: Blob[], message: string, sha: string): Promise<string> {
+  async createCommit(files: GithubFiles[], message: string, sha: string): Promise<string> {
     // Create a tree which defines the folder structure
-    logger.debug({ sha }, 'GitHub API: Create Tree');
-    const treeRes = await this.octokit.rest.git.createTree({
-      owner: this.owner,
-      repo: this.repo,
-      base_tree: sha,
-      tree: blobs,
-    });
-    if (!this.isOk(treeRes.status)) throw new Error(`Failed to create tree.`);
-
-    const treeSha = treeRes.data.sha;
+    const treeSha = await this.createTree(files, sha);
 
     // Create the commit
     logger.debug({ treeSha }, 'GitHub API: Create Commit');
@@ -151,6 +136,31 @@ export class GithubApi {
     });
     if (!this.isOk(commitRes.status)) throw new Error(`Failed to create commit.`);
     return commitRes.data.sha;
+  }
+
+  /** Create a tree in batches of files, removing files with null content */
+  async createTree(files: GithubFiles[], baseTree: string): Promise<string> {
+    let treeSha = baseTree;
+    let offset = 0;
+    do {
+      const chunk = files.slice(offset, offset + TreeChunkSize);
+      logger.debug({ baseTree: treeSha, files: chunk.length }, 'GitHub API: Create Tree');
+      const treeRes = await this.octokit.rest.git.createTree({
+        owner: this.owner,
+        repo: this.repo,
+        base_tree: treeSha,
+        tree: chunk.map((f) => ({
+          path: f.path,
+          mode: '100644' as const,
+          type: 'blob' as const,
+          ...(f.content == null ? { sha: null } : { content: f.content }),
+        })),
+      });
+      if (!this.isOk(treeRes.status)) throw new Error(`Failed to create tree.`);
+      treeSha = treeRes.data.sha;
+      offset += TreeChunkSize;
+    } while (offset < files.length);
+    return treeSha;
   }
 
   /**
@@ -186,16 +196,13 @@ export class GithubApi {
     }
 
     // git add
-    const blobs: Blob[] = [];
     for (const file of files) {
-      logger.info({ path: file.path }, 'GitHub: Add change');
-      const blob = await this.createBlob(file.content, file.path);
-      blobs.push(blob);
+      logger.info({ path: file.path }, file.content == null ? 'GitHub: Delete file' : 'GitHub: Add change');
     }
 
     // git commit
     logger.info({ branch }, 'GitHub: Commit to Branch');
-    const commitSha = await this.createCommit(blobs, title, sha);
+    const commitSha = await this.createCommit(files, title, sha);
 
     // git push
     logger.info({ branch }, 'GitHub: Push commit to Branch');
@@ -233,7 +240,7 @@ export class GithubApi {
 
 export interface GithubFiles {
   path: string;
-  content: string;
+  content: string | null;
 }
 
 interface GithubError {
