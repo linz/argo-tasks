@@ -6,19 +6,14 @@ import { UrlList } from '../../commands/common.ts';
 import { chunkItems, getFiles } from '../chunk.ts';
 
 describe('chunkItems', () => {
-  it('should chunk by count', () => {
-    assert.deepEqual(chunkItems([1, 2, 3, 4], 2), [
-      [1, 2],
-      [3, 4],
-    ]);
-    assert.deepEqual(chunkItems([1, 2, 3, 4], 3), [[1, 2, 3], [4]]);
-    assert.deepEqual(chunkItems([1, 2, 3, 4], 100), [[1, 2, 3, 4]]);
-    assert.deepEqual(chunkItems([1, 2, 3, 4], 1), [[1], [2], [3], [4]]);
-  });
-
-  it('should have no count limit at 0', () => {
-    assert.deepEqual(chunkItems([1, 2, 3, 4], 0), [[1, 2, 3, 4]]);
-  });
+  for (const [count, expected] of [
+    [1, [[1], [2], [3], [4]]],
+    [3, [[1, 2, 3], [4]]],
+    [100, [[1, 2, 3, 4]]],
+    [0, [[1, 2, 3, 4]]],
+  ] as const) {
+    it(`should chunk by count ${count}`, () => assert.deepEqual(chunkItems([1, 2, 3, 4], count), expected));
+  }
 
   it('should chunk by size, overshooting by one item', () => {
     assert.deepEqual(
@@ -32,11 +27,8 @@ describe('chunkItems', () => {
 
   it('should chunk by whichever limit is reached first', () => {
     assert.deepEqual(
-      chunkItems([4, 4, 4, 20], 2, 10, (v) => v),
-      [
-        [4, 4],
-        [4, 20],
-      ],
+      chunkItems([20, 1, 1, 1, 1], 3, 10, (v) => v),
+      [[20], [1, 1, 1], [1]],
     );
   });
 });

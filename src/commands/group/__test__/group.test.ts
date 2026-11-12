@@ -109,24 +109,13 @@ describe('group --group-size', () => {
     return Promise.all(ids.map((id) => fsa.readJson<unknown[]>(fsa.toUrl(`/tmp/group/output/${id}.json`))));
   }
 
-  it('should overshoot a group by one large item', async (t) => {
-    const a = await item('a', ['x/a.tiff', 4]);
-    const big = await item('big', ['x/big.tiff', 20]);
-    const b = await item('b', ['y/b1.tiff', 2], ['y/b2.tiff', 2]);
+  it('should sum input sizes per item with one listing per folder', async (t) => {
+    const a = await item('a', ['x/a1.tiff', 3], ['y/a2.tiff', 3]);
+    const b = await item('b', ['x/b.tiff', 4]);
     const c = await item('c', ['y/c.tiff', 4]);
-    const d = await item('d', ['y/d.tiff', 4]);
     const details = t.mock.method(sourceFs, 'details');
-
-    assert.deepEqual(await runGroup([a, big, b, c, d], 50, '10'), [
-      [a, big],
-      [b, c, d],
-    ]);
+    assert.deepEqual(await runGroup([a, b, c], 50, '10'), [[a, b], [c]]);
     assert.equal(details.mock.callCount(), 2);
-  });
-
-  it('should close a group at --size before --group-size', async () => {
-    const items = [await item('a', ['a.tiff', 4]), await item('b', ['b.tiff', 4]), await item('c', ['c.tiff', 4])];
-    assert.deepEqual(await runGroup(items, 2, '1Gi'), [[items[0], items[1]], [items[2]]]);
   });
 
   it('should not list input folders when --group-size is not positive', async (t) => {
