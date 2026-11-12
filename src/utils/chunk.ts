@@ -24,29 +24,28 @@ export async function* asyncFilter<T extends FileSizeInfo>(
   }
 }
 
-/** Chunk files into a max size (eg 1GB chunks) or max count (eg 100 files) or what ever comes first when both are defined */
-export function chunkFiles(values: FileSizeInfo[], count: number, size: number): URL[][] {
-  if (count == null && size == null) return [values.map((c) => c.url)];
-  return chunkItems(values, count, size, (v) => v.size).map((chunk) => chunk.map((v) => v.url));
-}
-
 /**
- * Chunk items into a max size or max count, whichever is reached first.
+ * Chunk items into a max count or max size, whichever is reached first; a limit of 0 or less is no limit.
  * A chunk closes on the item that reaches the size, so it can overshoot by one item; items without a size only count.
+ *
+ * @example
+ * ```typescript
+ * chunkItems(["a", "b", "c"], 2) => [["a", "b"], ["c"]]
+ * ```
  */
 export function chunkItems<T>(
   values: T[],
   count: number,
-  size: number,
-  sizeOf: (value: T) => number | undefined,
+  size?: number,
+  sizeOf?: (value: T, index: number) => number | undefined,
 ): T[][] {
   const output: T[][] = [];
   let current: T[] = [];
   let totalSize = 0;
-  for (const v of values) {
+  for (const [i, v] of values.entries()) {
     current.push(v);
-    totalSize += sizeOf(v) ?? 0;
-    if ((count > 0 && current.length >= count) || (size > 0 && totalSize >= size)) {
+    totalSize += sizeOf?.(v, i) ?? 0;
+    if ((count > 0 && current.length >= count) || (size != null && size > 0 && totalSize >= size)) {
       output.push(current);
       current = [];
       totalSize = 0;
@@ -132,5 +131,5 @@ export async function getFiles(locations: URL[], args: FileFilter = {}): Promise
     logger.info({ location: protocolAwareString(location), fileCount: fileList.length, totalSize }, 'List:Size');
   }
 
-  return chunkFiles(outputFiles, maxLength, groupSize);
+  return chunkItems(outputFiles, maxLength, groupSize, (f) => f.size).map((chunk) => chunk.map((f) => f.url));
 }

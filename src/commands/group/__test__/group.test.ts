@@ -4,26 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { StrList, Url } from '../../common.ts';
 import type { CommandGroupArgs } from '../group.ts';
-import { commandGroup, groupItems } from '../group.ts';
-
-describe('groupItems', () => {
-  it('should group items', () => {
-    assert.deepEqual(groupItems([1, 2, 3, 4], 2), [
-      [1, 2],
-      [3, 4],
-    ]);
-
-    assert.deepEqual(groupItems([1, 2, 3, 4], 3), [[1, 2, 3], [4]]);
-  });
-
-  it('should group max', () => {
-    assert.deepEqual(groupItems([1, 2, 3, 4], 100), [[1, 2, 3, 4]]);
-  });
-
-  it('should group min', () => {
-    assert.deepEqual(groupItems([1, 2, 3, 4], 1), [[1], [2], [3], [4]]);
-  });
-});
+import { commandGroup } from '../group.ts';
 
 describe('group', () => {
   const memoryFs = new FsMemory();

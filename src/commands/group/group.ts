@@ -9,22 +9,6 @@ import { protocolAwareString } from '../../utils/filelist.ts';
 import type { CommandArguments } from '../../utils/type.util.ts';
 import { config, forceOutput, parseSize, registerCli, StrList, Url, verbose } from '../common.ts';
 
-/** Chunk an array into a group size
- * @example
- *
- * ```typescript
- * groupItems(["a","b","c"], 2) => [["a","b"], ["c"]
- *```
- */
-export function groupItems<T>(items: T[], groupSize: number): T[][] {
-  const output: T[][] = [];
-  for (let index = 0; index < items.length; index += groupSize) {
-    const current = items.slice(index, index + groupSize);
-    output.push(current);
-  }
-  return output;
-}
-
 /** Input file locations of a tile-index-validate item `{ output, input: string[] }`, empty for any other item */
 function itemInputs(item: unknown): URL[] {
   const input = (item as { input?: unknown } | null)?.input;
@@ -49,17 +33,12 @@ export async function getFileSizes(files: URL[]): Promise<Map<string, number>> {
   return sizes;
 }
 
-/**
- * Group tile-index-validate items by count and by the total size of their input files, whichever is reached first
- *
- * @see {@link chunkItems}
- */
-export async function groupItemsBySize<T>(items: T[], count: number, maxSize: number): Promise<T[][]> {
+/** Total input file size of each tile-index-validate item, 0 for any other item */
+export async function getItemSizes(items: unknown[]): Promise<number[]> {
   const inputs = items.map(itemInputs);
   const sizes = await getFileSizes(inputs.flat());
 
   let missing = 0;
-  let totalSize = 0;
   const itemSizes = inputs.map((files) => {
     let size = 0;
     for (const file of files) {
@@ -67,14 +46,12 @@ export async function groupItemsBySize<T>(items: T[], count: number, maxSize: nu
       if (fileSize == null) missing++;
       else size += fileSize;
     }
-    totalSize += size;
     return size;
   });
+  const totalSize = itemSizes.reduce((total, size) => total + size, 0);
   logger.info({ items: items.length, totalSize, missing }, 'Group:Size');
   if (missing > 0) logger.warn({ missing }, 'Group:Size:Missing');
-
-  const indexes = chunkItems([...items.keys()], count, maxSize, (i) => itemSizes[i]);
-  return indexes.map((group) => group.map((i) => items[i] as T));
+  return itemSizes;
 }
 
 export const CommandGroupArgs = {
@@ -129,9 +106,9 @@ export const commandGroup = command({
       process.exit(1);
     }
 
-    const grouped = args.groupSize
-      ? await groupItemsBySize(inputs, args.size, parseSize(args.groupSize))
-      : groupItems(inputs, args.size);
+    const maxSize = args.groupSize ? parseSize(args.groupSize) : undefined;
+    const sizes = maxSize ? await getItemSizes(inputs) : [];
+    const grouped = chunkItems(inputs, args.size, maxSize, (_, i) => sizes[i]);
     logger.info({ files: inputs.length, groups: grouped.length }, 'Group:Done');
     if (args.forceOutput || isArgo()) {
       const items = [];
