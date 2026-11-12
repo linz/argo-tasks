@@ -1,4 +1,3 @@
-import type { BinaryLike } from 'crypto';
 import { createHash } from 'crypto';
 import type { Readable } from 'stream';
 
@@ -22,7 +21,7 @@ export const Sha256Prefix = '1220';
 export async function hashStream(stream: Readable): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash('sha256');
-    stream.on('data', (chunk: BinaryLike) => hash.update(chunk));
+    stream.on('data', (chunk: string | Buffer) => hash.update(chunk));
     stream.on('end', () => resolve(Sha256Prefix + hash.digest('hex')));
     stream.on('error', reject);
   });
