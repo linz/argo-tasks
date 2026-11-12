@@ -1,26 +1,58 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, optional, restPositionals } from 'cmd-ts';
+import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
+import { chunkItems } from '../../utils/chunk.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import type { CommandArguments } from '../../utils/type.util.ts';
-import { config, forceOutput, registerCli, StrList, Url, verbose } from '../common.ts';
+import { config, forceOutput, parseSize, registerCli, StrList, Url, verbose } from '../common.ts';
 
-/** Chunk an array into a group size
- * @example
- *
- * ```typescript
- * groupItems(["a","b","c"], 2) => [["a","b"], ["c"]
- *```
- */
-export function groupItems<T>(items: T[], groupSize: number): T[][] {
-  const output: T[][] = [];
-  for (let index = 0; index < items.length; index += groupSize) {
-    const current = items.slice(index, index + groupSize);
-    output.push(current);
+/** Input files of a tile-index-validate item */
+function itemInputs(item: unknown): URL[] {
+  const input = (item as { input?: unknown } | null)?.input;
+  return Array.isArray(input) ? input.map((f) => fsa.toUrl(String(f))) : [];
+}
+
+/** File sizes by URL href, from one listing per folder */
+export async function getFileSizes(files: URL[]): Promise<Map<string, number>> {
+  const sizes = new Map<string, number>();
+  const folders = new Set(files.map((f) => new URL('./', f).href));
+  for (const folder of folders) {
+    const location = new URL(folder);
+    logger.debug({ location: protocolAwareString(location) }, 'Group:List');
+    for await (const file of fsa.details(location, { recursive: false })) {
+      if (file.size != null) sizes.set(file.url.href, file.size);
+    }
   }
-  return output;
+  return sizes;
+}
+
+/** Total input file size per item */
+export async function getItemSizes(items: unknown[]): Promise<number[]> {
+  const inputs = items.map(itemInputs);
+  const sizes = await getFileSizes(inputs.flat());
+
+  let missing = 0;
+  const itemSizes = inputs.map((files) => {
+    let size = 0;
+    for (const file of files) {
+      const fileSize = sizes.get(file.href);
+      if (fileSize == null) missing++;
+      else size += fileSize;
+    }
+    return size;
+  });
+  const noInput = inputs.filter((files) => files.length === 0).length;
+  const totalSize = itemSizes.reduce((total, size) => total + size, 0);
+  logger.info({ items: items.length, totalSize, missing, noInput }, 'Group:Size');
+  if (missing > 0) logger.warn({ missing }, 'Group:Size:Missing');
+  if (noInput > 0) logger.warn({ noInput }, 'Group:Size:NoInput');
+  if (totalSize === 0) {
+    throw new Error('Group:Size: no input file sizes found, items must be tile-index-validate entries');
+  }
+  return itemSizes;
 }
 
 export const CommandGroupArgs = {
@@ -33,6 +65,11 @@ export const CommandGroupArgs = {
     description: 'Group items into this number of items group',
     defaultValue: () => 50,
     defaultValueIsSerializable: true,
+  }),
+  groupSize: option({
+    type: optional(string),
+    long: 'group-size',
+    description: 'Max total input file size per group, eg "100Gi"',
   }),
   inputs: restPositionals({
     type: StrList,
@@ -69,7 +106,9 @@ export const commandGroup = command({
       process.exit(1);
     }
 
-    const grouped = groupItems(inputs, args.size);
+    const maxSize = args.groupSize ? parseSize(args.groupSize) : -1;
+    const sizes = maxSize > 0 ? await getItemSizes(inputs) : [];
+    const grouped = chunkItems(inputs, args.size, maxSize, (_, i) => sizes[i]);
     logger.info({ files: inputs.length, groups: grouped.length }, 'Group:Done');
     if (args.forceOutput || isArgo()) {
       const items = [];

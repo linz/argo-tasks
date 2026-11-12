@@ -18,6 +18,7 @@ group <options> [...items]
 | ------------------- | --------------------------------------------------- | ----------- |
 | --config <str>      | Location of role configuration file                 | optional    |
 | --size <number>     | Group items into this number of items group         | default: 50 |
+| --group-size <str>  | Max total input file size per group, eg "100Gi"     | optional    |
 | --from-file <value> | JSON file to load inputs from, must be a JSON Array | optional    |
 
 ### Flags
