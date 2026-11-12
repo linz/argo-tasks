@@ -9,6 +9,7 @@ import type * as st from 'stac-ts';
 import { pathToFileURL } from 'url';
 
 import { CliInfo } from '../../cli.info.ts';
+import { skipResponseChecksumValidation } from '../../fs.register.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
@@ -60,6 +61,8 @@ export const commandStacValidate = command({
   },
 
   async handler(args) {
+    // file:checksum is validated with SHA-256; the AWS SDK's JavaScript CRC64NVME check on top halves read throughput
+    skipResponseChecksumValidation();
     registerCli(this, args);
 
     logger.info('StacValidation:Start');

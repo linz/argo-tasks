@@ -1,7 +1,35 @@
+import { S3Client } from '@aws-sdk/client-s3';
 import assert from 'assert';
 import { describe, it } from 'node:test';
 
-import { splitConfig } from '../fs.register.ts';
+import { skipResponseChecksumValidation, splitConfig } from '../fs.register.ts';
+
+describe('skipResponseChecksumValidation', () => {
+  it('should default to WHEN_REQUIRED', () => {
+    const env: NodeJS.ProcessEnv = {};
+    skipResponseChecksumValidation(env);
+    assert.equal(env['AWS_RESPONSE_CHECKSUM_VALIDATION'], 'WHEN_REQUIRED');
+  });
+
+  it('should keep an existing value', () => {
+    const env: NodeJS.ProcessEnv = { AWS_RESPONSE_CHECKSUM_VALIDATION: 'WHEN_SUPPORTED' };
+    skipResponseChecksumValidation(env);
+    assert.equal(env['AWS_RESPONSE_CHECKSUM_VALIDATION'], 'WHEN_SUPPORTED');
+  });
+
+  it('should apply to new S3 clients', async () => {
+    const previous = process.env['AWS_RESPONSE_CHECKSUM_VALIDATION'];
+    delete process.env['AWS_RESPONSE_CHECKSUM_VALIDATION'];
+    try {
+      skipResponseChecksumValidation();
+      const client = new S3Client({ region: 'ap-southeast-2' });
+      assert.equal(await client.config.responseChecksumValidation(), 'WHEN_REQUIRED');
+    } finally {
+      if (previous == null) delete process.env['AWS_RESPONSE_CHECKSUM_VALIDATION'];
+      else process.env['AWS_RESPONSE_CHECKSUM_VALIDATION'] = previous;
+    }
+  });
+});
 
 describe('splitConfig', () => {
   it('should parse JSON array string', () => {
