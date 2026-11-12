@@ -106,8 +106,8 @@ export const commandGroup = command({
       process.exit(1);
     }
 
-    const maxSize = args.groupSize ? parseSize(args.groupSize) : undefined;
-    const sizes = maxSize ? await getItemSizes(inputs) : [];
+    const maxSize = args.groupSize ? parseSize(args.groupSize) : -1;
+    const sizes = maxSize > 0 ? await getItemSizes(inputs) : [];
     const grouped = chunkItems(inputs, args.size, maxSize, (_, i) => sizes[i]);
     logger.info({ files: inputs.length, groups: grouped.length }, 'Group:Done');
     if (args.forceOutput || isArgo()) {

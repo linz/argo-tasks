@@ -132,6 +132,14 @@ describe('group --group-size', () => {
     assert.deepEqual(await runGroup(items, 2, '1Gi'), [[items[0], items[1]], [items[2]]]);
   });
 
+  it('should not list input folders when --group-size is not positive', async (t) => {
+    const items = [await item('a', ['a.tiff', 4]), await item('b', ['b.tiff', 4]), await item('c', ['c.tiff', 4])];
+    const details = t.mock.method(sourceFs, 'details');
+    assert.deepEqual(await runGroup(items, 2, '-1'), [[items[0], items[1]], [items[2]]]);
+    assert.deepEqual(await runGroup(items, 2, '0'), [[items[0], items[1]], [items[2]]]);
+    assert.equal(details.mock.callCount(), 0);
+  });
+
   it('should group by count when there are no sizes', async () => {
     const missing = { output: 'missing', input: ['memory://source/missing.tiff'] };
     assert.deepEqual(await runGroup(['a', missing, 'b'], 2, '10'), [['a', missing], ['b']]);
