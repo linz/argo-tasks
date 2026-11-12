@@ -140,8 +140,17 @@ describe('group --group-size', () => {
     assert.equal(details.mock.callCount(), 0);
   });
 
-  it('should group by count when there are no sizes', async () => {
+  it('should count items without sizes towards --size only', async () => {
+    const a = await item('a', ['a.tiff', 10]);
     const missing = { output: 'missing', input: ['memory://source/missing.tiff'] };
-    assert.deepEqual(await runGroup(['a', missing, 'b'], 2, '10'), [['a', missing], ['b']]);
+    assert.deepEqual(await runGroup(['x', a, missing, 'y', 'z'], 3, '10'), [
+      ['x', a],
+      [missing, 'y', 'z'],
+    ]);
+  });
+
+  it('should fail when no item has input file sizes', async () => {
+    const missing = { output: 'missing', input: ['memory://source/missing.tiff'] };
+    await assert.rejects(runGroup(['a', missing, 'b'], 2, '10'), /no input file sizes found/);
   });
 });

@@ -48,9 +48,14 @@ export async function getItemSizes(items: unknown[]): Promise<number[]> {
     }
     return size;
   });
+  const noInput = inputs.filter((files) => files.length === 0).length;
   const totalSize = itemSizes.reduce((total, size) => total + size, 0);
-  logger.info({ items: items.length, totalSize, missing }, 'Group:Size');
+  logger.info({ items: items.length, totalSize, missing, noInput }, 'Group:Size');
   if (missing > 0) logger.warn({ missing }, 'Group:Size:Missing');
+  if (noInput > 0) logger.warn({ noInput }, 'Group:Size:NoInput');
+  if (totalSize === 0) {
+    throw new Error('Group:Size: no input file sizes found, items must be tile-index-validate entries');
+  }
   return itemSizes;
 }
 
