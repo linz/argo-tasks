@@ -24,19 +24,11 @@ export async function* asyncFilter<T extends FileSizeInfo>(
   }
 }
 
-/**
- * Chunk items into a max count or max size, whichever is reached first; a limit of 0 or less is no limit.
- * A chunk closes on the item that reaches the size, so it can overshoot by one item; items without a size only count.
- *
- * @example
- * ```typescript
- * chunkItems(["a", "b", "c"], 2) => [["a", "b"], ["c"]]
- * ```
- */
+/** Chunk items by count or size, whichever is reached first; limits <= 0 are ignored */
 export function chunkItems<T>(
   values: T[],
   count: number,
-  size?: number,
+  size = -1,
   sizeOf?: (value: T, index: number) => number | undefined,
 ): T[][] {
   const output: T[][] = [];
@@ -45,7 +37,7 @@ export function chunkItems<T>(
   for (const [i, v] of values.entries()) {
     current.push(v);
     totalSize += sizeOf?.(v, i) ?? 0;
-    if ((count > 0 && current.length >= count) || (size != null && size > 0 && totalSize >= size)) {
+    if ((count > 0 && current.length >= count) || (size > 0 && totalSize >= size)) {
       output.push(current);
       current = [];
       totalSize = 0;

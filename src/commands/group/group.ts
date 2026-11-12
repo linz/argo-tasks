@@ -9,17 +9,13 @@ import { protocolAwareString } from '../../utils/filelist.ts';
 import type { CommandArguments } from '../../utils/type.util.ts';
 import { config, forceOutput, parseSize, registerCli, StrList, Url, verbose } from '../common.ts';
 
-/** Input file locations of a tile-index-validate item `{ output, input: string[] }`, empty for any other item */
+/** Input files of a tile-index-validate item */
 function itemInputs(item: unknown): URL[] {
   const input = (item as { input?: unknown } | null)?.input;
   return Array.isArray(input) ? input.map((f) => fsa.toUrl(String(f))) : [];
 }
 
-/**
- * Look up file sizes with one non-recursive listing per folder, instead of one HEAD per file
- *
- * @returns size in bytes by URL href, files that are not found are missing
- */
+/** File sizes by URL href, from one listing per folder */
 export async function getFileSizes(files: URL[]): Promise<Map<string, number>> {
   const sizes = new Map<string, number>();
   const folders = new Set(files.map((f) => new URL('./', f).href));
@@ -33,7 +29,7 @@ export async function getFileSizes(files: URL[]): Promise<Map<string, number>> {
   return sizes;
 }
 
-/** Total input file size of each tile-index-validate item, 0 for any other item */
+/** Total input file size per item */
 export async function getItemSizes(items: unknown[]): Promise<number[]> {
   const inputs = items.map(itemInputs);
   const sizes = await getFileSizes(inputs.flat());
@@ -73,8 +69,7 @@ export const CommandGroupArgs = {
   groupSize: option({
     type: optional(string),
     long: 'group-size',
-    description:
-      'Also close a group once its input files reach this total size, eg "100Gi". Items must be tile-index-validate entries ({"input": [...]})',
+    description: 'Max total input file size per group, eg "100Gi"',
   }),
   inputs: restPositionals({
     type: StrList,

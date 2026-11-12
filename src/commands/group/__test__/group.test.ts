@@ -89,7 +89,6 @@ describe('group --group-size', () => {
     sourceFs.files.clear();
   });
 
-  /** tile-index-validate style item, with an input file of each size */
   async function item(output: string, ...inputs: [string, number][]): Promise<{ output: string; input: string[] }> {
     for (const [name, size] of inputs) await fsa.write(fsa.toUrl(`memory://source/${name}`), Buffer.alloc(size));
     return { output, input: inputs.map(([name]) => `memory://source/${name}`) };
@@ -110,7 +109,7 @@ describe('group --group-size', () => {
     return Promise.all(ids.map((id) => fsa.readJson<unknown[]>(fsa.toUrl(`/tmp/group/output/${id}.json`))));
   }
 
-  it('should close a group on the item that reaches the size, overshooting by one large item', async (t) => {
+  it('should overshoot a group by one large item', async (t) => {
     const a = await item('a', ['x/a.tiff', 4]);
     const big = await item('big', ['x/big.tiff', 20]);
     const b = await item('b', ['y/b1.tiff', 2], ['y/b2.tiff', 2]);
@@ -118,12 +117,10 @@ describe('group --group-size', () => {
     const d = await item('d', ['y/d.tiff', 4]);
     const details = t.mock.method(sourceFs, 'details');
 
-    // a + big = 24 bytes, b + c + d = 12 bytes
     assert.deepEqual(await runGroup([a, big, b, c, d], 50, '10'), [
       [a, big],
       [b, c, d],
     ]);
-    // One listing per input folder
     assert.equal(details.mock.callCount(), 2);
   });
 
