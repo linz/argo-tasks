@@ -1,11 +1,13 @@
 import { fsa } from '@chunkd/fs';
-import { command, number, option, optional, restPositionals } from 'cmd-ts';
+import { command, number, option, optional, restPositionals, string } from 'cmd-ts';
 
 import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { isArgo } from '../../utils/argo.ts';
+import { chunkItems } from '../../utils/chunk.ts';
+import { protocolAwareString } from '../../utils/filelist.ts';
 import type { CommandArguments } from '../../utils/type.util.ts';
-import { config, forceOutput, registerCli, StrList, Url, verbose } from '../common.ts';
+import { config, forceOutput, parseSize, registerCli, StrList, Url, verbose } from '../common.ts';
 
 /** Chunk an array into a group size
  * @example
@@ -23,6 +25,58 @@ export function groupItems<T>(items: T[], groupSize: number): T[][] {
   return output;
 }
 
+/** Input file locations of a tile-index-validate item `{ output, input: string[] }`, empty for any other item */
+function itemInputs(item: unknown): URL[] {
+  const input = (item as { input?: unknown } | null)?.input;
+  return Array.isArray(input) ? input.map((f) => fsa.toUrl(String(f))) : [];
+}
+
+/**
+ * Look up file sizes with one non-recursive listing per folder, instead of one HEAD per file
+ *
+ * @returns size in bytes by URL href, files that are not found are missing
+ */
+export async function getFileSizes(files: URL[]): Promise<Map<string, number>> {
+  const sizes = new Map<string, number>();
+  const folders = new Set(files.map((f) => new URL('./', f).href));
+  for (const folder of folders) {
+    const location = new URL(folder);
+    logger.debug({ location: protocolAwareString(location) }, 'Group:List');
+    for await (const file of fsa.details(location, { recursive: false })) {
+      if (file.size != null) sizes.set(file.url.href, file.size);
+    }
+  }
+  return sizes;
+}
+
+/**
+ * Group tile-index-validate items by count and by the total size of their input files, whichever is reached first
+ *
+ * @see {@link chunkItems}
+ */
+export async function groupItemsBySize<T>(items: T[], count: number, maxSize: number): Promise<T[][]> {
+  const inputs = items.map(itemInputs);
+  const sizes = await getFileSizes(inputs.flat());
+
+  let missing = 0;
+  let totalSize = 0;
+  const itemSizes = inputs.map((files) => {
+    let size = 0;
+    for (const file of files) {
+      const fileSize = sizes.get(file.href);
+      if (fileSize == null) missing++;
+      else size += fileSize;
+    }
+    totalSize += size;
+    return size;
+  });
+  logger.info({ items: items.length, totalSize, missing }, 'Group:Size');
+  if (missing > 0) logger.warn({ missing }, 'Group:Size:Missing');
+
+  const indexes = chunkItems([...items.keys()], count, maxSize, (i) => itemSizes[i]);
+  return indexes.map((group) => group.map((i) => items[i] as T));
+}
+
 export const CommandGroupArgs = {
   config,
   verbose,
@@ -33,6 +87,12 @@ export const CommandGroupArgs = {
     description: 'Group items into this number of items group',
     defaultValue: () => 50,
     defaultValueIsSerializable: true,
+  }),
+  groupSize: option({
+    type: optional(string),
+    long: 'group-size',
+    description:
+      'Also close a group once its input files reach this total size, eg "100Gi". Items must be tile-index-validate entries ({"input": [...]})',
   }),
   inputs: restPositionals({
     type: StrList,
@@ -69,7 +129,9 @@ export const commandGroup = command({
       process.exit(1);
     }
 
-    const grouped = groupItems(inputs, args.size);
+    const grouped = args.groupSize
+      ? await groupItemsBySize(inputs, args.size, parseSize(args.groupSize))
+      : groupItems(inputs, args.size);
     logger.info({ files: inputs.length, groups: grouped.length }, 'Group:Done');
     if (args.forceOutput || isArgo()) {
       const items = [];
