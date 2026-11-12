@@ -1,5 +1,17 @@
 # Changelog
 
+## [8.3.1](https://github.com/linz/argo-tasks/compare/v8.3.0...v8.3.1) (2026-11-12)
+
+
+### Features
+
+* import STAC items into linz/flood-map with stac-github-import TDE-2216 ([#1429](https://github.com/linz/argo-tasks/issues/1429)) ([32a24dc](https://github.com/linz/argo-tasks/commit/32a24dca2ce8ca28c415fe489b7aa22086b5918c))
+
+
+### Bug Fixes
+
+* **deps:** bump node to 24.22.3 TDE-2220 ([#1439](https://github.com/linz/argo-tasks/issues/1439)) ([a10caaa](https://github.com/linz/argo-tasks/commit/a10caaa50355c28cc7989b0ad6d0254bca63de05))
+
 ## [8.3.0](https://github.com/linz/argo-tasks/compare/v8.2.0...v8.3.0) (2026-11-09)
 
 
