@@ -48,7 +48,7 @@
     "ajv-formats": "^3.0.1",
     "cmd-ts": "^0.15.0",
     "flatgeobuf": "^4.6.1",
-    "oxfmt": "^0.74.0",
+    "oxfmt": "^0.75.0",
     "p-limit": "^7.3.3",
     "pino": "^10.4.0",
     "pretty-json-log": "^1.4.0",
@@ -58,7 +58,7 @@
   "devDependencies": {
     "@chunkd/source-memory": "^11.2.2",
     "@linzjs/style": "^6.1.1",
-    "@types/node": "~24.5.0",
+    "@types/node": "~24.19.2",
     "stac-ts": "^1.0.4",
     "typescript": "^7.0.2"
   },
