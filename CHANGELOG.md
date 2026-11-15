@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.4.0](https://github.com/linz/argo-tasks/compare/v8.3.1...v8.4.0) (2026-11-15)
+
+
+### Features
+
+* group items by total input file size TDE-2226 ([#1441](https://github.com/linz/argo-tasks/issues/1441)) ([51541a5](https://github.com/linz/argo-tasks/commit/51541a5bb7958c2b8eb9daaf10b6695320c3536e))
+
 ## [8.3.1](https://github.com/linz/argo-tasks/compare/v8.3.0...v8.3.1) (2026-11-12)
 
 
