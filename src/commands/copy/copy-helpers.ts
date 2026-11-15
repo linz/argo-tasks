@@ -4,7 +4,7 @@ import { fsa } from '@chunkd/fs';
 import { logger } from '../../log.ts';
 import { tryHead } from '../../utils/file.head.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
-import { hashFile, HashKey, hashStream } from '../../utils/hash.ts';
+import { hashFile, HashKey } from '../../utils/hash.ts';
 import { guessStacContentType, replaceUrlPathPattern, urlPathEndsWith } from '../common.ts';
 import type { CopyContractArgs, CopyStatItem, CopyStats, TargetFileOperation } from './copy-rpc.ts';
 import { FileOperation } from './copy-rpc.ts';

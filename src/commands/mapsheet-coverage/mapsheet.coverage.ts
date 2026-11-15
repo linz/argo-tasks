@@ -15,7 +15,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { getPacificAucklandYearMonthDay } from '../../utils/date.ts';
 import { FileListEntryClass, makeRelative, protocolAwareString } from '../../utils/filelist.ts';
-import { hashFile, hashStream } from '../../utils/hash.ts';
+import { hashFile } from '../../utils/hash.ts';
 import { MapSheet } from '../../utils/mapsheet.ts';
 import { config, registerCli, replaceUrlPathPattern, Url, UrlFolder, urlPathEndsWith, verbose } from '../common.ts';
 
