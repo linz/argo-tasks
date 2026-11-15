@@ -4,26 +4,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { StrList, Url } from '../../common.ts';
 import type { CommandGroupArgs } from '../group.ts';
-import { commandGroup, groupItems } from '../group.ts';
-
-describe('groupItems', () => {
-  it('should group items', () => {
-    assert.deepEqual(groupItems([1, 2, 3, 4], 2), [
-      [1, 2],
-      [3, 4],
-    ]);
-
-    assert.deepEqual(groupItems([1, 2, 3, 4], 3), [[1, 2, 3], [4]]);
-  });
-
-  it('should group max', () => {
-    assert.deepEqual(groupItems([1, 2, 3, 4], 100), [[1, 2, 3, 4]]);
-  });
-
-  it('should group min', () => {
-    assert.deepEqual(groupItems([1, 2, 3, 4], 1), [[1], [2], [3], [4]]);
-  });
-});
+import { commandGroup } from '../group.ts';
 
 describe('group', () => {
   const memoryFs = new FsMemory();
@@ -37,6 +18,7 @@ describe('group', () => {
     fromFile: undefined,
     forceOutput: false,
     size: 0,
+    groupSize: undefined,
     inputs: [],
   };
 
@@ -94,5 +76,67 @@ describe('group', () => {
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output.json')), ['000', '001']);
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output/000.json')), [1, 2, 3]);
     assert.deepEqual(await fsa.readJson(fsa.toUrl('/tmp/group/output/001.json')), [4, 5]);
+  });
+});
+
+describe('group --group-size', () => {
+  const memoryFs = new FsMemory();
+  const sourceFs = new FsMemory();
+  beforeEach(() => {
+    fsa.register('file:///tmp/group', memoryFs);
+    fsa.register('memory://source/', sourceFs);
+    memoryFs.files.clear();
+    sourceFs.files.clear();
+  });
+
+  async function item(output: string, ...inputs: [string, number][]): Promise<{ output: string; input: string[] }> {
+    for (const [name, size] of inputs) await fsa.write(fsa.toUrl(`memory://source/${name}`), Buffer.alloc(size));
+    return { output, input: inputs.map(([name]) => `memory://source/${name}`) };
+  }
+
+  async function runGroup(items: unknown[], size: number, groupSize: string): Promise<unknown[][]> {
+    await fsa.write(fsa.toUrl('/tmp/group/input.json'), Buffer.from(JSON.stringify(items)));
+    await commandGroup.handler({
+      config: undefined,
+      verbose: false,
+      forceOutput: true,
+      inputs: [],
+      fromFile: await Url.from('/tmp/group/input.json'),
+      size,
+      groupSize,
+    });
+    const ids = await fsa.readJson<string[]>(fsa.toUrl('/tmp/group/output.json'));
+    return Promise.all(ids.map((id) => fsa.readJson<unknown[]>(fsa.toUrl(`/tmp/group/output/${id}.json`))));
+  }
+
+  it('should sum input sizes per item with one listing per folder', async (t) => {
+    const a = await item('a', ['x/a1.tiff', 3], ['y/a2.tiff', 3]);
+    const b = await item('b', ['x/b.tiff', 4]);
+    const c = await item('c', ['y/c.tiff', 4]);
+    const details = t.mock.method(sourceFs, 'details');
+    assert.deepEqual(await runGroup([a, b, c], 50, '10'), [[a, b], [c]]);
+    assert.equal(details.mock.callCount(), 2);
+  });
+
+  it('should not list input folders when --group-size is not positive', async (t) => {
+    const items = [await item('a', ['a.tiff', 4]), await item('b', ['b.tiff', 4]), await item('c', ['c.tiff', 4])];
+    const details = t.mock.method(sourceFs, 'details');
+    assert.deepEqual(await runGroup(items, 2, '-1'), [[items[0], items[1]], [items[2]]]);
+    assert.deepEqual(await runGroup(items, 2, '0'), [[items[0], items[1]], [items[2]]]);
+    assert.equal(details.mock.callCount(), 0);
+  });
+
+  it('should count items without sizes towards --size only', async () => {
+    const a = await item('a', ['a.tiff', 10]);
+    const missing = { output: 'missing', input: ['memory://source/missing.tiff'] };
+    assert.deepEqual(await runGroup(['x', a, missing, 'y', 'z'], 3, '10'), [
+      ['x', a],
+      [missing, 'y', 'z'],
+    ]);
+  });
+
+  it('should fail when no item has input file sizes', async () => {
+    const missing = { output: 'missing', input: ['memory://source/missing.tiff'] };
+    await assert.rejects(runGroup(['a', missing, 'b'], 2, '10'), /no input file sizes found/);
   });
 });

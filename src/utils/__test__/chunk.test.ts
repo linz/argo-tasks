@@ -3,7 +3,35 @@ import assert from 'node:assert';
 import { beforeEach, describe, it } from 'node:test';
 
 import { UrlList } from '../../commands/common.ts';
-import { getFiles } from '../chunk.ts';
+import { chunkItems, getFiles } from '../chunk.ts';
+
+describe('chunkItems', () => {
+  for (const [count, expected] of [
+    [1, [[1], [2], [3], [4]]],
+    [3, [[1, 2, 3], [4]]],
+    [100, [[1, 2, 3, 4]]],
+    [0, [[1, 2, 3, 4]]],
+  ] as const) {
+    it(`should chunk by count ${count}`, () => assert.deepEqual(chunkItems([1, 2, 3, 4], count), expected));
+  }
+
+  it('should chunk by size, overshooting by one item', () => {
+    assert.deepEqual(
+      chunkItems([4, 20, 4, 4, 4], 0, 10, (v) => v),
+      [
+        [4, 20],
+        [4, 4, 4],
+      ],
+    );
+  });
+
+  it('should chunk by whichever limit is reached first', () => {
+    assert.deepEqual(
+      chunkItems([20, 1, 1, 1, 1], 3, 10, (v) => v),
+      [[20], [1, 1, 1], [1]],
+    );
+  });
+});
 
 describe('getFiles', () => {
   const mem = new FsMemory();

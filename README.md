@@ -124,6 +124,12 @@ group --size 2 "a" "b" "c" '["1","2","3"]'
 # [["a","b"], ["c","1"], ["2", "3"]]
 ```
 
+- Group tile-index-validate items by 20 items or `100Gi` of input files, whichever comes first:
+
+```bash
+group --size 20 --group-size 100Gi --from-file /tmp/tile-index-validate/file-list.json
+```
+
 ### `stac catalog`
 
 Create STAC catalog JSON file when given links to catalog template JSON file and location to search for collection.json files.
