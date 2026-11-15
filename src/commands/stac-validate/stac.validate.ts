@@ -12,8 +12,7 @@ import { CliInfo } from '../../cli.info.ts';
 import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
-import { hashStream, Sha256Prefix } from '../../utils/hash.ts';
-import { retryOnError } from '../../utils/retry.ts';
+import { hashFile, Sha256Prefix } from '../../utils/hash.ts';
 import { config, registerCli, UrlList, verbose } from '../common.ts';
 
 export const commandStacValidate = command({
@@ -374,13 +373,7 @@ export async function validateStacChecksum(
   }
   logger.debug({ source: protocolAwareString(source), checksum }, 'Validate:Checksum');
   const startTime = performance.now();
-  const hash = await retryOnError(
-    3,
-    (attempt) => 1000 * attempt,
-    () => hashStream(fsa.readStream(source)),
-    isTransientNetworkError,
-    { source: protocolAwareString(source) },
-  );
+  const hash = await hashFile(source);
   const duration = performance.now() - startTime;
 
   if (hash !== checksum) {
@@ -408,14 +401,6 @@ export async function validateStacChecksum(
     'Checksum:Validation:Ok',
   );
   return true;
-}
-
-/** Network error codes that are safe to retry when reading a file to checksum */
-const ChecksumRetryCodes = new Set(['ECONNRESET', 'ETIMEDOUT', 'EPIPE']);
-
-function isTransientNetworkError(e: unknown): boolean {
-  const code = (e as { cause?: { code?: string } })?.cause?.code;
-  return code != null && ChecksumRetryCodes.has(code);
 }
 
 export type StacSchemaType = 'item' | 'catalog' | 'collection';

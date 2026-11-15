@@ -1,6 +1,5 @@
 import { fsa, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
-import { Readable } from 'node:stream';
 import { before, beforeEach, describe, it } from 'node:test';
 import type * as st from 'stac-ts';
 
@@ -58,51 +57,6 @@ describe('stacValidate', function () {
 
       const isValid = await validateStacChecksum(link, fsa.toUrl(`${path}collection.json`), false);
       assert.equal(isValid, true);
-    });
-
-    it('should retry after a network error', async (t) => {
-      await fsa.write(fsa.toUrl(`${path}item.json`), Buffer.from(JSON.stringify({ test: true })));
-      const link: st.StacLink = {
-        href: './item.json',
-        rel: 'item',
-        'file:checksum': '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
-      };
-      const realReadStream = fsa.readStream.bind(fsa);
-      let calls = 0;
-      t.mock.method(fsa, 'readStream', (loc: URL) => {
-        calls++;
-        if (calls > 1) return realReadStream(loc);
-        const stream = new Readable({ read(): void {} });
-        process.nextTick(() =>
-          stream.destroy(Object.assign(new Error('Failed to readStream'), { cause: { code: 'ECONNRESET' } })),
-        );
-        return stream;
-      });
-
-      const isValid = await validateStacChecksum(link, fsa.toUrl(`${path}collection.json`), false);
-      assert.equal(isValid, true);
-      assert.equal(calls, 2);
-    });
-
-    it('should not retry after a non-network error', async (t) => {
-      await fsa.write(fsa.toUrl(`${path}item.json`), Buffer.from(JSON.stringify({ test: true })));
-      const link: st.StacLink = {
-        href: './item.json',
-        rel: 'item',
-        'file:checksum': '12206fd977db9b2afe87a9ceee48432881299a6aaf83d935fbbe83007660287f9c2e',
-      };
-      const realReadStream = fsa.readStream.bind(fsa);
-      let calls = 0;
-      t.mock.method(fsa, 'readStream', (loc: URL) => {
-        calls++;
-        if (calls > 1) return realReadStream(loc);
-        const stream = new Readable({ read(): void {} });
-        process.nextTick(() => stream.destroy(new Error('Access denied')));
-        return stream;
-      });
-
-      await assert.rejects(validateStacChecksum(link, fsa.toUrl(`${path}collection.json`), false), /Access denied/);
-      assert.equal(calls, 1);
     });
 
     it('should return the path of an asset with invalid checksum', async () => {
