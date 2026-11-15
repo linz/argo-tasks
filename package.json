@@ -35,7 +35,7 @@
     "@basemaps/config": "^8.13.2",
     "@basemaps/geo": "^8.9.1",
     "@chunkd/fs": "^11.5.3",
-    "@chunkd/fs-aws": "^11.6.3",
+    "@chunkd/fs-aws": "^11.6.4",
     "@chunkd/source-file": "^11.2.2",
     "@cogeotiff/core": "^9.5.0",
     "@linzjs/geojson": "^8.0.0",
