@@ -35,7 +35,8 @@ export async function hashStream(stream: Readable): Promise<string> {
 /** Network error codes that are safe to retry when reading a file to hash */
 const HashRetryCodes = new Set(['ECONNRESET', 'ETIMEDOUT', 'EPIPE']);
 
-export function isTransientNetworkError(e: unknown): boolean {
+/** Whether an error is a network error worth retrying, based on cause.code */
+function isTransientNetworkError(e: unknown): boolean {
   const code = (e as { cause?: { code?: string } })?.cause?.code;
   return code != null && HashRetryCodes.has(code);
 }

@@ -58,7 +58,6 @@ describe('stacValidate', function () {
       const isValid = await validateStacChecksum(link, fsa.toUrl(`${path}collection.json`), false);
       assert.equal(isValid, true);
     });
-
     it('should return the path of an asset with invalid checksum', async () => {
       await fsa.write(fsa.toUrl(`${path}image.tiff`), Buffer.from('test'));
       const stacItem: st.StacItem = {
