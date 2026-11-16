@@ -63,6 +63,28 @@ describe('hashFile', () => {
     assert.equal(calls, 2);
   });
 
+  it('should retry after a network error that is not wrapped in a FsError', async (t) => {
+    const { delayMs } = HashRetry;
+    HashRetry.delayMs = 1;
+    t.after(() => {
+      HashRetry.delayMs = delayMs;
+    });
+    await fsa.write(source, Buffer.from('test'));
+    const realReadStream = fsa.readStream.bind(fsa);
+    let calls = 0;
+    t.mock.method(fsa, 'readStream', (loc: URL) => {
+      calls++;
+      if (calls > 1) return realReadStream(loc);
+      const stream = new Readable({ read(): void {} });
+      process.nextTick(() => stream.destroy(Object.assign(new Error('aborted'), { code: 'ECONNRESET' })));
+      return stream;
+    });
+
+    const digest = await hashFile(source);
+    assert.equal(digest, expectingDigest);
+    assert.equal(calls, 2);
+  });
+
   it('should not retry after a non-network error', async (t) => {
     let calls = 0;
     t.mock.method(fsa, 'readStream', () => {
