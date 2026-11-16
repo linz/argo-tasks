@@ -1,8 +1,7 @@
-import { FsError, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { isTransientNetworkError, retryOnError } from '../retry.ts';
+import { retryOnError } from '../retry.ts';
 
 describe('retryOnError', () => {
   it('should retry until the operation succeeds', async () => {
