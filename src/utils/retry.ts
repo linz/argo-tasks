@@ -22,3 +22,21 @@ export async function retryOnError<T>(
 
   throw new Error('Retry attempts exhausted');
 }
+
+/** Network error codes that are safe to retry */
+const TransientNetworkErrorCodes = new Set(['ECONNRESET', 'ETIMEDOUT', 'EPIPE']);
+
+/**
+ * Whether an error is a network error worth retrying
+ *
+ * Checks `code` on the error itself (e.g. a Node.js network error)
+ * and on its `cause` (e.g. a `FsError` from `@chunkd/fs` wrapping a network error)
+ */
+export function isTransientNetworkError(e: unknown): boolean {
+  if (e == null || typeof e !== 'object') return false;
+  const err = e as { code?: unknown; cause?: { code?: unknown } };
+  for (const code of [err.code, err.cause?.code]) {
+    if (typeof code === 'string' && TransientNetworkErrorCodes.has(code)) return true;
+  }
+  return false;
+}

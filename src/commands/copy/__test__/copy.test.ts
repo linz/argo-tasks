@@ -1,5 +1,6 @@
-import { fsa, FsMemory } from '@chunkd/fs';
+import { fsa, FsError, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
+import { Readable } from 'node:stream';
 import { beforeEach, describe, it } from 'node:test';
 
 import { logger } from '../../../log.ts';
@@ -57,6 +58,50 @@ describe('copyFiles', () => {
     );
     const retries = info.mock.calls.filter((call) => call.arguments[1] === 'Retry:Operation:Failed');
     assert.equal(retries.length, CopyRetry.attempts - 1);
+  });
+
+  it('should retry a copy after a network error', async (t) => {
+    const { delayMs } = CopyRetry;
+    CopyRetry.delayMs = 1;
+    t.after(() => {
+      CopyRetry.delayMs = delayMs;
+    });
+    const info = t.mock.method(logger, 'info');
+    const source = fsa.toUrl('memory://source/network.tiff');
+    const target = fsa.toUrl('memory://target/network.tiff');
+    // Source already has a multihash so the only read of the source is the copy itself
+    await fsa.write(source, Buffer.from('test'), {
+      metadata: { multihash: '12209f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08' },
+    });
+
+    const realReadStream = fsa.readStream.bind(fsa);
+    let calls = 0;
+    t.mock.method(fsa, 'readStream', (loc: URL) => {
+      if (loc.href !== source.href) return realReadStream(loc);
+      calls++;
+      if (calls > 1) return realReadStream(loc);
+      const stream = new Readable({ read(): void {} });
+      process.nextTick(() =>
+        stream.destroy(
+          new FsError(
+            `Failed to readStream: ${loc.href}`,
+            500,
+            loc,
+            'readStream',
+            memory,
+            Object.assign(new Error('aborted'), { code: 'ECONNRESET' }),
+          ),
+        ),
+      );
+      return stream;
+    });
+
+    await worker.routes.copy({ ...defaultCopyArgs, manifest: [{ source: source.href, target: target.href }] });
+
+    const retries = info.mock.calls.filter((call) => call.arguments[1] === 'Retry:Operation:Failed');
+    assert.equal(retries.length, 1);
+    assert.equal(calls, 2);
+    assert.equal(String(await fsa.read(target)), 'test');
   });
 
   it('should copy to the target location', async () => {
