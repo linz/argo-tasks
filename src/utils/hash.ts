@@ -4,7 +4,7 @@ import { createHash } from 'crypto';
 import type { Readable } from 'stream';
 
 import { protocolAwareString } from './filelist.ts';
-import { retryOnError } from './retry.ts';
+import { isTransientNetworkError, retryOnError } from './retry.ts';
 
 /** Key concatenated to 'x-amz-meta-' */
 export const HashKey = 'multihash';
@@ -32,14 +32,8 @@ export async function hashStream(stream: Readable): Promise<string> {
   });
 }
 
-/** Network error codes that are safe to retry when reading a file to hash */
-const HashRetryCodes = new Set(['ECONNRESET', 'ETIMEDOUT', 'EPIPE']);
-
-/** Whether an error is a network error worth retrying, based on cause.code */
-function isTransientNetworkError(e: unknown): boolean {
-  const code = (e as { cause?: { code?: string } })?.cause?.code;
-  return code != null && HashRetryCodes.has(code);
-}
+/** Retry settings for reading a file to hash */
+export const HashRetry = { attempts: 3, delayMs: 1000 };
 
 /**
  * Create a multihash from a file, retrying the read if it fails with a transient network error
@@ -49,8 +43,8 @@ function isTransientNetworkError(e: unknown): boolean {
  */
 export async function hashFile(loc: URL): Promise<string> {
   return retryOnError(
-    3,
-    (attempt) => 1000 * attempt,
+    HashRetry.attempts,
+    (attempt) => HashRetry.delayMs * attempt,
     () => hashStream(fsa.readStream(loc)),
     isTransientNetworkError,
     { source: protocolAwareString(loc) },

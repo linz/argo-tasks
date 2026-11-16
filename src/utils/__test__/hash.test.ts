@@ -1,9 +1,9 @@
-import { fsa, FsMemory } from '@chunkd/fs';
+import { fsa, FsError, FsMemory } from '@chunkd/fs';
 import assert from 'node:assert';
 import { Readable } from 'node:stream';
 import { before, beforeEach, describe, it } from 'node:test';
 
-import { hashBuffer, hashFile, hashStream } from '../hash.ts';
+import { hashBuffer, hashFile, HashRetry, hashStream } from '../hash.ts';
 
 describe('hashBuffer', () => {
   it('should return the expecting digest', () => {
@@ -31,6 +31,11 @@ describe('hashFile', () => {
   beforeEach(() => memory.files.clear());
 
   it('should retry after a network error', async (t) => {
+    const { delayMs } = HashRetry;
+    HashRetry.delayMs = 1;
+    t.after(() => {
+      HashRetry.delayMs = delayMs;
+    });
     await fsa.write(source, Buffer.from('test'));
     const realReadStream = fsa.readStream.bind(fsa);
     let calls = 0;
@@ -39,7 +44,16 @@ describe('hashFile', () => {
       if (calls > 1) return realReadStream(loc);
       const stream = new Readable({ read(): void {} });
       process.nextTick(() =>
-        stream.destroy(Object.assign(new Error('Failed to readStream'), { cause: { code: 'ECONNRESET' } })),
+        stream.destroy(
+          new FsError(
+            `Failed to readStream: ${loc.href}`,
+            500,
+            loc,
+            'readStream',
+            memory,
+            Object.assign(new Error('aborted'), { code: 'ECONNRESET' }),
+          ),
+        ),
       );
       return stream;
     });

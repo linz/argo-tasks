@@ -10,7 +10,7 @@ import { logger } from '../../log.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { protocolAwareString } from '../../utils/filelist.ts';
 import { HashTransform } from '../../utils/hash.stream.ts';
-import { retryOnError } from '../../utils/retry.ts';
+import { isTransientNetworkError, retryOnError } from '../../utils/retry.ts';
 import { registerCli } from '../common.ts';
 import { determineTargetFileOperation, fixFileMetadata, statsUpdaters, verifyTargetFile } from './copy-helpers.ts';
 import type { CopyContract, CopyContractArgs, CopyStats } from './copy-rpc.ts';
@@ -212,7 +212,7 @@ export const worker = new WorkerRpc<CopyContract>({
           CopyRetry.attempts,
           () => CopyRetry.delayMs,
           () => copyEntryAttempt(ctx),
-          isZstdError,
+          (error) => isZstdError(error) || isTransientNetworkError(error),
           {
             path: manifestEntry.source,
           },
