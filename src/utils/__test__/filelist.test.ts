@@ -14,12 +14,14 @@ describe('createFileList', () => {
     bands: [],
     bbox: [0, 0, 0, 0],
     tileNames: [],
+    edgeTileNames: [],
     source: new URL('memory://input1'),
   };
   const locationTestTwo: TiffLocation = {
     bands: [],
     bbox: [0, 0, 0, 0],
     tileNames: [],
+    edgeTileNames: [],
     source: new URL(complexLocation),
   };
   const entries = new Map<string, TiffLocation[]>([
