@@ -14,6 +14,7 @@ import type { FileListEntryClass } from '../../../utils/filelist.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { ChathamMapSheet, MapSheet } from '../../../utils/mapsheet.ts';
 import { createTiff, Url } from '../../common.ts';
+import type { TiffLocation } from '../tileindex.validate.ts';
 import {
   commandTileIndexValidate,
   determineGridSizeFromGSDPreset,
@@ -178,6 +179,41 @@ describe('tiffLocation', () => {
     const location = await extractTiffLocations([TiffCI06], 5000);
     assert.deepEqual(location[0]?.tileNames, ['CI06_5000_0507']);
   });
+
+  it('should tile a tiff overhanging the Chatham Islands grid by less than a pixel', async () => {
+    const tileIndex = ChathamMapSheet.getMapTileIndex('CI01_5000_0107');
+    if (tileIndex == null) throw new Error('Failed to compute test fixture tile index');
+
+    const TiffCI01 = new FakeCogTiff('s3://path/CI01_5000_0107.tiff', {
+      origin: [tileIndex.origin.x - 0.4, tileIndex.origin.y + 0.4],
+      size: { width: tileIndex.width + 1, height: tileIndex.height + 1 },
+      epsg: 3793,
+    });
+
+    const location = await extractTiffLocations([TiffCI01], 5000);
+    assert.deepEqual(location[0]?.tileNames, ['CI01_5000_0107']);
+    assert.ok(location[0]?.edgeTileNames.includes('CI01_5000_0108'));
+  });
+});
+
+describe('groupByTileName', () => {
+  const location = (name: string, tileNames: string[], edgeTileNames: string[]): TiffLocation => ({
+    source: new URL(`s3://path/${name}.tiff`),
+    bbox: [0, 0, 0, 0],
+    bands: [],
+    tileNames,
+    edgeTileNames,
+  });
+
+  it('should only add edge tiles to tiles covered by another tiff', () => {
+    const a = location('a', ['CH11_1000_0101'], ['CH11_1000_0102', 'CH11_1000_0201']);
+    const b = location('b', ['CH11_1000_0102'], ['CH11_1000_0101']);
+
+    const grouped = groupByTileName([a, b]);
+    assert.deepEqual([...grouped.keys()].sort(), ['CH11_1000_0101', 'CH11_1000_0102']);
+    assert.deepEqual(grouped.get('CH11_1000_0101'), [a, b]);
+    assert.deepEqual(grouped.get('CH11_1000_0102'), [a, b]);
+  });
 });
 
 describe('validate', () => {
@@ -215,6 +251,15 @@ describe('validate', () => {
       );
       assert.strictEqual(outputFileList[0]?.includeDerived, includeDerived);
     }
+  });
+
+  it('should fail when there are no output tiles', async (t) => {
+    const tinyTiff = new FakeCogTiff('s3://path/tiny.tiff', {
+      resolution: [0.1, -0.1, 0],
+      size: { width: 1, height: 1 },
+    });
+    t.mock.method(TiffLoader, 'load', () => Promise.resolve([tinyTiff]));
+    await assert.rejects(commandTileIndexValidate.handler(baseArguments), { message: 'No output tiles found' });
   });
 
   it('should read from utf8 sources', async (t) => {
