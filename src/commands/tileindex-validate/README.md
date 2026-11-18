@@ -1,6 +1,6 @@
 # tileindex-validate
 
-Map input TIFF or point cloud (LAS/LAZ) files to output tiles based on their location. Validate their alignment to the tile grid and output retiling information.
+Map input TIFF or point cloud (LAS/LAZ) files to output tiles based on their location. Validate TIFF alignment to the tile grid and output retiling information.
 
 ## Usage
 

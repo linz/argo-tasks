@@ -98,7 +98,7 @@ export type SourceType = (typeof SourceTypes)[number];
 export const commandTileIndexValidate = command({
   name: 'tileindex-validate',
   description:
-    'Map input TIFF or point cloud (LAS/LAZ) files to output tiles based on their location. Validate their alignment to the tile grid and output retiling information.',
+    'Map input TIFF or point cloud (LAS/LAZ) files to output tiles based on their location. Validate TIFF alignment to the tile grid and output retiling information.',
   version: CliInfo.version,
   args: {
     config,
