@@ -245,6 +245,7 @@ export function slugFromMetadata(metadata: SlugMetadata): string {
 
     case 'dem':
     case 'dsm':
+    case 'intensity':
     case 'dem-hillshade':
     case 'dem-hillshade-igor':
     case 'dsm-hillshade':
