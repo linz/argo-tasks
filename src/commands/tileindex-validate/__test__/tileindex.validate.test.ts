@@ -8,6 +8,7 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { pathToFileURL } from 'url';
 
 import { logger } from '../../../log.ts';
+import { fakeLasHeader } from '../../../utils/__test__/las.data.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
 import { ConcurrentQueue } from '../../../utils/concurrent.queue.ts';
 import type { FileListEntryClass } from '../../../utils/filelist.ts';
@@ -192,6 +193,7 @@ describe('validate', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
+    sourceType: 'raster' as const,
     include: undefined,
     preset: 'none',
     sourceEpsg: undefined,
@@ -342,6 +344,40 @@ describe('validate', () => {
       })
       .catch((e: Error) => e);
     assert.equal(String(ret), 'Error: Tiff loading failed: Error: Unable to read empty tiff');
+  });
+
+  const pointCloudArguments = {
+    ...baseArguments,
+    sourceType: 'auto' as const,
+    scale: 5000 as GridSize,
+    location: [[fsa.toUrl('memory://pc/')]],
+  };
+
+  it('should place point clouds in the tile of their centroid', async () => {
+    for (const tile of ['BY16_1000_1649', 'BY16_1000_1650']) {
+      const [minX, minY, maxX, maxY] = MapSheet.getMapTileIndex(tile)?.bbox ?? [0, 0, 0, 0];
+      await fsa.write(
+        fsa.toUrl(`memory://pc/CL2_${tile}.laz`),
+        fakeLasHeader([minX - 20, minY - 20, maxX + 20, maxY + 20]),
+      );
+    }
+    await commandTileIndexValidate.handler(pointCloudArguments);
+    const fileList: FileListEntryClass[] = await fsa.readJson(
+      fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
+    );
+    assert.deepEqual(
+      fileList.map((f) => [f.output, f.input.length]),
+      [['BY16_5000_0410', 2]],
+    );
+  });
+
+  it('should fail on a point cloud larger than its tile', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_10000_0101')?.bbox ?? [0, 0, 0, 0];
+    await fsa.write(fsa.toUrl('memory://pc/big.laz'), fakeLasHeader(bbox));
+    await assert.rejects(
+      commandTileIndexValidate.handler(pointCloudArguments),
+      /All locations have not been extracted/,
+    );
   });
 
   it('should not fail if there are duplicate tiles', async (t) => {
@@ -542,6 +578,7 @@ describe('GSD handling', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
+    sourceType: 'raster' as const,
     include: undefined,
     validate: false,
     preset: 'none',
@@ -617,6 +654,7 @@ describe('DataType handling', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
+    sourceType: 'raster' as const,
     include: undefined,
     validate: false,
     preset: 'none',
