@@ -2,7 +2,7 @@ import { fsa } from '@chunkd/fs';
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
-import type { TiffLocation } from '../../commands/tileindex-validate/tileindex.validate.ts';
+import type { SourceLocation } from '../../commands/tileindex-validate/tileindex.validate.ts';
 import type { FileListEntryClass } from '../filelist.ts';
 import { createFileList, protocolAwareString } from '../filelist.ts';
 
@@ -10,24 +10,24 @@ describe('createFileList', () => {
   const complexLocation = new URL(`memory://username@input2:3030/🦄🌈.tiff?query=foo#@1234`);
   const simpleLocation = new URL('memory://input1');
 
-  const locationTestOne: TiffLocation = {
+  const locationTestOne: SourceLocation = {
     bands: [],
     bbox: [0, 0, 0, 0],
     tileNames: [],
     source: new URL('memory://input1'),
   };
-  const locationTestTwo: TiffLocation = {
+  const locationTestTwo: SourceLocation = {
     bands: [],
     bbox: [0, 0, 0, 0],
     tileNames: [],
     source: new URL(complexLocation),
   };
-  const entries = new Map<string, TiffLocation[]>([
+  const entries = new Map<string, SourceLocation[]>([
     ['output1', [locationTestOne, locationTestTwo]],
     ['output2', [locationTestTwo]],
   ]);
 
-  it('should create a file list from TiffLocation and string inputs with derived inputs set based on input flag', () => {
+  it('should create a file list from SourceLocation and string inputs with derived inputs set based on input flag', () => {
     for (const includeDerived of [true, false]) {
       const result: FileListEntryClass[] = createFileList(entries, includeDerived);
       assert.deepEqual(result, [
@@ -46,7 +46,7 @@ describe('createFileList', () => {
   });
 
   it('should handle empty entries map', () => {
-    const entries = new Map<string, TiffLocation[]>();
+    const entries = new Map<string, SourceLocation[]>();
     const includeDerived = false;
 
     const result: FileListEntryClass[] = createFileList(entries, includeDerived);

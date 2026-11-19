@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
-import type { TiffLocation } from '../commands/tileindex-validate/tileindex.validate.ts';
+import type { SourceLocation } from '../commands/tileindex-validate/tileindex.validate.ts';
 export const HttpProtocols = ['https:', 'http:'];
 
 /**
@@ -122,7 +122,7 @@ export class FileListEntryClass implements FileListEntry {
  *
  * @returns list of mapsheets with associated input files.
  */
-export function createFileList(entries: Map<string, TiffLocation[]>, includeDerived: boolean): FileListEntryClass[] {
+export function createFileList(entries: Map<string, SourceLocation[]>, includeDerived: boolean): FileListEntryClass[] {
   const output: FileListEntryClass[] = [];
   for (const [key, value] of entries) {
     output.push(

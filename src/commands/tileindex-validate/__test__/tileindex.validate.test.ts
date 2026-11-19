@@ -8,6 +8,7 @@ import { before, beforeEach, describe, it } from 'node:test';
 import { pathToFileURL } from 'url';
 
 import { logger } from '../../../log.ts';
+import { fakeLasHeader } from '../../../utils/__test__/las.data.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
 import { ConcurrentQueue } from '../../../utils/concurrent.queue.ts';
 import type { FileListEntryClass } from '../../../utils/filelist.ts';
@@ -17,18 +18,22 @@ import { createTiff, Url } from '../../common.ts';
 import {
   commandTileIndexValidate,
   determineGridSizeFromGSDPreset,
-  extractTiffLocations,
+  extractLocations,
+  FileLoader,
   getSize,
   getTileName,
   GridSizeFromString,
   groupByTileName,
   isTiff,
   reprojectIfNeeded,
-  TiffLoader,
+  TiffFiles,
+  TiffSource,
   validatePreset,
   validateTiffDataType,
 } from '../tileindex.validate.ts';
 import { FakeCogTiff } from './tileindex.validate.data.ts';
+
+const toSource = (tiff: Tiff): TiffSource => new TiffSource(tiff);
 
 function convertTileName(fileName: string, gridSize: GridSize): string | null {
   const mapTileIndex = MapSheet.getMapTileIndex(fileName);
@@ -96,7 +101,7 @@ describe('tiffLocation', () => {
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
     TiffAy29.images[0].origin[0] = 1684000;
     TiffAy29.images[0].origin[1] = 6018000;
-    const location = await extractTiffLocations([TiffAs21, TiffAy29], 1000);
+    const location = await extractLocations([TiffAs21, TiffAy29].map(toSource), 1000);
     assert.deepEqual(location[0]?.tileNames, ['AS21_1000_0101']);
     assert.deepEqual(location[1]?.tileNames, ['AY29_1000_0101']);
   });
@@ -108,7 +113,7 @@ describe('tiffLocation', () => {
     const TiffAy29 = FakeCogTiff.fromTileName('AY29_1000_0101');
     TiffAy29.images[0].origin[0] = 1684000;
     TiffAy29.images[0].origin[1] = 6018000;
-    const location = await extractTiffLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29], 1000);
+    const location = await extractLocations([TiffAs21, TiffAy29, TiffAs21, TiffAy29].map(toSource), 1000);
     const duplicates = groupByTileName(location);
     assert.deepEqual(
       duplicates.get('AS21_1000_0101')?.map((c) => c.source.href),
@@ -125,7 +130,7 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].epsg = 3857;
     TiffAy29.images[0].origin[0] = 19128043.69337794;
     TiffAy29.images[0].origin[1] = -4032710.6009459053;
-    const location = await extractTiffLocations([TiffAy29], 1000, undefined, 2193);
+    const location = await extractLocations([TiffAy29].map(toSource), 1000, undefined, 2193);
     assert.deepEqual(location[0]?.tileNames, ['AS21_1000_0101']);
   });
 
@@ -137,7 +142,7 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].epsg = 3857;
     TiffAy29.images[0].origin[0] = 19128043.69337794;
     TiffAy29.images[0].origin[1] = -4032710.6009459053;
-    await assert.rejects(extractTiffLocations([TiffAy29], 1000));
+    await assert.rejects(extractLocations([TiffAy29].map(toSource), 1000));
   });
 
   it('should fail if one location is not extracted', async () => {
@@ -148,7 +153,7 @@ describe('tiffLocation', () => {
     TiffAy29.images[0].origin[0] = 1684000;
     TiffAy29.images[0].origin[1] = 6018000;
     TiffAy29.images[0].epsg = 0; // make the projection failing
-    await assert.rejects(extractTiffLocations([TiffAs21, TiffAy29], 1000));
+    await assert.rejects(extractLocations([TiffAs21, TiffAy29].map(toSource), 1000));
   });
 
   it('should tile Chatham Islands (EPSG:3793) imagery against the Chatham grid when explicitly requested', async () => {
@@ -161,7 +166,7 @@ describe('tiffLocation', () => {
       epsg: 3793,
     });
 
-    const location = await extractTiffLocations([TiffCI06], 5000, undefined, 3793);
+    const location = await extractLocations([TiffCI06].map(toSource), 5000, undefined, 3793);
     assert.deepEqual(location[0]?.tileNames, ['CI06_5000_0507']);
   });
 
@@ -175,7 +180,7 @@ describe('tiffLocation', () => {
       epsg: 3793,
     });
 
-    const location = await extractTiffLocations([TiffCI06], 5000);
+    const location = await extractLocations([TiffCI06].map(toSource), 5000);
     assert.deepEqual(location[0]?.tileNames, ['CI06_5000_0507']);
   });
 });
@@ -192,6 +197,7 @@ describe('validate', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
+    sourceType: 'auto' as const,
     include: undefined,
     preset: 'none',
     sourceEpsg: undefined,
@@ -199,12 +205,14 @@ describe('validate', () => {
     includeDerived: false,
     scale: 1000 as GridSize,
     forceOutput: true,
-    location: [[fsa.toUrl('s3://test')]],
+    location: [[fsa.toUrl('memory://test/')]],
     concurrency: 1,
   };
 
   it('should set the includeDerived flag in file-list.json based on its input flag', async (t) => {
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101')]));
+    t.mock.method(FileLoader, 'load', () =>
+      Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101')].map(toSource)),
+    );
     for (const includeDerived of [true, false]) {
       await commandTileIndexValidate.handler({
         ...baseArguments,
@@ -233,7 +241,7 @@ describe('validate', () => {
       `1\n0\n0\n-1\n${expectedBounds?.origin.x + 0.5}\n${expectedBounds?.origin.y - 0.5}`,
     );
 
-    const stub = t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+    const stub = t.mock.method(FileLoader, 'load', () => Promise.resolve([fakeTiff].map(toSource)));
     await commandTileIndexValidate.handler({
       ...baseArguments,
       location: [[sourceLocation]],
@@ -292,13 +300,14 @@ describe('validate', () => {
         return { source } as Tiff;
       });
 
-      const tiffs = await TiffLoader.load(
+      const tiffs = await FileLoader.load(
+        TiffFiles,
         folders.map((folder) => fsa.toUrl(root + folder)),
         new ConcurrentQueue(files.length),
       );
 
       assert.deepEqual(
-        tiffs.map((tiff) => tiff.source.url.href.replace(root, '')),
+        tiffs.map((tiff) => tiff.source.href.replace(root, '')),
         expected,
       );
     });
@@ -344,10 +353,102 @@ describe('validate', () => {
     assert.equal(String(ret), 'Error: Tiff loading failed: Error: Unable to read empty tiff');
   });
 
+  const pointCloudArguments = {
+    ...baseArguments,
+    scale: 5000 as GridSize,
+    location: [[fsa.toUrl('memory://pc/')]],
+  };
+
+  it('should place point clouds in the tile of their centroid', async () => {
+    for (const tile of ['BY16_1000_1649', 'BY16_1000_1650']) {
+      const [minX, minY, maxX, maxY] = MapSheet.getMapTileIndex(tile)?.bbox ?? [0, 0, 0, 0];
+      await fsa.write(
+        fsa.toUrl(`memory://pc/CL2_${tile}.laz`),
+        fakeLasHeader([minX - 20, minY - 20, maxX + 20, maxY + 20]),
+      );
+    }
+    await commandTileIndexValidate.handler(pointCloudArguments);
+    const fileList: FileListEntryClass[] = await fsa.readJson(
+      fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
+    );
+    assert.deepEqual(
+      fileList.map((f) => [f.output, f.input.length]),
+      [['BY16_5000_0410', 2]],
+    );
+    const output = async (name: string): Promise<string> =>
+      String(await fsa.read(fsa.toUrl(`file:///tmp/tile-index-validate/${name}`)));
+    assert.deepEqual(
+      [await output('gsd'), await output('data-type'), await output('density'), await output('point-format')],
+      ['', '', '0.00253', '6'],
+    );
+  });
+
+  it('should fail early listing every point cloud with a bad or different CRS', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    const files = {
+      'good-1': {},
+      'good-2': {},
+      broken: { verticalDatum: 7839 },
+      flat: { vertical: null },
+      other: { vertical: 4440 },
+    };
+    for (const [name, opts] of Object.entries(files)) {
+      await fsa.write(fsa.toUrl(`memory://pc/${name}.laz`), fakeLasHeader(bbox, opts));
+    }
+    await assert.rejects(commandTileIndexValidate.handler(pointCloudArguments), (e: Error) => {
+      assert.equal(
+        e.message.split('\n').slice(1).join('\n'),
+        [
+          'memory://pc/broken.laz: vertical datum is the CRS code 7839',
+          'memory://pc/flat.laz: no vertical CRS',
+          'memory://pc/other.laz: EPSG:2193+4440, most files are EPSG:2193+7839',
+        ].join('\n'),
+      );
+      assert.match(e.message, /run fix-laz-header/);
+      return true;
+    });
+  });
+
+  it('should fail on mixed point formats', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    for (const [name, pointFormat] of [
+      ['a', 0x86],
+      ['b', 0x86],
+      ['c', 0x87],
+    ] as const) {
+      await fsa.write(fsa.toUrl(`memory://pc/${name}.laz`), fakeLasHeader(bbox, { pointFormat }));
+    }
+    await assert.rejects(
+      commandTileIndexValidate.handler(pointCloudArguments),
+      /Mixed point formats, most files are 6:\nmemory:\/\/pc\/c.laz: 7$/,
+    );
+  });
+
+  it('should tile point clouds in the CRS of their header', async () => {
+    const bbox = ChathamMapSheet.getMapTileIndex('CI06_5000_0507')?.bbox ?? [0, 0, 0, 0];
+    await fsa.write(fsa.toUrl('memory://pc/chathams.laz'), fakeLasHeader(bbox, { epsg: 3793 }));
+    await commandTileIndexValidate.handler({ ...pointCloudArguments, targetEpsg: undefined });
+    const fileList: FileListEntryClass[] = await fsa.readJson(
+      fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
+    );
+    assert.deepEqual(
+      fileList.map((f) => f.output),
+      ['CI06_5000_0507'],
+    );
+  });
+
+  it('should fail on both TIFFs and point clouds', async () => {
+    await fsa.write(fsa.toUrl('memory://pc/a.tiff'), Buffer.from(''));
+    await fsa.write(fsa.toUrl('memory://pc/b.laz'), Buffer.from(''));
+    await assert.rejects(commandTileIndexValidate.handler(pointCloudArguments), /Found both TIFFs and point clouds/);
+  });
+
   it('should not fail if there are duplicate tiles', async (t) => {
     // Input source/a/AS21_1000_0101.tiff source/b/AS21_1000_0101.tiff
-    t.mock.method(TiffLoader, 'load', () =>
-      Promise.resolve([FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')]),
+    t.mock.method(FileLoader, 'load', () =>
+      Promise.resolve(
+        [FakeCogTiff.fromTileName('AS21_1000_0101'), FakeCogTiff.fromTileName('AS21_1000_0101')].map(toSource),
+      ),
     );
 
     await commandTileIndexValidate.handler({
@@ -372,7 +473,7 @@ describe('validate', () => {
       size: { width: chathamTileIndex.width, height: chathamTileIndex.height },
       epsg: 3793,
     });
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([TiffCI06]));
+    t.mock.method(FileLoader, 'load', () => Promise.resolve([TiffCI06].map(toSource)));
 
     await commandTileIndexValidate.handler({
       ...baseArguments,
@@ -495,7 +596,7 @@ describe('TiffFromMisalignedTiff', () => {
     const fakeTiffCover3 = FakeCogTiff.fromTileName('BL32');
     fakeTiffCover3.images[0].origin[1] -= 10;
     fakeTiffCover3.images[0].size.height *= 2;
-    const locations = await extractTiffLocations([fakeTiffCover4, fakeTiffCover9, fakeTiffCover3], 50000);
+    const locations = await extractLocations([fakeTiffCover4, fakeTiffCover9, fakeTiffCover3].map(toSource), 50000);
 
     assert.deepEqual(locations[0]?.tileNames, ['CH08', 'CH09', 'CJ08', 'CJ09']);
     assert.deepEqual(locations[1]?.tileNames, ['AZ32', 'AZ33', 'AZ34', 'BA32', 'BA33', 'BA34', 'BB32', 'BB33', 'BB34']);
@@ -542,13 +643,14 @@ describe('GSD handling', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
+    sourceType: 'auto' as const,
     include: undefined,
     validate: false,
     preset: 'none',
     sourceEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
-    location: [[fsa.toUrl('s3://test')]],
+    location: [[fsa.toUrl('memory://test/')]],
     scale: 1000 as GridSize,
     forceOutput: true,
     concurrency: 1,
@@ -560,7 +662,7 @@ describe('GSD handling', () => {
   it('should fail if GSDs are inconsistent', async (t) => {
     fakeTiff1.images[0].resolution[0] = 1.23;
     fakeTiff2.images[0].resolution[0] = 3.21;
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+    t.mock.method(FileLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2].map(toSource)));
 
     const ret = await commandTileIndexValidate
       .handler({
@@ -574,7 +676,7 @@ describe('GSD handling', () => {
     fakeTiff1.images[0].resolution[0] = 0.5;
     fakeTiff2.images[0].resolution[0] = 0.502499; // within tolerance
     fakeTiff3.images[0].resolution[0] = 0.4975; // within tolerance
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2, fakeTiff3]));
+    t.mock.method(FileLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2, fakeTiff3].map(toSource)));
 
     await commandTileIndexValidate.handler(baseArguments);
 
@@ -593,7 +695,7 @@ describe('GSD handling', () => {
         fakeTiff2.images[0].resolution[0],
         fakeTiff3.images[0].resolution[0],
       );
-      t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2, fakeTiff3]));
+      t.mock.method(FileLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2, fakeTiff3].map(toSource)));
 
       await commandTileIndexValidate.handler(baseArguments);
 
@@ -617,13 +719,14 @@ describe('DataType handling', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
+    sourceType: 'auto' as const,
     include: undefined,
     validate: false,
     preset: 'none',
     sourceEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
-    location: [[fsa.toUrl('s3://test')]],
+    location: [[fsa.toUrl('memory://test/')]],
     scale: 1000 as GridSize,
     forceOutput: true,
     concurrency: 1,
@@ -631,7 +734,7 @@ describe('DataType handling', () => {
 
   it('should output the data type as its sample-format-qualified name, not the raw bit depth', async (t) => {
     const fakeTiff = FakeCogTiff.fromTileName('AS21_1000_0101');
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff]));
+    t.mock.method(FileLoader, 'load', () => Promise.resolve([fakeTiff].map(toSource)));
 
     await commandTileIndexValidate.handler(baseArguments);
 
@@ -644,7 +747,7 @@ describe('DataType handling', () => {
     const fakeTiff2 = FakeCogTiff.fromTileName('AT21_1000_0101');
     t.mock.method(fakeTiff1.images[0], 'fetch', () => null);
     t.mock.method(fakeTiff2.images[0], 'fetch', () => null);
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+    t.mock.method(FileLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2].map(toSource)));
 
     const ret = await commandTileIndexValidate.handler(baseArguments).catch((e: Error) => e);
     assert.ok(String(ret).startsWith('Error: No data types found in the TIFFs: '));
@@ -660,7 +763,7 @@ describe('DataType handling', () => {
       if (tag === TiffTag.SampleFormat) return [SampleFormat.Uint, SampleFormat.Uint, SampleFormat.Uint];
       return null;
     });
-    t.mock.method(TiffLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2]));
+    t.mock.method(FileLoader, 'load', () => Promise.resolve([fakeTiff1, fakeTiff2].map(toSource)));
 
     await assert.rejects(commandTileIndexValidate.handler({ ...baseArguments, preset: 'webp' }), {
       message: 'Inconsistent data types found: uint8, uint16',
