@@ -3,7 +3,7 @@ import type { BBox } from '@linzjs/geojson';
 
 import { protocolAwareString } from './filelist.ts';
 
-export interface LasHeader {
+export interface LasHeader extends LasCrs {
   source: URL;
   version: string;
   /** Point data record format, without the LAZ compression bits */
@@ -12,8 +12,6 @@ export interface LasHeader {
   scale: [number, number, number];
   /** [minX, minY, maxX, maxY] */
   bbox: BBox;
-  /** Horizontal CRS from the WKT or GeoTIFF keys VLR */
-  epsg?: number;
 }
 
 /** Variable length record https://lasformat.org/latest/02.00_definition.html#variable-length-records-vlrs */
@@ -71,33 +69,57 @@ export function parseGeoKeys(data: ArrayBuffer): GeoKey[] {
   }));
 }
 
-/** EPSG code of the projected CRS in WKT1 or WKT2, eg the PROJCS of a COMPD_CS */
-export function wktEpsg(wkt: string): number | undefined {
-  const start = wkt.search(/PROJ(CS|CRS)\[/);
-  if (start < 0) return undefined;
+/** First WKT1 or WKT2 node starting with `start`, eg the `PROJCS[...]` of a `COMPD_CS` */
+function wktNode(wkt: string | undefined, start: RegExp): string | undefined {
+  const from = wkt?.search(start) ?? -1;
+  if (wkt == null || from < 0) return undefined;
   let depth = 0;
   let quoted = false;
-  let end = start;
-  for (; end < wkt.length; end++) {
-    const c = wkt[end];
+  for (let i = from; i < wkt.length; i++) {
+    const c = wkt[i];
     if (c === '"') quoted = !quoted;
     else if (!quoted && c === '[') depth++;
-    else if (!quoted && c === ']' && --depth === 0) break;
+    else if (!quoted && c === ']' && --depth === 0) return wkt.slice(from, i + 1);
   }
-  const code = [...wkt.slice(start, end).matchAll(/(?:AUTHORITY|ID)\["EPSG",\s*"?(\d+)"?\]/g)].at(-1)?.[1];
-  return code == null ? undefined : Number(code);
+  return undefined;
 }
 
-/** Horizontal EPSG code from the WKT (2112) or GeoTIFF keys (34735) VLR */
-export function lasEpsg(vlrs: LasVlr[]): number | undefined {
+/** EPSG code of a WKT node, its last AUTHORITY or ID */
+function wktEpsg(node: string | undefined): number | undefined {
+  const code = node && [...node.matchAll(/(?:AUTHORITY|ID)\["EPSG",\s*"?(\d+)"?\]/g)].at(-1)?.[1];
+  return code ? Number(code) : undefined;
+}
+
+export interface LasCrs {
+  /** Horizontal CRS */
+  epsg?: number;
+  /** Vertical CRS, eg NZVD2016 height 7839 */
+  verticalEpsg?: number;
+  /** Vertical datum, eg NZVD2016 1169. Broken when it is the vertical CRS code */
+  verticalDatum?: number;
+}
+
+/** CRS from the WKT (2112) VLR of LAS 1.4, or the GeoTIFF keys (34735) VLR of LAS 1.2 */
+export function lasCrs(vlrs: LasVlr[]): LasCrs {
   const find = (id: number): ArrayBuffer | undefined =>
     vlrs.find((v) => v.userId === 'LASF_Projection' && v.recordId === id)?.data;
-  const wkt = find(2112);
-  const fromWkt = wkt && wktEpsg(text(wkt, 0, wkt.byteLength));
-  if (fromWkt) return fromWkt;
-  const keys = find(34735);
-  const projected = keys && parseGeoKeys(keys).find((k) => k.id === 3072 && k.location === 0);
-  return projected && projected.value !== 32767 ? projected.value : undefined;
+  const wktData = find(2112);
+  if (wktData) {
+    const wkt = text(wktData, 0, wktData.byteLength);
+    const vertical = wktNode(wkt, /VERT(_CS|CS|CRS)\[/);
+    return {
+      epsg: wktEpsg(wktNode(wkt, /PROJ(CS|CRS)\[/)),
+      verticalEpsg: wktEpsg(vertical),
+      verticalDatum: wktEpsg(wktNode(vertical, /(VERT_DATUM|VDATUM|VERTICALDATUM)\[/)),
+    };
+  }
+  const keyData = find(34735);
+  const keys = keyData ? parseGeoKeys(keyData) : [];
+  const key = (id: number): number | undefined => {
+    const value = keys.find((k) => k.id === id && k.location === 0)?.value;
+    return value === 32767 ? undefined : value;
+  };
+  return { epsg: key(3072), verticalEpsg: key(4096), verticalDatum: key(4098) };
 }
 
 export function isPointCloud(url: URL): boolean {
@@ -141,6 +163,6 @@ export async function readLasHeader(url: URL): Promise<LasHeader> {
       view.getFloat64(179, true),
       view.getFloat64(195, true),
     ],
-    epsg: lasEpsg(vlrs),
+    ...lasCrs(vlrs),
   };
 }

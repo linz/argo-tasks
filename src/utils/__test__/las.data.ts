@@ -1,17 +1,25 @@
 import type { BBox } from '@linzjs/geojson';
 
-/** Fake LAS public header block, with a COMPD_CS WKT VLR unless `epsg` is null */
+/** Fake LAS public header block with a WKT VLR, without it when `epsg` is null */
 export function fakeLasHeader(
   bbox: BBox,
-  opts: { minor?: number; pointFormat?: number; count?: number; epsg?: number | null } = {},
+  opts: {
+    minor?: number;
+    pointFormat?: number;
+    count?: number;
+    epsg?: number | null;
+    vertical?: number | null;
+    verticalDatum?: number;
+  } = {},
 ): Buffer {
   const minor = opts.minor ?? 4;
   const count = opts.count ?? 1_000;
   const epsg = opts.epsg === undefined ? 2193 : opts.epsg;
+  const vertical = opts.vertical === undefined ? 7839 : opts.vertical;
+  const projcs = `PROJCS["",GEOGCS["",AUTHORITY["EPSG","4167"]],AUTHORITY["EPSG","${epsg}"]]`;
+  const vertcs = `VERT_CS["",VERT_DATUM["",2005,AUTHORITY["EPSG","${opts.verticalDatum ?? 1169}"]],AUTHORITY["EPSG","${vertical}"]]`;
   const wkt = new TextEncoder().encode(
-    epsg == null
-      ? ''
-      : `COMPD_CS["",PROJCS["",GEOGCS["",AUTHORITY["EPSG","4167"]],AUTHORITY["EPSG","${epsg}"]],VERT_CS["",AUTHORITY["EPSG","7839"]]]\0`,
+    epsg == null ? '' : `${vertical == null ? projcs : `COMPD_CS["",${projcs},${vertcs}]`}\0`,
   );
   const vlrSize = wkt.length > 0 ? 54 + wkt.length : 0;
   const view = new DataView(new ArrayBuffer(375 + vlrSize));
