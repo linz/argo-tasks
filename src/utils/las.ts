@@ -24,7 +24,7 @@ export function isPointCloud(url: URL): boolean {
   return /\.la[sz]$/i.test(url.pathname);
 }
 
-/** Read the public header block of a LAS, LAZ or COPC file. */
+/** Read the public header block of a LAS, LAZ or COPC file. https://lasformat.org/latest/02.00_definition.html#public-header-block */
 export async function readLasHeader(url: URL): Promise<LasHeader> {
   const bytes = await fsa.source(url).fetch(0, LasHeaderSize);
   const view = new DataView(bytes);
@@ -45,6 +45,7 @@ export async function readLasHeader(url: URL): Promise<LasHeader> {
   return {
     source: url,
     version: `${major}.${minor}`,
+    // LASzip compression bits https://github.com/LASzip/LASzip/blob/a446a0c01362ed1c642928cff30416217f0468c3/src/laszip_dll.cpp#L4260-L4267
     pointFormat: view.getUint8(104) & 0x3f,
     pointCount,
     scale: [view.getFloat64(131, true), view.getFloat64(139, true), view.getFloat64(147, true)],
