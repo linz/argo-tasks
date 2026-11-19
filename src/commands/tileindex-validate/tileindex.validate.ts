@@ -23,17 +23,17 @@ import type { CommandArguments } from '../../utils/type.util.ts';
 import { config, forceOutput, registerCli, UrlFolderList, verbose } from '../common.ts';
 import { CommandListArgs } from '../list/list.ts';
 
-export interface TiffLocation {
-  /** Location to the TIFF file */
+export interface SourceLocation {
+  /** Location to the source file */
   source: URL;
   /** bbox, [minX, minY, maxX, maxY] */
   bbox: BBox;
-  /** EPSG code of the tiff if found */
+  /** EPSG code of the file if found */
   epsg?: number | null;
   /** Output tile name */
   tileNames: string[];
   /**
-   * List of bands inside the tiff in the format `uint8',`uint16`, `uint32`
+   * List of bands inside a TIFF in the format `uint8',`uint16`, `uint32`, or the point format and scale of a point cloud
    *
    * @see {@link extractBandInformation} for more information on bad types
    */
@@ -115,11 +115,11 @@ export const commandTileIndexValidate = command({
       type: oneOf(SourceTypes),
       long: 'source-type',
       description:
-        'Type of the input files. "auto" uses the first TIFF or point cloud found. Point clouds are placed in the tile of their centroid',
+        'Type of the input files. "auto" detects it and fails if there are both TIFFs and point clouds. Point clouds are placed in the tile of their centroid',
       defaultValueIsSerializable: true,
       defaultValue: (): SourceType => 'auto',
     }),
-    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input tiffs' }),
+    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input files' }),
     targetEpsg: option({
       type: optional(TargetEpsgFromString),
       long: 'target-epsg',
@@ -250,26 +250,23 @@ export const commandTileIndexValidate = command({
   },
 });
 
-export interface FileType<T> {
+export interface FileType<T extends { source: URL }> {
   /** Name in logs and errors, eg "Tiff" */
   name: string;
   accept(url: URL): boolean;
   open(url: URL): Promise<T>;
-  url(item: T): URL;
 }
 
-export const TiffFiles: FileType<Tiff> = {
+export const TiffFiles: FileType<TiffSource> = {
   name: 'Tiff',
   accept: isTiff,
-  open: (url) => Tiff.create(fsa.source(url)),
-  url: (tiff) => tiff.source.url,
+  open: async (url) => new TiffSource(await Tiff.create(fsa.source(url))),
 };
 
-export const PointCloudFiles: FileType<LasHeader> = {
+export const PointCloudFiles: FileType<PointCloudSource> = {
   name: 'PointCloud',
   accept: isPointCloud,
-  open: readLasHeader,
-  url: (header) => header.source,
+  open: async (url) => new PointCloudSource(await readLasHeader(url)),
 };
 
 export const FileLoader = {
@@ -283,7 +280,12 @@ export const FileLoader = {
    * @param args filter the files
    * @returns loaded files
    */
-  async load<T>(type: FileType<T>, locations: URL[], q: ConcurrentQueue, args?: FileFilter): Promise<T[]> {
+  async load<T extends { source: URL }>(
+    type: FileType<T>,
+    locations: URL[],
+    q: ConcurrentQueue,
+    args?: FileFilter,
+  ): Promise<T[]> {
     const filterArgs = { ...args, sizeMin: 0 };
     const hosts = new Set<string>();
     /** File href to its listing position and most specific location's href length */
@@ -358,8 +360,8 @@ export const FileLoader = {
 
     // Restore listing order, as files load concurrently
     output.sort((a, b) => {
-      const orderA = listingOrder.get(type.url(a).href);
-      const orderB = listingOrder.get(type.url(b).href);
+      const orderA = listingOrder.get(a.source.href);
+      const orderB = listingOrder.get(b.source.href);
       if (orderA == null || orderB == null) throw new Error(`${type.name} missing from listing`);
       return orderA.position - orderB.position;
     });
@@ -368,26 +370,6 @@ export const FileLoader = {
     return output;
   },
 };
-
-export const TiffLoader = {
-  /** Load the TIFFs in the locations provided, see {@link FileLoader.load} */
-  load(locations: URL[], q: ConcurrentQueue, args?: FileFilter): Promise<Tiff[]> {
-    return FileLoader.load(TiffFiles, locations, q, args);
-  },
-};
-
-/**
- * Load TIFF files from the specified locations.
- *
- * @param args The command arguments containing location and concurrency settings.
- * @returns A promise that resolves to an object containing the loaded TIFFs and their locations.
- */
-async function loadTiffs(args: CommandTileIndexValidateArgs): Promise<{ tiffs: Tiff[]; locations: URL[] }> {
-  const q = new ConcurrentQueue(args.concurrency);
-  const tiffLocationsToLoad = args.location.flat();
-  const tiffs = await TiffLoader.load(tiffLocationsToLoad, q, args);
-  return { tiffs, locations: tiffLocationsToLoad };
-}
 
 interface TileIndexInput {
   files: SourceFile[];
@@ -400,7 +382,9 @@ interface TileIndexInput {
 /** Load and validate the input TIFFs */
 async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndexInput> {
   const readTiffStartTime = performance.now();
-  const { tiffs, locations } = await loadTiffs(args);
+  const locations = args.location.flat();
+  const files = await FileLoader.load(TiffFiles, locations, new ConcurrentQueue(args.concurrency), args);
+  const tiffs = files.map((file) => file.tiff);
   await validatePreset(args.preset, tiffs);
   const tiffsMetadata = await getTiffsMetadata(tiffs, locations);
   logger.info(
@@ -425,7 +409,7 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
   const targetEpsg = args.targetEpsg ?? args.sourceEpsg ?? [...tiffsMetadata.projections][0] ?? EpsgCode.Nztm2000;
 
   return {
-    files: tiffs.map((tiff) => new TiffSource(tiff)),
+    files,
     gridSize,
     targetEpsg,
     gsd: String([...tiffsMetadata.roundedGsds][0]),
@@ -436,26 +420,33 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
 /** Load the headers of the input point clouds */
 async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<TileIndexInput> {
   if (args.scale === 'auto') throw new Error('Point clouds need a --scale');
-  const q = new ConcurrentQueue(args.concurrency);
-  const headers = await FileLoader.load(PointCloudFiles, args.location.flat(), q, args);
+  const files = await FileLoader.load(
+    PointCloudFiles,
+    args.location.flat(),
+    new ConcurrentQueue(args.concurrency),
+    args,
+  );
   return {
-    files: headers.map((header) => new PointCloudSource(header)),
+    files,
     gridSize: args.scale,
-    targetEpsg: args.targetEpsg ?? args.sourceEpsg ?? EpsgCode.Nztm2000,
+    targetEpsg: args.targetEpsg ?? args.sourceEpsg ?? files.find((f) => f.epsg != null)?.epsg ?? EpsgCode.Nztm2000,
+    // No GSD or band data type for point clouds, empty files keep the Argo output parameters resolving
     gsd: '',
     dataType: '',
   };
 }
 
-/** Type of the first TIFF or point cloud listed, "raster" if there is none */
+/** "pointcloud" if only point clouds are listed, "raster" otherwise. Fails if both TIFFs and point clouds are listed */
 export async function detectSourceType(locations: URL[], args?: FileFilter): Promise<Exclude<SourceType, 'auto'>> {
+  const found = new Set<Exclude<SourceType, 'auto'>>();
   for (const loc of locations) {
     for await (const file of asyncFilter(fsa.details(loc), args)) {
-      if (isTiff(file.url)) return 'raster';
-      if (isPointCloud(file.url)) return 'pointcloud';
+      if (isTiff(file.url)) found.add('raster');
+      if (isPointCloud(file.url)) found.add('pointcloud');
+      if (found.size > 1) throw new Error('Found both TIFFs and point clouds, set --source-type or --include');
     }
   }
-  return 'raster';
+  return found.has('pointcloud') ? 'pointcloud' : 'raster';
 }
 
 /**
@@ -539,15 +530,15 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
 /**
  * Generate output files as result of the tile index validation
  *
- * @param tiffLocations The list of source TIFF locations.
- * @param outputTiles The map of output tiles to their source TIFFs.
- * @param targetEpsg The EPSG code the tiles were aligned to (see `getMapTileIndex`/`extractTiffLocations`).
+ * @param locations The list of source file locations.
+ * @param outputTiles The map of output tiles to their source files.
+ * @param targetEpsg The EPSG code the tiles were aligned to (see `getMapTileIndex`/`extractLocations`).
  * @param includeDerived Whether to include derived TIFFs in the output.
  * @param gsd The ground sample distance to use for the output.
  */
 async function generateOutputFiles(
-  tiffLocations: TiffLocation[],
-  outputTiles: Map<string, TiffLocation[]>,
+  locations: SourceLocation[],
+  outputTiles: Map<string, SourceLocation[]>,
   targetEpsg: number,
   includeDerived: boolean,
   gsd: string,
@@ -558,9 +549,9 @@ async function generateOutputFiles(
 
   const inputGeoJson = {
     type: 'FeatureCollection',
-    // `loc.bbox` has already been reprojected into `targetEpsg` by `extractTiffLocations`, so it
-    // must be read back out with the same projection, not the tiff's original source EPSG.
-    features: tiffLocations.map((loc) => {
+    // `loc.bbox` has already been reprojected into `targetEpsg` by `extractLocations`, so it
+    // must be read back out with the same projection, not the file's original source EPSG.
+    features: locations.map((loc) => {
       return targetProjection.boundsToGeoJsonFeature(Bounds.fromBbox(loc.bbox), {
         source: loc.source,
         tileName: loc.tileNames.join(', '),
@@ -604,17 +595,17 @@ async function generateOutputFiles(
 }
 
 /**
- * Validate the tiling of the output tiles against the input TIFFs.
+ * Validate the tiling of the output tiles against the input files.
  *
- * @param outputTiles Map of output tiles to their source TIFFs.
+ * @param outputTiles Map of output tiles to their source files.
  */
-function validateTiling(outputTiles: Map<string, TiffLocation[]>): void {
-  for (const [tileName, tiffs] of outputTiles.entries()) {
-    if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
-    if (tiffs.length === 1) continue;
-    const bandType = validateConsistentBands(tiffs);
+function validateTiling(outputTiles: Map<string, SourceLocation[]>): void {
+  for (const [tileName, files] of outputTiles.entries()) {
+    if (files.length === 0) throw new Error(`Output tile with no source file: ${tileName}`);
+    if (files.length === 1) continue;
+    const bandType = validateConsistentBands(files);
     logger.info(
-      { tileName, uris: tiffs.map((v) => protocolAwareString(v.source)), bands: bandType },
+      { tileName, uris: files.map((v) => protocolAwareString(v.source)), bands: bandType },
       'TileIndex:Retile',
     );
   }
@@ -685,7 +676,7 @@ export async function validatePreset(preset: string, tiffs: Tiff[]): Promise<voi
  * @returns list of bands in the first image if consistent with the other images
  * @throws if one image does not have consistent band information
  */
-function validateConsistentBands(locs: TiffLocation[]): string[] {
+function validateConsistentBands(locs: SourceLocation[]): string[] {
   const firstBands = locs[0]?.bands ?? [];
   const firstBand = firstBands.join(',');
 
@@ -708,14 +699,14 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
 }
 
 /**
- * Group input TIFFs by their output tile names.
+ * Group input files by their output tile names.
  *
- * @param tiffs List of input TIFFs to group.
- * @returns Map of tile names to their corresponding input TIFFs.
+ * @param locations List of input files to group.
+ * @returns Map of tile names to their corresponding input files.
  */
-export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
-  const inputs: Map<string, TiffLocation[]> = new Map();
-  for (const loc of tiffs) {
+export function groupByTileName(locations: SourceLocation[]): Map<string, SourceLocation[]> {
+  const inputs: Map<string, SourceLocation[]> = new Map();
+  for (const loc of locations) {
     for (const sheetCode of loc.tileNames) {
       const uris = inputs.get(sheetCode) ?? [];
       uris.push(loc);
@@ -788,9 +779,8 @@ export class TiffSource implements SourceFile {
   }
 }
 
-/** Point cloud, placed in the one tile of its centroid, assumed NZTM2000 */
+/** Point cloud, placed in the one tile of its centroid, its points may fall outside it */
 export class PointCloudSource implements SourceFile {
-  readonly epsg = EpsgCode.Nztm2000;
   readonly header: LasHeader;
 
   constructor(header: LasHeader) {
@@ -799,6 +789,10 @@ export class PointCloudSource implements SourceFile {
 
   get source(): URL {
     return this.header.source;
+  }
+
+  get epsg(): number | undefined {
+    return this.header.epsg;
   }
 
   bbox(): Promise<BBox> {
@@ -811,15 +805,7 @@ export class PointCloudSource implements SourceFile {
   }
 
   tileNames(bbox: BBox, gridSize: GridSize, mapSheet: MapSheetLike): string[] {
-    const tileName = getTileName((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, gridSize, mapSheet);
-    const tile = mapSheet.getMapTileIndex(tileName);
-    if (tile == null) throw new Error('Failed to extract tile information from: ' + tileName);
-    const size = getSize(bbox);
-    const tileSize = getSize(tile.bbox);
-    if (size.width > tileSize.width || size.height > tileSize.height) {
-      throw new Error(`Point cloud is larger than tile ${tileName}`);
-    }
-    return [tileName];
+    return [getTileName((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, gridSize, mapSheet)];
   }
 
   close(): Promise<void> {
@@ -828,22 +814,22 @@ export class PointCloudSource implements SourceFile {
 }
 
 /**
- * Create a list of `TiffLocation` from source files by extracting their bounding box and output tile names for a provided `GridSize`.
+ * Create a list of `SourceLocation` from source files by extracting their bounding box and output tile names for a provided `GridSize`.
  *
  * @param files
  * @param gridSize
  * @param forceSourceEpsg
  * @param targetEpsg CRS to align tiles to and calculate map sheet names in, see {@link getMapSheet}. Defaults to each file's own (source) EPSG, ie no reprojection.
- * @returns {TiffLocation[]}
+ * @returns {SourceLocation[]}
  */
 export async function extractLocations(
   files: SourceFile[],
   gridSize: GridSize,
   forceSourceEpsg?: number,
   targetEpsg?: number,
-): Promise<TiffLocation[]> {
+): Promise<SourceLocation[]> {
   const result = await Promise.all(
-    files.map(async (file): Promise<TiffLocation | null> => {
+    files.map(async (file): Promise<SourceLocation | null> => {
       try {
         const sourceBbox = await file.bbox();
 
@@ -851,7 +837,7 @@ export async function extractLocations(
         if (sourceEpsg == null) {
           logger.error(
             { reason: 'EPSG is missing', source: protocolAwareString(file.source) },
-            'MissingEPSG:ExtractTiffLocations:Failed',
+            'MissingEPSG:ExtractLocations:Failed',
           );
           return null;
         }
@@ -868,7 +854,7 @@ export async function extractLocations(
         if (targetBbox === null) {
           logger.error(
             { reason: 'Failed to reproject point', source: protocolAwareString(file.source) },
-            'Reprojection:ExtracTiffLocations:Failed',
+            'Reprojection:ExtractLocations:Failed',
           );
           return null;
         }
@@ -881,7 +867,7 @@ export async function extractLocations(
           bands: await file.bands(),
         };
       } catch (e) {
-        logger.error({ reason: e, source: protocolAwareString(file.source) }, 'ExtractTiffLocation:Failed');
+        logger.error({ reason: e, source: protocolAwareString(file.source) }, 'ExtractLocation:Failed');
         return null;
       } finally {
         await file.close();
@@ -889,28 +875,13 @@ export async function extractLocations(
     }),
   );
 
-  const output: TiffLocation[] = [];
+  const output: SourceLocation[] = [];
   for (const o of result) {
     if (o === null) throw new Error('All locations have not been extracted.');
     output.push(o);
   }
 
   return output;
-}
-
-/** {@link extractLocations} of TIFFs */
-export function extractTiffLocations(
-  tiffs: Tiff[],
-  gridSize: GridSize,
-  forceSourceEpsg?: number,
-  targetEpsg?: number,
-): Promise<TiffLocation[]> {
-  return extractLocations(
-    tiffs.map((tiff) => new TiffSource(tiff)),
-    gridSize,
-    forceSourceEpsg,
-    targetEpsg,
-  );
 }
 
 /**
