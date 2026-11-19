@@ -241,6 +241,7 @@ export const commandTileIndexValidate = command({
         args.includeDerived,
         input.gsd,
         input.dataType,
+        input.crs,
       );
     }
 
@@ -377,6 +378,8 @@ interface TileIndexInput {
   targetEpsg: number;
   gsd: string;
   dataType: string;
+  /** CRS of the output tiles, eg "EPSG:2193+7839" */
+  crs: string;
 }
 
 /** Load and validate the input TIFFs */
@@ -414,6 +417,7 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
     targetEpsg,
     gsd: String([...tiffsMetadata.roundedGsds][0]),
     dataType: String([...tiffsMetadata.dataTypes][0]),
+    crs: `EPSG:${targetEpsg}`,
   };
 }
 
@@ -426,14 +430,77 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
     new ConcurrentQueue(args.concurrency),
     args,
   );
+  const crs = validatePointCloudCrs(files, args.sourceEpsg);
+  const pointFormat = validatePointFormat(files);
   return {
     files,
     gridSize: args.scale,
-    targetEpsg: args.targetEpsg ?? args.sourceEpsg ?? files.find((f) => f.epsg != null)?.epsg ?? EpsgCode.Nztm2000,
-    // No GSD or band data type for point clouds, empty files keep the Argo output parameters resolving
-    gsd: '',
-    dataType: '',
+    targetEpsg: args.targetEpsg ?? args.sourceEpsg ?? files[0]?.epsg ?? EpsgCode.Nztm2000,
+    // Point density (points/m²) and point format, until they get their own outputs
+    gsd: String(medianDensity(files)),
+    dataType: String(pointFormat),
+    crs,
   };
+}
+
+/** Most common value, and the items with another value */
+function majority<T>(items: T[], value: (item: T) => string): { common?: string; others: T[] } {
+  const counts = new Map<string, number>();
+  for (const item of items) counts.set(value(item), (counts.get(value(item)) ?? 0) + 1);
+  const common = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+  return { common, others: items.filter((item) => value(item) !== common) };
+}
+
+/**
+ * Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file
+ *
+ * @returns the shared CRS, eg "EPSG:2193+7839"
+ */
+function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: number): string {
+  const crs = (f: PointCloudSource): string => `EPSG:${forceSourceEpsg ?? f.epsg}+${f.header.verticalEpsg}`;
+  const problems = new Map<PointCloudSource, string>();
+  for (const f of files) {
+    const { epsg, verticalEpsg, verticalDatum } = f.header;
+    if (forceSourceEpsg == null && epsg == null) problems.set(f, 'no horizontal CRS');
+    else if (verticalEpsg == null) problems.set(f, 'no vertical CRS');
+    else if (verticalDatum === verticalEpsg) problems.set(f, `vertical datum is the CRS code ${verticalDatum}`);
+  }
+  const { common, others } = majority(
+    files.filter((f) => !problems.has(f)),
+    crs,
+  );
+  for (const f of others) problems.set(f, `${crs(f)}, most files are ${common}`);
+  if (common == null || problems.size > 0) {
+    throw new Error(
+      'Point cloud CRS check failed, run fix-laz-header on these files (mainland NZTM2000 + NZVD2016 data only, until it takes a CRS parameter):\n' +
+        [...problems].map(([f, reason]) => `${protocolAwareString(f.source)}: ${reason}`).join('\n'),
+    );
+  }
+  return common;
+}
+
+/** Fail on mixed point formats, listing every file that differs from the most common one */
+function validatePointFormat(files: PointCloudSource[]): number {
+  const { common, others } = majority(files, (f) => String(f.header.pointFormat));
+  if (common == null || others.length > 0) {
+    throw new Error(
+      `Mixed point formats, most files are ${common}:\n` +
+        others.map((f) => `${protocolAwareString(f.source)}: ${f.header.pointFormat}`).join('\n'),
+    );
+  }
+  return Number(common);
+}
+
+/** Median points per m² of the header bboxes, rough as they include buffers and empty areas */
+function medianDensity(files: PointCloudSource[]): number {
+  const densities = files
+    .map((f) => {
+      const { width, height } = getSize(f.header.bbox);
+      return f.header.pointCount / (width * height);
+    })
+    .filter((d) => Number.isFinite(d))
+    .sort((a, b) => a - b);
+  return Number((densities[Math.floor(densities.length / 2)] ?? 0).toPrecision(3));
 }
 
 /** "pointcloud" if only point clouds are listed, "raster" otherwise. Fails if both TIFFs and point clouds are listed */
@@ -535,6 +602,7 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
  * @param targetEpsg The EPSG code the tiles were aligned to (see `getMapTileIndex`/`extractLocations`).
  * @param includeDerived Whether to include derived TIFFs in the output.
  * @param gsd The ground sample distance to use for the output.
+ * @param crs The CRS of the output tiles.
  */
 async function generateOutputFiles(
   locations: SourceLocation[],
@@ -543,6 +611,7 @@ async function generateOutputFiles(
   includeDerived: boolean,
   gsd: string,
   dataType: string,
+  crs: string,
 ): Promise<void> {
   const mapSheet = getMapSheet(targetEpsg);
   const targetProjection = Projection.get(targetEpsg);
@@ -576,6 +645,7 @@ async function generateOutputFiles(
   const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
   const gsdFileName = fsa.toUrl('/tmp/tile-index-validate/gsd');
   const dataTypeFileName = fsa.toUrl('/tmp/tile-index-validate/data-type');
+  const crsFileName = fsa.toUrl('/tmp/tile-index-validate/crs');
 
   await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
   logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
@@ -592,6 +662,9 @@ async function generateOutputFiles(
 
   await fsa.write(dataTypeFileName, dataType);
   logger.info({ path: protocolAwareString(dataTypeFileName), dataType }, 'Write:DataType');
+
+  await fsa.write(crsFileName, crs);
+  logger.info({ path: protocolAwareString(crsFileName), crs }, 'Write:Crs');
 }
 
 /**

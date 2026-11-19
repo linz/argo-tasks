@@ -375,6 +375,53 @@ describe('validate', () => {
       fileList.map((f) => [f.output, f.input.length]),
       [['BY16_5000_0410', 2]],
     );
+    const output = async (name: string): Promise<string> =>
+      String(await fsa.read(fsa.toUrl(`file:///tmp/tile-index-validate/${name}`)));
+    assert.deepEqual(
+      [await output('gsd'), await output('data-type'), await output('crs')],
+      ['0.00253', '6', 'EPSG:2193+7839'],
+    );
+  });
+
+  it('should fail early listing every point cloud with a bad or different CRS', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    const files = {
+      'good-1': {},
+      'good-2': {},
+      broken: { verticalDatum: 7839 },
+      flat: { vertical: null },
+      other: { vertical: 4440 },
+    };
+    for (const [name, opts] of Object.entries(files)) {
+      await fsa.write(fsa.toUrl(`memory://pc/${name}.laz`), fakeLasHeader(bbox, opts));
+    }
+    await assert.rejects(commandTileIndexValidate.handler(pointCloudArguments), (e: Error) => {
+      assert.equal(
+        e.message.split('\n').slice(1).join('\n'),
+        [
+          'memory://pc/broken.laz: vertical datum is the CRS code 7839',
+          'memory://pc/flat.laz: no vertical CRS',
+          'memory://pc/other.laz: EPSG:2193+4440, most files are EPSG:2193+7839',
+        ].join('\n'),
+      );
+      assert.match(e.message, /run fix-laz-header/);
+      return true;
+    });
+  });
+
+  it('should fail on mixed point formats', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    for (const [name, pointFormat] of [
+      ['a', 0x86],
+      ['b', 0x86],
+      ['c', 0x87],
+    ] as const) {
+      await fsa.write(fsa.toUrl(`memory://pc/${name}.laz`), fakeLasHeader(bbox, { pointFormat }));
+    }
+    await assert.rejects(
+      commandTileIndexValidate.handler(pointCloudArguments),
+      /Mixed point formats, most files are 6:\nmemory:\/\/pc\/c.laz: 7$/,
+    );
   });
 
   it('should tile point clouds in the CRS of their header', async () => {
