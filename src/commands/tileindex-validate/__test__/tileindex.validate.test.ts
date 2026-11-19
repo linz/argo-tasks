@@ -378,8 +378,8 @@ describe('validate', () => {
     const output = async (name: string): Promise<string> =>
       String(await fsa.read(fsa.toUrl(`file:///tmp/tile-index-validate/${name}`)));
     assert.deepEqual(
-      [await output('gsd'), await output('data-type'), await output('crs')],
-      ['0.00253', '6', 'EPSG:2193+7839'],
+      [await output('gsd'), await output('data-type'), await output('density'), await output('point-format')],
+      ['', '', '0.00253', '6'],
     );
   });
 

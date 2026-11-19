@@ -234,15 +234,7 @@ export const commandTileIndexValidate = command({
     );
 
     if (args.forceOutput || isArgo()) {
-      await generateOutputFiles(
-        locations,
-        outputTiles,
-        input.targetEpsg,
-        args.includeDerived,
-        input.gsd,
-        input.dataType,
-        input.crs,
-      );
+      await generateOutputFiles(locations, outputTiles, input.targetEpsg, args.includeDerived, input.outputs);
     }
 
     validateTiling(outputTiles);
@@ -376,10 +368,8 @@ interface TileIndexInput {
   files: SourceFile[];
   gridSize: GridSize;
   targetEpsg: number;
-  gsd: string;
-  dataType: string;
-  /** CRS of the output tiles, eg "EPSG:2193+7839" */
-  crs: string;
+  /** Text outputs by file name, all written so the Argo output parameters resolve, empty when not applicable */
+  outputs: Record<'gsd' | 'data-type' | 'density' | 'point-format', string>;
 }
 
 /** Load and validate the input TIFFs */
@@ -415,9 +405,12 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
     files,
     gridSize,
     targetEpsg,
-    gsd: String([...tiffsMetadata.roundedGsds][0]),
-    dataType: String([...tiffsMetadata.dataTypes][0]),
-    crs: `EPSG:${targetEpsg}`,
+    outputs: {
+      gsd: String([...tiffsMetadata.roundedGsds][0]),
+      'data-type': String([...tiffsMetadata.dataTypes][0]),
+      density: '',
+      'point-format': '',
+    },
   };
 }
 
@@ -430,16 +423,17 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
     new ConcurrentQueue(args.concurrency),
     args,
   );
-  const crs = validatePointCloudCrs(files, args.sourceEpsg);
-  const pointFormat = validatePointFormat(files);
+  validatePointCloudCrs(files, args.sourceEpsg);
   return {
     files,
     gridSize: args.scale,
     targetEpsg: args.targetEpsg ?? args.sourceEpsg ?? files[0]?.epsg ?? EpsgCode.Nztm2000,
-    // Point density (points/m²) and point format, until they get their own outputs
-    gsd: String(medianDensity(files)),
-    dataType: String(pointFormat),
-    crs,
+    outputs: {
+      gsd: '',
+      'data-type': '',
+      density: String(medianDensity(files)),
+      'point-format': String(validatePointFormat(files)),
+    },
   };
 }
 
@@ -451,12 +445,8 @@ function majority<T>(items: T[], value: (item: T) => string): { common?: string;
   return { common, others: items.filter((item) => value(item) !== common) };
 }
 
-/**
- * Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file
- *
- * @returns the shared CRS, eg "EPSG:2193+7839"
- */
-function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: number): string {
+/** Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file */
+function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: number): void {
   const crs = (f: PointCloudSource): string => `EPSG:${forceSourceEpsg ?? f.epsg}+${f.header.verticalEpsg}`;
   const problems = new Map<PointCloudSource, string>();
   for (const f of files) {
@@ -470,13 +460,12 @@ function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: numb
     crs,
   );
   for (const f of others) problems.set(f, `${crs(f)}, most files are ${common}`);
-  if (common == null || problems.size > 0) {
+  if (problems.size > 0) {
     throw new Error(
       'Point cloud CRS check failed, run fix-laz-header on these files (mainland NZTM2000 + NZVD2016 data only, until it takes a CRS parameter):\n' +
         [...problems].map(([f, reason]) => `${protocolAwareString(f.source)}: ${reason}`).join('\n'),
     );
   }
-  return common;
 }
 
 /** Fail on mixed point formats, listing every file that differs from the most common one */
@@ -601,17 +590,14 @@ async function getTiffsMetadata(tiffs: Tiff[], locations: URL[]): Promise<TiffsM
  * @param outputTiles The map of output tiles to their source files.
  * @param targetEpsg The EPSG code the tiles were aligned to (see `getMapTileIndex`/`extractLocations`).
  * @param includeDerived Whether to include derived TIFFs in the output.
- * @param gsd The ground sample distance to use for the output.
- * @param crs The CRS of the output tiles.
+ * @param outputs Text outputs by file name, eg the ground sample distance in `gsd`.
  */
 async function generateOutputFiles(
   locations: SourceLocation[],
   outputTiles: Map<string, SourceLocation[]>,
   targetEpsg: number,
   includeDerived: boolean,
-  gsd: string,
-  dataType: string,
-  crs: string,
+  outputs: TileIndexInput['outputs'],
 ): Promise<void> {
   const mapSheet = getMapSheet(targetEpsg);
   const targetProjection = Projection.get(targetEpsg);
@@ -643,9 +629,6 @@ async function generateOutputFiles(
   const inputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/input.geojson');
   const outputGeoJsonFileName = fsa.toUrl('/tmp/tile-index-validate/output.geojson');
   const fileListFileName = fsa.toUrl('/tmp/tile-index-validate/file-list.json');
-  const gsdFileName = fsa.toUrl('/tmp/tile-index-validate/gsd');
-  const dataTypeFileName = fsa.toUrl('/tmp/tile-index-validate/data-type');
-  const crsFileName = fsa.toUrl('/tmp/tile-index-validate/crs');
 
   await fsa.write(inputGeoJsonFileName, JSON.stringify(inputGeoJson));
   logger.info({ path: protocolAwareString(inputGeoJsonFileName) }, 'Write:InputGeoJson');
@@ -657,14 +640,11 @@ async function generateOutputFiles(
   await fsa.write(fileListFileName, JSON.stringify(fileList));
   logger.info({ path: protocolAwareString(fileListFileName), count: outputTiles.size }, 'Write:FileList');
 
-  await fsa.write(gsdFileName, gsd);
-  logger.info({ path: protocolAwareString(gsdFileName), gsd }, 'Write:GSD');
-
-  await fsa.write(dataTypeFileName, dataType);
-  logger.info({ path: protocolAwareString(dataTypeFileName), dataType }, 'Write:DataType');
-
-  await fsa.write(crsFileName, crs);
-  logger.info({ path: protocolAwareString(crsFileName), crs }, 'Write:Crs');
+  for (const [name, value] of Object.entries(outputs)) {
+    const fileName = fsa.toUrl(`/tmp/tile-index-validate/${name}`);
+    await fsa.write(fileName, value);
+    logger.info({ path: protocolAwareString(fileName), value }, 'Write:Output');
+  }
 }
 
 /**
