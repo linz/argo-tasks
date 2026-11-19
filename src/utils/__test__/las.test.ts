@@ -21,6 +21,7 @@ describe('readLasHeader', () => {
       pointCount: 5_000_000_000,
       scale: [0.001, 0.001, 0.001],
       bbox,
+      epsg: 2193,
     });
   });
 
