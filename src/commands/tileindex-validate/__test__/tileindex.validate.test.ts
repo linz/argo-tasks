@@ -458,7 +458,7 @@ describe('validate', () => {
     );
   });
 
-  it('should replace a point cloud by a later one with the same file name', async () => {
+  it('should write same-name point clouds to file-list.json in location order', async () => {
     const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
     for (const file of ['pc/BY16_1000_1649.laz', 'pc/add/BY16_1000_1649.laz']) {
       await fsa.write(fsa.toUrl(`memory://${file}`), fakeLasHeader(bbox));
@@ -472,7 +472,7 @@ describe('validate', () => {
     );
     assert.deepEqual(
       fileList.map((f) => f.input),
-      [['memory://pc/add/BY16_1000_1649.laz']],
+      [['memory://pc/BY16_1000_1649.laz', 'memory://pc/add/BY16_1000_1649.laz']],
     );
   });
 

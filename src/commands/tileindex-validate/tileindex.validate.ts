@@ -154,7 +154,7 @@ export const commandTileIndexValidate = command({
       type: UrlFolderList,
       displayName: 'location',
       description:
-        'Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap, a point cloud replaces an earlier one with the same file name.',
+        'Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap.',
     }),
     concurrency: option({
       type: number,
@@ -206,7 +206,7 @@ export const commandTileIndexValidate = command({
    * Filelist grouped by target tileNames with includeDerived flag
    *
    * Attributes:
-   * - input (string[]): paths to source files
+   * - input (string[]): paths to source files, in order of their most specific location, so later ones take priority
    * - output (string): target tileName for target tile index
    * - includeDerived (boolean): include input tiles as STAC `derived_from` links
    *
@@ -425,8 +425,11 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
 /** Load the headers of the input point clouds */
 async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<TileIndexInput> {
   if (args.scale === 'auto') throw new Error('Point clouds need a --scale');
-  const files = replaceByName(
-    await FileLoader.load(PointCloudFiles, args.location.flat(), new ConcurrentQueue(args.concurrency), args),
+  const files = await FileLoader.load(
+    PointCloudFiles,
+    args.location.flat(),
+    new ConcurrentQueue(args.concurrency),
+    args,
   );
   const crs = validatePointCloudCrs(files, args.sourceEpsg, args.sourceVerticalEpsg);
   const pointFormat = validateSame(files, 'point formats', (f) => String(f.header.pointFormat));
@@ -443,24 +446,6 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
       crs,
     },
   };
-}
-
-/** Point clouds by file name, a later one replaces an earlier one, see `location` */
-function replaceByName(files: PointCloudSource[]): PointCloudSource[] {
-  const byName = new Map<string, PointCloudSource>();
-  for (const file of files) {
-    const name = file.source.pathname.split('/').at(-1) ?? file.source.pathname;
-    const replaced = byName.get(name);
-    if (replaced) {
-      logger.warn(
-        { source: protocolAwareString(replaced.source), replacement: protocolAwareString(file.source) },
-        'PointCloud:Replaced',
-      );
-      byName.delete(name);
-    }
-    byName.set(name, file);
-  }
-  return [...byName.values()];
 }
 
 /** Most common value, undefined on a tie, and the items with another value */
