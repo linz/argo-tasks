@@ -136,11 +136,11 @@ export function lasCrs(vlrs: LasVlr[]): LasCrs {
   const wktData = find(2112);
   if (wktData) {
     const wkt = text(wktData, 0, wktData.byteLength);
-    const vertical = wktNode(wkt, /VERT(_CS|CS|CRS)\[/);
+    const vertical = wktNode(wkt, /VERT(_CS|CS|CRS|ICALCRS)\[/);
     return {
-      epsg: wktEpsg(wktNode(wkt, /PROJ(CS|CRS)\[/)),
+      epsg: wktEpsg(wktNode(wkt, /PROJ(CS|CRS|ECTEDCRS)\[/)),
       verticalEpsg: wktEpsg(vertical),
-      verticalDatum: wktEpsg(wktNode(vertical, /(VERT_DATUM|VDATUM|VERTICALDATUM)\[/)),
+      verticalDatum: wktEpsg(wktNode(vertical, /(VERT_DATUM|VDATUM|VERTICALDATUM|VRF|VERTICALFRAME)\[/)),
     };
   }
   const keyData = find(34735);

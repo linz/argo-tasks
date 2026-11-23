@@ -5,7 +5,7 @@ import { before, describe, it } from 'node:test';
 
 import type { LasVlr } from '../las.ts';
 import { lasCrs, readLasHeader } from '../las.ts';
-import { fakeLasHeader } from './las.data.ts';
+import { fakeLasHeader, geoKeys } from './las.data.ts';
 
 describe('readLasHeader', () => {
   const bbox: BBox = [1_570_000, 5_180_000, 1_570_480, 5_180_720];
@@ -43,7 +43,7 @@ describe('readLasHeader', () => {
     assert.deepEqual([epsg, verticalEpsg, verticalDatum], [2193, 7839, 7839]);
   });
 
-  it('should read the CRS of LAS 1.4 from an EVLR', async () => {
+  it('should read the CRS of LAS 1.4 from an EVLR after another EVLR', async () => {
     const url = fsa.toUrl('memory://las/evlr.laz');
     await fsa.write(url, fakeLasHeader(bbox, { evlr: true }));
     const { epsg, verticalEpsg } = await readLasHeader(url);
@@ -64,6 +64,20 @@ describe('readLasHeader', () => {
       'COMPOUNDCRS["",PROJCRS["",BASEGEOGCRS["",ID["EPSG",4167]],CONVERSION["",PARAMETER["",0,ID["EPSG",8801]]],ID["EPSG",2193]],' +
       'VERTCRS["",VDATUM["",ID["EPSG",1169]],ID["EPSG",7839]]]';
     assert.deepEqual(lasCrs(vlrs(wkt2)), { epsg: 2193, verticalEpsg: 7839, verticalDatum: 1169 });
+    const long = wkt2.replace('PROJCRS', 'PROJECTEDCRS').replace('VERTCRS', 'VERTICALCRS').replace('VDATUM', 'VRF');
+    assert.deepEqual(lasCrs(vlrs(long)), { epsg: 2193, verticalEpsg: 7839, verticalDatum: 1169 });
+  });
+
+  it('should ignore GeoKeys stored outside the directory', () => {
+    const data = geoKeys([
+      [3072, 2193],
+      [4096, 0, 34736],
+    ]).buffer as ArrayBuffer;
+    assert.deepEqual(lasCrs([{ userId: 'LASF_Projection', recordId: 34735, description: '', data }]), {
+      epsg: 2193,
+      verticalEpsg: undefined,
+      verticalDatum: undefined,
+    });
   });
 
   it('should fail on a non LAS file', async () => {

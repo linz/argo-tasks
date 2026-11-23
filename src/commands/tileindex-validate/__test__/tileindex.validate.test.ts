@@ -198,7 +198,7 @@ describe('validate', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
-    sourceType: 'auto' as const,
+    sourceType: 'raster' as const,
     include: undefined,
     preset: 'none',
     sourceEpsg: undefined,
@@ -357,6 +357,7 @@ describe('validate', () => {
 
   const pointCloudArguments = {
     ...baseArguments,
+    sourceType: 'pointcloud' as const,
     scale: 5000 as GridSize,
     location: [[fsa.toUrl('memory://pc/')]],
   };
@@ -437,6 +438,16 @@ describe('validate', () => {
     assert.equal(String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/crs'))), 'EPSG:2193+4440');
   });
 
+  it('should fail on point cloud CRS without a most common one', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    await fsa.write(fsa.toUrl('memory://pc/a.laz'), fakeLasHeader(bbox));
+    await fsa.write(fsa.toUrl('memory://pc/b.laz'), fakeLasHeader(bbox, { vertical: 4440 }));
+    await assert.rejects(
+      commandTileIndexValidate.handler(pointCloudArguments),
+      /\nmemory:\/\/pc\/a.laz: EPSG:2193\+7839, no value is most common\nmemory:\/\/pc\/b.laz: EPSG:2193\+4440, no value is most common$/,
+    );
+  });
+
   it('should fail on mixed scales without a most common one', async () => {
     const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
     await fsa.write(fsa.toUrl('memory://pc/a.laz'), fakeLasHeader(bbox, { scale: 0.001 }));
@@ -467,7 +478,7 @@ describe('validate', () => {
 
   it('should fail on point clouds without --scale', async () => {
     await assert.rejects(
-      commandTileIndexValidate.handler({ ...pointCloudArguments, sourceType: 'pointcloud', scale: 'auto' }),
+      commandTileIndexValidate.handler({ ...pointCloudArguments, scale: 'auto' }),
       /Point clouds need a --scale/,
     );
   });
@@ -498,12 +509,6 @@ describe('validate', () => {
       fileList.map((f) => f.output),
       ['CI06_5000_0507'],
     );
-  });
-
-  it('should fail on both TIFFs and point clouds', async () => {
-    await fsa.write(fsa.toUrl('memory://pc/a.tiff'), Buffer.from(''));
-    await fsa.write(fsa.toUrl('memory://pc/b.laz'), Buffer.from(''));
-    await assert.rejects(commandTileIndexValidate.handler(pointCloudArguments), /Found both TIFFs and point clouds/);
   });
 
   it('should not fail if there are duplicate tiles', async (t) => {
@@ -714,7 +719,7 @@ describe('GSD handling', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
-    sourceType: 'auto' as const,
+    sourceType: 'raster' as const,
     include: undefined,
     validate: false,
     preset: 'none',
@@ -791,7 +796,7 @@ describe('DataType handling', () => {
   const baseArguments = {
     config: undefined,
     verbose: false,
-    sourceType: 'auto' as const,
+    sourceType: 'raster' as const,
     include: undefined,
     validate: false,
     preset: 'none',

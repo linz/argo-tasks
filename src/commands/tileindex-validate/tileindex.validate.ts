@@ -92,7 +92,7 @@ export const TargetEpsgFromString: Type<string, number> = {
   },
 };
 
-export const SourceTypes = ['auto', 'raster', 'pointcloud'] as const;
+export const SourceTypes = ['raster', 'pointcloud'] as const;
 export type SourceType = (typeof SourceTypes)[number];
 
 export const commandTileIndexValidate = command({
@@ -115,9 +115,9 @@ export const commandTileIndexValidate = command({
       type: oneOf(SourceTypes),
       long: 'source-type',
       description:
-        'Type of the input files. "auto" detects it and fails if there are both TIFFs and point clouds. Point clouds are placed in the tile of their centroid',
+        'Type of the input files, TIFFs or LAS/LAZ point clouds. Point clouds are placed in the tile of their centroid',
       defaultValueIsSerializable: true,
-      defaultValue: (): SourceType => 'auto',
+      defaultValue: (): SourceType => 'raster',
     }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input files' }),
     sourceVerticalEpsg: option({
@@ -224,10 +224,7 @@ export const commandTileIndexValidate = command({
     registerCli(this, args);
     logger.info('TileIndex:Start');
 
-    const sourceType =
-      args.sourceType === 'auto' ? await detectSourceType(args.location.flat(), args) : args.sourceType;
-    logger.info({ sourceType }, 'TileIndex:SourceType');
-    const input = sourceType === 'pointcloud' ? await loadPointClouds(args) : await loadRaster(args);
+    const input = args.sourceType === 'pointcloud' ? await loadPointClouds(args) : await loadRaster(args);
 
     const groupByTileNameStartTime = performance.now();
     const locations = await extractLocations(input.files, input.gridSize, args.sourceEpsg, input.targetEpsg);
@@ -480,7 +477,7 @@ function mostFiles(common: string | undefined): string {
 }
 
 /**
- * Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file. The source EPSG codes force the CRS
+ * Fail on point clouds without one shared horizontal + vertical CRS, listing the bad files. The source EPSG codes force the CRS
  *
  * @returns the CRS of all files, eg `EPSG:2193+7839`
  */
@@ -507,24 +504,30 @@ function validatePointCloudCrs(
   if (problems.size > 0) {
     throw new Error(
       'Point cloud CRS check failed, set --source-epsg and --source-vertical-epsg or run fix-laz-header on these files (mainland NZTM2000 + NZVD2016 data only, until it takes a CRS parameter):\n' +
-        [...problems].map(([f, reason]) => `${protocolAwareString(f.source)}: ${reason}`).join('\n'),
+        listFiles([...problems]),
     );
   }
   return common ?? '';
 }
 
+const MaxListedFiles = 20;
+
+/** A `source: value` line per file, the first {@link MaxListedFiles} only */
+function listFiles(files: [PointCloudSource, string][]): string {
+  const lines = files.slice(0, MaxListedFiles).map(([f, value]) => `${protocolAwareString(f.source)}: ${value}`);
+  if (files.length > MaxListedFiles) lines.push(`...and ${files.length - MaxListedFiles} more`);
+  return lines.join('\n');
+}
+
 /**
- * Fail on point clouds with mixed values, listing every file that differs from the most common one
+ * Fail on point clouds with mixed values, listing the files that differ from the most common one
  *
  * @returns the value of all files
  */
 function validateSame(files: PointCloudSource[], name: string, value: (f: PointCloudSource) => string): string {
   const { common, others } = majority(files, value);
   if (common == null || others.length > 0) {
-    throw new Error(
-      `Mixed ${name}, ${mostFiles(common)}:\n` +
-        others.map((f) => `${protocolAwareString(f.source)}: ${value(f)}`).join('\n'),
-    );
+    throw new Error(`Mixed ${name}, ${mostFiles(common)}:\n` + listFiles(others.map((f) => [f, value(f)])));
   }
   return common;
 }
@@ -539,19 +542,6 @@ function medianDensity(files: PointCloudSource[]): number {
     .filter((d) => Number.isFinite(d))
     .sort((a, b) => a - b);
   return Number((densities[Math.floor(densities.length / 2)] ?? 0).toPrecision(3));
-}
-
-/** "pointcloud" if only point clouds are listed, "raster" otherwise. Fails if both TIFFs and point clouds are listed */
-export async function detectSourceType(locations: URL[], args?: FileFilter): Promise<Exclude<SourceType, 'auto'>> {
-  const found = new Set<Exclude<SourceType, 'auto'>>();
-  for (const loc of locations) {
-    for await (const file of asyncFilter(fsa.details(loc), args)) {
-      if (isTiff(file.url)) found.add('raster');
-      if (isPointCloud(file.url)) found.add('pointcloud');
-      if (found.size > 1) throw new Error('Found both TIFFs and point clouds, set --source-type or --include');
-    }
-  }
-  return found.has('pointcloud') ? 'pointcloud' : 'raster';
 }
 
 /**
