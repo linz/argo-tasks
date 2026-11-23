@@ -161,3 +161,9 @@ export async function findResolution(tiff: Tiff): Promise<number> {
   const tfw = await loadTfw(tiffLocation);
   return tfw.scale.x;
 }
+
+/** Whether the URL is a TIFF file */
+export function isTiff(url: URL): boolean {
+  const fileName = url.pathname.toLowerCase();
+  return fileName.endsWith('.tiff') || fileName.endsWith('.tif');
+}

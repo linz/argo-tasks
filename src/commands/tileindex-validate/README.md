@@ -8,9 +8,9 @@ tileindex-validate <options> [...location]
 
 ### Arguments
 
-| Usage         | Description                                                                                                       | Options |
-| ------------- | ----------------------------------------------------------------------------------------------------------------- | ------- |
-| [...location] | Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap. |         |
+| Usage         | Description                                                                                                                                                                      | Options |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| [...location] | Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap, a point cloud replaces an earlier one with the same file name. |         |
 
 ### Options
 

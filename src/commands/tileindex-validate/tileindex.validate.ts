@@ -14,7 +14,7 @@ import type { FileFilter } from '../../utils/chunk.ts';
 import { asyncFilter } from '../../utils/chunk.ts';
 import { ConcurrentQueue } from '../../utils/concurrent.queue.ts';
 import { createFileList, protocolAwareString } from '../../utils/filelist.ts';
-import { findBoundingBox, findResolution } from '../../utils/geotiff.ts';
+import { findBoundingBox, findResolution, isTiff } from '../../utils/geotiff.ts';
 import type { LasHeader } from '../../utils/las.ts';
 import { isPointCloud, readLasHeader } from '../../utils/las.ts';
 import type { GridSize, MapSheetLike } from '../../utils/mapsheet.ts';
@@ -33,7 +33,7 @@ export interface SourceLocation {
   /** Output tile name */
   tileNames: string[];
   /**
-   * List of bands inside a TIFF in the format `uint8',`uint16`, `uint32`, or the point format and scale of a point cloud
+   * List of bands inside a TIFF in the format `uint8',`uint16`, `uint32`, empty for point clouds
    *
    * @see {@link extractBandInformation} for more information on bad types
    */
@@ -154,7 +154,7 @@ export const commandTileIndexValidate = command({
       type: UrlFolderList,
       displayName: 'location',
       description:
-        'Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap.',
+        'Location of the source files. Accepts multiple source paths. Later locations take priority where folders overlap, a point cloud replaces an earlier one with the same file name.',
     }),
     concurrency: option({
       type: number,
@@ -164,8 +164,8 @@ export const commandTileIndexValidate = command({
     }),
   },
   /**
-   * Validate list of tiffs match a LINZ map sheet tile index
-   * Group the input TIFFs to their output tile names
+   * Group input TIFFs or point clouds to their output tile names on a LINZ map sheet tile index.
+   * TIFFs go to every tile they cover, point clouds to the tile of their centroid.
    *
    * Examples:
    * input: 1:1000
@@ -180,7 +180,7 @@ export const commandTileIndexValidate = command({
    * -- Not handled (yet!)
    * input: 1:10_000
    * scale: 1:1000
-   * Create a re-tiling output of  1 input tiff = 100x {tileName, input: string}[]
+   * Create a re-tiling output of  1 input file = 100x {tileName, input: string}[]
    *
    * If --includeDerived
    * Sets includeDerived in file-list.json (determines whether to create derived_from links in STAC)
@@ -188,27 +188,30 @@ export const commandTileIndexValidate = command({
    * @output
    * /tmp/tile-index-validate/input.geojson
    * Geometry:
-   *  bounding boxes of the input tiff files.
+   *  bounding boxes of the input files.
    *
    * Attributes:
-   * - source (string): path to source tiff
+   * - source (string): path to source file
    * - tileName (string): calculated target tileName
    *
    * /tmp/tile-index-validate/output.geojson
    * Geometry:
-   *  bounding boxes of the target tiff files
+   *  bounding boxes of the target tiles
    *
    * Attributes:
-   * - source (string[]): paths to source tiffs
+   * - source (string[]): paths to source files
    * - tileName (string): target tileName for target tile index
    *
    * /tmp/tile-index-validate/file-list.json
    * Filelist grouped by target tileNames with includeDerived flag
    *
    * Attributes:
-   * - input (string[]): paths to source tiffs
+   * - input (string[]): paths to source files
    * - output (string): target tileName for target tile index
    * - includeDerived (boolean): include input tiles as STAC `derived_from` links
+   *
+   * /tmp/tile-index-validate/gsd, data-type, density, point-format
+   * Text files, empty when not applicable: GSD and band data type of TIFFs, points per m² and point format of point clouds
    *
    * @example
    * Create a list of files that need to be retiled
@@ -284,7 +287,6 @@ export const FileLoader = {
     q: ConcurrentQueue,
     args?: FileFilter,
   ): Promise<T[]> {
-    const filterArgs = { ...args, sizeMin: 0 };
     const hosts = new Set<string>();
     /** File href to its listing position and most specific location's href length */
     const listingOrder = new Map<string, { position: number; specificity: number }>();
@@ -292,21 +294,24 @@ export const FileLoader = {
     const totalTime = performance.now();
     let progressTime = totalTime;
 
-    let loaded = 0;
-    let listed = 0;
+    /** Number of files loaded or failed */
+    let loadedCount = 0;
+    /** Number of files listed, including duplicates */
+    let listedCount = 0;
+    /** Number of files that failed to load */
     let failedCount = 0;
     const output: T[] = [];
     let lastError: unknown = null;
 
     for (const loc of locations) {
-      for await (const file of asyncFilter(fsa.details(loc), filterArgs)) {
+      for await (const file of asyncFilter(fsa.details(loc), args)) {
         if (!type.accept(file.url)) continue;
         const existing = listingOrder.get(file.url.href);
         // Deepest location wins, the later one on ties
         if (existing == null || loc.href.length >= existing.specificity) {
-          listingOrder.set(file.url.href, { position: listed, specificity: loc.href.length });
+          listingOrder.set(file.url.href, { position: listedCount, specificity: loc.href.length });
         }
-        listed++;
+        listedCount++;
         if (existing != null) continue;
         // ensure credentials have been loaded
         if (!hosts.has(file.url.hostname)) {
@@ -318,12 +323,12 @@ export const FileLoader = {
           return type
             .open(file.url)
             .then((item) => {
-              loaded++;
-              if (loaded % 1_000 === 0) {
+              loadedCount++;
+              if (loadedCount % 1_000 === 0) {
                 logger.info(
                   {
                     source: protocolAwareString(file.url),
-                    loaded,
+                    loaded: loadedCount,
                     duration: performance.now() - progressTime,
                   },
                   `${type.name}:Load:Progress`,
@@ -335,7 +340,7 @@ export const FileLoader = {
             .catch((e: unknown) => {
               logger.fatal({ lastFile: protocolAwareString(file.url), err: e }, `${type.name}:Load:Failed`);
               failedCount++;
-              loaded++;
+              loadedCount++;
               lastError = e;
             });
         });
@@ -344,7 +349,7 @@ export const FileLoader = {
       }
     }
 
-    const duplicates = listed - listingOrder.size;
+    const duplicates = listedCount - listingOrder.size;
     if (duplicates > 0) logger.warn({ duplicates }, `${type.name}:Load:Duplicates`);
 
     await q.join();
@@ -422,13 +427,12 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
 /** Load the headers of the input point clouds */
 async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<TileIndexInput> {
   if (args.scale === 'auto') throw new Error('Point clouds need a --scale');
-  const files = await FileLoader.load(
-    PointCloudFiles,
-    args.location.flat(),
-    new ConcurrentQueue(args.concurrency),
-    args,
+  const files = replaceByName(
+    await FileLoader.load(PointCloudFiles, args.location.flat(), new ConcurrentQueue(args.concurrency), args),
   );
   validatePointCloudCrs(files, args.sourceEpsg, args.sourceVerticalEpsg);
+  const pointFormat = validateSame(files, 'point formats', (f) => String(f.header.pointFormat));
+  validateSame(files, 'scales', (f) => f.header.scale.join(','));
   return {
     files,
     gridSize: args.scale,
@@ -437,17 +441,40 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
       gsd: '',
       'data-type': '',
       density: String(medianDensity(files)),
-      'point-format': String(validatePointFormat(files)),
+      'point-format': pointFormat,
     },
   };
 }
 
-/** Most common value, and the items with another value */
+/** Point clouds by file name, a later one replaces an earlier one, see `location` */
+function replaceByName(files: PointCloudSource[]): PointCloudSource[] {
+  const byName = new Map<string, PointCloudSource>();
+  for (const file of files) {
+    const name = file.source.pathname.split('/').at(-1) ?? file.source.pathname;
+    const replaced = byName.get(name);
+    if (replaced) {
+      logger.warn(
+        { source: protocolAwareString(replaced.source), replacement: protocolAwareString(file.source) },
+        'PointCloud:Replaced',
+      );
+      byName.delete(name);
+    }
+    byName.set(name, file);
+  }
+  return [...byName.values()];
+}
+
+/** Most common value, undefined on a tie, and the items with another value */
 function majority<T>(items: T[], value: (item: T) => string): { common?: string; others: T[] } {
   const counts = new Map<string, number>();
   for (const item of items) counts.set(value(item), (counts.get(value(item)) ?? 0) + 1);
-  const common = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const [first, second] = [...counts].sort((a, b) => b[1] - a[1]);
+  const common = first != null && first[1] !== second?.[1] ? first[0] : undefined;
   return { common, others: items.filter((item) => value(item) !== common) };
+}
+
+function mostFiles(common: string | undefined): string {
+  return common == null ? 'no value is most common' : `most files are ${common}`;
 }
 
 /** Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file. The source EPSG codes force the CRS */
@@ -466,7 +493,7 @@ function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: numb
     files.filter((f) => !problems.has(f)),
     crs,
   );
-  for (const f of others) problems.set(f, `${crs(f)}, most files are ${common}`);
+  for (const f of others) problems.set(f, `${crs(f)}, ${mostFiles(common)}`);
   if (problems.size > 0) {
     throw new Error(
       'Point cloud CRS check failed, set --source-epsg and --source-vertical-epsg or run fix-laz-header on these files (mainland NZTM2000 + NZVD2016 data only, until it takes a CRS parameter):\n' +
@@ -475,16 +502,20 @@ function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: numb
   }
 }
 
-/** Fail on mixed point formats, listing every file that differs from the most common one */
-function validatePointFormat(files: PointCloudSource[]): number {
-  const { common, others } = majority(files, (f) => String(f.header.pointFormat));
+/**
+ * Fail on point clouds with mixed values, listing every file that differs from the most common one
+ *
+ * @returns the value of all files
+ */
+function validateSame(files: PointCloudSource[], name: string, value: (f: PointCloudSource) => string): string {
+  const { common, others } = majority(files, value);
   if (common == null || others.length > 0) {
     throw new Error(
-      `Mixed point formats, most files are ${common}:\n` +
-        others.map((f) => `${protocolAwareString(f.source)}: ${f.header.pointFormat}`).join('\n'),
+      `Mixed ${name}, ${mostFiles(common)}:\n` +
+        others.map((f) => `${protocolAwareString(f.source)}: ${value(f)}`).join('\n'),
     );
   }
-  return Number(common);
+  return common;
 }
 
 /** Median points per m² of the header bboxes, rough as they include buffers and empty areas */
@@ -859,13 +890,18 @@ export class PointCloudSource implements SourceFile {
     return Promise.resolve(this.header.bbox);
   }
 
-  /** Point format and scale, which must match to merge */
+  /** None, point format and scale are checked for all point clouds when loading */
   bands(): Promise<string[]> {
-    return Promise.resolve([`pdrf${this.header.pointFormat}`, `scale${this.header.scale.join(',')}`]);
+    return Promise.resolve([]);
   }
 
   tileNames(bbox: BBox, gridSize: GridSize, mapSheet: MapSheetLike): string[] {
-    return [getTileName((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, gridSize, mapSheet)];
+    const x = (bbox[0] + bbox[2]) / 2;
+    const y = (bbox[1] + bbox[3]) / 2;
+    if (!mapSheet.isKnown(mapSheet.sheetCode(x, y))) {
+      throw new Error(`Point cloud centroid ${x}, ${y} is outside the ${mapSheet.name} map sheets`);
+    }
+    return [getTileName(x, y, gridSize, mapSheet)];
   }
 
   close(): Promise<void> {
@@ -952,17 +988,6 @@ export async function extractLocations(
  */
 export function getSize(extent: BBox): Size {
   return { width: extent[2] - extent[0], height: extent[3] - extent[1] };
-}
-
-/**
- * Check if a URL points to a TIFF file.
- *
- * @param url The URL to check.
- * @returns True if the URL points to a TIFF file, false otherwise.
- */
-export function isTiff(url: URL): boolean {
-  const fileName = url.pathname.toLowerCase();
-  return fileName.endsWith('.tiff') || fileName.endsWith('.tif');
 }
 
 /**

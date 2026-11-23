@@ -12,6 +12,7 @@ import { fakeLasHeader } from '../../../utils/__test__/las.data.ts';
 import { MapSheetData } from '../../../utils/__test__/mapsheet.data.ts';
 import { ConcurrentQueue } from '../../../utils/concurrent.queue.ts';
 import type { FileListEntryClass } from '../../../utils/filelist.ts';
+import { isTiff } from '../../../utils/geotiff.ts';
 import type { GridSize } from '../../../utils/mapsheet.ts';
 import { ChathamMapSheet, MapSheet } from '../../../utils/mapsheet.ts';
 import { createTiff, Url } from '../../common.ts';
@@ -24,7 +25,7 @@ import {
   getTileName,
   GridSizeFromString,
   groupByTileName,
-  isTiff,
+  PointCloudSource,
   reprojectIfNeeded,
   TiffFiles,
   TiffSource,
@@ -432,6 +433,41 @@ describe('validate', () => {
     );
   });
 
+  it('should fail on mixed scales without a most common one', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    await fsa.write(fsa.toUrl('memory://pc/a.laz'), fakeLasHeader(bbox, { scale: 0.001 }));
+    await fsa.write(fsa.toUrl('memory://pc/b.laz'), fakeLasHeader(bbox, { scale: 0.01 }));
+    await assert.rejects(
+      commandTileIndexValidate.handler(pointCloudArguments),
+      /Mixed scales, no value is most common:\nmemory:\/\/pc\/a.laz: 0.001,0.001,0.001\nmemory:\/\/pc\/b.laz: 0.01,0.01,0.01$/,
+    );
+  });
+
+  it('should replace a point cloud by a later one with the same file name', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    for (const file of ['pc/BY16_1000_1649.laz', 'pc/add/BY16_1000_1649.laz']) {
+      await fsa.write(fsa.toUrl(`memory://${file}`), fakeLasHeader(bbox));
+    }
+    await commandTileIndexValidate.handler({
+      ...pointCloudArguments,
+      location: [[fsa.toUrl('memory://pc/'), fsa.toUrl('memory://pc/add/')]],
+    });
+    const fileList: FileListEntryClass[] = await fsa.readJson(
+      fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
+    );
+    assert.deepEqual(
+      fileList.map((f) => f.input),
+      [['memory://pc/add/BY16_1000_1649.laz']],
+    );
+  });
+
+  it('should fail on point clouds without --scale', async () => {
+    await assert.rejects(
+      commandTileIndexValidate.handler({ ...pointCloudArguments, sourceType: 'pointcloud', scale: 'auto' }),
+      /Point clouds need a --scale/,
+    );
+  });
+
   it('should fail on mixed point formats', async () => {
     const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
     for (const [name, pointFormat] of [
@@ -512,6 +548,14 @@ describe('validate', () => {
         includeDerived: false,
       },
     ]);
+  });
+});
+
+describe('PointCloudSource', () => {
+  it('should fail on a centroid outside the map sheets', () => {
+    const header = { source: new URL('memory://pc/a.laz'), version: '1.4', pointFormat: 6, pointCount: 1 };
+    const source = new PointCloudSource({ ...header, scale: [0.001, 0.001, 0.001], bbox: [0, 0, 10, 10] });
+    assert.throws(() => source.tileNames([0, 0, 10, 10], 5000, MapSheet), /outside the NZTM2000 map sheets/);
   });
 });
 
