@@ -14,16 +14,17 @@ tileindex-validate <options> [...location]
 
 ### Options
 
-| Usage                  | Description                                                                                                                                                                                          | Options       |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| --config <str>         | Location of role configuration file                                                                                                                                                                  | optional      |
-| --include <str>        | Include files eg ".*.tiff?$"                                                                                                                                                                         | optional      |
-| --scale <value>        | Tile grid scale to align output tile to. If set to "auto", the system will determine the appropriate scale based on the imagery type (`--preset`) and its GSD. Required for point clouds             | optional      |
-| --source-type <value>  | Type of the input files. "auto" detects it and fails if there are both TIFFs and point clouds. Point clouds are placed in the tile of their centroid                                                 | default: auto |
-| --source-epsg <number> | Force epsg code for input files                                                                                                                                                                      | optional      |
-| --target-epsg <value>  | Target CRS to align output tiles to and calculate map sheet names in. Defaults to the (source) EPSG of the input tiffs; set to 2193 (NZTM2000) or 3793 (CITM2000) to reproject into a specific grid. | optional      |
-| --preset <str>         | Validate the input tiffs with a configuration preset                                                                                                                                                 | default: none |
-| --concurrency <number> | Number of files to read concurrently                                                                                                                                                                 | optional      |
+| Usage                           | Description                                                                                                                                                                                          | Options       |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| --config <str>                  | Location of role configuration file                                                                                                                                                                  | optional      |
+| --include <str>                 | Include files eg ".*.tiff?$"                                                                                                                                                                         | optional      |
+| --scale <value>                 | Tile grid scale to align output tile to. If set to "auto", the system will determine the appropriate scale based on the imagery type (`--preset`) and its GSD. Required for point clouds             | optional      |
+| --source-type <value>           | Type of the input files. "auto" detects it and fails if there are both TIFFs and point clouds. Point clouds are placed in the tile of their centroid                                                 | default: auto |
+| --source-epsg <number>          | Force epsg code for input files                                                                                                                                                                      | optional      |
+| --source-vertical-epsg <number> | Force the vertical CRS of input point clouds, eg 7839 for NZVD2016 height                                                                                                                            | optional      |
+| --target-epsg <value>           | Target CRS to align output tiles to and calculate map sheet names in. Defaults to the (source) EPSG of the input tiffs; set to 2193 (NZTM2000) or 3793 (CITM2000) to reproject into a specific grid. | optional      |
+| --preset <str>                  | Validate the input tiffs with a configuration preset                                                                                                                                                 | default: none |
+| --concurrency <number>          | Number of files to read concurrently                                                                                                                                                                 | optional      |
 
 ### Flags
 

@@ -201,6 +201,7 @@ describe('validate', () => {
     include: undefined,
     preset: 'none',
     sourceEpsg: undefined,
+    sourceVerticalEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
     scale: 1000 as GridSize,
@@ -407,6 +408,28 @@ describe('validate', () => {
       assert.match(e.message, /run fix-laz-header/);
       return true;
     });
+  });
+
+  it('should force the CRS of point clouds to the source EPSG codes', async () => {
+    const bbox = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+    const files = {
+      good: {},
+      broken: { verticalDatum: 7839 },
+      flat: { vertical: null },
+      none: { epsg: null },
+      other: { epsg: 3793, vertical: 4440 },
+    };
+    for (const [name, opts] of Object.entries(files)) {
+      await fsa.write(fsa.toUrl(`memory://pc/${name}.laz`), fakeLasHeader(bbox, opts));
+    }
+    await commandTileIndexValidate.handler({ ...pointCloudArguments, sourceEpsg: 2193, sourceVerticalEpsg: 7839 });
+    const fileList: FileListEntryClass[] = await fsa.readJson(
+      fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
+    );
+    assert.deepEqual(
+      fileList.map((f) => [f.output, f.input.length]),
+      [['BY16_5000_0410', 5]],
+    );
   });
 
   it('should fail on mixed point formats', async () => {
@@ -648,6 +671,7 @@ describe('GSD handling', () => {
     validate: false,
     preset: 'none',
     sourceEpsg: undefined,
+    sourceVerticalEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
     location: [[fsa.toUrl('memory://test/')]],
@@ -724,6 +748,7 @@ describe('DataType handling', () => {
     validate: false,
     preset: 'none',
     sourceEpsg: undefined,
+    sourceVerticalEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
     location: [[fsa.toUrl('memory://test/')]],

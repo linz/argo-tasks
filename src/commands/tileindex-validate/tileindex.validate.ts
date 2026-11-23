@@ -120,6 +120,11 @@ export const commandTileIndexValidate = command({
       defaultValue: (): SourceType => 'auto',
     }),
     sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input files' }),
+    sourceVerticalEpsg: option({
+      type: optional(number),
+      long: 'source-vertical-epsg',
+      description: 'Force the vertical CRS of input point clouds, eg 7839 for NZVD2016 height',
+    }),
     targetEpsg: option({
       type: optional(TargetEpsgFromString),
       long: 'target-epsg',
@@ -423,7 +428,7 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
     new ConcurrentQueue(args.concurrency),
     args,
   );
-  validatePointCloudCrs(files, args.sourceEpsg);
+  validatePointCloudCrs(files, args.sourceEpsg, args.sourceVerticalEpsg);
   return {
     files,
     gridSize: args.scale,
@@ -445,13 +450,15 @@ function majority<T>(items: T[], value: (item: T) => string): { common?: string;
   return { common, others: items.filter((item) => value(item) !== common) };
 }
 
-/** Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file */
-function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: number): void {
-  const crs = (f: PointCloudSource): string => `EPSG:${forceSourceEpsg ?? f.epsg}+${f.header.verticalEpsg}`;
+/** Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file. The source EPSG codes force the CRS */
+function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: number, forceVerticalEpsg?: number): void {
+  const crs = (f: PointCloudSource): string =>
+    `EPSG:${forceSourceEpsg ?? f.epsg}+${forceVerticalEpsg ?? f.header.verticalEpsg}`;
   const problems = new Map<PointCloudSource, string>();
   for (const f of files) {
     const { epsg, verticalEpsg, verticalDatum } = f.header;
     if (forceSourceEpsg == null && epsg == null) problems.set(f, 'no horizontal CRS');
+    else if (forceVerticalEpsg != null) continue;
     else if (verticalEpsg == null) problems.set(f, 'no vertical CRS');
     else if (verticalDatum === verticalEpsg) problems.set(f, `vertical datum is the CRS code ${verticalDatum}`);
   }
@@ -462,7 +469,7 @@ function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: numb
   for (const f of others) problems.set(f, `${crs(f)}, most files are ${common}`);
   if (problems.size > 0) {
     throw new Error(
-      'Point cloud CRS check failed, run fix-laz-header on these files (mainland NZTM2000 + NZVD2016 data only, until it takes a CRS parameter):\n' +
+      'Point cloud CRS check failed, set --source-epsg and --source-vertical-epsg or run fix-laz-header on these files (mainland NZTM2000 + NZVD2016 data only, until it takes a CRS parameter):\n' +
         [...problems].map(([f, reason]) => `${protocolAwareString(f.source)}: ${reason}`).join('\n'),
     );
   }
