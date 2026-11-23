@@ -488,7 +488,7 @@ function validatePointCloudCrs(
   for (const f of others) problems.set(f, `${crs(f)}, ${mostFiles(common)}`);
   if (problems.size > 0) {
     throw new Error(
-      'Point cloud CRS check failed, set --source-epsg and --source-vertical-epsg or run fix-laz-header on these files (mainland NZTM2000 + NZVD2016 data only, until it takes a CRS parameter):\n' +
+      'Point cloud CRS check failed, fix these files or set --source-epsg and --source-vertical-epsg:\n' +
         listFiles([...problems]),
     );
   }

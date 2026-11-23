@@ -410,7 +410,7 @@ describe('validate', () => {
           'memory://pc/other.laz: EPSG:2193+4440, most files are EPSG:2193+7839',
         ].join('\n'),
       );
-      assert.match(e.message, /run fix-laz-header/);
+      assert.match(e.message, /^Point cloud CRS check failed/);
       return true;
     });
   });
