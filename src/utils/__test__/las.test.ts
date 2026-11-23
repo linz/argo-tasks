@@ -3,6 +3,7 @@ import type { BBox } from '@linzjs/geojson';
 import assert from 'node:assert';
 import { before, describe, it } from 'node:test';
 
+import type { LasVlr } from '../las.ts';
 import { lasCrs, readLasHeader } from '../las.ts';
 import { fakeLasHeader } from './las.data.ts';
 
@@ -35,20 +36,34 @@ describe('readLasHeader', () => {
     assert.equal(header.pointFormat, 1);
   });
 
-  it('should read the CRS from GeoTIFF keys', () => {
-    const keys: [number, number][] = [
-      [3072, 2193],
-      [4096, 7839],
-      [4098, 7839],
+  it('should read the CRS of LAS 1.2 from GeoTIFF keys', async () => {
+    const url = fsa.toUrl('memory://las/keys.las');
+    await fsa.write(url, fakeLasHeader(bbox, { minor: 2, verticalDatum: 7839 }));
+    const { epsg, verticalEpsg, verticalDatum } = await readLasHeader(url);
+    assert.deepEqual([epsg, verticalEpsg, verticalDatum], [2193, 7839, 7839]);
+  });
+
+  it('should read the CRS of LAS 1.4 from an EVLR', async () => {
+    const url = fsa.toUrl('memory://las/evlr.laz');
+    await fsa.write(url, fakeLasHeader(bbox, { evlr: true }));
+    const { epsg, verticalEpsg } = await readLasHeader(url);
+    assert.deepEqual([epsg, verticalEpsg], [2193, 7839]);
+  });
+
+  it('should read the own EPSG code of WKT1 and WKT2 nodes only', () => {
+    const vlrs = (wkt: string): LasVlr[] => [
+      { userId: 'LASF_Projection', recordId: 2112, description: '', data: new TextEncoder().encode(wkt).buffer },
     ];
-    const view = new DataView(new ArrayBuffer(8 + keys.length * 8));
-    view.setUint16(6, keys.length, true);
-    keys.forEach(([id, value], i) => {
-      view.setUint16(8 + i * 8, id, true);
-      view.setUint16(14 + i * 8, value, true);
+    const unit = 'UNIT["metre",1,AUTHORITY["EPSG","9001"]]';
+    assert.deepEqual(lasCrs(vlrs(`COMPD_CS["",PROJCS["",${unit}],VERT_CS["",${unit}]]`)), {
+      epsg: undefined,
+      verticalEpsg: undefined,
+      verticalDatum: undefined,
     });
-    const vlr = { userId: 'LASF_Projection', recordId: 34735, description: '', data: view.buffer };
-    assert.deepEqual(lasCrs([vlr]), { epsg: 2193, verticalEpsg: 7839, verticalDatum: 7839 });
+    const wkt2 =
+      'COMPOUNDCRS["",PROJCRS["",BASEGEOGCRS["",ID["EPSG",4167]],CONVERSION["",PARAMETER["",0,ID["EPSG",8801]]],ID["EPSG",2193]],' +
+      'VERTCRS["",VDATUM["",ID["EPSG",1169]],ID["EPSG",7839]]]';
+    assert.deepEqual(lasCrs(vlrs(wkt2)), { epsg: 2193, verticalEpsg: 7839, verticalDatum: 1169 });
   });
 
   it('should fail on a non LAS file', async () => {

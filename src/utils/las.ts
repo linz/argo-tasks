@@ -38,6 +38,8 @@ const LasHeaderSizeMin = 227;
 
 const VlrHeaderSize = 54;
 
+const EvlrHeaderSize = 60;
+
 function text(bytes: ArrayBuffer, offset: number, length: number): string {
   return new TextDecoder().decode(new Uint8Array(bytes, offset, length)).replace(/\0.*$/s, '');
 }
@@ -59,9 +61,12 @@ export function parseVlrs(bytes: ArrayBuffer, count: number): LasVlr[] {
   return vlrs;
 }
 
+/** GeoKeys of a GeoKeyDirectoryTag (34735) record, ignoring keys past its end */
 export function parseGeoKeys(data: ArrayBuffer): GeoKey[] {
+  if (data.byteLength < 8) return [];
   const view = new DataView(data);
-  return Array.from({ length: view.getUint16(6, true) }, (_, i) => ({
+  const count = Math.min(view.getUint16(6, true), Math.floor((data.byteLength - 8) / 8));
+  return Array.from({ length: count }, (_, i) => ({
     id: view.getUint16(8 + i * 8, true),
     location: view.getUint16(10 + i * 8, true),
     count: view.getUint16(12 + i * 8, true),
@@ -84,10 +89,35 @@ function wktNode(wkt: string | undefined, start: RegExp): string | undefined {
   return undefined;
 }
 
-/** EPSG code of a WKT node, its last AUTHORITY or ID */
+/** Direct children of a WKT node, eg the `AUTHORITY[...]` of a `PROJCS[...]` but not of its `UNIT[...]` */
+function wktChildren(node: string): string[] {
+  const children: string[] = [];
+  let start = node.indexOf('[') + 1;
+  let depth = 0;
+  let quoted = false;
+  for (let i = start; i < node.length; i++) {
+    const c = node[i];
+    if (c === '"') quoted = !quoted;
+    else if (quoted) continue;
+    else if (c === '[') depth++;
+    else if (c === ']' && depth > 0) depth--;
+    else if ((c === ']' || c === ',') && depth === 0) {
+      children.push(node.slice(start, i).trim());
+      start = i + 1;
+      if (c === ']') break;
+    }
+  }
+  return children;
+}
+
+/** EPSG code of a WKT node's own AUTHORITY or ID */
 function wktEpsg(node: string | undefined): number | undefined {
-  const code = node && [...node.matchAll(/(?:AUTHORITY|ID)\["EPSG",\s*"?(\d+)"?\]/g)].at(-1)?.[1];
-  return code ? Number(code) : undefined;
+  if (node == null) return undefined;
+  for (const child of wktChildren(node)) {
+    const code = /^(?:AUTHORITY|ID)\["EPSG",\s*"?(\d+)"?/.exec(child)?.[1];
+    if (code) return Number(code);
+  }
+  return undefined;
 }
 
 export interface LasCrs {
@@ -126,6 +156,28 @@ export function isPointCloud(url: URL): boolean {
   return /\.la[sz]$/i.test(url.pathname);
 }
 
+/** LASF_Projection EVLRs of LAS 1.4, without fetching the data of other EVLRs */
+async function readProjectionEvlrs(
+  source: ReturnType<typeof fsa.source>,
+  start: number,
+  count: number,
+): Promise<LasVlr[]> {
+  const evlrs: LasVlr[] = [];
+  for (let i = 0, o = start; i < count; i++) {
+    const header = await source.fetch(o, EvlrHeaderSize);
+    if (header.byteLength < EvlrHeaderSize) break;
+    const view = new DataView(header);
+    const userId = text(header, 2, 16);
+    const length = Number(view.getBigUint64(20, true));
+    if (userId === 'LASF_Projection') {
+      const data = await source.fetch(o + EvlrHeaderSize, length);
+      evlrs.push({ userId, recordId: view.getUint16(18, true), description: text(header, 28, 32), data });
+    }
+    o += EvlrHeaderSize + length;
+  }
+  return evlrs;
+}
+
 /** Read the public header block and CRS of a LAS, LAZ or COPC file. https://lasformat.org/latest/02.00_definition.html#public-header-block */
 export async function readLasHeader(url: URL): Promise<LasHeader> {
   const source = fsa.source(url);
@@ -149,6 +201,11 @@ export async function readLasHeader(url: URL): Promise<LasHeader> {
   const vlrCount = view.getUint32(100, true);
   const vlrBytes = view.getUint32(96, true) - headerSize;
   const vlrs = vlrCount > 0 && vlrBytes > 0 ? parseVlrs(await source.fetch(headerSize, vlrBytes), vlrCount) : [];
+  let crs = lasCrs(vlrs);
+  const evlrCount = minor >= 4 ? view.getUint32(243, true) : 0;
+  if (crs.epsg == null && evlrCount > 0) {
+    crs = lasCrs(await readProjectionEvlrs(source, Number(view.getBigUint64(235, true)), evlrCount));
+  }
 
   return {
     source: url,
@@ -163,6 +220,6 @@ export async function readLasHeader(url: URL): Promise<LasHeader> {
       view.getFloat64(179, true),
       view.getFloat64(195, true),
     ],
-    ...lasCrs(vlrs),
+    ...crs,
   };
 }
