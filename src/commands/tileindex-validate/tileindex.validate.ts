@@ -210,8 +210,8 @@ export const commandTileIndexValidate = command({
    * - output (string): target tileName for target tile index
    * - includeDerived (boolean): include input tiles as STAC `derived_from` links
    *
-   * /tmp/tile-index-validate/gsd, data-type, density, point-format
-   * Text files, empty when not applicable: GSD and band data type of TIFFs, points per m² and point format of point clouds
+   * /tmp/tile-index-validate/gsd, data-type, density, point-format, crs
+   * Text files, empty when not applicable: GSD and band data type of TIFFs, points per m², point format and `EPSG:<horizontal>+<vertical>` CRS of point clouds
    *
    * @example
    * Create a list of files that need to be retiled
@@ -379,7 +379,7 @@ interface TileIndexInput {
   gridSize: GridSize;
   targetEpsg: number;
   /** Text outputs by file name, all written so the Argo output parameters resolve, empty when not applicable */
-  outputs: Record<'gsd' | 'data-type' | 'density' | 'point-format', string>;
+  outputs: Record<'gsd' | 'data-type' | 'density' | 'point-format' | 'crs', string>;
 }
 
 /** Load and validate the input TIFFs */
@@ -420,6 +420,7 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
       'data-type': String([...tiffsMetadata.dataTypes][0]),
       density: '',
       'point-format': '',
+      crs: '',
     },
   };
 }
@@ -430,7 +431,7 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
   const files = replaceByName(
     await FileLoader.load(PointCloudFiles, args.location.flat(), new ConcurrentQueue(args.concurrency), args),
   );
-  validatePointCloudCrs(files, args.sourceEpsg, args.sourceVerticalEpsg);
+  const crs = validatePointCloudCrs(files, args.sourceEpsg, args.sourceVerticalEpsg);
   const pointFormat = validateSame(files, 'point formats', (f) => String(f.header.pointFormat));
   validateSame(files, 'scales', (f) => f.header.scale.join(','));
   return {
@@ -442,6 +443,7 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
       'data-type': '',
       density: String(medianDensity(files)),
       'point-format': pointFormat,
+      crs,
     },
   };
 }
@@ -477,8 +479,16 @@ function mostFiles(common: string | undefined): string {
   return common == null ? 'no value is most common' : `most files are ${common}`;
 }
 
-/** Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file. The source EPSG codes force the CRS */
-function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: number, forceVerticalEpsg?: number): void {
+/**
+ * Fail on point clouds without one shared horizontal + vertical CRS, listing every bad file. The source EPSG codes force the CRS
+ *
+ * @returns the CRS of all files, eg `EPSG:2193+7839`
+ */
+function validatePointCloudCrs(
+  files: PointCloudSource[],
+  forceSourceEpsg?: number,
+  forceVerticalEpsg?: number,
+): string {
   const crs = (f: PointCloudSource): string =>
     `EPSG:${forceSourceEpsg ?? f.epsg}+${forceVerticalEpsg ?? f.header.verticalEpsg}`;
   const problems = new Map<PointCloudSource, string>();
@@ -500,6 +510,7 @@ function validatePointCloudCrs(files: PointCloudSource[], forceSourceEpsg?: numb
         [...problems].map(([f, reason]) => `${protocolAwareString(f.source)}: ${reason}`).join('\n'),
     );
   }
+  return common ?? '';
 }
 
 /**

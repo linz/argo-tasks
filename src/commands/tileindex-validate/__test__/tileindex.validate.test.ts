@@ -379,10 +379,13 @@ describe('validate', () => {
     );
     const output = async (name: string): Promise<string> =>
       String(await fsa.read(fsa.toUrl(`file:///tmp/tile-index-validate/${name}`)));
-    assert.deepEqual(
-      [await output('gsd'), await output('data-type'), await output('density'), await output('point-format')],
-      ['', '', '0.00253', '6'],
-    );
+    assert.deepEqual(await Promise.all(['gsd', 'data-type', 'density', 'point-format', 'crs'].map(output)), [
+      '',
+      '',
+      '0.00253',
+      '6',
+      'EPSG:2193+7839',
+    ]);
   });
 
   it('should fail early listing every point cloud with a bad or different CRS', async () => {
@@ -423,7 +426,7 @@ describe('validate', () => {
     for (const [name, opts] of Object.entries(files)) {
       await fsa.write(fsa.toUrl(`memory://pc/${name}.laz`), fakeLasHeader(bbox, opts));
     }
-    await commandTileIndexValidate.handler({ ...pointCloudArguments, sourceEpsg: 2193, sourceVerticalEpsg: 7839 });
+    await commandTileIndexValidate.handler({ ...pointCloudArguments, sourceEpsg: 2193, sourceVerticalEpsg: 4440 });
     const fileList: FileListEntryClass[] = await fsa.readJson(
       fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
     );
@@ -431,6 +434,7 @@ describe('validate', () => {
       fileList.map((f) => [f.output, f.input.length]),
       [['BY16_5000_0410', 5]],
     );
+    assert.equal(String(await fsa.read(fsa.toUrl('file:///tmp/tile-index-validate/crs'))), 'EPSG:2193+4440');
   });
 
   it('should fail on mixed scales without a most common one', async () => {
