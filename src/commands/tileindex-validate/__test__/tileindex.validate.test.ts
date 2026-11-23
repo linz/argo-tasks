@@ -806,7 +806,7 @@ describe('determineGridSizeFromGSDPreset', () => {
     assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'dem_lerc'), 50000);
   });
 
-    // Intensity (preset: 'intensity_zstd')
+  // Intensity (preset: 'intensity_zstd')
   it('returns 10000 for intensity >= 0.2m and <= 1.0m', () => {
     assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'intensity_zstd'), 10000);
   });
