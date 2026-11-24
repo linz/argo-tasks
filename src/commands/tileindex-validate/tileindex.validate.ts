@@ -92,6 +92,27 @@ export const TargetEpsgFromString: Type<string, number> = {
   },
 };
 
+export interface SourceCrs {
+  epsg: number;
+  verticalEpsg?: number;
+}
+
+export const SourceEpsgFromString: Type<string, SourceCrs> = {
+  /**
+   * Parse a horizontal EPSG code with an optional vertical one, eg "2193", "2193+7839" or "EPSG:2193+7839".
+   *
+   * @param value The input string.
+   * @returns The horizontal and vertical EPSG codes.
+   */
+  // oxlint-disable-next-line typescript/require-await -- throw must become a rejection
+  async from(value) {
+    const match = /^(?:EPSG:)?(\d+)(?:\+(\d+))?$/i.exec(value.trim());
+    if (match?.[1] == null) throw new Error(`Invalid source-epsg "${value}", eg "2193" or "2193+7839"`);
+    const epsg = Number(match[1]);
+    return match[2] == null ? { epsg } : { epsg, verticalEpsg: Number(match[2]) };
+  },
+};
+
 export const SourceTypes = ['raster', 'pointcloud'] as const;
 export type SourceType = (typeof SourceTypes)[number];
 
@@ -119,11 +140,11 @@ export const commandTileIndexValidate = command({
       defaultValueIsSerializable: true,
       defaultValue: (): SourceType => 'raster',
     }),
-    sourceEpsg: option({ type: optional(number), long: 'source-epsg', description: 'Force epsg code for input files' }),
-    sourceVerticalEpsg: option({
-      type: optional(number),
-      long: 'source-vertical-epsg',
-      description: 'Force the vertical CRS of input point clouds, eg 7839 for NZVD2016 height',
+    sourceEpsg: option({
+      type: optional(SourceEpsgFromString),
+      long: 'source-epsg',
+      description:
+        'Force epsg code for input files. Point clouds can add a vertical code, eg 2193+7839 for NZTM2000 + NZVD2016 height',
     }),
     targetEpsg: option({
       type: optional(TargetEpsgFromString),
@@ -227,7 +248,7 @@ export const commandTileIndexValidate = command({
     const input = args.sourceType === 'pointcloud' ? await loadPointClouds(args) : await loadRaster(args);
 
     const groupByTileNameStartTime = performance.now();
-    const locations = await extractLocations(input.files, input.gridSize, args.sourceEpsg, input.targetEpsg);
+    const locations = await extractLocations(input.files, input.gridSize, args.sourceEpsg?.epsg, input.targetEpsg);
     const outputTiles = groupByTileName(locations);
     logger.info(
       {
@@ -381,6 +402,9 @@ interface TileIndexInput {
 
 /** Load and validate the input TIFFs */
 async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndexInput> {
+  if (args.sourceEpsg?.verticalEpsg != null) {
+    throw new Error('TIFFs have no vertical CRS, set --source-epsg without "+<vertical>"');
+  }
   const readTiffStartTime = performance.now();
   const locations = args.location.flat();
   const files = await FileLoader.load(TiffFiles, locations, new ConcurrentQueue(args.concurrency), args);
@@ -406,7 +430,7 @@ async function loadRaster(args: CommandTileIndexValidateArgs): Promise<TileIndex
 
   // Default to the (source) EPSG of the input tiffs so imagery tiles against its own native
   // map sheet grid (eg Chatham Islands EPSG:3793) unless the caller explicitly asks to reproject.
-  const targetEpsg = args.targetEpsg ?? args.sourceEpsg ?? [...tiffsMetadata.projections][0] ?? EpsgCode.Nztm2000;
+  const targetEpsg = args.targetEpsg ?? args.sourceEpsg?.epsg ?? [...tiffsMetadata.projections][0] ?? EpsgCode.Nztm2000;
 
   return {
     files,
@@ -431,13 +455,13 @@ async function loadPointClouds(args: CommandTileIndexValidateArgs): Promise<Tile
     new ConcurrentQueue(args.concurrency),
     args,
   );
-  const crs = validatePointCloudCrs(files, args.sourceEpsg, args.sourceVerticalEpsg);
+  const crs = validatePointCloudCrs(files, args.sourceEpsg?.epsg, args.sourceEpsg?.verticalEpsg);
   const pointFormat = validateSame(files, 'point formats', (f) => String(f.header.pointFormat));
   validateSame(files, 'scales', (f) => f.header.scale.join(','));
   return {
     files,
     gridSize: args.scale,
-    targetEpsg: args.targetEpsg ?? args.sourceEpsg ?? files[0]?.epsg ?? EpsgCode.Nztm2000,
+    targetEpsg: args.targetEpsg ?? args.sourceEpsg?.epsg ?? files[0]?.epsg ?? EpsgCode.Nztm2000,
     outputs: {
       gsd: '',
       'data-type': '',
@@ -488,8 +512,7 @@ function validatePointCloudCrs(
   for (const f of others) problems.set(f, `${crs(f)}, ${mostFiles(common)}`);
   if (problems.size > 0) {
     throw new Error(
-      'Point cloud CRS check failed, fix these files or set --source-epsg and --source-vertical-epsg:\n' +
-        listFiles([...problems]),
+      'Point cloud CRS check failed, fix these files or set --source-epsg, eg 2193+7839:\n' + listFiles([...problems]),
     );
   }
   return common ?? '';

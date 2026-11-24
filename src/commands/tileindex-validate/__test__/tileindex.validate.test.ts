@@ -27,6 +27,7 @@ import {
   groupByTileName,
   PointCloudSource,
   reprojectIfNeeded,
+  SourceEpsgFromString,
   TiffFiles,
   TiffSource,
   validatePreset,
@@ -202,7 +203,6 @@ describe('validate', () => {
     include: undefined,
     preset: 'none',
     sourceEpsg: undefined,
-    sourceVerticalEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
     scale: 1000 as GridSize,
@@ -427,7 +427,7 @@ describe('validate', () => {
     for (const [name, opts] of Object.entries(files)) {
       await fsa.write(fsa.toUrl(`memory://pc/${name}.laz`), fakeLasHeader(bbox, opts));
     }
-    await commandTileIndexValidate.handler({ ...pointCloudArguments, sourceEpsg: 2193, sourceVerticalEpsg: 4440 });
+    await commandTileIndexValidate.handler({ ...pointCloudArguments, sourceEpsg: { epsg: 2193, verticalEpsg: 4440 } });
     const fileList: FileListEntryClass[] = await fsa.readJson(
       fsa.toUrl('file:///tmp/tile-index-validate/file-list.json'),
     );
@@ -580,6 +580,14 @@ describe('GridSizeFromString', () => {
   });
 });
 
+describe('SourceEpsgFromString', () => {
+  it('should parse horizontal and vertical EPSG codes', async () => {
+    assert.deepEqual(await SourceEpsgFromString.from('2193'), { epsg: 2193 });
+    assert.deepEqual(await SourceEpsgFromString.from('EPSG:2193+7839'), { epsg: 2193, verticalEpsg: 7839 });
+    await assert.rejects(SourceEpsgFromString.from('+7839'), /Invalid source-epsg/);
+  });
+});
+
 describe('validateTiffDataType', () => {
   const dataDir = './src/commands/tileindex-validate/__test__/data';
   it('should be a uint8 TIFF', async () => {
@@ -724,7 +732,6 @@ describe('GSD handling', () => {
     validate: false,
     preset: 'none',
     sourceEpsg: undefined,
-    sourceVerticalEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
     location: [[fsa.toUrl('memory://test/')]],
@@ -801,7 +808,6 @@ describe('DataType handling', () => {
     validate: false,
     preset: 'none',
     sourceEpsg: undefined,
-    sourceVerticalEpsg: undefined,
     targetEpsg: 2193,
     includeDerived: false,
     location: [[fsa.toUrl('memory://test/')]],
