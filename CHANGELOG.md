@@ -1,5 +1,17 @@
 # Changelog
 
+## [8.5.0](https://github.com/linz/argo-tasks/compare/v8.4.0...v8.5.0) (2026-11-25)
+
+
+### Features
+
+* add intensity category, path and slug TDE-2241 ([#1447](https://github.com/linz/argo-tasks/issues/1447)) ([baf0ad7](https://github.com/linz/argo-tasks/commit/baf0ad71005a64b37780ce00cffd4b88106c74e0))
+
+
+### Bug Fixes
+
+* retry checksum reads on transient network errors TDE-2196 ([#1445](https://github.com/linz/argo-tasks/issues/1445)) ([a23d857](https://github.com/linz/argo-tasks/commit/a23d8577e52e3728ddf846cc166f424ab0589bd7))
+
 ## [8.4.0](https://github.com/linz/argo-tasks/compare/v8.3.1...v8.4.0) (2026-11-15)
 
 
