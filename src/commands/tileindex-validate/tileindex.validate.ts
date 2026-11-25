@@ -28,8 +28,10 @@ export interface TiffLocation {
   bbox: BBox;
   /** EPSG code of the tiff if found */
   epsg?: number | null;
-  /** Output tile name */
+  /** Output tile names */
   tileNames: string[];
+  /** Neighbouring tiles overlapped by up to one pixel */
+  edgeTileNames: string[];
   /**
    * List of bands inside the tiff in the format `uint8',`uint16`, `uint32`
    *
@@ -520,6 +522,7 @@ async function generateOutputFiles(
  * @param outputTiles Map of output tiles to their source TIFFs.
  */
 function validateTiling(outputTiles: Map<string, TiffLocation[]>): void {
+  if (outputTiles.size === 0) throw new Error('No output tiles found');
   for (const [tileName, tiffs] of outputTiles.entries()) {
     if (tiffs.length === 0) throw new Error(`Output tile with no source tiff: ${tileName}`);
     if (tiffs.length === 1) continue;
@@ -620,20 +623,23 @@ function validateConsistentBands(locs: TiffLocation[]): string[] {
 }
 
 /**
- * Group input TIFFs by their output tile names.
+ * Group input TIFFs by their output tile names, edge tiles only add inputs to tiles covered by another TIFF.
  *
  * @param tiffs List of input TIFFs to group.
  * @returns Map of tile names to their corresponding input TIFFs.
  */
 export function groupByTileName(tiffs: TiffLocation[]): Map<string, TiffLocation[]> {
   const inputs: Map<string, TiffLocation[]> = new Map();
+  const covered = new Set<string>();
   for (const loc of tiffs) {
-    for (const sheetCode of loc.tileNames) {
+    for (const sheetCode of loc.tileNames) covered.add(sheetCode);
+    for (const sheetCode of [...loc.tileNames, ...loc.edgeTileNames]) {
       const uris = inputs.get(sheetCode) ?? [];
       uris.push(loc);
       inputs.set(sheetCode, uris);
     }
   }
+  for (const sheetCode of inputs.keys()) if (!covered.has(sheetCode)) inputs.delete(sheetCode);
   return inputs;
 }
 
@@ -701,12 +707,18 @@ export async function extractTiffLocations(
           return null;
         }
 
-        const covering = getCovering(targetBbox, gridSize, mapSheet);
+        const targetSize = getSize(targetBbox);
+        const imageSize = tiff.images[0]?.size;
+        const pixelSize: Size = imageSize
+          ? { width: targetSize.width / imageSize.width, height: targetSize.height / imageSize.height }
+          : { width: 0, height: 0 };
+        const covering = getCovering(targetBbox, gridSize, mapSheet, pixelSize);
 
         return {
           bbox: targetBbox,
           source: tiff.source.url,
-          tileNames: covering,
+          tileNames: covering.tileNames,
+          edgeTileNames: covering.edgeTileNames,
           epsg: tiff.images[0]?.epsg,
           //FIXME: extractBandInformation now runs in getTiffsMetadata, so it runs twice.
           bands: await extractBandInformation(tiff),
@@ -820,9 +832,17 @@ export async function validateTiffDataType(tiff: Tiff, allowedDataTypes: Set<str
  * @param bbox Bounding box of the area of interest (in `mapSheet`'s CRS) to get the map sheets for (e.g. TIFF area).
  * @param gridSize Grid size of the map sheets / tiles to get.
  * @param mapSheet The map sheet grid to tile against, see {@link getMapSheet}.
+ * @param pixelSize Pixel size of the TIFF in `mapSheet`'s CRS.
  * @param minIntersectionMeters Minimum intersection area in meters (width or height) to include the map sheet.
+ * @returns Tiles overlapped by more than one pixel, and edge tiles overlapped by up to one pixel.
  */
-function getCovering(bbox: BBox, gridSize: GridSize, mapSheet: MapSheetLike, minIntersectionMeters = 0.15): string[] {
+function getCovering(
+  bbox: BBox,
+  gridSize: GridSize,
+  mapSheet: MapSheetLike,
+  pixelSize: Size,
+  minIntersectionMeters = 0.15,
+): { tileNames: string[]; edgeTileNames: string[] } {
   const SurroundingTiles = [
     { x: 1, y: 0 },
     { x: 0, y: -1 },
@@ -832,7 +852,8 @@ function getCovering(bbox: BBox, gridSize: GridSize, mapSheet: MapSheetLike, min
 
   const targetBounds = Bounds.fromBbox(bbox);
 
-  const output: string[] = [];
+  const tileNames: string[] = [];
+  const edgeTileNames: string[] = [];
   const tilesPerMapSheetSide = Math.floor(mapSheet.gridSizeMax / gridSize);
 
   const tileWidth = Math.floor(mapSheet.width / tilesPerMapSheetSide);
@@ -841,9 +862,10 @@ function getCovering(bbox: BBox, gridSize: GridSize, mapSheet: MapSheetLike, min
   const seen = new Set();
   const todo: Bounds[] = [];
 
-  const sheetName = getTileName(bbox[0], bbox[3], gridSize, mapSheet);
+  // Start from the centre, edges can extend past the map sheet grid
+  const sheetName = getTileName((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, gridSize, mapSheet);
   const sheetInfo = mapSheet.getMapTileIndex(sheetName);
-  if (sheetInfo == null) throw new Error('Unable to extract sheet information for point: ' + bbox[0]);
+  if (sheetInfo == null) throw new Error('Unable to extract sheet information for: ' + sheetName);
 
   todo.push(Bounds.fromBbox(sheetInfo.bbox));
   while (todo.length > 0) {
@@ -863,8 +885,10 @@ function getCovering(bbox: BBox, gridSize: GridSize, mapSheet: MapSheetLike, min
     for (const pt of SurroundingTiles) todo.push(nextBounds.add({ x: pt.x * tileWidth, y: pt.y * tileHeight })); // intersection not null, so add all neighbours
     // Add to output only if the intersection is above the minimum coverage
     if (intersection.width < minIntersectionMeters || intersection.height < minIntersectionMeters) continue;
-    output.push(getTileName(nextX, nextY, gridSize, mapSheet));
+    const tileName = getTileName(nextX, nextY, gridSize, mapSheet);
+    if (intersection.width > pixelSize.width && intersection.height > pixelSize.height) tileNames.push(tileName);
+    else edgeTileNames.push(tileName);
   }
 
-  return output.sort();
+  return { tileNames: tileNames.sort(), edgeTileNames: edgeTileNames.sort() };
 }
