@@ -521,7 +521,7 @@ function validatePointCloudCrs(
 const MaxListedFiles = 20;
 
 /** A `source: value` line per file, the first {@link MaxListedFiles} only */
-function listFiles(files: [PointCloudSource, string][]): string {
+function listFiles(files: [SourceFile, string][]): string {
   const lines = files.slice(0, MaxListedFiles).map(([f, value]) => `${protocolAwareString(f.source)}: ${value}`);
   if (files.length > MaxListedFiles) lines.push(`...and ${files.length - MaxListedFiles} more`);
   return lines.join('\n');
@@ -918,8 +918,15 @@ export class PointCloudSource implements SourceFile {
   }
 }
 
+/** Why a source file was not placed on the tile grid, and its log message */
+interface LocationFailure {
+  reason: string;
+  msg: string;
+}
+
 /**
  * Create a list of `SourceLocation` from source files by extracting their bounding box and output tile names for a provided `GridSize`.
+ * Logs and lists the first {@link MaxListedFiles} failed files only.
  *
  * @param files
  * @param gridSize
@@ -934,18 +941,12 @@ export async function extractLocations(
   targetEpsg?: number,
 ): Promise<SourceLocation[]> {
   const result = await Promise.all(
-    files.map(async (file): Promise<SourceLocation | null> => {
+    files.map(async (file): Promise<SourceLocation | LocationFailure> => {
       try {
         const sourceBbox = await file.bbox();
 
         const sourceEpsg = forceSourceEpsg ?? file.epsg;
-        if (sourceEpsg == null) {
-          logger.error(
-            { reason: 'EPSG is missing', source: protocolAwareString(file.source) },
-            'MissingEPSG:ExtractLocations:Failed',
-          );
-          return null;
-        }
+        if (sourceEpsg == null) return { reason: 'EPSG is missing', msg: 'MissingEPSG:ExtractLocations:Failed' };
 
         // Default to the source EPSG so imagery tiles against its own native map sheet grid
         // unless the caller explicitly asks to reproject into a different one.
@@ -957,11 +958,7 @@ export async function extractLocations(
         const targetBbox = reprojectIfNeeded(sourceBbox, sourceProjection, targetProjection);
 
         if (targetBbox === null) {
-          logger.error(
-            { reason: 'Failed to reproject point', source: protocolAwareString(file.source) },
-            'Reprojection:ExtractLocations:Failed',
-          );
-          return null;
+          return { reason: 'Failed to reproject point', msg: 'Reprojection:ExtractLocations:Failed' };
         }
 
         return {
@@ -972,21 +969,27 @@ export async function extractLocations(
           bands: await file.bands(),
         };
       } catch (e) {
-        logger.error({ reason: e, source: protocolAwareString(file.source) }, 'ExtractLocation:Failed');
-        return null;
+        return { reason: e instanceof Error ? e.message : String(e), msg: 'ExtractLocations:Failed' };
       } finally {
         await file.close();
       }
     }),
   );
 
-  const output: SourceLocation[] = [];
-  for (const o of result) {
-    if (o === null) throw new Error('All locations have not been extracted.');
-    output.push(o);
+  const failures = files.flatMap((file, i): [SourceFile, LocationFailure][] => {
+    const r = result[i];
+    return r != null && 'reason' in r ? [[file, r]] : [];
+  });
+  if (failures.length > 0) {
+    for (const [file, { reason, msg }] of failures.slice(0, MaxListedFiles)) {
+      logger.error({ reason, source: protocolAwareString(file.source) }, msg);
+    }
+    if (failures.length > MaxListedFiles) {
+      logger.error({ failedCount: failures.length, more: failures.length - MaxListedFiles }, 'ExtractLocations:Failed');
+    }
+    throw new Error('ExtractLocations:Failed\n' + listFiles(failures.map(([file, { reason }]) => [file, reason])));
   }
-
-  return output;
+  return result.filter((r): r is SourceLocation => !('reason' in r));
 }
 
 /**

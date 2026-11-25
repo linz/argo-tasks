@@ -566,6 +566,45 @@ describe('PointCloudSource', () => {
     const source = new PointCloudSource({ ...header, scale: [0.001, 0.001, 0.001], bbox: [0, 0, 10, 10] });
     assert.throws(() => source.tileNames([0, 0, 10, 10], 5000, MapSheet), /outside the NZTM2000 map sheets/);
   });
+
+  const pointCloud = (name: string, bbox: BBox, epsg?: number): PointCloudSource =>
+    new PointCloudSource({
+      source: new URL(`memory://pc/${name}.laz`),
+      version: '1.4',
+      pointFormat: 6,
+      pointCount: 1,
+      scale: [0.001, 0.001, 0.001],
+      bbox,
+      ...(epsg == null ? {} : { epsg }),
+    });
+  const inside = MapSheet.getMapTileIndex('BY16_1000_1649')?.bbox ?? [0, 0, 0, 0];
+
+  it('should list every point cloud not placed with its reason', async () => {
+    const files = [pointCloud('a', [0, 0, 10, 10], 2193), pointCloud('b', inside, 2193), pointCloud('c', inside)];
+    await assert.rejects(extractLocations(files, 5000), {
+      message: [
+        'ExtractLocations:Failed',
+        'memory://pc/a.laz: Point cloud centroid 5, 5 is outside the NZTM2000 map sheets',
+        'memory://pc/c.laz: EPSG is missing',
+      ].join('\n'),
+    });
+  });
+
+  it('should log and list the first 20 point clouds not placed and count the rest', async (t) => {
+    const errorStub = t.mock.method(logger, 'error');
+    const files = Array.from({ length: 25 }, (_, i) => pointCloud(`f${String(i).padStart(2, '0')}`, inside));
+    const err = await extractLocations(files, 5000).catch((e: unknown) => e);
+    const lines = (err instanceof Error ? err.message : '').split('\n');
+    assert.equal(lines.length, 22);
+    assert.equal(lines[20], 'memory://pc/f19.laz: EPSG is missing');
+    assert.equal(lines[21], '...and 5 more');
+    assert.equal(errorStub.mock.callCount(), 21);
+    assert.deepEqual(errorStub.mock.calls[19]?.arguments, [
+      { reason: 'EPSG is missing', source: 'memory://pc/f19.laz' },
+      'MissingEPSG:ExtractLocations:Failed',
+    ]);
+    assert.deepEqual(errorStub.mock.calls[20]?.arguments, [{ failedCount: 25, more: 5 }, 'ExtractLocations:Failed']);
+  });
 });
 
 describe('GridSizeFromString', () => {
