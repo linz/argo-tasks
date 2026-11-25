@@ -461,10 +461,14 @@ describe('validatePreset', () => {
     const test16bTiff = await createTiff(pathToFileURL(`${dataDir}/16b.tiff`));
     await assert.doesNotReject(validatePreset('webp', [test16bTiff, test16bTiff]));
   });
+  it('should accept uint16 tiffs for intensity_zstd', async () => {
+    const test16bTiff = await createTiff(pathToFileURL(`${dataDir}/16b.tiff`));
+    await assert.doesNotReject(validatePreset('intensity_zstd', [test16bTiff]));
+  });
   it('should validate multiple tiffs for rgbnir_zstd', async (t) => {
     await testValidatePresetTiffs(t, 'rgbnir_zstd');
   });
-  for (const preset of ['webp', 'rgbnir_zstd']) {
+  for (const preset of ['webp', 'rgbnir_zstd', 'intensity_zstd']) {
     for (const [dataType, file] of [
       ['float32', '32f.tiff'],
       ['int16', '16i.tiff'],
@@ -480,6 +484,15 @@ describe('validatePreset', () => {
       });
     }
   }
+  it('should reject uint8 tiffs for intensity_zstd', async (t) => {
+    const testTiff = await createTiff(pathToFileURL(`${dataDir}/8b.tiff`));
+    const fatalStub = t.mock.method(logger, 'fatal');
+    await assert.rejects(validatePreset('intensity_zstd', [testTiff]), {
+      message: `Tiff preset:"intensity_zstd" validation failed`,
+    });
+    const opts = fatalStub.mock.calls[0]?.arguments[0] as Record<string, string>;
+    assert.ok(opts['reason']?.includes('unsupported data type: uint8'));
+  });
 });
 
 describe('TiffFromMisalignedTiff', () => {
@@ -791,6 +804,14 @@ describe('determineGridSizeFromGSDPreset', () => {
   it('returns 50000 for elevation > 1.0m', () => {
     assert.strictEqual(determineGridSizeFromGSDPreset(1.01, 'dem_lerc'), 50000);
     assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'dem_lerc'), 50000);
+  });
+
+  // Intensity (preset: 'intensity_zstd')
+  it('returns 10000 for intensity >= 0.2m and <= 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(1.0, 'intensity_zstd'), 10000);
+  });
+  it('returns 50000 for intensity > 1.0m', () => {
+    assert.strictEqual(determineGridSizeFromGSDPreset(2.0, 'intensity_zstd'), 50000);
   });
 
   it('throws error for unknown preset', () => {

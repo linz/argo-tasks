@@ -546,7 +546,7 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
     if (gsd >= 1.0) return 50000;
   }
   // DEM/DSM/Hillshade
-  if (preset === 'dem_lerc') {
+  if (preset === 'dem_lerc' || preset === 'intensity_zstd') {
     if (gsd < 0.2) return 1000;
     if (gsd >= 0.2 && gsd <= 1.0) return 10000;
     if (gsd > 1.0) return 50000;
@@ -557,6 +557,7 @@ export function determineGridSizeFromGSDPreset(gsd: number, preset: string): Gri
 
 function allowedDataTypesForPreset(preset: string): Set<string> | null {
   if (preset === 'webp' || preset === 'rgbnir_zstd') return new Set(['uint8', 'uint16']);
+  if (preset === 'intensity_zstd') return new Set(['uint16']);
   if (preset === 'lzw') return new Set(['uint8']);
   if (preset === 'dem_lerc') return new Set(['float32']);
   return null;

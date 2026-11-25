@@ -188,6 +188,20 @@ describe('GeneratePathGeospatialDataCategories', () => {
     };
     assert.equal(generatePath(metadata), 's3://nz-elevation/auckland/auckland_2023/dsm_1m/2193/');
   });
+  it('Should match - intensity from slug', () => {
+    const metadata: PathMetadata = {
+      targetBucketName: 'nz-coastal',
+      geospatialCategory: 'intensity',
+      region: 'northland',
+      slug: 'doubtless-bay-and-mangonui-harbour_2025',
+      gsd: 2,
+      epsg: 2193,
+    };
+    assert.equal(
+      generatePath(metadata),
+      's3://nz-coastal/northland/doubtless-bay-and-mangonui-harbour_2025/intensity_2m/2193/',
+    );
+  });
   it('Should error - invalid geospatial category', () => {
     const metadata: PathMetadata = {
       targetBucketName: 'nz-imagery',

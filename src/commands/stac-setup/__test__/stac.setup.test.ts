@@ -478,19 +478,21 @@ describe('coastal path co-location', () => {
     });
   };
 
-  it('should publish ancillary imagery alongside DEM and DSM of the same survey', () => {
+  it('should publish ancillary imagery and intensity alongside DEM and DSM of the same survey', () => {
     assert.deepStrictEqual(
       [
         pathFor('dem', '1'),
         pathFor('dsm', '1'),
         pathFor('ancillary-aerial-photos', '0.3'),
         pathFor('ancillary-near-infrared-aerial-photos', '0.3'),
+        pathFor('intensity', '2'),
       ],
       [
         's3://nz-coastal/auckland/mangawhai-to-snells_2025/dem_1m/2193/',
         's3://nz-coastal/auckland/mangawhai-to-snells_2025/dsm_1m/2193/',
         's3://nz-coastal/auckland/mangawhai-to-snells_2025/rgb_0.3m/2193/',
         's3://nz-coastal/auckland/mangawhai-to-snells_2025/rgbnir_0.3m/2193/',
+        's3://nz-coastal/auckland/mangawhai-to-snells_2025/intensity_2m/2193/',
       ],
     );
     // Imagery and DSM of the same survey resolve to the same survey folder

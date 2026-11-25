@@ -25,6 +25,7 @@ export const GeospatialDataCategories = {
   DemHillshadeIgor: 'dem-hillshade-igor',
   DsmHillshade: 'dsm-hillshade',
   DsmHillshadeIgor: 'dsm-hillshade-igor',
+  Intensity: 'intensity',
 } as const;
 
 export type GeospatialDataCategory = (typeof GeospatialDataCategories)[keyof typeof GeospatialDataCategories];
