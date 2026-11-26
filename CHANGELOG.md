@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.6.0](https://github.com/linz/argo-tasks/compare/v8.5.0...v8.6.0) (2026-11-26)
+
+
+### Features
+
+* add point cloud support to tileindex-validate TDE-2236 ([#1448](https://github.com/linz/argo-tasks/issues/1448)) ([5c34d2f](https://github.com/linz/argo-tasks/commit/5c34d2fa9da4fa86bf6c71fc96d9490a08c77478))
+
 ## [8.5.0](https://github.com/linz/argo-tasks/compare/v8.4.0...v8.5.0) (2026-11-25)
 
 
