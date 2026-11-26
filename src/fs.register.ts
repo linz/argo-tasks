@@ -115,6 +115,15 @@ export function splitConfig(x: string): string[] {
     .filter((s) => s !== '');
 }
 
+/**
+ * Only validate S3 response checksums when a request asks for it.
+ *
+ * Set through the environment so it also applies to the S3 clients `@chunkd/fs-aws` creates per bucket.
+ */
+export function skipResponseChecksumValidation(env: NodeJS.ProcessEnv = process.env): void {
+  env['AWS_RESPONSE_CHECKSUM_VALIDATION'] ??= 'WHEN_REQUIRED';
+}
+
 /** Register the S3 file system with chunkd/fsa */
 export function registerFileSystem(opts: { config?: string }): FsAwsS3 {
   const s3Fs = setupS3FileSystem(new FsAwsS3(new S3Client()));
